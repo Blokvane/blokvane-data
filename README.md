@@ -24,3 +24,16 @@ every entry and drops anything that doesn't look exactly right. Nothing here run
 
 Rules from this file can never override what a user blocked, paused or allowed,
 the malware and phishing lists, or Kid mode.
+
+## Daily auto test
+
+Every day a GitHub job (in the private app repo) runs Blokvane's Protection test with the
+online ad block tests, picks the ad and tracker addresses that got through, checks popular
+sites still work without them, and adds them to `block.domains` here. It adds at most 25 a
+day and never blocks shared services, work sites or anything in `autotest/never.json`.
+
+- `autotest/log.json`: what each daily run did (newest first)
+- `autotest/never.json`: addresses the auto test must never add, like `["example.com"]`
+
+To undo an address: remove it from `block.domains`, and add it to `autotest/never.json`
+so it isn't added again. If it broke sites, also add it to `allow.domains` for a day.
