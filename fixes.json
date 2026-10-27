@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "updated": "2026-10-27",
+  "minVersion": "3.13.0",
+  "youtube": {
+    "deleteKeys": [],
+    "adRenderers": [],
+    "wrapperKeys": [],
+    "keepKeys": [],
+    "markers": [],
+    "endpoints": [],
+    "initialData": [],
+    "skipButtons": [],
+    "enforcement": [],
+    "shortsAd": [],
+    "overlayClose": []
+  },
+  "facebook": {
+    "markers": [],
+    "adKeys": [],
+    "wrapperKeys": [],
+    "endpoints": [],
+    "words": [],
+    "adLinks": []
+  },
+  "instagram": {
+    "words": [],
+    "adLinks": []
+  },
+  "streaming": {
+    "skipWords": [],
+    "netflix": [],
+    "prime": [],
+    "twitch": [],
+    "spotify": [],
+    "hulu": [],
+    "max": [],
+    "disney": []
+  },
+  "block": { "domains": [] },
+  "allow": { "domains": [] },
+  "hide": { "generic": [], "sites": {} },
+  "unhide": { "generic": [] }
+}
