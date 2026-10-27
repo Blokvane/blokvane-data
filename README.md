@@ -18,19 +18,36 @@ every entry and drops anything that doesn't look exactly right. Nothing here run
 | `instagram.words`, `instagram.adLinks` | Instagram only |
 | `streaming.<service>`, `streaming.skipWords` | New ad markers on Netflix, Prime Video, Twitch, Spotify and others |
 | `block.domains` | Extra ad or tracker addresses to block (never shared services like fonts or CDNs) |
-| `allow.domains` | Emergency: stop blocking an address that breaks sites |
+| `allow.domains` | Emergency: stop blocking an address that breaks sites (at most 100) |
 | `hide.generic`, `hide.sites` | Extra boxes to hide, everywhere or on one site |
-| `unhide.generic` | Emergency: stop hiding a box that breaks sites |
+| `unhide.generic` | Emergency: stop hiding a box that breaks sites (at most 300) |
 
 Rules from this file can never override what a user blocked, paused or allowed,
 the malware and phishing lists, or Kid mode.
+
+## Safety limits (built into the extension)
+
+Even if this repo were ever taken over, Blokvane drops anything that could do real harm:
+
+- **CSS selectors** (hiding, clicking or spotting ads) must name something specific: a class
+  (`.ad-box`), an id (`#ad-top`), a custom element (`ytd-ad-slot-renderer`) or an attribute with
+  a value (`[id^="div-gpt-ad"]`). Dropped: `*`, `html`, `body`, plain tags like `div` or `button`,
+  page wrappers like `#root` or `.container`, `:has()`, `:is()`, `:where()`, and attributes like
+  `lang` or `dir`. A hiding rule can never hide the page itself.
+- **block.domains** can't hold shared services or work sites, a parent of one (`googleapis.com`),
+  or a whole address ending (`co.uk`, `github.io`, `netlify.app`).
+- **allow.domains** can't hold a known ad or tracking company, an address that starts like an
+  ad server (`ads.`, `pixel.`, `analytics.`...), or a whole address ending.
+- **unhide.generic** can't switch off Blokvane's core ad hiding (`.adsbygoogle`, `.ad-banner`...),
+  and **youtube.keepKeys** can't stop the core YouTube ad removal (`adPlacements`, `adSlots`, `playerAds`).
 
 ## Daily auto test
 
 Every day a GitHub job (in the private app repo) runs Blokvane's Protection test with the
 online ad block tests, picks the ad and tracker addresses that got through, checks popular
-sites still work without them, and adds them to `block.domains` here. It adds at most 25 a
-day and never blocks shared services, work sites or anything in `autotest/never.json`.
+sites still work without them, and adds them to `block.domains` here. It only adds addresses
+that AdGuard's public ad and tracker list already has, at most 25 a day, and never blocks
+shared services, work sites or anything in `autotest/never.json`.
 
 - `autotest/log.json`: what each daily run did (newest first)
 - `autotest/never.json`: addresses the auto test must never add, like `["example.com"]`
