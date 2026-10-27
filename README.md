@@ -30,13 +30,21 @@ the malware and phishing lists, or Kid mode.
 Even if this repo were ever taken over, Blokvane drops anything that could do real harm:
 
 - **CSS selectors** (hiding, clicking or spotting ads) must name something specific: a class
-  (`.ad-box`), an id (`#ad-top`), a custom element (`ytd-ad-slot-renderer`) or an attribute with
-  a value (`[id^="div-gpt-ad"]`). Dropped: `*`, `html`, `body`, plain tags like `div` or `button`,
-  page wrappers like `#root` or `.container`, `:has()`, `:is()`, `:where()`, and attributes like
-  `lang` or `dir`. A hiding rule can never hide the page itself.
+  (`.ad-box`), an id (`#ad-top`), a custom element (`ytd-ad-slot-renderer`) or an attribute
+  (`[id^="div-gpt-ad"]`, `[data-ad-slot]`). Dropped: `*`, `html`, `body`, plain tags like `div` or
+  `button`, page wrappers like `#root` or `.container`, `:has()`, `:is()`, `:where()`, and
+  attributes like `lang` or `dir`. A hiding rule can never hide the page itself.
+- Every selector must also **name an ad** on the element it hides, clicks or spots: a word like
+  `ad`, `ads`, `sponsored`, `advert`, `doubleclick` or `taboola` in its class, id, tag or attribute
+  (`skipButtons` may say `skip`, `enforcement` may say `enforcement`). A short word only counts
+  when it stands apart: `[class*="ad"]` also matches "header" and "loading", so it is dropped,
+  while `[class*="-ad-"]`, `[class^="ad-"]` and `.ad-box` are fine. `banner` and `promo` don't count
+  (sites use them for their own headers and coupon boxes).
 - **block.domains** can't hold shared services or work sites, a parent of one (`googleapis.com`),
-  or a whole address ending (`co.uk`, `github.io`, `netlify.app`).
-- **allow.domains** can't hold a known ad or tracking company, an address that starts like an
+  a whole address ending (`co.uk`, `github.io`, `netlify.app`, `r2.dev`), or a big platform's own
+  image and video servers (`fbcdn.net`, `ggpht.com`, `twimg.com`...).
+- **allow.domains** can't hold a known ad or tracking company, a big platform (`google.com`,
+  `youtube.com`, `amazon.com`... and anything under them), an address that starts like an
   ad server (`ads.`, `pixel.`, `analytics.`...), or a whole address ending.
 - **unhide.generic** can't switch off Blokvane's core ad hiding (`.adsbygoogle`, `.ad-banner`...),
   and **youtube.keepKeys** can't stop the core YouTube ad removal (`adPlacements`, `adSlots`, `playerAds`).
