@@ -67,44 +67,89 @@ so it isn't added again. If it broke sites, also add it to `allow.domains` for a
 
 `templates/index.json` is the free list of extra Signage templates. In the Signage Studio they
 show under "More templates" in the Templates window, and in their own categories next to the
-built-in ones. Blokvane only downloads this list when someone opens "More templates" or presses
-"Check for new templates", and nothing about them is sent.
+built-in ones. Blokvane only downloads the list when someone opens "More templates" (or presses
+"Check for new templates"), at most once a week after that (a part that could not be downloaded is
+tried again the next time), keeps it on that computer, and sends nothing about anyone.
 
-The format: one list called `templates`, one template per line.
+The list has two parts:
+
+- `templates`: hand-made templates, one per line (at most 500).
+- `packs`: more files of templates, one per category, in `templates/packs/` (at most 60 packs,
+  400 templates and 2 MB each, 2000 templates and 24 MB in all). Blokvane only reads packs over https,
+  on the list's own site and in its folder.
 
 ```json
 { "templates": [
-  { "id": "pi-day", "name": "Pi Day", "cat": "Education", "color": "blue",
-    "tags": ["pi day", "math", "march"],
-    "when": { "kind": "year", "month": 3, "day": 14, "start": "00:00", "end": "00:00", "label": "Pi Day (March 14)" },
-    "wide": { "name": "Pi Day", "background": "#13315c", "items": [] },
-    "tall": { "name": "Pi Day", "background": "#13315c", "items": [] } }
-] }
+    { "id": "pi-day", "name": "Pi Day", "cat": "Education", "color": "blue", "tags": ["pi day", "math", "march"], "wide": { ... }, "tall": { ... } }
+  ],
+  "packs": [
+    { "url": "packs/restaurants.json", "cat": "Restaurants", "count": 40 }
+  ] }
 ```
 
-| Part | What it is |
-|---|---|
-| `id` | Short lowercase words with dashes. It must not be the id of another template (Blokvane puts `more-` in front) |
-| `name` | The name people see |
-| `cat` | One of: Holidays, Seasons, Celebrations, Business, Retail, Restaurants, Education, Healthcare, Worship, Fitness, Hotels, Info screens. Anything else shows as "More" |
-| `color` | For the color filter: red, orange, yellow, gold, green, teal, blue, navy, purple, pink, brown, sand, black, pastel, coral or rainbow |
-| `tags` | Words people might search for (at most 20) |
-| `when` | Optional: when the template makes sense, as a schedule rule (`year` for a date, `nth` for "the first Friday of June", `week` for weekdays), or the name of a holiday Blokvane knows, like `"halloween"`. Leave it out for templates that fit any time |
-| `wide` | The slide for a wide screen (16:9) |
-| `tall` | Optional: the same slide made for a tall screen (9:16). Without it, tall screens get the wide one |
+**The packs are built, not written by hand.** Each template in them comes from a short spec in
+`templates/src/` (a layout, a color set and the words), and the builder makes its wide and tall
+slides with Blokvane's own code. See [templates/src/README.md](templates/src/README.md) for how
+to write specs, with examples. The tools (they need Node.js; the path is the extension folder of
+the app repo, the one with `manifest.json`):
 
-A list can also point to more lists with `"packs": ["more.json"]` (at most 30).
+| Command | What it does |
+|---|---|
+| `node tools/build-templates.js ../blokvane/blokvane` | Builds every spec in `templates/src` into `templates/packs/*.json` and updates `templates/index.json` (the hand-made templates stay as they are). Writes nothing if any template has a problem |
+| `node tools/check-templates.js ../blokvane/blokvane` | Checks the whole list as it will go live, and loads it the way Blokvane does |
+| `node tools/sheet-templates.js ../blokvane/blokvane` | Contact sheets: pictures of the templates, wide and tall (`--src` for the specs, `--filter=menu` for some). Needs Playwright |
+| `node tools/kit-info.js ../blokvane/blokvane` | What a spec can use: layouts and their options, palettes, fonts, categories, holidays, drawings |
+
+| Part of a template | What it is |
+|---|---|
+| `id` | Short lowercase words with dashes. It must not be the id of another template, built-in or online (Blokvane puts `more-` in front) |
+| `name` | The name people see |
+| `cat` | A category (below). Anything else shows as "Other" |
+| `color` | For the color filter: red, orange, yellow, gold, green, teal, blue, navy, purple, pink, brown, sand, black, pastel, coral or rainbow |
+| `tags` | Words people might search for (at most 20). Search also finds words that mean the same, like "sale" for "discount" |
+| `when` | Optional: when the template makes sense, as a schedule rule (`year` for a date, `nth` for "the first Friday of June", `week` for weekdays), or the name of a holiday Blokvane knows, like `"halloween"`. Leave it out for templates that fit any time |
+| `palette` | Its eight colors by role, so people can recolor it exactly with "Make it yours" (the builder adds it) |
+| `wide` | The slide for a wide screen (16:9) |
+| `tall` | The same slide made for a tall screen (9:16). Without it, tall screens get the wide one |
+
+The categories, in the groups the Studio shows them in:
+
+| Group | Categories |
+|---|---|
+| Celebrate | Holidays, Seasons, Celebrations, Events |
+| Food and drink | Restaurants, Menus, Cafes and bakeries, Bars and nightlife |
+| Shops and services | Retail, Sales and deals, Beauty and spa, Cars and auto, Real estate, Pets, Home services, Finance and law |
+| Work | Business, Office life, Numbers and charts, Marketing and social |
+| Learning | Education, College, Kids and youth |
+| Health and fitness | Healthcare, Fitness, Wellness, Sports |
+| Community and travel | Worship, Charity and fundraising, Public services, Hotels, Travel |
+| Info and safety | Info screens, Safety, Split screens |
 
 **Pictures are left out.** A template here can only hold words, colors, drawings, shapes and
-widgets: pictures, videos and parts of websites are dropped. Every template also goes through
-the same checks as a saved slideshow, so this list can never put anything harmful on a screen.
+widgets: pictures, videos, links and parts of websites become empty areas people fill with their
+own photos. Every template also goes through the same checks as a saved slideshow, so this list
+can never put anything harmful on a screen.
 
-**To add a template:**
+**To add a hand-made template** (one you made in the Studio):
 
 1. Make the slide in the Signage Studio (for a wide screen, and a tall one if you like).
 2. Use "Save as a template file" to export it.
 3. Open that file and copy the template in it (the part with `id`, `name` and `wide`) into the
-   `templates` list here, on its own line, with a comma after the template before it.
-4. Give it a new `id`, the right `cat`, a `color` and a few `tags`. Keep the file under 1 MB.
-5. To try it before it goes live, put the file's raw GitHub address into "Template list address"
-   under "More templates" in the Studio, and set it back afterwards.
+   `templates` list in `templates/index.json`, on its own line, with a comma after the template before it.
+4. Give it a new `id`, the right `cat`, a `color` and a few `tags`.
+5. Run `node tools/check-templates.js ../blokvane/blokvane`.
+6. To try the list before it goes live, put its raw GitHub address (from a branch) into
+   "Template list address" under "More templates" in the Studio, and set it back afterwards.
+
+## Boo Box and Elements
+
+`boobox/` holds the lists behind Boo Box in the Signage Studio: moving stickers Blokvane drew,
+animated emoji (Noto Emoji Animation by Google, CC BY 4.0), moving words and moving
+backgrounds. `elements/` holds the icons in Elements (Tabler Icons, MIT, without logos of companies,
+products or organizations).
+Blokvane downloads a part only when someone opens it, keeps it on that computer, checks it again
+at most once a week, and sends nothing about anyone. Every sticker, emoji and icon is checked
+with Blokvane's own rules before it is shown, and none of it can run code.
+
+How they are built and checked (`node boobox/tools/build.js`, `node boobox/tools/check.js`), what
+each file holds and where each part comes from: see [boobox/README.md](boobox/README.md).
