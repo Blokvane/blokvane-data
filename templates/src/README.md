@@ -128,8 +128,8 @@ People can switch it off when they add the template.
 
 | Option | What it does |
 |---|---|
-| `kick` | A small line above the title (`scriptKick: true` writes it in script) |
-| `title` | The big words. `\n` starts a new line |
+| `kick` | A small line above the title (`scriptKick: true` writes it in script). A kick in the script font longer than 18 characters (spaces count) comes out in small caps by itself, also in the recipes that write kicks in script: a long line of script is hard to read. For the same reason a font pair (`fonts`) never turns a long line into the script font: it keeps its own handwriting |
+| `title` | The big words. `\n` starts a new line (on a tall screen a title on two lines gets more room in `receipt`, `checklist`, `magazine` and `directory`) |
 | `sub` | A line or two under the title |
 | `foot` | A small label at the bottom |
 | `art` | Drawings in the recipe's spots: `[['balloons'], ['star', ['$accent']]]` (id, then up to 3 colors) |
@@ -147,7 +147,7 @@ These read every color from the palette, so they recolor exactly.
 | `magazine` | A magazine cover: masthead, a big drawing, headlines down the side, a corner badge | `mast`, `big`, `lines` (up to 3), `badge` |
 | `admit` | An event ticket with a numbered stub | `details` ([[label, value]] x3), `stub`, `stubLabel`, `admit` |
 | `polaroids` | Three photo prints taped to the wall (empty areas for photos) | `captions` (3) |
-| `receipt` | A receipt with items and prices | `shop`, `shopSub`, `items` ('Name \| 9.50' lines), `total` ([label, price]), `thanks`, `currency` |
+| `receipt` | A receipt with items and prices (up to 6 items read best on a tall screen) | `shop`, `shopSub`, `items` ('Name \| 9.50' lines), `total` ([label, price]), `thanks`, `currency` |
 | `diagonal` | The screen cut on a slant, a big drawing on a disc | `big` ([id, colors]) |
 | `bigstats` | Two to four big numbers, each with a drawing and a label | `stats` ([{ value, label, art }]) |
 | `timeline` | Three to five moments on a line | `steps` ([{ label, text }]) |
@@ -155,7 +155,7 @@ These read every color from the palette, so they recolor exactly.
 | `directory` | A list of names and places (two columns on wide when long) | `rows` ([[name, where]]), `clock` |
 | `scan` | Scan this code: three steps and a QR code (people put in their own link) | `steps` (3), `codeLabel` |
 | `social` | Where to find you online, with simple icons | `handles` ([[icon, name]]: iconcamera, iconplay, iconchat, iconweb...), `big` |
-| `testimonial` | A review on a card with five stars | `quote`, `who`, `role` |
+| `testimonial` | A review on a card with five stars | `quote`, `who`, `role`, `stars: false` (no stars) |
 | `features` | Three good things side by side | `features` ([{ art, title, text }]) |
 | `prices` | Two or three price cards, one picked out | `plans` ([{ name, price, per, lines, hot, tag }]) |
 | `coupon` | A cut-out coupon | `deal`, `code`, `until` |
@@ -179,7 +179,7 @@ They work with palettes too (their colors come from the palette's roles). `hero`
 with a big drawing: `big`), `neon` (a neon sign), `ticket` (`stub`), `stamp` (a round seal: `ring`, `center`),
 `ribbon`, `sunburst`, `marquee` (blinking lights), `arch` (`big`), `swiss` (one giant number: `num`), `bigtype`
 (`lines`), `kids`, `paper` (a paper-cut landscape: `land`), `datestamp` (`month`, `day`), `alert`, `board`,
-`lobby`, `chalk`, `full`, `duo`, `stats`. The built-in templates are made from these, so the Studio has
+`lobby`, `chalk`, `full`, `duo`, `stats` (`kpis`: up to 3 big numbers, and a `chart`). The built-in templates are made from these, so the Studio has
 examples of each.
 
 ## Examples
