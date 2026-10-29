@@ -1,0 +1,21 @@
+{"icons":[
+{"n":"circuit-ammeter","c":"Electrical","t":["diagram","electric","electricity","circuit","ammeter"],"o":[["p","M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"],["p","M5 12h-3"],["p","M19 12h3"],["p","M10 14v-3c0 -1.036 .895 -2 2 -2s2 .964 2 2v3"],["p","M14 12h-4"]]},
+{"n":"circuit-battery","c":"Electrical","t":["diagram","electric","electricity","power","circuit","battery"],"o":[["p","M2 12h4"],["p","M18 12h4"],["p","M18 5v14"],["p","M14 9v6"],["p","M10 5v14"],["p","M6 9v6"]]},
+{"n":"circuit-bulb","c":"Electrical","t":["lamp","light","electric","electricity","circuit","bulb"],"o":[["p","M2 12h5"],["p","M17 12h5"],["p","M12 12m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M8.5 8.5l7 7"],["p","M15.5 8.5l-7 7"]]},
+{"n":"circuit-capacitor","c":"Electrical","t":["diagram","electric","electricity","circuit","capacitor"],"o":[["p","M22 12h-8"],["p","M2 12h8"],["p","M10 7v10"],["p","M14 7v10"]]},
+{"n":"circuit-capacitor-polarized","c":"Electrical","t":["diagram","electric","electricity","circuit","capacitor","polarized"],"o":[["p","M22 12h-8"],["p","M2 12h8"],["p","M10 7v10"],["p","M14 7v10"],["p","M17 5h4"],["p","M19 3v4"]]},
+{"n":"circuit-cell","c":"Electrical","t":["electric","diagram","electricity","battery","power","circuit","cell"],"o":[["p","M2 12h8"],["p","M14 12h8"],["p","M10 5v14"],["p","M14 9v6"]]},
+{"n":"circuit-cell-plus","c":"Electrical","t":["electric","diagram","electricity","battery","power","circuit","cell","plus"],"o":[["p","M2 12h9"],["p","M15 12h7"],["p","M11 5v14"],["p","M15 9v6"],["p","M3 5h4"],["p","M5 3v4"]]},
+{"n":"circuit-changeover","c":"Electrical","t":["electric","diagram","electricity","change","circuit","changeover"],"o":[["p","M2 12h2"],["p","M20 7h2"],["p","M6 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M18 7m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M20 17h2"],["p","M18 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M7.5 10.5l8.5 -3.5"]]},
+{"n":"circuit-diode","c":"Electrical","t":["diagram","electric","electronic","led","circuit","diode"],"o":[["p","M22 12h-6"],["p","M2 12h6"],["p","M8 7l8 5l-8 5z"],["p","M16 7v10"]]},
+{"n":"circuit-diode-zener","c":"Electrical","t":["electric","electricity","diagram","digital","circuit","diode","zener"],"o":[["p","M22 12h-6"],["p","M2 12h6"],["p","M8 7l8 5l-8 5z"],["p","M14 7h2v10h2"]]},
+{"n":"circuit-ground","c":"Electrical","t":["electric","electricity","diagram","circuit","ground"],"o":[["p","M12 13v-8"],["p","M4 13h16"],["p","M7 16h10"],["p","M10 19h4"]]},
+{"n":"circuit-ground-digital","c":"Electrical","t":["electric","electricity","diagram","circuit","ground","digital"],"o":[["p","M12 13v-10"],["p","M12 21l-6 -8h12z"]]},
+{"n":"circuit-inductor","c":"Electrical","t":["electric","electricity","diagram","coil","circuit","inductor"],"o":[["p","M2 14h3v-2a2 2 0 1 1 4 0v2v-1.5a2.5 2.5 0 1 1 5 0v1.5v-1.5a2.5 2.5 0 1 1 5 0v1.5h3"]]},
+{"n":"circuit-motor","c":"Electrical","t":["circuity","diagram","electric","electricity","circuit","motor"],"o":[["p","M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"],["p","M5 12h-3"],["p","M19 12h3"],["p","M10 14v-4l2 2l2 -2v4"]]},
+{"n":"circuit-pushbutton","c":"Electrical","t":["diagram","electric","electricity","open","circuit","pushbutton"],"o":[["p","M2 17h2"],["p","M20 17h2"],["p","M6 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M18 17m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M6 11h12"],["p","M12 11v-6"]]},
+{"n":"circuit-resistor","c":"Electrical","t":["diagram","electric","electricity","nema","circuit","resistor"],"o":[["p","M2 12h2l2 -5l3 10l3 -10l3 10l3 -10l1.5 5h2.5"]]},
+{"n":"circuit-switch-closed","c":"Electrical","t":["diagram","electric","electricity","locked","circuit","switch","closed"],"o":[["p","M2 12h2"],["p","M20 12h2"],["p","M6 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M18 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M8 12h8"]]},
+{"n":"circuit-switch-open","c":"Electrical","t":["diagram","electric","electricity","opened","circuit","switch","open"],"o":[["p","M2 12h2"],["p","M20 12h2"],["p","M6 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M18 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"],["p","M7.5 10.5l7.5 -5.5"]]},
+{"n":"circuit-voltmeter","c":"Electrical","t":["diagram","electric","electricity","component","circuit","voltmeter"],"o":[["p","M12 12m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"],["p","M5 12h-3"],["p","M19 12h3"],["p","M10 10l2 4l2 -4"]]}
+]}

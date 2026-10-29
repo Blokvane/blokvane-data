@@ -1,0 +1,145 @@
+// Seasons and weather: sun, clouds, rain, snow, wind, spring flowers, summer fun, autumn leaves and cozy winter
+// things (Blokvane's own drawings).
+'use strict';
+const K = require('./kit');
+const T = require('./text');
+const { r, P, at, g, node, path, circle, ellipse, rect, line, poly, pline, ink, fillInk, anim, heart, star, roundPoly, scallop, cloud, MOVES: M, OL, HL, SH } = K;
+const { blob, egg, smooth, curve, ring, drop, leaf, body, part, X, face, make } = require('./make');
+
+const CAT = 'Seasons and weather';
+const mk = (id, name, tags, o) => make({ id, name, cat: CAT, tags, body: o.body, behind: o.behind, front: o.front, extra: o.extra, motion: o.motion || 'bob', css: o.css, colors: o.colors, ground: o.ground });
+const cloudP = (x, y, w, h, fill = '#ffffff', w2 = 5) => path(cloud(x, y, w, h), fillInk(fill, w2));
+const rays = (cx, cy, r1, r2, n, col, w = 8) => Array.from({ length: n }, (_, i) => { const a = i * 360 / n, p1 = at(cx, cy, r1, a), p2 = at(cx, cy, r2, a); return g({}, line(r(p1[0]), r(p1[1]), r(p2[0]), r(p2[1]), ink(w + 6)), line(r(p1[0]), r(p1[1]), r(p2[0]), r(p2[1]), { stroke: col, 'stroke-width': w, 'stroke-linecap': 'round' })); });
+const flake = (cx, cy, s, col = '#a5d8ff', w = 4) => g({}, ...[0, 60, 120].map(a => { const p1 = at(cx, cy, s, a), p2 = at(cx, cy, s, a + 180); return line(r(p1[0]), r(p1[1]), r(p2[0]), r(p2[1]), { stroke: col, 'stroke-width': w, 'stroke-linecap': 'round' }); }),
+  ...[0, 60, 120, 180, 240, 300].map(a => { const m = at(cx, cy, s * 0.6, a), b1 = at(m[0], m[1], s * 0.3, a + 140), b2 = at(m[0], m[1], s * 0.3, a - 140); return path(`M${P(...b1)}L${P(...m)}L${P(...b2)}`, { fill: 'none', stroke: col, 'stroke-width': w * 0.8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }); }));
+const petals = (cx, cy, n, rr, pr, fill, w = 4, start = -90, ry) => ring(cx, cy, rr, n, start).map((p, i) => ellipse(r(p[0]), r(p[1]), pr, ry || pr * 0.62, { ...fillInk(fill, w), transform: `rotate(${r(start + i * 360 / n)} ${r(p[0])} ${r(p[1])})` }));
+const stem = (d, col = '#51cf66', w = 7) => [path(d, { fill: 'none', ...ink(w + 8) }), path(d, { fill: 'none', stroke: col, 'stroke-width': w, 'stroke-linecap': 'round' })];
+const pot = (col = '#e8590c', rim = '#ff922b') => [path('M64 140H136L128 178Q127 182 122 182H78Q73 182 72 178Z', fillInk(col)), rect(58, 130, 84, 18, { rx: 5, ...fillInk(rim) })];
+const leafP = (x1, y1, x2, y2, w, col = '#51cf66', vein = '#2b8a3e') => [path(leaf(x1, y1, x2, y2, w), fillInk(col, 4)), path(`M${P(x1, y1)}L${P(x1 + (x2 - x1) * 0.75, y1 + (y2 - y1) * 0.75)}`, { stroke: vein, 'stroke-width': 2.5, 'stroke-linecap': 'round', opacity: 0.6 })];
+const maple = (cx, cy, s, col) => path(roundPoly([[0, -1], [0.16, -0.62], [0.42, -0.74], [0.36, -0.38], [0.86, -0.46], [0.66, -0.16], [0.82, 0.02], [0.34, 0.12], [0.4, 0.34], [0.06, 0.26], [0.04, 0.62], [-0.04, 0.62], [-0.06, 0.26], [-0.4, 0.34], [-0.34, 0.12], [-0.82, 0.02], [-0.66, -0.16], [-0.86, -0.46], [-0.36, -0.38], [-0.42, -0.74], [-0.16, -0.62]].map(p => [cx + p[0] * s, cy + p[1] * s]), s * 0.03), fillInk(col, 4.5));
+
+const LIST = () => [
+  // ---------- weather
+  mk('weather-sun', 'Happy sun', ['sun', 'sunny', 'weather', 'summer', 'happy', 'morning'], { colors: ['#ffd43b', '#ffa94d'], motion: 'none',
+    body: [anim('ry', ...rays(100, 100, 66, 88, 12, '#ffa94d', 8)), circle(100, 100, 56, fillInk('#ffd43b')), K.shine(78, 76, 6, 11, 40, 0.6), face(100, 104, 56, { eyes: 'happy', mouth: 'open' })], css: M.spin('ry', 12) }),
+  mk('weather-sun-cool', 'Cool sun', ['sun', 'cool', 'sunglasses', 'summer', 'hot', 'beach'], { colors: ['#ffc93a', '#ff922b'], motion: 'none',
+    body: [anim('ry', path(star(100, 100, 92, 62, 14, -90, 4), fillInk('#ff922b'))), circle(100, 100, 56, fillInk('#ffc93a')), face(100, 104, 58, { eyes: 'shades', mouth: 'smirk' })], css: M.spin('ry', 16) }),
+  mk('weather-cloud', 'Happy cloud', ['cloud', 'weather', 'sky', 'cute', 'calm'], { colors: ['#ffffff', '#d0ebff'], motion: 'drift',
+    body: [cloudP(22, 150, 156, 108), path('M150 140Q170 132 168 112', { fill: 'none', stroke: '#d0ebff', 'stroke-width': 6, 'stroke-linecap': 'round' }), face(100, 118, 54, { eyes: 'closed', mouth: 'smile' })] }),
+  mk('weather-rain', 'Rain cloud', ['rain', 'cloud', 'weather', 'wet', 'rainy', 'umbrella'], { colors: ['#a5b4c8', '#74c0fc'], motion: 'none',
+    body: [anim('cl', cloudP(22, 118, 156, 96, '#a5b4c8'), face(100, 90, 48, { eyes: 'sad', mouth: 'sad' }))], extra: () => X.drops([[50, 140, 8], [86, 150, 9], [122, 140, 8], [156, 152, 7], [70, 172, 6], [138, 176, 6]]), css: M.bob('cl', 3, 4) }),
+  mk('weather-storm', 'Thunder cloud', ['storm', 'thunder', 'lightning', 'weather', 'cloud', 'grumpy'], { colors: ['#6c7a92', '#ffd43b'], motion: 'none',
+    body: [anim('bt', path('M104 108L84 150H100L90 188L130 136H112L124 108Z', fillInk('#ffd43b', 4.5))), anim('cl', cloudP(20, 122, 160, 100, '#6c7a92'), face(100, 92, 48, { eyes: 'line', mouth: 'flat', ink: '#ffffff', cheeks: false }))],
+    css: '.bt{animation:btk 1.8s steps(1) infinite}@keyframes btk{0%,40%,100%{opacity:0}45%,55%,70%{opacity:1}50%,65%{opacity:.2}}' + M.shake('cl', 1.8, 2) }),
+  mk('weather-snow', 'Snow cloud', ['snow', 'cloud', 'weather', 'winter', 'cold', 'snowy'], { colors: ['#e7f5ff', '#a5d8ff'], motion: 'none',
+    body: [anim('cl', cloudP(22, 116, 156, 96, '#e7f5ff'), face(100, 88, 48, { mouth: 'o' }))],
+    extra: () => ({ n: [[56, 140, 9], [100, 152, 11], [144, 140, 9], [78, 176, 7], [124, 178, 7]].map((p, i) => anim('f' + i, flake(p[0], p[1], p[2]))), css: [0, 1, 2, 3, 4].map(i => M.fall('f' + i, 2.6, i * 0.5, 26)).join('') }), css: M.bob('cl', 3, 4) }),
+  mk('weather-partly', 'Sun and cloud', ['sun', 'cloud', 'weather', 'partly cloudy', 'spring', 'sky'], { colors: ['#ffd43b', '#ffffff', '#ffa94d'], motion: 'none',
+    body: [anim('sn', ...rays(118, 76, 46, 62, 10, '#ffa94d', 6), circle(118, 76, 38, fillInk('#ffd43b')), face(126, 72, 34, { eyes: 'happy', mouth: 'smile', cheeks: false })), anim('cl', cloudP(16, 168, 140, 86), face(84, 140, 40, { mouth: 'smile', eyes: 'closed' }))],
+    css: M.rise('sn', 4, 6) + M.drift('cl', 5, 8) }),
+  mk('weather-snowflake', 'Snowflake', ['snowflake', 'snow', 'winter', 'cold', 'frozen', 'ice'], { colors: ['#74c0fc', '#d0ebff'], motion: 'none', ground: false,
+    body: [anim('sf', g({}, ...[0, 60, 120].map(a => { const p1 = at(100, 100, 80, a), p2 = at(100, 100, 80, a + 180); return line(r(p1[0]), r(p1[1]), r(p2[0]), r(p2[1]), ink(18)); })), flake(100, 100, 80, '#74c0fc', 10), circle(100, 100, 16, fillInk('#d0ebff', 4)))], css: M.spin('sf', 10) }),
+  mk('winter-snowman', 'Snowman', ['snowman', 'snow', 'winter', 'cold', 'holidays', 'christmas'], { colors: ['#ffffff', '#ff6b5e', '#3f3a56'], motion: 'wiggle',
+    body: [circle(100, 142, 42, fillInk('#ffffff')), circle(100, 80, 32, fillInk('#ffffff')), path('M60 104Q100 118 140 104L142 116Q100 130 58 116Z', fillInk('#ff6b5e', 4)), path('M118 114L130 150L144 146L132 112Z', fillInk('#ff6b5e', 4)),
+      path('M76 54H124V58H76Z', fillInk('#3f3a56', 4)), rect(82, 20, 36, 36, { rx: 4, ...fillInk('#3f3a56', 4) }), rect(82, 42, 36, 7, { fill: '#ff6b5e' }), face(100, 82, 44, { mouth: 'none' }), path('M100 88L122 92L100 96Z', fillInk('#ff922b', 3)),
+      path('M82 96Q100 104 114 98', { fill: 'none', ...ink(3) }), ...[130, 146, 162].map(y => circle(100, y, 4, { fill: OL })), path('M60 132L30 112M40 120L32 104', { fill: 'none', ...ink(5) }), path('M140 132L170 112M160 120L168 104', { fill: 'none', ...ink(5) })], extra: () => X.snow() }),
+  mk('weather-umbrella', 'Umbrella', ['umbrella', 'rain', 'weather', 'autumn', 'wet', 'cover'], { colors: ['#ff6b5e', '#ffffff'], motion: 'tilt',
+    body: [path('M100 60V160Q100 176 86 176Q74 176 74 164', { fill: 'none', ...ink(14) }), path('M100 60V160Q100 176 86 176Q74 176 74 164', { fill: 'none', stroke: '#868e96', 'stroke-width': 6, 'stroke-linecap': 'round' }),
+      path('M18 104C18 56 58 30 100 30C142 30 182 56 182 104Q168 92 154 104Q140 92 126 104Q114 92 100 104Q86 92 74 104Q60 92 46 104Q32 92 18 104Z', fillInk('#ff6b5e')), path('M100 30Q76 56 74 104M100 30Q124 56 126 104', { fill: 'none', stroke: '#ffffff', 'stroke-width': 5, opacity: 0.8 }), path('M100 30Q76 56 74 104M100 30Q124 56 126 104', { fill: 'none', ...ink(3), opacity: 0.5 }), circle(100, 26, 6, fillInk('#ff6b5e', 4))],
+    extra: () => X.drops([[30, 140, 7], [168, 136, 7], [144, 170, 6], [52, 176, 6]]) }),
+  mk('weather-wind', 'Windy day', ['wind', 'windy', 'weather', 'autumn', 'breeze', 'air'], { colors: ['#74c0fc', '#ff922b'], motion: 'none', ground: false,
+    body: [anim('w1', path('M20 70H120C150 70 150 30 124 32C108 34 108 52 120 54', { fill: 'none', stroke: '#74c0fc', 'stroke-width': 10, 'stroke-linecap': 'round' })), anim('w2', path('M30 108H156C188 108 188 150 160 150C144 150 144 132 156 130', { fill: 'none', stroke: '#a5d8ff', 'stroke-width': 10, 'stroke-linecap': 'round' })),
+      anim('w3', path('M14 146H90', { fill: 'none', stroke: '#74c0fc', 'stroke-width': 10, 'stroke-linecap': 'round' })), anim('lf', ...leafP(150, 74, 182, 50, 9, '#ff922b', '#c2410c'))],
+    css: M.slideX('w1', 1.6, 10) + M.slideX('w2', 1.8, -10) + M.slideX('w3', 1.4, 12) + '.lf{animation:lfk 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 50%}@keyframes lfk{0%{transform:translate(-30px,30px) rotate(0)}50%{transform:translate(0,0) rotate(180deg)}100%{transform:translate(-30px,30px) rotate(360deg)}}' }),
+  mk('weather-hot', 'Hot day', ['hot', 'heat', 'summer', 'thermometer', 'temperature', 'weather'], { colors: ['#ff6b5e', '#ffffff'], motion: 'shake',
+    body: [rect(76, 24, 48, 120, { rx: 24, ...fillInk('#ffffff') }), circle(100, 148, 34, fillInk('#ff6b5e')), rect(90, 60, 20, 80, { rx: 10, fill: '#ff6b5e' }), path('M124 52H134M124 72H134M124 92H134M124 112H134', { fill: 'none', ...ink(4) }),
+      face(100, 150, 40, { eyes: 'line', mouth: 'open', ink: OL }), K.shine(88, 44, 4, 10, 10, 0.6)], extra: () => ({ n: [anim('sw', path(drop(160, 60, 10), fillInk('#74c0fc', 3)))], css: M.fall('sw', 1.4, 0, 30) }) }),
+  mk('weather-bolt', 'Lightning bolt', ['lightning', 'bolt', 'energy', 'power', 'fast', 'electric', 'storm'], { colors: ['#ffd43b'], motion: 'none',
+    body: [anim('bt', path('M118 18L46 112H96L80 184L156 82H106Z', fillInk('#ffd43b')), face(102, 102, 40, { mouth: 'open', eyes: 'happy' }))], extra: () => X.sparkles([[40, 50, 12], [164, 136, 12], [170, 40, 8]], '#ffd43b'), css: M.flicker('bt', 2.2) }),
+  mk('weather-drop', 'Raindrop', ['raindrop', 'drop', 'water', 'rain', 'wet', 'blue'], { colors: ['#74c0fc'], motion: 'hop',
+    body: [path(drop(100, 112, 76), fillInk('#74c0fc')), K.shine(80, 108, 6, 14, 20, 0.6), face(100, 130, 54, { mouth: 'smile' })] }),
+  // ---------- spring
+  mk('spring-tulip', 'Tulip', ['tulip', 'flower', 'spring', 'garden', 'mother day'], { colors: ['#ff6b9a', '#51cf66', '#e8590c'], motion: 'none',
+    body: [anim('fl', ...stem('M100 132V86'), ...leafP(98, 128, 66, 92, 12), path('M70 60C70 40 80 30 84 30L100 48L116 30C120 30 130 40 130 60C130 86 116 96 100 96C84 96 70 86 70 60Z', fillInk('#ff6b9a')), path('M100 48C92 60 92 82 100 96', { fill: 'none', ...ink(3), opacity: 0.4 }), face(100, 70, 34, { eyes: 'happy', mouth: 'smile', cheeks: false })), ...pot()],
+    css: M.swing('fl', 3, 4, '50% 100%') }),
+  mk('spring-daisy', 'Daisy', ['daisy', 'flower', 'spring', 'happy', 'garden'], { colors: ['#ffffff', '#ffd43b', '#51cf66'], motion: 'none',
+    body: [anim('fl', ...stem('M100 168Q96 140 100 120'), ...leafP(98, 156, 62, 136, 11), ...leafP(100, 150, 140, 134, 11), ...petals(100, 82, 12, 44, 20, '#ffffff', 4), circle(100, 82, 28, fillInk('#ffd43b')), face(100, 84, 34, { mouth: 'open', eyes: 'happy', cheeks: false }))],
+    css: M.swing('fl', 2.6, 4, '50% 100%') }),
+  mk('spring-sunflower', 'Sunflower', ['sunflower', 'flower', 'summer', 'yellow', 'sunny'], { colors: ['#ffd43b', '#8b5e3c', '#51cf66'], motion: 'none',
+    body: [anim('fl', ...stem('M100 180V120', '#51cf66', 8), ...leafP(98, 160, 58, 140, 12), ...leafP(102, 150, 146, 128, 12), ...petals(100, 78, 14, 50, 22, '#ffd43b', 4), circle(100, 78, 34, fillInk('#8b5e3c')), ...[[88, 66], [110, 64], [118, 84], [84, 90], [100, 98]].map(p => circle(p[0], p[1], 2, { fill: '#5c3d24' })), face(100, 80, 40, { mouth: 'smile', ink: '#ffe8a3', cheeks: false }))],
+    css: M.swing('fl', 3.4, 3, '50% 100%') }),
+  mk('spring-blossom', 'Cherry blossom', ['blossom', 'cherry blossom', 'spring', 'flower', 'pink', 'sakura'], { colors: ['#ffc9de', '#ff8fab', '#8b5e3c'], motion: 'none', ground: false,
+    body: [path('M10 170C60 150 90 110 110 60M76 132C96 132 126 140 150 160', { fill: 'none', ...ink(14) }), path('M10 170C60 150 90 110 110 60M76 132C96 132 126 140 150 160', { fill: 'none', stroke: '#8b5e3c', 'stroke-width': 7, 'stroke-linecap': 'round' }),
+      ...[[110, 56, 1], [72, 116, 0.8], [146, 150, 0.85], [44, 156, 0.6]].map(([x, y, k], i) => anim('b' + i, ...ring(x, y, 22 * k, 5).map((p, j) => path(heart(r(p[0]), r(p[1]), 26 * k), { ...fillInk(i % 2 ? '#ff8fab' : '#ffc9de', 3.5), transform: `rotate(${r(180 + j * 72)} ${r(p[0])} ${r(p[1])})` })), circle(x, y, 7 * k, fillInk('#ffd43b', 2.5))))],
+    extra: () => ({ n: [[40, 40], [170, 60], [140, 100]].map((p, i) => anim('pt' + i, ellipse(p[0], p[1], 6, 4, { fill: '#ffc9de', ...ink(2) }))), css: [0, 1, 2].map(i => M.fall('pt' + i, 3, i * 0.9, 60)).join('') }), css: [0, 1, 2, 3].map(i => M.pulse('b' + i, 2 + i * 0.3, 1.06)).join('') }),
+  mk('spring-sprout', 'Sprout', ['sprout', 'plant', 'grow', 'spring', 'garden', 'new'], { colors: ['#69db7c', '#c8875a', '#8b5e3c'], motion: 'none',
+    body: [anim('sp', ...stem('M100 132Q98 100 102 76', '#40c057', 7), ...leafP(102, 80, 56, 58, 18, '#69db7c'), ...leafP(102, 76, 148, 46, 18, '#69db7c')), ...pot('#c8875a', '#e0a96d'), face(100, 162, 34, { mouth: 'smile', eyes: 'happy' })],
+    css: '.sp{animation:spk 3s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 100%}@keyframes spk{0%,100%{transform:scale(.92) rotate(-3deg)}50%{transform:scale(1.04) rotate(3deg)}}' }),
+  mk('spring-can', 'Watering can', ['watering can', 'garden', 'water', 'plants', 'spring', 'grow'], { colors: ['#4dabf7', '#74c0fc'], motion: 'none',
+    body: [anim('cn', path('M60 82Q60 54 92 52Q124 54 124 82', { fill: 'none', ...ink(14) }), path('M60 82Q60 54 92 52Q124 54 124 82', { fill: 'none', stroke: '#4dabf7', 'stroke-width': 7 }), path('M128 120L178 76L186 86L136 140Z', fillInk('#4dabf7', 4.5)), ellipse(184, 80, 8, 12, { ...fillInk('#74c0fc', 4), transform: 'rotate(45 184 80)' }),
+      path('M42 88H142L134 164Q133 170 126 170H58Q51 170 50 164Z', fillInk('#4dabf7')), face(92, 126, 46, { mouth: 'smile', eyes: 'happy' }), K.shine(60, 106, 4, 12, 10, 0.5))],
+    extra: () => X.drops([[190, 110, 6], [178, 130, 6], [194, 146, 5]]), css: M.tilt('cn', 3, 4) }),
+  mk('spring-kite', 'Kite', ['kite', 'wind', 'spring', 'fly', 'sky', 'play'], { colors: ['#ff6b5e', '#ffd43b', '#4dabf7'], motion: 'none', ground: false,
+    body: [anim('kt', path('M100 20L150 80L100 150L50 80Z', fillInk('#ff6b5e')), path('M100 20L100 150M50 80H150', { fill: 'none', ...ink(3.5) }), path('M100 20L150 80H100Z', { fill: '#ffd43b' }), path('M100 80H50L100 150Z', { fill: '#4dabf7' }), path('M100 20L150 80L100 150L50 80Z', { fill: 'none', ...ink(5) }),
+      path('M100 150Q80 164 96 176Q112 186 92 196', { fill: 'none', ...ink(3) }), ...[[90, 166, 30], [100, 182, -30]].map(p => path(`M${p[0] - 8} ${p[1] - 5}L${p[0] + 8} ${p[1] + 5}L${p[0] + 8} ${p[1] - 5}L${p[0] - 8} ${p[1] + 5}Z`, fillInk('#ffd43b', 2.5))), face(100, 84, 32, { mouth: 'smile', cheeks: false }))],
+    css: '.kt{animation:ktk 3s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 90%}@keyframes ktk{0%,100%{transform:rotate(-8deg) translate(0,0)}50%{transform:rotate(8deg) translate(6px,-8px)}}' }),
+  // ---------- summer
+  mk('summer-palm', 'Palm tree', ['palm', 'tree', 'beach', 'summer', 'island', 'vacation', 'tropical'], { colors: ['#51cf66', '#c8875a', '#ffd8a8'], motion: 'none',
+    body: [ellipse(100, 172, 76, 16, fillInk('#ffd8a8')), path('M96 172C98 130 92 96 104 64', { fill: 'none', ...ink(22) }), path('M96 172C98 130 92 96 104 64', { fill: 'none', stroke: '#c8875a', 'stroke-width': 14, 'stroke-linecap': 'round' }), path('M90 148H106M92 124H106M94 100H108', { stroke: '#8b5e3c', 'stroke-width': 3 }),
+      anim('lv', ...[[104, 64, 30, 46, 18], [104, 64, 172, 50, 18], [104, 64, 52, 104, 14], [104, 64, 158, 106, 14], [104, 64, 108, 22, 14]].map(([a, b, c, d, w]) => path(leaf(a, b, c, d, w), fillInk('#51cf66', 4.5))), circle(96, 74, 8, fillInk('#8b5e3c', 3.5)), circle(112, 76, 8, fillInk('#8b5e3c', 3.5)))],
+    css: M.swing('lv', 3, 4, '50% 50%') }),
+  mk('summer-ball', 'Beach ball', ['beach ball', 'ball', 'beach', 'summer', 'play', 'pool'], { colors: ['#ff6b5e', '#ffd43b', '#4dabf7'], motion: 'hop',
+    body: [node('defs', {}, [node('clipPath', { id: 'bc' }, [circle(100, 108, 62)])]), circle(100, 108, 62, { fill: '#ffffff' }),
+      g({ 'clip-path': 'url(#bc)' }, path('M100 46C60 70 60 146 100 170L30 170V46Z', { fill: '#ff6b5e' }), path('M100 46C140 70 140 146 100 170L170 170V46Z', { fill: '#4dabf7' }), path('M100 46C84 80 84 136 100 170C116 136 116 80 100 46Z', { fill: '#ffd43b' })),
+      path('M100 46C60 70 60 146 100 170M100 46C140 70 140 146 100 170M100 46C84 80 84 136 100 170M100 46C116 80 116 136 100 170', { fill: 'none', ...ink(3) }), circle(100, 108, 62, { fill: 'none', ...ink(5) }), K.shine(70, 80, 7, 13, 40, 0.7)] }),
+  mk('summer-sandcastle', 'Sandcastle', ['sandcastle', 'beach', 'sand', 'summer', 'vacation', 'kids'], { colors: ['#f4c27a', '#e0a050', '#ff6b5e'], motion: 'none',
+    body: [path('M30 176V112H44V100H56V112H70V176Z', fillInk('#f4c27a')), path('M130 176V112H144V100H156V112H170V176Z', fillInk('#f4c27a')), path('M64 176V84H78V72H92V84H108V72H122V84H136V176Z', fillInk('#f4c27a')),
+      path('M88 176V146Q100 132 112 146V176Z', fillInk('#c8742c', 4)), path('M100 72V36', ink(4)), anim('fg', path('M100 36L128 44L100 54Z', fillInk('#ff6b5e', 3.5))), ...[[40, 140], [160, 140], [84, 112], [116, 112]].map(p => rect(p[0] - 5, p[1] - 7, 10, 14, { rx: 5, fill: '#e0a050' })),
+      path('M20 176H180', { stroke: '#e0a050', 'stroke-width': 6, 'stroke-linecap': 'round' }), face(100, 108, 32, { mouth: 'smile', eyes: 'happy', cheeks: false })],
+    css: '.fg{animation:fgk 1s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:0% 50%}@keyframes fgk{to{transform:scaleX(.7) skewY(6deg)}}' }),
+  // ---------- autumn
+  mk('autumn-leaf', 'Maple leaf', ['leaf', 'maple', 'autumn', 'fall', 'orange', 'canada'], { colors: ['#ff922b', '#e8590c'], motion: 'none',
+    body: [anim('lf', maple(100, 100, 86, '#ff922b'), path('M100 96V178', { fill: 'none', ...ink(6) }), path('M100 96L100 176M100 120L60 90M100 120L140 90M100 140L66 128M100 140L134 128', { fill: 'none', stroke: '#e8590c', 'stroke-width': 3.5, 'stroke-linecap': 'round' }), face(100, 76, 40, { mouth: 'smile', eyes: 'happy', cheeks: false }))],
+    css: '.lf{animation:lfk 3.2s ease-in-out infinite;transform-box:fill-box;transform-origin:50% 0%}@keyframes lfk{0%,100%{transform:rotate(-10deg) translateX(-6px)}50%{transform:rotate(10deg) translateX(6px)}}' }),
+  mk('autumn-acorn', 'Acorn', ['acorn', 'autumn', 'fall', 'forest', 'nut', 'squirrel'], { colors: ['#e0a96d', '#8b5e3c'], motion: 'hop',
+    body: [path('M56 92C56 140 80 176 100 176C120 176 144 140 144 92Z', fillInk('#e0a96d')), path('M44 92C40 60 70 46 100 46C130 46 160 60 156 92Q100 106 44 92Z', fillInk('#8b5e3c')), path('M56 70L144 70M50 82L150 82M70 54L130 54', { stroke: '#6b4428', 'stroke-width': 3, opacity: 0.6 }),
+      path('M100 46Q104 30 116 26', { fill: 'none', ...ink(7) }), K.shine(72, 116, 5, 12, 10, 0.5), face(100, 128, 46, { mouth: 'smile' })] }),
+  mk('autumn-pumpkin', 'Pumpkin', ['pumpkin', 'autumn', 'fall', 'halloween', 'harvest', 'orange'], { colors: ['#ff922b', '#e8590c', '#51cf66'], motion: 'squash',
+    body: [path('M100 56Q96 38 110 30', { fill: 'none', ...ink(12) }), path('M100 56Q96 38 110 30', { fill: 'none', stroke: '#51cf66', 'stroke-width': 6, 'stroke-linecap': 'round' }), ...leafP(108, 44, 140, 32, 9),
+      ellipse(64, 116, 36, 52, fillInk('#ff922b')), ellipse(136, 116, 36, 52, fillInk('#ff922b')), ellipse(100, 116, 34, 56, fillInk('#ffa94d')), K.shine(90, 86, 4, 10, 10, 0.5), face(100, 122, 56, { mouth: 'grin', eyes: 'happy' })] }),
+  mk('autumn-mushroom', 'Mushroom', ['mushroom', 'forest', 'autumn', 'nature', 'cute'], { colors: ['#ff6b5e', '#fff3e3'], motion: 'bounce',
+    body: [path('M74 112Q70 150 78 170Q100 180 122 170Q130 150 126 112Z', fillInk('#fff3e3')), face(100, 146, 40, { mouth: 'smile', eyes: 'happy' }),
+      path('M24 116C24 64 60 34 100 34C140 34 176 64 176 116Q100 132 24 116Z', fillInk('#ff6b5e')), ...[[66, 70, 11], [112, 56, 9], [146, 88, 10], [94, 96, 7], [48, 102, 6]].map(p => ellipse(p[0], p[1], p[2], p[2] * 0.8, { fill: '#ffffff' }))] }),
+  mk('autumn-bat', 'Little bat', ['bat', 'halloween', 'night', 'autumn', 'spooky', 'cute'], { colors: ['#5f4b8b', '#ff8fab'], motion: 'float',
+    body: [anim('wl', path('M70 100C50 70 20 70 8 84C20 88 22 98 18 108C30 104 40 110 40 120C50 112 62 116 70 118Z', fillInk('#5f4b8b', 4.5))), anim('wr', path('M130 100C150 70 180 70 192 84C180 88 178 98 182 108C170 104 160 110 160 120C150 112 138 116 130 118Z', fillInk('#5f4b8b', 4.5))),
+      path('M74 74L70 46L90 66Z', fillInk('#5f4b8b', 4)), path('M126 74L130 46L110 66Z', fillInk('#5f4b8b', 4)), circle(100, 104, 40, fillInk('#5f4b8b')), face(100, 104, 48, { mouth: 'cat', ink: '#ffffff' }), path('M92 112L96 120L100 112M100 112L104 120L108 112', { fill: '#ffffff', ...ink(1.5) })],
+    css: '.wl{animation:wlk .45s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:100% 50%}@keyframes wlk{to{transform:rotate(-16deg)}}.wr{animation:wrk .45s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:0% 50%}@keyframes wrk{to{transform:rotate(16deg)}}' }),
+  // ---------- winter
+  mk('winter-mitten', 'Mitten', ['mitten', 'glove', 'winter', 'cold', 'warm', 'knit'], { colors: ['#ff6b5e', '#ffffff'], motion: 'wiggle',
+    body: [path('M64 120C56 80 56 44 92 40C126 36 136 70 132 92L150 82C166 76 176 94 162 106L134 130Z', fillInk('#ff6b5e')), path('M68 64H126', { stroke: '#ffffff', 'stroke-width': 5, 'stroke-dasharray': '8 6' }),
+      rect(54, 120, 92, 38, { rx: 12, ...fillInk('#ffffff') }), path('M66 128V150M78 128V150M90 128V150M102 128V150M114 128V150M126 128V150', { stroke: '#dee2e6', 'stroke-width': 4 }), face(94, 98, 40, { mouth: 'smile', eyes: 'happy', cheeks: false })] }),
+  mk('winter-cocoa', 'Hot cocoa', ['cocoa', 'hot chocolate', 'winter', 'cozy', 'drink', 'marshmallow'], { colors: ['#ff6b5e', '#8b5e3c', '#ffffff'], motion: 'none',
+    body: [path('M146 96C174 92 178 132 146 136', { fill: 'none', ...ink(15) }), path('M146 96C174 92 178 132 146 136', { fill: 'none', stroke: '#ff6b5e', 'stroke-width': 7 }), path('M42 84H150V148Q150 176 122 176H70Q42 176 42 148Z', fillInk('#ff6b5e')),
+      ellipse(96, 84, 54, 10, fillInk('#8b5e3c', 4.5)), rect(64, 70, 20, 16, { rx: 4, ...fillInk('#ffffff', 3.5), transform: 'rotate(-12 74 78)' }), rect(96, 68, 20, 16, { rx: 4, ...fillInk('#ffe3ec', 3.5), transform: 'rotate(10 106 76)' }),
+      path('M42 140H150', { stroke: '#ffffff', 'stroke-width': 5, 'stroke-dasharray': '6 6' }), face(96, 120, 46, { eyes: 'closed', mouth: 'smile', ink: OL })], extra: () => X.steam(88, 56) }),
+  mk('winter-tree', 'Holiday tree', ['tree', 'christmas', 'holidays', 'winter', 'pine', 'lights'], { colors: ['#40c057', '#ffd43b', '#ff6b5e'], motion: 'none',
+    body: [rect(88, 156, 24, 22, { rx: 3, ...fillInk('#8b5e3c', 4.5) }), path('M100 20L150 84H128L164 128H136L172 162H28L64 128H36L72 84H50Z', fillInk('#40c057')), path('M62 98Q100 116 140 96M54 140Q100 158 148 136', { fill: 'none', stroke: '#ffd43b', 'stroke-width': 4 }),
+      ...[[80, 112, '#ff6b5e'], [118, 108, '#4dabf7'], [100, 74, '#ff6b5e'], [74, 150, '#4dabf7'], [130, 148, '#ff6b5e'], [100, 134, '#ffd43b']].map((p, i) => anim('o' + i, circle(p[0], p[1], 6.5, fillInk(p[2], 3)))), anim('st', path(star(100, 22, 18, 8, 5, -90, 2), fillInk('#ffd43b', 4)))],
+    css: [0, 1, 2, 3, 4, 5].map(i => `.o${i}{animation:o${i}k 1.6s ease-in-out ${r(i * 0.27)}s infinite alternate}@keyframes o${i}k{to{opacity:.45}}`).join('') + M.pulse('st', 1.4, 1.15) }),
+  mk('winter-ornament', 'Ornament', ['ornament', 'bauble', 'christmas', 'holidays', 'winter', 'decoration'], { colors: ['#ff4d6d', '#ffd43b'], motion: 'swing',
+    body: [line(100, 0, 100, 40, ink(3)), rect(86, 36, 28, 16, { rx: 3, ...fillInk('#ffd43b', 4) }), circle(100, 110, 60, fillInk('#ff4d6d')), path('M44 100Q100 120 156 100M48 132Q100 150 152 132', { fill: 'none', stroke: '#ffd43b', 'stroke-width': 5 }),
+      ...[[70, 112], [100, 116], [130, 112]].map(p => path(star(p[0], p[1], 6, 2.5, 4, -90), { fill: '#ffffff' })), K.shine(74, 82, 8, 16, 40, 0.6), face(100, 92, 34, { mouth: 'smile', cheeks: false })] }),
+  mk('winter-gingerbread', 'Gingerbread friend', ['gingerbread', 'cookie', 'holidays', 'christmas', 'winter', 'baking'], { colors: ['#c8742c', '#ffffff', '#ff6b5e'], motion: 'hop',
+    body: [path('M100 24C120 24 132 40 130 58C128 66 124 70 120 74H150C164 74 164 96 150 96H128V126L146 162C152 176 134 182 128 170L100 140L72 170C66 182 48 176 54 162L72 126V96H50C36 96 36 74 50 74H80C76 70 72 66 70 58C68 40 80 24 100 24Z', fillInk('#c8742c')),
+      path('M46 82Q52 88 46 92M154 82Q148 88 154 92M60 166Q66 164 64 172M140 166Q134 164 136 172', { fill: 'none', stroke: '#ffffff', 'stroke-width': 3.5, 'stroke-linecap': 'round' }), circle(100, 92, 5, fillInk('#ff6b5e', 2.5)), circle(100, 110, 5, fillInk('#4dabf7', 2.5)), path('M84 76L100 84L116 76L116 90L100 84L84 90Z', fillInk('#ff6b5e', 2.5)),
+      face(100, 50, 40, { mouth: 'smile', cheek: '#ff6b5e' })] }),
+  mk('winter-globe', 'Snow globe', ['snow globe', 'snow', 'winter', 'holidays', 'gift', 'magic'], { colors: ['#d0ebff', '#ff6b5e', '#40c057'], motion: 'none',
+    body: [path('M48 150H152L162 176H38Z', fillInk('#ff6b5e')), circle(100, 92, 64, fillInk('#d0ebff')), node('defs', {}, [node('clipPath', { id: 'gc' }, [circle(100, 92, 60)])]),
+      g({ 'clip-path': 'url(#gc)' }, ellipse(100, 150, 70, 24, { fill: '#ffffff' }), path('M100 64L122 100H112L128 124H72L88 100H78Z', fillInk('#40c057', 3.5)), rect(96, 124, 8, 10, { fill: '#8b5e3c' }),
+        anim('sn', ...[[60, 40], [140, 50], [84, 30], [120, 76], [56, 96], [150, 104], [100, 56], [70, 70]].map(p => circle(p[0], p[1], 3, { fill: '#ffffff' })))),
+      circle(100, 92, 64, { fill: 'none', ...ink(5) }), K.shine(68, 64, 8, 16, 40, 0.7)], css: M.fall('sn', 3.6, 0, 40) }),
+  mk('winter-candycane', 'Candy cane', ['candy cane', 'candy', 'christmas', 'holidays', 'winter', 'sweet'], { colors: ['#ff4d6d', '#ffffff', '#51cf66'], motion: 'tilt',
+    body: [path('M84 180V70C84 30 146 30 146 70V82', { fill: 'none', ...ink(32) }), path('M84 180V70C84 30 146 30 146 70V82', { fill: 'none', stroke: '#ffffff', 'stroke-width': 22, 'stroke-linecap': 'round' }),
+      path('M84 180V70C84 30 146 30 146 70V82', { fill: 'none', stroke: '#ff4d6d', 'stroke-width': 22, 'stroke-dasharray': '12 12' }), ...leafP(118, 110, 150, 96, 8, '#51cf66'), circle(116, 112, 6, fillInk('#ff4d6d', 3)), circle(126, 116, 6, fillInk('#ff4d6d', 3))] })
+];
+module.exports = { LIST, CAT };

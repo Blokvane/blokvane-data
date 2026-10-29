@@ -1,0 +1,44 @@
+{
+ "v": 1,
+ "updated": "2026-10-29",
+ "note": "Boo Box for the Blokvane Signage Studio. Stickers, words and moving backgrounds: made by Blokvane. Animated emoji: Noto Emoji Animation by Google, CC BY 4.0 (see emoji/NOTICE).",
+ "tabs": {
+  "stickers": {
+   "count": 355,
+   "packs": [
+    "stickers/boo.json",
+    "stickers/animals.json",
+    "stickers/food.json",
+    "stickers/hearts-and-stars.json",
+    "stickers/party.json",
+    "stickers/seasons-and-weather.json",
+    "stickers/badges.json",
+    "stickers/arrows-and-bubbles.json",
+    "stickers/office-and-school.json"
+   ]
+  },
+  "emoji": {
+   "count": 608,
+   "list": "emoji/list.json",
+   "tones": [
+    "light",
+    "medium-light",
+    "medium",
+    "medium-dark",
+    "dark"
+   ]
+  },
+  "words": {
+   "count": 324,
+   "packs": [
+    "words/words.json"
+   ]
+  },
+  "scenes": {
+   "count": 102,
+   "packs": [
+    "scenes/scenes.json"
+   ]
+  }
+ }
+}

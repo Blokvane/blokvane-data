@@ -1,0 +1,12 @@
+{
+  "name": "blokvane-boobox-tools",
+  "private": true,
+  "description": "Builds and checks Blokvane's Boo Box and Elements lists (node build.js, node check.js, node sheet.js).",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "fontkit": "2.0.4"
+  },
+  "optionalDependencies": {
+    "playwright": "1.63.0"
+  }
+}

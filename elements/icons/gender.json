@@ -1,0 +1,20 @@
+{"icons":[
+{"n":"gender-agender","c":"Gender","t":["identity","genderless","gender","agender"],"o":[["p","M12 12m-6 0a6 6 0 1 0 12 0a6 6 0 1 0 -12 0"],["p","M7 12h11"]]},
+{"n":"gender-androgyne","c":"Gender","t":["identity","intersex","feminine","genderqueer","gender","androgyne"],"o":[["p","M13 11l6 -6"],["p","M9 15m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M19 9v-4h-4"],["p","M16.5 10.5l-3 -3"]]},
+{"n":"gender-bigender","c":"Gender","t":["identity","female","bi","sexual","gender","bigender"],"o":[["p","M11 11m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"],["p","M19 3l-5 5"],["p","M15 3h4v4"],["p","M11 16v6"],["p","M8 19h6"]]},
+{"n":"gender-demiboy","c":"Gender","t":["identity","demimale","demi","gender","demiboy"],"o":[["p","M10 14m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M19 5l-5.4 5.4"],["p","M19 5h-5"]]},
+{"n":"gender-demigirl","c":"Gender","t":["identity","demiwoman","demifemale","gender","demigirl"],"o":[["p","M12 9m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M12 14v7"],["p","M9 18h3"]]},
+{"n":"gender-epicene","c":"Gender","t":["identity","genderqueer","transgender","gender","epicene"],"o":[["p","M15.536 15.536a5 5 0 1 0 -7.072 -7.072a5 5 0 0 0 7.072 7.072z"],["p","M15.536 15.535l5.464 -5.535"],["p","M3 14l5.464 -5.535"],["p","M12 12h.01"]]},
+{"n":"gender-female","c":"Gender","t":["identity","woman","girl","gender","female"],"o":[["p","M12 9m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M12 14v7"],["p","M9 18h6"]]},
+{"n":"gender-femme","c":"Gender","t":["identity","lesbian","gender","femme"],"o":[["p","M12 9m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M12 14v7"],["p","M7 18h10"]]},
+{"n":"gender-genderfluid","c":"Gender","t":["identity","indefinite","gender","genderfluid"],"o":[["p","M10 15.464a4 4 0 1 0 4 -6.928a4 4 0 0 0 -4 6.928z"],["p","M15.464 14l3 -5.196"],["p","M5.536 15.195l3 -5.196"],["p","M12 12h.01"],["p","M9 9l-6 -6"],["p","M5.5 8.5l3 -3"],["p","M21 21l-6 -6"],["p","M17 20l3 -3"],["p","M3 7v-4h4"]]},
+{"n":"gender-genderless","c":"Gender","t":["identity","unisex","gender","genderless"],"o":[["p","M12 10a5 5 0 1 1 0 10a5 5 0 0 1 0 -10z"],["p","M12 10v-7"],["p","M7 15h10"]]},
+{"n":"gender-genderqueer","c":"Gender","t":["identity","non binary","gender","genderqueer"],"o":[["p","M12 11a5 5 0 1 1 0 10a5 5 0 0 1 0 -10z"],["p","M12 11v-8"],["p","M14.5 4.5l-5 3"],["p","M9.5 4.5l5 3"]]},
+{"n":"gender-hermaphrodite","c":"Gender","t":["identify","intersexuality","hybrid","gender","hermaphrodite"],"o":[["p","M12 14v7"],["p","M9 18h6"],["p","M12 6a4 4 0 1 1 0 8a4 4 0 0 1 0 -8z"],["p","M15 3a3 3 0 1 1 -6 0"]]},
+{"n":"gender-intergender","c":"Gender","t":["identity","transgender","intersex","gender","intergender"],"o":[["p","M13.5 11.5l6.5 6.5v-4"],["p","M11.5 13.5l6.5 6.5"],["p","M9 4a5 5 0 1 1 0 10a5 5 0 0 1 0 -10z"],["p","M14 20l2 -2"]]},
+{"n":"gender-male","c":"Gender","t":["identity","man","boy","person","gender","male"],"o":[["p","M10 14m-5 0a5 5 0 1 0 10 0a5 5 0 1 0 -10 0"],["p","M19 5l-5.4 5.4"],["p","M19 5h-5"],["p","M19 5v5"]]},
+{"n":"gender-neutrois","c":"Gender","t":["identity","none","transgender","gender","neutrois"],"o":[["p","M12 10a5 5 0 1 1 0 10a5 5 0 0 1 0 -10z"],["p","M12 10v-7"]]},
+{"n":"gender-third","c":"Gender","t":["identity","none","female","gender","third"],"o":[["p","M11 12a5 5 0 1 0 10 0a5 5 0 0 0 -10 0z"],["p","M11 12h-3"],["p","M8 12l-5 -4v8z"]]},
+{"n":"gender-transgender","c":"Gender","t":["identity","ladyboy","lgbt","gay","homosexual","gender","transgender"],"o":[["p","M12 12m-4 0a4 4 0 1 0 8 0a4 4 0 1 0 -8 0"],["p","M15 9l6 -6"],["p","M21 7v-4h-4"],["p","M9 9l-6 -6"],["p","M3 7v-4h4"],["p","M5.5 8.5l3 -3"],["p","M12 16v5"],["p","M9.5 19h5"]]},
+{"n":"gender-trasvesti","c":"Gender","t":["identity","birth","male","female","heterosexual","homosexual","gender","trasvesti"],"o":[["p","M15 20a5 5 0 1 1 0 -10a5 5 0 0 1 0 10z"],["p","M6 6l5.4 5.4"],["p","M4 8l4 -4"]]}
+]}

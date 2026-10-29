@@ -62,3 +62,49 @@ shared services, work sites or anything in `autotest/never.json`.
 
 To undo an address: remove it from `block.domains`, and add it to `autotest/never.json`
 so it isn't added again. If it broke sites, also add it to `allow.domains` for a day.
+
+## Templates
+
+`templates/index.json` is the free list of extra Signage templates. In the Signage Studio they
+show under "More templates" in the Templates window, and in their own categories next to the
+built-in ones. Blokvane only downloads this list when someone opens "More templates" or presses
+"Check for new templates", and nothing about them is sent.
+
+The format: one list called `templates`, one template per line.
+
+```json
+{ "templates": [
+  { "id": "pi-day", "name": "Pi Day", "cat": "Education", "color": "blue",
+    "tags": ["pi day", "math", "march"],
+    "when": { "kind": "year", "month": 3, "day": 14, "start": "00:00", "end": "00:00", "label": "Pi Day (March 14)" },
+    "wide": { "name": "Pi Day", "background": "#13315c", "items": [] },
+    "tall": { "name": "Pi Day", "background": "#13315c", "items": [] } }
+] }
+```
+
+| Part | What it is |
+|---|---|
+| `id` | Short lowercase words with dashes. It must not be the id of another template (Blokvane puts `more-` in front) |
+| `name` | The name people see |
+| `cat` | One of: Holidays, Seasons, Celebrations, Business, Retail, Restaurants, Education, Healthcare, Worship, Fitness, Hotels, Info screens. Anything else shows as "More" |
+| `color` | For the color filter: red, orange, yellow, gold, green, teal, blue, navy, purple, pink, brown, sand, black, pastel, coral or rainbow |
+| `tags` | Words people might search for (at most 20) |
+| `when` | Optional: when the template makes sense, as a schedule rule (`year` for a date, `nth` for "the first Friday of June", `week` for weekdays), or the name of a holiday Blokvane knows, like `"halloween"`. Leave it out for templates that fit any time |
+| `wide` | The slide for a wide screen (16:9) |
+| `tall` | Optional: the same slide made for a tall screen (9:16). Without it, tall screens get the wide one |
+
+A list can also point to more lists with `"packs": ["more.json"]` (at most 30).
+
+**Pictures are left out.** A template here can only hold words, colors, drawings, shapes and
+widgets: pictures, videos and parts of websites are dropped. Every template also goes through
+the same checks as a saved slideshow, so this list can never put anything harmful on a screen.
+
+**To add a template:**
+
+1. Make the slide in the Signage Studio (for a wide screen, and a tall one if you like).
+2. Use "Save as a template file" to export it.
+3. Open that file and copy the template in it (the part with `id`, `name` and `wide`) into the
+   `templates` list here, on its own line, with a comma after the template before it.
+4. Give it a new `id`, the right `cat`, a `color` and a few `tags`. Keep the file under 1 MB.
+5. To try it before it goes live, put the file's raw GitHub address into "Template list address"
+   under "More templates" in the Studio, and set it back afterwards.
