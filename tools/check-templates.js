@@ -10,6 +10,7 @@
 // Blokvane does (from these files, nothing is downloaded) and counts what it gets.
 'use strict';
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 const { TPL, findExt, load, checkTemplate, strings, PACK_BYTES, EM_DASH } = require('./kit');
 
@@ -19,13 +20,18 @@ const err = m => errors.push(m), note = m => notes.push(m);
 
 // a stand-in for the internet: the list's address is answered from the files here
 const BASE = 'https://templates.invalid/templates/';
-const served = [];
+const served = [], asked = new Map();
 function localFetch(url) {
   const u = String(url);
   if (!u.startsWith(BASE)) return Promise.reject(new Error('not part of the list: ' + u));
-  const file = path.join(TPL, decodeURIComponent(u.slice(BASE.length)));
+  // (a pack is asked for with its version: packs/holidays.json?v=...)
+  const [rel, query] = u.slice(BASE.length).split('?');
+  const file = path.join(TPL, decodeURIComponent(rel));
   if (!file.startsWith(TPL + path.sep) || !fs.existsSync(file)) return Promise.resolve(new Response('not found', { status: 404 }));
-  served.push(path.relative(TPL, file));
+  // (the pack's place as the list names it, with forward slashes on every computer)
+  const rel2 = path.relative(TPL, file).split(path.sep).join('/');
+  served.push(rel2);
+  if (query) asked.set(rel2, new URLSearchParams(query).get('v') || '');
   return Promise.resolve(new Response(fs.readFileSync(file), { status: 200, headers: { 'content-type': 'application/json' } }));
 }
 const { B, K } = load(ext, { fetch: localFetch, Response, AbortController });
@@ -39,6 +45,8 @@ function textOk(file, text) {
   if (text.includes(EM_DASH) || /\\u2014/i.test(text)) err(`${file}: has an em dash`);
 }
 let allBytes = 0;
+// (the same version whatever line endings a copy of the file has: Git on Windows may turn them into its own)
+const verOf = text => crypto.createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex').slice(0, 12);
 const readJson = rel => {
   const file = path.join(TPL, rel);
   if (!fs.existsSync(file)) { err(`${rel}: missing`); return null; }
@@ -47,7 +55,7 @@ const readJson = rel => {
   textOk(rel, text);
   const bytes = Buffer.byteLength(text);
   if (bytes > PACK_BYTES) err(`${rel}: ${(bytes / 1048576).toFixed(2)} MB (at most 2 MB; Blokvane stops reading a file at 3 MB)`);
-  try { return { json: JSON.parse(text), bytes }; } catch (e) { err(`${rel}: not valid JSON (${e.message})`); return null; }
+  try { return { json: JSON.parse(text), bytes, text }; } catch (e) { err(`${rel}: not valid JSON (${e.message})`); return null; }
 };
 
 const ids = new Map();
@@ -85,6 +93,8 @@ if (index) {
     const list = r.json && r.json.templates;
     if (Array.isArray(list) && list.length > L.PACK_MAX) err(`${url}: ${list.length} templates (Blokvane reads at most ${L.PACK_MAX} from one pack)`);
     if (p && typeof p === 'object' && Array.isArray(list) && p.count !== list.length) note(`index.json: says ${url} has ${p.count} templates, it has ${list.length}`);
+    // (the version must be the one of what is in the pack: Blokvane downloads a pack again only when it changes)
+    if (p && typeof p === 'object' && p.v !== undefined && p.v !== verOf(r.text)) err(`index.json: the version of ${url} is not the one of the file (build again with tools/build-templates.js)`);
     checkList(list, url, p && p.cat);
   }
   const packDir = path.join(TPL, 'packs');
@@ -110,6 +120,8 @@ if (fs.existsSync(srcDir)) for (const f of fs.readdirSync(srcDir)) if (/\.(js|md
     if (got.cut) err('the list is bigger than Blokvane reads in one update, so it is cut');
     const notRead = packs.map(p => (typeof p === 'string' ? p : p.url)).filter(u => !served.includes(u));
     if (notRead.length) err(`Blokvane did not read: ${notRead.join(', ')}`);
+    // (each pack is asked for with its version, so a new version is downloaded and not taken from a cache)
+    for (const p of packs) if (p && typeof p === 'object' && p.v && served.includes(p.url) && asked.get(p.url) !== p.v) err(`Blokvane asked for ${p.url} without its version (${p.v})`);
     else console.log(`Loaded like Blokvane does: ${got.length} templates from index.json and ${packs.length} pack${packs.length === 1 ? '' : 's'}.`);
   }
   notes.forEach(m => console.log('note  ' + m));

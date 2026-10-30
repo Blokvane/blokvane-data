@@ -6,12 +6,14 @@
 // For every spec it makes the slide for a wide screen and the one for a tall screen, makes them small (it leaves
 // out what Blokvane puts back by itself), checks them (tools/kit.js) and writes:
 //   templates/packs/<category>.json   one file per category (split in parts when it gets big)
-//   templates/index.json              the hand-made templates already in it, and the list of packs
+//   templates/index.json              the hand-made templates already in it, and the list of packs (each with
+//                                     its version, so Blokvane only downloads the packs that changed)
 // Nothing is written when a template has a problem. --dry checks everything and writes nothing.
 // --only=file.js checks just that spec file (and that its ids are new next to every other file); it writes nothing.
 'use strict';
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const { TPL, findExt, load, readSpecs, lineJson, slug, checkTemplate, strings, PACK_BYTES } = require('./kit');
 
 const args = process.argv.slice(2);
@@ -97,7 +99,11 @@ if (total > L.MORE_MAX) problems.push(`${total} templates in all (Blokvane keeps
 const outs = packs.map(p => ({ file: path.join(TPL, p.url), text: lineJson({ cat: p.cat }, p.list) }));
 for (const o of outs) { const b = Buffer.byteLength(o.text); if (b > PACK_BYTES) problems.push(`${path.relative(TPL, o.file)} is ${(b / 1048576).toFixed(2)} MB (at most 2 MB)`); }
 const head = { about: 'Blokvane\'s free list of Signage templates. The packs are built by tools/build-templates.js from templates/src (see templates/src/README.md).' };
-const indexText = lineJson(head, root, { packs: packs.map(p => ({ url: p.url, cat: p.cat, count: p.count })) });
+// each pack's version (from what is in it): Blokvane downloads a pack again only when its version changes, and
+// asks for it with the version (?v=...), so a pack that just changed never comes from an old copy kept on the way
+// (the same version whatever line endings a copy of the file has; the files written here have plain ones)
+const verOf = text => crypto.createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex').slice(0, 12);
+const indexText = lineJson(head, root, { packs: packs.map((p, i) => ({ url: p.url, cat: p.cat, count: p.count, v: verOf(outs[i].text) })) });
 
 console.log(`${files.length} spec file${files.length === 1 ? '' : 's'}, ${specs.length} specs, ${root.length} hand-made templates, ${packs.length} packs, ${total} templates in all`);
 if (problems.length) {

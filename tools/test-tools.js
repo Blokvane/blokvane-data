@@ -93,6 +93,24 @@ test('the builder never writes through a link (a pack that links to a file somew
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
 });
 
+// Fix (audit): Git on Windows can check the packs out with Windows line endings; their versions were then read as
+// wrong and every pack failed the check. The tools from before this fix fail this test (TOOLS_DIR: a copy of them).
+test('Fix (audit): a pack with Windows line endings keeps its version, and the checker sees each pack asked for with it', () => {
+  const dir = sandbox();
+  try {
+    fs.writeFileSync(path.join(dir, 'templates', 'index.json'), JSON.stringify({ templates: [] }));
+    fs.writeFileSync(path.join(dir, 'templates', 'src', 'one.js'), `module.exports = [${JSON.stringify(SPEC)}];\n`);
+    const b = run(dir, 'build-templates.js');
+    assert.strictEqual(b.status, 0, b.stderr + b.stdout);
+    const packs = fs.readdirSync(path.join(dir, 'templates', 'packs'));
+    assert.ok(packs.length > 0, 'a pack was built');
+    for (const f of packs) { const file = path.join(dir, 'templates', 'packs', f); fs.writeFileSync(file, fs.readFileSync(file, 'utf8').replace(/\n/g, '\r\n')); }
+    const r = run(dir, 'check-templates.js');
+    assert.strictEqual(r.status, 0, r.stderr + r.stdout);
+    assert.match(r.stdout, /Loaded like Blokvane does/);
+  } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('the spec guide says spec files are code, to be read before building', () => {
   const text = fs.readFileSync(README, 'utf8');
   assert.match(text, /## Spec files are code/);

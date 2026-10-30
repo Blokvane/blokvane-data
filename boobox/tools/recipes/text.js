@@ -5,7 +5,8 @@ const path = require('path');
 const fs = require('fs');
 
 const FILES = { anton: 'anton-400.woff2', alfa: 'alfaslab-400.woff2', fredoka: 'fredoka-600.woff2', unbounded: 'unbounded-800.woff2', pacifico: 'pacifico-400.woff2',
-  outfit: 'outfit-800.woff2', caveat: 'caveat-700.woff2', neon: 'tiltneon-400.woff2', playfair: 'playfair-700.woff2' };
+  outfit: 'outfit-800.woff2', caveat: 'caveat-700.woff2', neon: 'tiltneon-400.woff2', playfair: 'playfair-700.woff2',
+  outfit7: 'outfit-700.woff2', outfit5: 'outfit-500.woff2', playfairi: 'playfair-700i.woff2', vibes: 'greatvibes-400.woff2' };
 let dir = '';
 const fonts = {};
 function setFontDir(d) {
