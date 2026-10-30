@@ -153,3 +153,20 @@ with Blokvane's own rules before it is shown, and none of it can run code.
 
 How they are built and checked (`node boobox/tools/build.js`, `node boobox/tools/check.js`), what
 each file holds and where each part comes from: see [boobox/README.md](boobox/README.md).
+
+## TV screens anywhere (`tv/`)
+
+`tv/` is the page a TV opens with a screen's private link from Blokvane, like
+`https://blokvane.github.io/blokvane-data/tv/#s1.<secret>.<owner>`. GitHub Pages serves it
+(Settings, Pages, Deploy from a branch, `main`, `/ (root)`). `.nojekyll` tells Pages to serve
+every file as it is.
+
+There is no server behind it. The page finds the computer with the slideshows through the same
+free public relays Watch together uses, connects straight to it (WebRTC, encrypted), and copies the
+slideshow player, that one screen's slideshows and their pictures and videos into the TV's browser.
+`sw.js` plays them from that copy, so the screen keeps playing when the computer is off. The
+secret after `#` never leaves the TV (browsers don't send that part to any website), and only
+messages signed by the computer's own key are believed.
+
+`wt-core.js` and `wt-net.js` are copies of `blokvane/lib/wt-core.js` and `blokvane/lib/wt-net.js`
+in the extension. Copy them again when those change.

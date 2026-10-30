@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>Blokvane Screens</title>
+<link rel="icon" href="icon.png">
+<link rel="stylesheet" href="tv.css">
+<!-- Blokvane Screens anywhere: the page a TV (or any web browser) opens with a screen's private link from Blokvane.
+     How it works is in tv.js. The link's secret is after the # in the address: browsers never send that part to
+     any website, so it stays on this screen. -->
+</head>
+<body>
+<iframe id="player" title="Slideshow" allow="autoplay; fullscreen; screen-wake-lock; clipboard-write" hidden></iframe>
+<main id="boot" class="boot" aria-live="polite">
+  <div class="card">
+    <div class="mark"><img src="icon.png" alt=""><i id="ring"></i></div>
+    <h1 id="t">Setting up this screen</h1>
+    <p id="p">Getting ready.</p>
+    <div class="bar" id="bar" hidden><i id="fill"></i></div>
+    <small id="s"></small>
+  </div>
+</main>
+<div id="chip" class="chip" hidden><i></i><span id="chipT"></span></div>
+<script src="wt-core.js"></script>
+<script src="wt-net.js"></script>
+<script src="tv.js"></script>
+</body>
+</html>
