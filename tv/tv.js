@@ -111,7 +111,7 @@
   let helloT = 0, helloN = 0;
   function hello() {
     clearTimeout(helloT);
-    if (open()) return;
+    if (open() || away) return;
     send({ k: 'hi', v: haveV });
     helloN++;
     helloT = setTimeout(hello, helloN < 5 ? 2000 * helloN : 15000);
@@ -308,6 +308,22 @@
     }
   });
   try { navigator.serviceWorker.startMessages(); } catch (e) {}
+
+  // ---------- theater mode on a computer moved this screen to a window of its own: this tab steps aside ----------
+  // (the new window is this same page; only one of them may talk to your computer)
+  let away = false;
+  addEventListener('message', e => {
+    if (away || e.origin !== location.origin || e.source !== frame.contentWindow || !e.data || e.data.bvtv !== 'moved') return;
+    away = true;
+    clearTimeout(helloT); clearTimeout(retryT); clearInterval(reportT); clearTimeout(cleanT);
+    drop(false);
+    try { if (net) net.close(); } catch (er) {}
+    net = null;
+    frame.hidden = true;
+    frame.src = 'about:blank';
+    say('This screen opened in its own window', 'You can close this tab.', { still: true });
+    try { window.close(); } catch (er) {}
+  });
 
   // ---------- off we go ----------
   (async () => {
