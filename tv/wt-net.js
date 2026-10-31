@@ -19,13 +19,15 @@ var BVWT_NET = (() => {
     'relay.layer.systems', 'relay.nostr.blockhenge.com', 'relay.nostr.dev.br', 'relay.nostrmap.net', 'relay.novospes.com', 'relay.piazza.today', 'relay.routstr.com',
     'testr.nymble.world'].map(h => 'wss://' + h);
   // Public MQTT brokers. All of them call themselves test services with no promise they stay up, which is
-  // why they're used together with the Nostr relays and never alone.
-  const MQTT = [{ url: 'wss://broker.emqx.io:8084/mqtt' }, { url: 'wss://broker.hivemq.com:8884/mqtt' }, { url: 'wss://test.mosquitto.org:8081/mqtt' },
+  // why they're used together with the Nostr relays and never alone. (test.mosquitto.org was dropped: its secure
+  // websocket mostly turns connections away.)
+  const MQTT = [{ url: 'wss://broker.emqx.io:8084/mqtt' }, { url: 'wss://broker.hivemq.com:8884/mqtt' },
     { url: 'wss://public.cloud.shiftr.io', user: 'public', pass: 'public' }];
   const NOSTR_PER_ROOM = 4;
   const ECHO_WAIT = 8000;            // our own message should be back by then
   const MISSES_BAD = 3;              // this many missing in a row: try another relay
   const RETRY = [1000, 3000, 8000, 20000, 45000, 90000, 180000];
+  const MAX_BAD = 6 * 3600000;       // a relay that has never worked here is left alone for up to 6 hours
   const MAX_OWN = 8;                 // a relay list from settings uses at most this many of each kind
   // allowances, counted only for messages that open with the party key (in one burst, then each second)
   const PER_SENDER = 20, PER_SENDER_BURST = 40;    // each member the party counts in: their own, shared with nobody
@@ -57,7 +59,8 @@ var BVWT_NET = (() => {
   }
 
   // o: { onMessage(topic, bytes, url, at) (may return a promise: messages are handed over one at a time, in order),
-  //      onChange(), relays: { nostr: [urls], mqtt: [{ url, user, pass }] } (optional), now(), WebSocket }
+  //      onChange(), relays: { nostr: [urls], mqtt: [{ url, user, pass }] } (optional), now(), WebSocket,
+  //      memory: { load(), save(obj) } (optional: what was learned about the relays, kept between restarts) }
   function create(o) {
     const now = o.now || (() => Date.now());
     const WS = o.WebSocket || WebSocket;
@@ -72,12 +75,27 @@ var BVWT_NET = (() => {
     const echoWait = o.echoWait || ECHO_WAIT, perRoom = o.perRoom || NOSTR_PER_ROOM;
     const changed = () => { try { o.onChange && o.onChange(); } catch (e) {} };
     const isBad = url => { const h = health.get(url); return !!(h && h.badUntil > now()); };
+    // Every try at a relay that is down shows up as an error in the browser, so a relay that keeps failing is left
+    // alone for longer and longer: one that has worked here before for 2 minutes, then up to 30; one that never has
+    // for 10 minutes, then up to 6 hours. With o.memory that is kept between restarts too.
+    let saveT = 0;
+    function remember() {
+      if (!o.memory || saveT) return;
+      saveT = setTimeout(() => {
+        saveT = 0;
+        const out = {}, t = now();
+        for (const [url, h] of health) if (h.badUntil > t || h.ok) out[url] = { badUntil: h.badUntil, strikes: h.strikes, ok: !!h.ok };
+        try { o.memory.save(out); } catch (e) {}
+      }, 1500);
+    }
     function strike(url, why) {
-      const h = health.get(url) || { badUntil: 0, strikes: 0 };
+      const h = health.get(url) || { badUntil: 0, strikes: 0, ok: false };
       h.strikes++;
-      h.badUntil = now() + Math.min(30 * 60000, 120000 * 2 ** Math.min(h.strikes - 1, 4));
+      if (h.strikes >= 5) h.ok = false;
+      h.badUntil = now() + (h.ok ? Math.min(30 * 60000, 120000 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 600000 * 3 ** Math.min(h.strikes - 1, 4)));
       h.why = why;
       health.set(url, h);
+      remember();
       const c = conns.get(url);
       if (c) c.close();
       rebalance();
@@ -94,7 +112,11 @@ var BVWT_NET = (() => {
         const p = pending.get(id);
         if (p) {                                 // our own message came back, unchanged: that relay works
           const cc = conns.get(url);
-          if (cc) { cc.misses = 0; cc.oks++; cc.lastEcho = now(); const h = health.get(url); if (h) h.strikes = 0; }
+          if (cc) {
+            cc.misses = 0; cc.oks++; cc.lastEcho = now();
+            const h = health.get(url);
+            if (!h) { health.set(url, { badUntil: 0, strikes: 0, ok: true }); remember(); } else if (!h.ok || h.strikes) { h.ok = true; h.strikes = 0; remember(); }
+          }
           p.urls.delete(url);
           return;
         }
@@ -229,6 +251,18 @@ var BVWT_NET = (() => {
       if (rooms.size && !timer) timer = setInterval(maintain, Math.min(2000, echoWait / 2));
       if (!rooms.size && timer) { clearInterval(timer); timer = 0; }
       changed();
+    }
+    // (what was learned before a restart: relays that were failing stay left alone)
+    if (o.memory) {
+      Promise.resolve().then(() => o.memory.load()).then(saved => {
+        if (!saved || typeof saved !== 'object') return;
+        const t = now();
+        for (const [url, h] of Object.entries(saved)) {
+          if (!h || typeof h !== 'object' || health.has(url) || typeof url !== 'string' || url.length > 300) continue;
+          health.set(url, { badUntil: Math.min(+h.badUntil || 0, t + MAX_BAD), strikes: Math.max(0, Math.min(+h.strikes || 0, 8)), ok: !!h.ok });
+        }
+        if (rooms.size) rebalance();
+      }).catch(() => {});
     }
     function maintain() {
       const t = now();

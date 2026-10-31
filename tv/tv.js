@@ -345,7 +345,9 @@
     try { me = await C.newMember(jwk || undefined); } catch (e) { me = await C.newMember(); }
     try { localStorage.setItem('bvtv:me:' + ns, JSON.stringify(me.jwk)); } catch (e) {}
     gate = NET.gate({ key: keys.key, topic: keys.topic, check: C.verifier(), known: id => id === link.owner });
-    net = NET.create({ onMessage: onRelay });
+    // (what was learned about the relays is kept in this browser, so a relay that is down isn't tried again and again)
+    const memory = { load: () => { try { return JSON.parse(localStorage.getItem('bvtv:relays') || 'null'); } catch (e) { return null; } }, save: h => { try { localStorage.setItem('bvtv:relays', JSON.stringify(h)); } catch (e) {} } };
+    net = NET.create({ onMessage: onRelay, memory });
     net.join(keys.topic);
     // (the relays need a moment to connect)
     setTimeout(hello, 1200);
