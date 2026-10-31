@@ -251,8 +251,8 @@
     let doneBytes = 0;
     const show = got => {
       const at = doneBytes + got;
+      // (while a slideshow plays, changes come in quietly: nothing shows on the screen)
       if (!started) say('Getting your slideshow', 'This takes a moment the first time. After that the screen plays even when your computer is off.', { progress: total ? at / total : 1, small: total > 524288 ? `${mb(at)} of ${mb(total)} MB` : '' });
-      else chip(total > 524288 ? `Getting the latest slides, ${Math.round(at / total * 100)}%` : 'Getting the latest slides');
     };
     if (todo.length) show(0);
     for (const [p, size, etag] of todo) {
