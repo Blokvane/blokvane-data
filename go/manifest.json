@@ -1,0 +1,11 @@
+{
+  "name": "Blokvane",
+  "short_name": "Blokvane",
+  "description": "Blokvane on your phone: the remote for your computer and TV screens, sending, Kid mode, party games.",
+  "display": "standalone",
+  "background_color": "#0b0f17",
+  "theme_color": "#0b0f17",
+  "icons": [
+    { "src": "../tv/icon.png", "sizes": "128x128", "type": "image/png" }
+  ]
+}

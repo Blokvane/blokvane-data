@@ -48,8 +48,34 @@
   // (the plain address, without the link: the last screen opened in this browser plays again)
   if (!link) { try { link = parse(localStorage.getItem(LINK)); } catch (e) {} if (link) { try { history.replaceState(null, '', link.hash); } catch (e) {} } }
   if (!link) {
-    say('Open your screen\'s link here', 'In Blokvane on your computer, open Slideshows and screens, then TV screens, and copy the link of this screen (or scan its QR code).', { still: true });
+    say('Set up this screen', 'In Blokvane on your computer, open Connect, then TV screens, then "Type the TV\'s code", and type the letters below. (Or open this screen\'s link from Slideshows and screens, then TV screens.)', { still: true });
+    pairByCode();
     return;
+  }
+  // Pair a TV with a short code: this screen shows 6 letters and waits in a room made from them (the letters are
+  // stretched, so guessing them is slow, and they change every 10 minutes). Blokvane on your computer, given the
+  // letters, sends this screen its own private link through that room.
+  function pairByCode() {
+    if (typeof BVLIVE === 'undefined' || !(window.crypto && crypto.subtle)) return;
+    const L = BVLIVE;
+    const box = document.createElement('div');
+    box.style.cssText = 'font:800 clamp(40px,12vw,120px)/1 ui-rounded,system-ui,sans-serif;letter-spacing:.16em;margin:18px 0 6px;color:#fff';
+    $('s').before(box);
+    let R = null;
+    const fresh = async () => {
+      const code = L.shortCode(6);
+      box.textContent = code.slice(0, 3) + ' ' + code.slice(3);
+      if (R) R.close();
+      R = await L.room({ secret: await L.codeSecret(code, 'tvpair'), label: 'bvtvpair', name: 'TV', role: 'tv', open: true, onMsg: m => {
+        if (m.k !== 'tv-link' || !parse(m.hash)) return;
+        R.send({ k: 'tv-ok' }).catch(() => {});
+        try { localStorage.setItem(LINK, parse(m.hash).hash); } catch (e) {}
+        setTimeout(() => { location.hash = parse(m.hash).hash; location.reload(); }, 800);
+      } });
+      $('s').textContent = 'The letters change every 10 minutes.';
+    };
+    fresh().catch(() => {});
+    setInterval(() => fresh().catch(() => {}), 10 * 60000);
   }
   try { localStorage.setItem(LINK, link.hash); } catch (e) {}
   if (!('serviceWorker' in navigator) || !window.RTCPeerConnection || !window.caches || !(window.crypto && crypto.subtle) || typeof BigInt !== 'function') {
