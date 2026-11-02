@@ -48,6 +48,12 @@
     s.id = 'pt-css';
     s.textContent = `
 .pt-me{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:18px;background:var(--panel);border:1px solid var(--line);margin-bottom:14px}
+.pt-num{display:flex;align-items:center;gap:10px}
+.pt-num .input{max-width:130px;font:800 22px/1 var(--round);text-align:center}
+.pt-num .u{color:var(--dim);font-weight:700}
+.pt-quick{margin-top:10px}
+.pt-next{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:60;max-width:528px;margin:0 auto;animation:ptNext .4s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 10px 24px rgba(0,0,0,.45))}
+@keyframes ptNext{from{transform:translateY(120%);opacity:0}}
 .pt-me img{width:44px;height:44px;border-radius:50%;object-fit:cover;background:#fff;flex:none}
 .pt-me b{flex:1;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pt-me .pt-score{font:800 22px/1 var(--round);color:var(--sun)}
@@ -353,6 +359,7 @@ button.pt-pl:active{transform:scale(.97)}
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'pink' }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
+      case 'nextq': return onNextQ(m);
       case 'res': return onRes(m);
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
@@ -390,6 +397,7 @@ button.pt-pl:active{transform:scale(.97)}
   }
   function onLobbyNow(m, prev, was, force) {
     G.host = m.host === G.id;
+    if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
     if (!G.joined) return;
@@ -405,9 +413,23 @@ button.pt-pl:active{transform:scale(.97)}
       if (big) { stopQ(); showLobby(); } else updLobby();
     }
   }
+  // the TV waits for the host to start the next question: one big button on the host's phone, over whatever it shows
+  function onNextQ(m) {
+    if (!G.host || G.phase !== 'play' || !Number.isInteger(m.n) || (G.nextDone === m.n)) return;
+    if (G.ui.next && G.ui.next.isConnected && G.ui.next._n === m.n) return;
+    hideNext();
+    const bar = el('div', 'pt-next', document.body);
+    bar._n = m.n;
+    const label = typeof m.label === 'string' && L.clean(m.label, 40) ? L.clean(m.label, 40) : T('Next question');
+    btn('⏭️ ' + label, { kind: 'go', huge: true, full: true }, bar, () => { G.nextDone = m.n; send({ k: 'next', n: m.n }); buzz('tap'); hideNext(); });
+    G.ui.next = bar;
+    buzz('tap');
+  }
+  function hideNext() { if (G.ui.next) { G.ui.next.remove(); G.ui.next = null; } }
   function onQ(m) {
     if (!m || !Number.isInteger(m.n) || !Array.isArray(m.who) || typeof m.kind !== 'string') return;
     if (G.q && m.n <= G.q.n) return;
+    hideNext();
     const inIt = m.who.includes(G.id);
     if (m.extra && m.extra.helpOnly && !inIt) return;
     if (G.bingo && m.kind === 'wait') return;
@@ -599,6 +621,26 @@ button.pt-pl:active{transform:scale(.97)}
         row.appendChild(t);
         let tm = 0;
         t.oninput = () => { t.dataset.dirty = '1'; clearTimeout(tm); tm = setTimeout(() => { send({ k: 'set', key: f.key, v: t.value }); t.dataset.dirty = ''; }, 700); };
+        G.ui.sets[f.key] = t;
+      } else if (f.type === 'number') {
+        // (type any number, or tap one of the quick ones)
+        el('label', 'lbl', row, L.clean(f.label, 80));
+        const wrap = el('div', 'pt-num', row);
+        const t = el('input', 'input', wrap);
+        t.type = 'number'; t.inputMode = 'numeric'; t.step = '1';
+        const lo = Number.isFinite(+f.min) ? +f.min : 0, hi = Number.isFinite(+f.max) ? +f.max : 999;
+        t.min = String(lo); t.max = String(hi);
+        t.value = String(cur != null ? cur : f.default);
+        if (f.unit) el('span', 'u', wrap, L.clean(f.unit, 20));
+        let tm = 0;
+        const push = () => { const n = Math.round(+t.value); if (!Number.isFinite(n) || t.value === '') return; const c = Math.max(lo, Math.min(hi, n)); send({ k: 'set', key: f.key, v: c }); t.dataset.dirty = ''; };
+        t.oninput = () => { t.dataset.dirty = '1'; clearTimeout(tm); tm = setTimeout(push, 700); };
+        t.onchange = () => { clearTimeout(tm); push(); };
+        t.onblur = () => { const n = Math.round(+t.value); t.value = String(Number.isFinite(n) && t.value !== '' ? Math.max(lo, Math.min(hi, n)) : (cur != null ? cur : f.default)); };
+        if (Array.isArray(f.quick) && f.quick.length) {
+          const qk = el('div', 'chips pt-quick', row);
+          for (const n of f.quick.slice(0, 6)) { if (!Number.isFinite(+n)) continue; const c = el('button', 'chip', qk, String(+n)); c.type = 'button'; c.onclick = () => { t.value = String(+n); clearTimeout(tm); push(); buzz('tap'); }; }
+        }
         G.ui.sets[f.key] = t;
       } else if (Array.isArray(f.options)) {
         el('label', 'lbl', row, L.clean(f.label, 80));

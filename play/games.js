@@ -238,6 +238,9 @@
       { key: 'cat', label: 'Category', type: 'seg', options: PK.cats.map(c => [c[0], c[1]]), default: 0 },
       { key: 'wheel', label: 'Category wheel (a new category every 5 questions)', type: 'toggle', default: false },
       { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s']], default: 20 },
+      // (after each answer: the next question comes by itself after a wait the host picks, or when the host taps for it)
+      { key: 'next', label: 'Next question', type: 'seg', options: [['auto', 'Automatic', 'The next question starts by itself after a short wait.'], ['host', 'The host starts it', 'The host taps Next question on their phone when everyone is ready.']], default: 'auto' },
+      { key: 'wait', label: 'Wait before the next question', type: 'number', min: 1, max: 120, quick: [3, 5, 10, 15], unit: 'seconds', default: 5, when: ['next', 'auto'] },
       { key: 'speed', label: 'Speed points (faster answers score more)', type: 'toggle', default: false },
       { key: 'teams', label: 'Teams', type: 'toggle', default: false, desc: 'Phones join a color team, and each team\'s points are added up.' },
       { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: ['teams', true] }
@@ -325,7 +328,12 @@
         K.boo(rightN >= live.length / 2 ? 'happy' : 'sad');
         P.sfx(rightN ? 'right' : 'wrong');
         v.board.draw(null, res);
-        await K.sleep(family ? 5000 : 4200);
+        // the next question: by itself after the wait the host picked, or when the host taps Next question on their phone
+        // (after the last question, or once the game is decided, the winner comes after a short pause)
+        const last = i >= qs.length - 1 || ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && K.alive().length <= 1) || (s.mode === 'race' && K.players().some(p => p.right >= +s.raceTo));
+        if (last) await K.sleep(5000);
+        else if (s.next === 'host') await hostNext(K, v, qn);
+        else await nextIn(K, v, Math.max(1, Math.min(120, Math.round(+s.wait) || 5)));
       }
       // a tie for first: one number question, the closest guess wins
       let ps = K.players().slice().sort((a, b) => b.score - a.score);
@@ -346,6 +354,24 @@
       return ps;
     }
   });
+  // the next question in a few seconds, counting down on the TV
+  async function nextIn(K, v, secs) {
+    const pill = K.el('div', 'pill nextp', v.fx);
+    for (let n = secs; n > 0 && !K.over(); n--) { pill.textContent = '⏭️ ' + await K.tr('Next question in {n}', { n: K.num(n) }); await K.sleep(1000); }
+  }
+  // the host goes on when everyone is ready: their phone gets a Next question button (sent again every few seconds, so a
+  // phone that just came back, or a new host, has it too)
+  async function hostNext(K, v, n) {
+    K.el('div', 'pill nextp', v.fx, '⏸️ ' + await K.tr('Waiting for the host to start the next question'));
+    const label = await K.tr('Next question');
+    let go = false;
+    const off = K.on('next', (m, p) => { if (+m.n === n && K.isHost(p.id)) go = true; });
+    for (let k = 0; !go && !K.over(); k++) {
+      if (k % 8 === 0) { const h = K.players().find(p => K.isHost(p.id)); if (h) K.sayTo(h.id, { k: 'nextq', n, label }); }
+      await K.sleep(500);
+    }
+    off();
+  }
   // a hint: Chrome's built-in AI on computers that have it (English games), or simply the first letter (and how many
   // words, where words have spaces between them)
   async function hint(K, q, answer, shown) {

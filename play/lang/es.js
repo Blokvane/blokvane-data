@@ -615,5 +615,14 @@ BVI18N.add("es", {
 "Easy questions, great with kids": "Preguntas fáciles, ideales para niños",
 "{n} questions": "{n} preguntas",
 "No timer": "Sin reloj",
-"A tie for first? A number question decides": "¿Empate en cabeza? Lo decide una pregunta de desempate"
+"A tie for first? A number question decides": "¿Empate en cabeza? Lo decide una pregunta de desempate",
+"Next question": "Siguiente pregunta",
+"Automatic": "Automático",
+"The next question starts by itself after a short wait.": "La siguiente pregunta empieza sola tras una breve pausa.",
+"The host starts it": "La inicia el anfitrión",
+"The host taps Next question on their phone when everyone is ready.": "Cuando todos estén listos, el anfitrión toca \"Siguiente pregunta\" en su teléfono.",
+"Wait before the next question": "Pausa antes de la siguiente pregunta",
+"seconds": "segundos",
+"Next question in {n}": "Siguiente pregunta en {n}",
+"Waiting for the host to start the next question": "Esperando a que el anfitrión inicie la siguiente pregunta"
 });

@@ -615,5 +615,14 @@ BVI18N.add("hi", {
 "Easy questions, great with kids": "आसान सवाल, बच्चों के लिए बढ़िया",
 "{n} questions": "{n} सवाल",
 "No timer": "कोई टाइमर नहीं",
-"A tie for first? A number question decides": "पहले स्थान पर टाई? टाई-ब्रेकर सवाल से फ़ैसला"
+"A tie for first? A number question decides": "पहले स्थान पर टाई? टाई-ब्रेकर सवाल से फ़ैसला",
+"Next question": "अगला सवाल",
+"Automatic": "अपने-आप",
+"The next question starts by itself after a short wait.": "थोड़ी देर बाद अगला सवाल अपने-आप शुरू हो जाएगा।",
+"The host starts it": "होस्ट शुरू करेंगे",
+"The host taps Next question on their phone when everyone is ready.": "सब तैयार हों, तो होस्ट अपने फ़ोन पर \"अगला सवाल\" दबाएँ।",
+"Wait before the next question": "अगले सवाल से पहले का इंतज़ार",
+"seconds": "सेकंड",
+"Next question in {n}": "अगला सवाल {n} सेकंड में",
+"Waiting for the host to start the next question": "होस्ट के अगला सवाल शुरू करने का इंतज़ार है"
 });

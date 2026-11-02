@@ -615,5 +615,14 @@ BVI18N.add("zh", {
 "Easy questions, great with kids": "题目简单，适合和孩子一起玩",
 "{n} questions": "共{n}题",
 "No timer": "不限时",
-"A tie for first? A number question decides": "并列第一？来一道猜数字决胜题"
+"A tie for first? A number question decides": "并列第一？来一道猜数字决胜题",
+"Next question": "下一题",
+"Automatic": "自动",
+"The next question starts by itself after a short wait.": "稍等片刻，下一题会自动开始。",
+"The host starts it": "房主来开始",
+"The host taps Next question on their phone when everyone is ready.": "大家准备好后，房主在手机上点“下一题”。",
+"Wait before the next question": "下一题前等待",
+"seconds": "秒",
+"Next question in {n}": "{n}秒后下一题",
+"Waiting for the host to start the next question": "等待房主开始下一题"
 });

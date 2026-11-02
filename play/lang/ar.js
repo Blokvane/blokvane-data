@@ -615,5 +615,14 @@ BVI18N.add("ar", {
 "Easy questions, great with kids": "أسئلة سهلة، مثالية للأطفال",
 "{n} questions": "عدد الأسئلة: {n}",
 "No timer": "بلا مؤقّت",
-"A tie for first? A number question decides": "تعادل على الصدارة؟ سؤال الحسم يحدد الفائز"
+"A tie for first? A number question decides": "تعادل على الصدارة؟ سؤال الحسم يحدد الفائز",
+"Next question": "السؤال التالي",
+"Automatic": "تلقائي",
+"The next question starts by itself after a short wait.": "يبدأ السؤال التالي وحده بعد انتظار قصير.",
+"The host starts it": "يبدؤه المضيف",
+"The host taps Next question on their phone when everyone is ready.": "يضغط المضيف «السؤال التالي» على هاتفه عندما يكون الجميع جاهزين.",
+"Wait before the next question": "الانتظار قبل السؤال التالي",
+"seconds": "ثانية",
+"Next question in {n}": "السؤال التالي بعد {n} ث",
+"Waiting for the host to start the next question": "بانتظار أن يبدأ المضيف السؤال التالي"
 });

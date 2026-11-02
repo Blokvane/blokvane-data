@@ -130,7 +130,7 @@ var BVPLAY = (() => {
     const gl = await Promise.all([...games.values()].map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
     const optsOf = f => (game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options);
     // (each choice keeps its short explanation, and a setting its own, in the game's language)
-    const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined,
+    const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined,
       options: f.options ? await Promise.all(optsOf(f).map(async o => (o[2] ? [o[0], await optLabel(o[1]), await P.tr(o[2])] : [o[0], await optLabel(o[1])]))) : undefined }))) : null;
     const name = game ? await P.tr(game.name) : '';
     if (want !== (game ? game.id : '') + '|' + lang) return;
@@ -144,6 +144,7 @@ var BVPLAY = (() => {
     if (f.type === 'toggle') settings[key] = !!v;
     else if (f.options && f.options.some(o => String(o[0]) === String(v))) settings[key] = f.options.find(o => String(o[0]) === String(v))[0];
     else if (f.type === 'text') settings[key] = String(v == null ? '' : v).split(/\n/).map(x => P.safe(x, 90)).filter(Boolean).join('\n').slice(0, 1500);
+    else if (f.type === 'number') { const n = Math.round(Number(v)); if (!Number.isFinite(n)) return; settings[key] = Math.max(f.min || 0, Math.min(f.max || 999, n)); }
     if (key === 'teams' || key === 'teamN') balanceTeams();
     lobby(); sayLobby();
   }
