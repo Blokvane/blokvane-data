@@ -67,6 +67,7 @@
 .pt-selfie img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--tint)}
 .pt-q{font:800 22px/1.25 var(--round);text-align:center;margin:4px 4px 14px;overflow-wrap:anywhere}
 .pt-q.emoji{font-size:54px;line-height:1.15}
+.pt-look{font:800 17px/1.3 var(--round);text-align:center;margin:2px 4px 12px;color:var(--dim)}
 .pt-ans{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pt-ans.one{grid-template-columns:1fr}
 .pt-a{position:relative;min-height:100px;border:0;border-radius:22px;color:#fff;font:800 19px/1.2 var(--round);padding:14px 14px 14px 60px;text-align:start;box-shadow:0 6px 0 rgba(0,0,0,.3);background:var(--c);transition:transform .12s,opacity .25s,filter .25s;overflow-wrap:anywhere}
@@ -707,6 +708,8 @@ button.pt-pl:active{transform:scale(.97)}
     if (ex.hot) { const h = el('div', 'pill warn', b, '🤧 ' + S().yourTurn); h.style.cssText = 'display:block;text-align:center;font-size:18px;margin:0 auto 12px;width:max-content'; buzz('long'); }
     const prompt = L.clean(q.prompt, 300);
     if (prompt && q.kind !== 'pin') { const p = el('div', 'pt-q', b, prompt); if (/^[\p{Extended_Pictographic}‍️\s]+$/u.test(prompt)) p.classList.add('emoji'); }
+    // (Trivia: the question is only on the TV, so everyone looks up; the phone has the answers)
+    else if (ex.tv) el('div', 'pt-look', b, '📺 ' + S().look);
     G.ui.body = b;
     switch (q.kind) {
       case 'choice': choiceQ(b, q); break;

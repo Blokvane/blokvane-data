@@ -279,6 +279,8 @@ var BVPLAY = (() => {
     soundHint();
     // the game's own lobby tune (Trivia), loaded with its other sounds while people join
     if (g && g.sounds) { SND.preload(g.sounds); SND.music('theme', { fadeIn: 1.5 }); } else SND.music(null);
+    // (and its questions, in the language picked)
+    if (g && g.prep) { try { g.prep(lang); } catch (e) {} }
     const sp = stage.querySelector('.spot');
     if (sp) { requestAnimationFrame(() => fitSpot(sp)); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitSpot(sp)).catch(() => {}); }
   }
@@ -340,14 +342,18 @@ var BVPLAY = (() => {
     draw();
     return { node: b, draw };
   }
-  function ring(parent, sec) {
+  // the clock (idle: it shows the full time and waits for go(), like Trivia's while the answers appear)
+  function ring(parent, sec, idle) {
     const r = el('div', 'ring', parent);
     r.innerHTML = '<svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><span></span>';
     const fg = r.querySelector('.fg'), n = r.querySelector('span');
-    let left = sec, t = 0;
+    let left = sec, t = 0, stopped = false;
     const tick = () => { if (left < sec && !r.isConnected) { clearInterval(t); return; } n.textContent = String(Math.max(0, left)); fg.style.strokeDashoffset = String(276.5 * (1 - Math.max(0, left) / sec)); if (left <= 3 && left > 0) P.sfx('tick'); left--; if (left < -1) clearInterval(t); };
-    if (sec > 0) { tick(); t = setInterval(tick, 1000); } else r.hidden = true;
-    return { node: r, stop: () => { clearInterval(t); r.classList.add('done'); } };
+    const go = () => { if (t || stopped || !(sec > 0)) return; tick(); t = setInterval(tick, 1000); };
+    if (!(sec > 0)) r.hidden = true;
+    else if (idle) n.textContent = String(sec);
+    else go();
+    return { node: r, go, stop: () => { stopped = true; clearInterval(t); r.classList.add('done'); } };
   }
   let booEl = null;
   function boo(mood) {
@@ -399,8 +405,8 @@ var BVPLAY = (() => {
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();
-    // 3, 2, 1 (the lobby tune fades out)
-    SND.music(null, { fadeOut: 2 });
+    // 3, 2, 1 (the lobby tune fades out; a game with its own sounds keeps it going until its first sound)
+    if (!game.sounds) SND.music(null, { fadeOut: 2 });
     stage.textContent = '';
     const cv = el('div', 'cover', stage);
     const n = el('div', 'big', cv, '3');
@@ -464,7 +470,8 @@ var BVPLAY = (() => {
     });
     el('p', 'win-foot', cv, foot);
     boo('happy');
-    if (game.sounds) { SND.music(null, { fadeOut: 0.4 }); SND.sting('win'); } else { SND.music(null); P.sfx('win'); }
+    // (the winner's fanfare, then the lobby tune again: the room never goes quiet)
+    if (game.sounds) { SND.music('theme', { delay: 7, fadeIn: 2.5, fadeOut: 0.4 }); SND.sting('win'); } else { SND.music(null); P.sfx('win'); }
     const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
     for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
     say({ k: 'end', ranking: rk.slice(0, 10) });
@@ -514,7 +521,7 @@ var BVPLAY = (() => {
       say: m => (live() ? say(m) : nop()), sayTo: (id, m) => (live() ? sayTo(id, m) : nop()), box: (id, m) => (live() ? box(id, m) : Promise.resolve(false)),
       ask: o => (live() ? ask(o) : Promise.resolve(new Map())), wait: (t, x) => (live() ? wait(t, x) : nop()), result: (id, r) => (live() ? result(id, r) : nop()),
       on: (k, fn) => (live() ? on(k, fn) : nop), boo: mood => (live() ? boo(mood) : nop()),
-      ring: (parent, sec) => (live() ? ring(parent, sec) : { node: el('div'), stop: nop }), board: (parent, o) => board(live() ? parent : el('div'), o),
+      ring: (parent, sec, idle) => (live() ? ring(parent, sec, idle) : { node: el('div'), stop: nop, go: nop }), board: (parent, o) => board(live() ? parent : el('div'), o),
       // (no title: a screen that makes its own top, like Trivia's questions)
       view(title, sub, right) { if (!live()) return el('div'); stage.textContent = ''; if (booEl && booEl.dataset.slot) booEl.hidden = true; if (title != null) top(stage, title, sub, right); const b = el('div', 'body', stage); credit(game); return b; },
       player: id => players.get(id),
@@ -525,7 +532,7 @@ var BVPLAY = (() => {
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
-      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null) },
+      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), on: () => SND.state() === 'on' },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
       over: () => !live()
     };

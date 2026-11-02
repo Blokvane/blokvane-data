@@ -1,5 +1,7 @@
 // Blokvane party games: the music and sound effects on the TV (Trivia's game-show sounds: the lobby tune, a tune for
-// easy, medium and hard questions, a tune between questions, "next question", "time's up" and the winner). They play with the Web Audio API, so
+// the first, middle and last third of the questions and one for the last two, a tune between questions, "next
+// question" and "every 5 questions" before a question, "correct" and "wrong" before the answer shows, "time's up" and
+// the winner). They play with the Web Audio API, so
 // they fade in and out smoothly, loop without a gap and never pile up on each other. A browser keeps a page quiet
 // until someone clicks or presses a key on it once: until then the lobby shows a "Click for sound" button, and the
 // same button turns the sound off (or on again) on this screen. The phones stay quiet.
@@ -14,8 +16,12 @@ var BVSOUND = (() => {
     easy: ['q-easy.mp3', 0.46, 'loop'],
     medium: ['q-medium.mp3', 0.5, { skip: 0.62, tail: 0.25, xf: 1.6 }],
     hard: ['q-hard.mp3', 0.5, { skip: 0.38, tail: 0.25, xf: 1.6 }],
+    last2: ['last2.mp3', 0.8, { skip: 0, tail: 0.3, xf: 2 }],
     between: ['between.mp3', 0.4, { skip: 0.1, tail: 0.3, xf: 0.9 }],
-    next: ['next.mp3', 1.15],
+    next: ['next.mp3', 0.61],
+    every5: ['every5.mp3', 0.86],
+    correct: ['correct.mp3', 0.66],
+    wrong: ['wrong.mp3', 0.69],
     timesup: ['times-up.mp3', 0.85],
     win: ['win.mp3', 0.7]
   };

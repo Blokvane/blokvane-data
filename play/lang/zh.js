@@ -638,5 +638,7 @@ BVI18N.add("zh", {
 "Sound on": "声音已开",
 "Sound off": "声音已关",
 "{n} correct": "答对{n}题",
-"Click anywhere on this screen to turn on the sound": "点一下屏幕任意位置即可开启声音"
+"Click anywhere on this screen to turn on the sound": "点一下屏幕任意位置即可开启声音",
+"Last question!": "最后一题！",
+"Last 2 questions!": "最后 2 题！"
 });

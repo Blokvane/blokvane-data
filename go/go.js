@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '6';
+  const VERSION = '7';
   const $ = id => document.getElementById(id);
   const app = $('app');
 

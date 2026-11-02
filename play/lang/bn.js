@@ -638,5 +638,7 @@ BVI18N.add("bn", {
 "Sound on": "শব্দ চালু",
 "Sound off": "শব্দ বন্ধ",
 "{n} correct": "{n}টি সঠিক উত্তর",
-"Click anywhere on this screen to turn on the sound": "শব্দ চালু করতে স্ক্রিনের যেকোনো জায়গায় ক্লিক করুন"
+"Click anywhere on this screen to turn on the sound": "শব্দ চালু করতে স্ক্রিনের যেকোনো জায়গায় ক্লিক করুন",
+"Last question!": "শেষ প্রশ্ন!",
+"Last 2 questions!": "শেষ 2টি প্রশ্ন!"
 });

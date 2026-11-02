@@ -399,6 +399,40 @@ html[dir="rtl"] .answers.hx .ans { --gdir: 270deg; }
 @keyframes medal { from { transform: scale(.35) rotate(-30deg); opacity: 0; } }
 @keyframes sweep { to { transform: translateX(110%); } }
 
+/* ---------- Trivia: before each question, which one it is (big, in a hexagon) while its sound plays; then the question
+   comes in, and its four answers pop in one by one ---------- */
+.body.tqi { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0;
+  background: radial-gradient(ellipse 70% 60% at 50% 46%, #2b1c6b 0%, #170f3d 55%, rgba(23, 15, 61, 0) 100%); }
+.tqi-rays { position: absolute; left: 50%; top: 46%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 220, 150, .08) 0deg 5deg, transparent 5deg 15deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .5) 14%, transparent 40%); mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .5) 14%, transparent 40%);
+  animation: raySpin 60s linear infinite, fade 1.2s ease both; }
+.tqi-box { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2.2vh; text-align: center; }
+.tqi-hex { --tip: 7.5vh; --bw: .55vh; position: relative; isolation: isolate; display: grid; place-items: center; min-width: 40vh; height: 27vh; padding: 0 11vh;
+  filter: drop-shadow(0 1.6vh 4vh rgba(0, 0, 0, .45)); animation: tqiIn .8s cubic-bezier(.2, 1.4, .4, 1) both; }
+.tqi-hex::before, .tqi-hex::after { content: ""; position: absolute; z-index: -1;
+  -webkit-clip-path: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%);
+  clip-path: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%); }
+.tqi-hex::before { inset: 0; background: linear-gradient(90deg, #ff5f7e, #b46bff 38%, #4f8bff 64%, #2fd59a); }
+.tqi-hex::after { inset: var(--bw); background: linear-gradient(180deg, #2c2068, #170f3d); }
+.tqi-hex b { font: 700 17vh/1 var(--fun); color: var(--gold); text-shadow: 0 .6vh 3vh rgba(255, 196, 60, .45); }
+.tqi-t { font: 700 4.4vh/1.1 var(--fun); color: #fff; animation: fade .5s ease .35s both; }
+.tqi-c { font-size: 2.6vh; font-weight: 800; color: rgba(203, 188, 255, .75); animation: fade .5s ease .55s both; }
+.tqi-rib { margin-top: .6vh; padding: 1.2vh 3.4vh; border-radius: 99px; background: linear-gradient(180deg, #ffe08a, #ffbf3c); color: #2a1a05;
+  font: 700 3.6vh/1 var(--fun); box-shadow: 0 0 0 .4vh rgba(255, 255, 255, .25), 0 1vh 4vh rgba(255, 191, 60, .5); animation: tqiRib .7s cubic-bezier(.2, 1.4, .4, 1) .6s both; }
+.tqi-box.big .tqi-hex { animation: tqiIn .8s cubic-bezier(.2, 1.4, .4, 1) both, tqiPulse 1.6s ease-in-out .9s infinite; }
+.tqi-box.big .tqi-hex::before { background: linear-gradient(90deg, #ffd166, #ff8a5c 35%, #ff5f7e 60%, #ffd166); }
+.tqi-box.fin .tqi-hex::before { background: linear-gradient(90deg, #ff5f57, #ffbf3c 50%, #ff5f57); }
+@keyframes tqiIn { from { transform: scale(.35) rotate(-8deg); opacity: 0; } }
+@keyframes tqiRib { from { transform: scale(.4) translateY(2vh); opacity: 0; } }
+@keyframes tqiPulse { 50% { transform: scale(1.04); filter: drop-shadow(0 1.6vh 4vh rgba(0, 0, 0, .45)) drop-shadow(0 0 3vh rgba(255, 196, 60, .45)); } }
+.tq-qw.in { animation: tqQIn .6s cubic-bezier(.2, 1.3, .4, 1) backwards; }
+@keyframes tqQIn { from { transform: scale(.85) translateY(2vh); opacity: 0; } }
+.answers.hx .ans.pre { opacity: 0; }
+.answers.hx .ans.pop { animation: ansIn .45s cubic-bezier(.2, 1.35, .4, 1) backwards; }
+@keyframes ansIn { from { transform: scale(.82) translateY(2vh); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .tqi-rays, .tqi-box.big .tqi-hex { animation: none; } }
+
 /* ---------- the winner: a game show's finale (spotlights, light rays, confetti, a podium that rises) ---------- */
 .cover.win { display: block; overflow: hidden; background: radial-gradient(ellipse 80% 70% at 50% 42%, #2b1c6b 0%, #170f3d 48%, #08051c 100%); }
 .cover.win .rays { position: absolute; left: 50%; top: 50%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; border-radius: 50%; pointer-events: none;

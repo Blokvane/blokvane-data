@@ -638,5 +638,7 @@ BVI18N.add("hi", {
 "Sound on": "आवाज़ चालू",
 "Sound off": "आवाज़ बंद",
 "{n} correct": "{n} सही जवाब",
-"Click anywhere on this screen to turn on the sound": "आवाज़ चालू करने के लिए स्क्रीन पर कहीं भी क्लिक करें"
+"Click anywhere on this screen to turn on the sound": "आवाज़ चालू करने के लिए स्क्रीन पर कहीं भी क्लिक करें",
+"Last question!": "आख़िरी सवाल!",
+"Last 2 questions!": "आख़िरी 2 सवाल!"
 });
