@@ -624,5 +624,18 @@ BVI18N.add("fr", {
 "Wait before the next question": "Pause avant la question suivante",
 "seconds": "secondes",
 "Next question in {n}": "Question suivante dans {n}",
-"Waiting for the host to start the next question": "On attend que l'hôte lance la question suivante"
+"Waiting for the host to start the next question": "On attend que l'hôte lance la question suivante",
+"No limit": "Sans limite",
+"No clock: each question waits until everyone answers. The host can show the answer any time.": "Pas de chrono : chaque question attend que tout le monde ait répondu. L'hôte peut montrer la réponse à tout moment.",
+"Show the answer": "Montrer la réponse",
+"Difficulty": "Difficulté",
+"Easy to hard": "Du facile au difficile",
+"Starts easy and gets harder as you go.": "Ça commence facile, puis ça se corse.",
+"Only easy questions. Great with kids.": "Que des questions faciles. Parfait avec les enfants.",
+"Only medium questions.": "Que des questions moyennes.",
+"Only hard questions, for quiz fans.": "Que des questions difficiles, pour les pros du quiz.",
+"Click for sound": "Clique pour activer le son",
+"Sound on": "Son activé",
+"Sound off": "Son coupé",
+"{n} correct": "Bonnes réponses : {n}"
 });

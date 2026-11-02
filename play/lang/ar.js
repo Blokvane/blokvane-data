@@ -624,5 +624,18 @@ BVI18N.add("ar", {
 "Wait before the next question": "الانتظار قبل السؤال التالي",
 "seconds": "ثانية",
 "Next question in {n}": "السؤال التالي بعد {n} ث",
-"Waiting for the host to start the next question": "بانتظار أن يبدأ المضيف السؤال التالي"
+"Waiting for the host to start the next question": "بانتظار أن يبدأ المضيف السؤال التالي",
+"No limit": "بلا حد زمني",
+"No clock: each question waits until everyone answers. The host can show the answer any time.": "بلا مؤقت: ينتظر كل سؤال حتى يجيب الجميع، ويمكن للمضيف إظهار الإجابة في أي وقت.",
+"Show the answer": "أظهر الإجابة",
+"Difficulty": "الصعوبة",
+"Easy to hard": "من السهل إلى الصعب",
+"Starts easy and gets harder as you go.": "تبدأ سهلة وتزداد صعوبة كلما تقدمتم.",
+"Only easy questions. Great with kids.": "أسئلة سهلة فقط. مناسبة للعب مع الأطفال.",
+"Only medium questions.": "أسئلة متوسطة فقط.",
+"Only hard questions, for quiz fans.": "أسئلة صعبة فقط، لعشاق المسابقات.",
+"Click for sound": "انقر لتشغيل الصوت",
+"Sound on": "الصوت يعمل",
+"Sound off": "الصوت متوقف",
+"{n} correct": "الإجابات الصحيحة: {n}"
 });

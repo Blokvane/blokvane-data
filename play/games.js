@@ -93,9 +93,11 @@
     // (more players, a taller scoreboard: the question and answers get a little smaller so everything fits)
     if (board.node.classList.contains('tight')) body.classList.add('crowd');
     else if (board.node.classList.contains('many')) body.classList.add('packed');
-    let ring = null;
-    // (Boo pops up where the clock was, once the answer shows)
-    if (o.sec) { const tw = K.el('div', 'tq-timer boo-slot', mid); ring = K.ring(tw, o.sec); }
+    let ring = null, inf = null;
+    // (Boo pops up where the clock was, once the answer shows; with no clock the spot shows ∞)
+    const tw = K.el('div', 'tq-timer boo-slot', mid);
+    if (o.sec) ring = K.ring(tw, o.sec);
+    else inf = K.el('span', 'inf', tw, '∞');
     // (the fastest player, or "nobody goes out", shows here: in the open space just above the question, never on it)
     const fx = K.el('div', 'tq-fx', main);
     const qw = K.el('div', 'tq-qw', main);
@@ -104,7 +106,7 @@
     const q = K.el('span', '', qb, o.text);
     const cells = await answersGrid(K, main, o.opts, true);
     await tqLadder(K, body, o);
-    return { body, main, board, ring, q, fx, cells };
+    return { body, main, board, ring, inf, q, fx, cells };
   }
   async function tqBoard(K, parent, o, meta) {
     const n = K.players().length, few = n <= 4;
@@ -207,6 +209,8 @@
   G({
     id: 'trivia', name: 'Trivia', emoji: '🧠', sub: 'Questions on the TV, answers on your phone.', teams: true, teamsWin: true,
     step: ['Tap {letters}', 'Answer on your phone before time runs out.'], deco: 'letters', helpers: ['Remove two', 'Hint', 'Answer it for me', 'Ask everyone'],
+    // its own sounds on the TV (sound.js): the lobby tune, a tune for each difficulty, next question, time's up, the winner
+    sounds: ['theme', 'next', 'easy', 'medium', 'hard', 'timesup', 'win'],
     credit: lang => (lang === 'en' ? 'Questions: Open Trivia Database (opentdb.com), CC BY-SA 4.0. The first five: Blokvane.' : 'Questions written by Blokvane.'),
     rules: ['A question shows on the TV with four answers.', 'Tap your answer on your phone before time runs out.', 'Each helper works once: remove two, a hint, answer it for me, ask everyone.'],
     // the TV's lobby explains the mode the host picked, and changes as soon as they pick another
@@ -225,7 +229,8 @@
       }[m[0]];
       const family = m[0] === 'family';
       const cat = s.wheel ? 'Category wheel' : catName(+s.cat) || 'Everything (mixed)';
-      const facts = [['❓', '{n} questions', { n: family ? 10 : +s.count }], family ? ['⏳', 'No timer'] : ['⏱️', '{n} s', { n: +s.sec }], ['🗂️', cat]];
+      const facts = [['❓', '{n} questions', { n: family ? 10 : +s.count }], family || !+s.sec ? ['⏳', 'No timer'] : ['⏱️', '{n} s', { n: +s.sec }], ['🗂️', cat]];
+      if (!family && ['easy', 'medium', 'hard'].includes(s.level)) facts.splice(1, 0, ['🎯', DIFF[s.level]]);
       if (s.teams) facts.push(['👥', 'Teams']);
       return { key: m[0], icon: { most: '🏆', knockout: '⚔️', lives: '❤️', race: '🏁', first: '⚡', family: '🏡' }[m[0]], label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: +s.raceTo }, facts };
     },
@@ -234,10 +239,12 @@
     settings: [
       { key: 'mode', label: 'Game mode', type: 'seg', options: TRIVIA_MODES, default: 'most' },
       { key: 'count', label: 'Questions', type: 'seg', options: [[10, '10'], [15, '15'], [20, '20'], [30, '30']], default: 15 },
+      { key: 'level', label: 'Difficulty', type: 'seg', options: [['mix', 'Easy to hard', 'Starts easy and gets harder as you go.'], ['easy', 'Easy', 'Only easy questions. Great with kids.'],
+        ['medium', 'Medium', 'Only medium questions.'], ['hard', 'Hard', 'Only hard questions, for quiz fans.']], default: 'mix', when: ['mode', '!family'] },
       { key: 'raceTo', label: 'Race to', type: 'seg', options: [[5, '5'], [10, '10'], [20, '20']], default: 10, when: ['mode', 'race'] },
       { key: 'cat', label: 'Category', type: 'seg', options: PK.cats.map(c => [c[0], c[1]]), default: 0 },
       { key: 'wheel', label: 'Category wheel (a new category every 5 questions)', type: 'toggle', default: false },
-      { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s']], default: 20 },
+      { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s'], [0, 'No limit', 'No clock: each question waits until everyone answers. The host can show the answer any time.']], default: 20 },
       // (after each answer: the next question comes by itself after a wait the host picks, or when the host taps for it)
       { key: 'next', label: 'Next question', type: 'seg', options: [['auto', 'Automatic', 'The next question starts by itself after a short wait.'], ['host', 'The host starts it', 'The host taps Next question on their phone when everyone is ready.']], default: 'auto' },
       { key: 'wait', label: 'Wait before the next question', type: 'number', min: 1, max: 120, quick: [3, 5, 10, 15], unit: 'seconds', default: 5, when: ['next', 'auto'] },
@@ -254,11 +261,26 @@
       const cat = s.wheel ? 0 : +s.cat;
       const bankAll = (LP ? LP.trivia : PK.trivia).map(fromBank).filter(q => !family || q.d === 'easy');
       const bankOf = c => { const b = bankAll.filter(q => !c || q.cat === c); return b.length ? b : (c ? [] : bankAll); };
-      let pool = (LP ? [] : await otdb({ amount: 50, cat, diff: family ? 'easy' : '' })).concat(bankOf(cat));
-      if (!pool.length) pool = bankAll.slice();
+      // (one difficulty only: that level from this category, then from every category, then the nearest level)
+      const level = family ? 'easy' : ['easy', 'medium', 'hard'].includes(s.level) ? s.level : 'mix';
       const starters = P.shuffle(LP ? LP.easy : PK.easy).map(fromPack);
-      let qs = starters.slice(0, Math.min(5, n));
-      qs = qs.concat(inOrder(pool, n - qs.length));
+      const levelPool = async (c, many) => {
+        const lv = q => q.d === level, near = { easy: ['medium', 'hard'], medium: ['easy', 'hard'], hard: ['medium', 'easy'] }[level];
+        let out = (LP ? [] : await otdb({ amount: many, cat: c, diff: level })).concat(P.shuffle(bankOf(c).filter(lv)));
+        if (out.length < many) out = out.concat(P.shuffle(bankAll.filter(q => lv(q) && !out.includes(q))));
+        for (const d of near) if (out.length < many) out = out.concat(P.shuffle(bankOf(c).filter(q => q.d === d)), P.shuffle(bankAll.filter(q => q.d === d && !bankOf(c).includes(q))));
+        return out;
+      };
+      let qs;
+      if (level === 'mix') {
+        let pool = (LP ? [] : await otdb({ amount: 50, cat })).concat(bankOf(cat));
+        if (!pool.length) pool = bankAll.slice();
+        qs = starters.slice(0, Math.min(5, n));
+        qs = qs.concat(inOrder(pool, n - qs.length));
+      } else {
+        qs = (level === 'easy' ? starters.slice(0, Math.min(5, n)) : []);
+        qs = qs.concat((await levelPool(cat, n)).filter(q => !qs.includes(q))).slice(0, n);
+      }
       while (qs.length < n && qs.length < starters.length) qs.push(starters[qs.length]);
       let wheelCats = P.shuffle(PK.cats.filter(c => c[0] && (!LP || BANK_CATS.has(c[0])))).slice(0, 8);
       const sec = family ? 0 : +s.sec;
@@ -268,7 +290,11 @@
         if ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && live.length <= 1) break;
         if (s.mode === 'race' && K.players().some(p => p.right >= +s.raceTo)) break;
         // the category wheel: every 5 questions the TV spins for the next ones
-        if (s.wheel && i >= 5 && (i - 5) % 5 === 0) { const wc = await wheel(K, wheelCats); const more = (LP ? [] : await otdb({ amount: 10, cat: wc[0] })).concat(P.shuffle(bankOf(wc[0])).filter(q => !qs.includes(q))); if (more.length) qs.splice(i, 5, ...inOrder(more, 5)); }
+        if (s.wheel && i >= 5 && (i - 5) % 5 === 0) {
+          const wc = await wheel(K, wheelCats);
+          const more = (level === 'mix' ? (LP ? [] : await otdb({ amount: 10, cat: wc[0] })).concat(P.shuffle(bankOf(wc[0]))) : await levelPool(wc[0], 10)).filter(q => !qs.includes(q));
+          if (more.length) qs.splice(i, 5, ...(level === 'mix' ? inOrder(more, 5) : more.slice(0, 5)));
+        }
         const q = qs[i];
         const opts = P.shuffle([q.a, ...q.w]).slice(0, 4);
         const ok = opts.indexOf(q.a);
@@ -276,7 +302,11 @@
         const tq = await K.tr(q.q), tOpts = await Promise.all(opts.map(o => K.tr(o)));
         const v = await tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, live, goal: s.mode === 'race' ? +s.raceTo : qs.length });
         const qt = v.q, cells = v.cells;
-        if (family) K.speak(qt.textContent);
+        // the sounds: "next question", then the tune for how hard it is (softer in Family mode, under the voice that
+        // reads the question, which starts once the "next question" sound is done)
+        K.snd.sting('next');
+        K.snd.music({ medium: 'medium', hard: 'hard' }[q.d] || 'easy', { delay: 0.9, fadeIn: 1.2, vol: family ? 0.4 : 1 });
+        if (family) setTimeout(() => K.speak(qt.textContent), 1300);
         const answered = new Set();
         let qn = -1;
         // the helpers (each player, each once): remove two, a hint, answer it for me, ask everyone (the players who are out vote)
@@ -294,11 +324,21 @@
             K.sayTo(p.id, { k: 'helped', n: qn, h: 'ask', tally });
           }
         });
-        const asking = K.ask({ kind: 'choice', prompt: qt.textContent, opts: tOpts, sec, extra: { letters: true, helpers: !family }, onAns: id => { answered.add(id); v.board.draw(answered); } });
+        // (no time limit: the question stays open until everyone answers, or the host shows the answer from their phone)
+        const open = !family && !sec;
+        const asking = K.ask({ kind: 'choice', prompt: qt.textContent, opts: tOpts, sec, open, extra: { letters: true, helpers: !family }, onAns: id => { answered.add(id); v.board.draw(answered); } });
         qn = K.qn();
+        const stopReveal = open ? hostReveal(K, qn) : null;
+        // (the clock hits zero with answers missing: the tune stops and "time's up" plays)
+        let closed = false, timeUp = false;
+        const tuT = sec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; timeUp = true; K.snd.music(null, { fadeOut: 0.25 }); K.snd.sting('timesup'); }, sec * 1000) : 0;
         const answers = await asking;
+        closed = true; clearTimeout(tuT);
+        if (!timeUp) K.snd.music(null, { fadeOut: 0.7 });
+        if (stopReveal) stopReveal();
         offHelp();
         if (v.ring) v.ring.stop();
+        if (v.inf) v.inf.classList.add('done');
         // the right answer
         cells.forEach((c, j) => c.node.classList.add(j === ok ? 'right' : 'dim'));
         for (let j = 0; j < opts.length; j++) showWho(K, cells[j], [...answers].filter(([, a]) => +a.v === j).map(([id]) => id));
@@ -326,7 +366,7 @@
         }
         if (first) { if (s.mode === 'first') { first.p.score += 1; K.result(first.p.id, { ok: true, pts: 1, score: first.p.score, first: true, right: tOpts[ok] }); } await firstBadge(K, v.fx, first.p, first.ms); }
         K.boo(rightN >= live.length / 2 ? 'happy' : 'sad');
-        P.sfx(rightN ? 'right' : 'wrong');
+        if (!timeUp) P.sfx(rightN ? 'right' : 'wrong');
         v.board.draw(null, res);
         // the next question: by itself after the wait the host picked, or when the host taps Next question on their phone
         // (after the last question, or once the game is decided, the winner comes after a short pause)
@@ -342,7 +382,10 @@
         const [qq, real] = P.pick(LP ? LP.numbers : PK.numbers);
         const v = await qView(K, { title: await K.tr('Tie-breaker!'), sub: await K.tr('The closest guess wins'), sec: 25 });
         K.el('div', 'question', v.main, await K.tr(qq));
+        K.snd.sting('next');
+        K.snd.music('hard', { delay: 0.9, fadeIn: 1.2 });
         const got = await K.ask({ kind: 'number', prompt: await K.tr(qq), sec: 25, who: tied.map(p => p.id) });
+        K.snd.music(null, { fadeOut: 0.7 });
         let best = null;
         for (const [id, a] of got) { const d = Math.abs(+a.v - real); if (!best || d < best.d || (d === best.d && a.ms < best.ms)) best = { id, d, ms: a.ms, v: +a.v }; }
         K.el('div', 'question', v.main, await K.tr('The answer: {x}', { x: K.num(real) }));
@@ -354,6 +397,21 @@
       return ps;
     }
   });
+  // with no time limit, the host can show the answer whenever they like: their phone gets a Show the answer button once
+  // they have answered (sent again every few seconds, for a phone that just came back or a new host)
+  function hostReveal(K, n) {
+    let on = true;
+    (async () => {
+      const label = await K.tr('Show the answer');
+      const off = K.on('reveal', (m, p) => { if (+m.n === n && K.isHost(p.id)) K.close(n); });
+      for (let k = 0; on && !K.over(); k++) {
+        if (k % 8 === 0) { const h = K.players().find(p => K.isHost(p.id)); if (h) K.sayTo(h.id, { k: 'revealq', n, label }); }
+        await K.sleep(500);
+      }
+      off();
+    })();
+    return () => { on = false; };
+  }
   // the next question in a few seconds, counting down on the TV
   async function nextIn(K, v, secs) {
     const pill = K.el('div', 'pill nextp', v.fx);

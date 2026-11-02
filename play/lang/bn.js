@@ -624,5 +624,18 @@ BVI18N.add("bn", {
 "Wait before the next question": "পরের প্রশ্নের আগে অপেক্ষা",
 "seconds": "সেকেন্ড",
 "Next question in {n}": "{n} সেকেন্ড পরে পরের প্রশ্ন",
-"Waiting for the host to start the next question": "হোস্টের পরের প্রশ্ন শুরু করার অপেক্ষায়"
+"Waiting for the host to start the next question": "হোস্টের পরের প্রশ্ন শুরু করার অপেক্ষায়",
+"No limit": "সময়ের সীমা নেই",
+"No clock: each question waits until everyone answers. The host can show the answer any time.": "ঘড়ি নেই: সবাই উত্তর না দেওয়া পর্যন্ত প্রশ্ন থাকবে। হোস্ট যেকোনো সময় উত্তর দেখাতে পারবেন।",
+"Show the answer": "উত্তর দেখান",
+"Difficulty": "কঠিনতা",
+"Easy to hard": "সহজ থেকে কঠিন",
+"Starts easy and gets harder as you go.": "শুরুতে সহজ, তারপর ধীরে ধীরে কঠিন।",
+"Only easy questions. Great with kids.": "শুধু সহজ প্রশ্ন। ছোটদের সঙ্গে খেলার জন্য দারুণ।",
+"Only medium questions.": "শুধু মাঝারি প্রশ্ন।",
+"Only hard questions, for quiz fans.": "শুধু কঠিন প্রশ্ন, কুইজপ্রেমীদের জন্য।",
+"Click for sound": "শব্দ চালু করতে ক্লিক করুন",
+"Sound on": "শব্দ চালু",
+"Sound off": "শব্দ বন্ধ",
+"{n} correct": "{n}টি সঠিক উত্তর"
 });

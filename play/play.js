@@ -167,6 +167,9 @@ var BVPLAY = (() => {
   }
   // The lobby, like a game show's welcome screen: how to join (the QR code and the code, as tiles), the steps, everyone
   // who is in (with a check once they're ready, and empty seats waiting), and what's special about the game.
+  // music and sound effects (sound.js); a quiet stand-in if it didn't load
+  const SND = window.BVSOUND || { preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
+  let sndOff = null;
   // (it's built off screen, then shown in one go: a newer lobby, like one more player joining, replaces it)
   let lobbyRun = 0, lastSpot = '';
   async function lobby() {
@@ -243,12 +246,24 @@ var BVPLAY = (() => {
     }
     // the bottom: what happens next, and the credit
     const ft = el('div', 'lob-foot', page);
-    el('b', '', ft, g ? await T(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await T('Made by Blokvane. No app, no account: your phone and this screen talk straight to each other.'));
+    const fl = el('div', 'lf', ft);
+    el('b', '', fl, g ? await T(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await T('Made by Blokvane. No app, no account: your phone and this screen talk straight to each other.'));
+    // the sound button: "Click for sound" until the browser lets this page play sound, then on or off
+    const sw = { locked: '🔈 ' + await T('Click for sound'), on: '🔊 ' + await T('Sound on'), off: '🔇 ' + await T('Sound off') };
+    const sb = el('button', 'snd', fl);
+    sb.type = 'button';
+    const paint = () => { const st = SND.state(); sb.hidden = st === 'none'; sb.textContent = sw[st] || ''; sb.classList.toggle('off', st !== 'on'); };
+    sb.onclick = () => { const st = SND.state(); if (st === 'locked') SND.unlock(); else SND.setOn(st !== 'on'); };
+    paint();
     const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit);
     if (c) el('small', '', ft, P.f(c));
     if (my !== lobbyRun || phase === 'play') return;
     stage.textContent = '';
     stage.append(...page.childNodes);
+    if (sndOff) sndOff();
+    sndOff = SND.onChange(paint);
+    // the game's own lobby tune (Trivia), loaded with its other sounds while people join
+    if (g && g.sounds) { SND.preload(g.sounds); SND.music('theme', { fadeIn: 1.5 }); } else SND.music(null);
     const sp = stage.querySelector('.spot');
     if (sp) { requestAnimationFrame(() => fitSpot(sp)); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitSpot(sp)).catch(() => {}); }
   }
@@ -350,8 +365,9 @@ var BVPLAY = (() => {
       let t = 0;
       w.finish = () => { if (w.done) return; w.done = true; clearTimeout(t); pending.delete(n); res(w.got); };
       pending.set(n, w);
-      // (a little more time than the phones show: the last tap is still on its way; no clock at all still ends in 2 minutes)
-      t = setTimeout(w.finish, o.sec ? o.sec * 1000 + 1500 : 120000);
+      // (a little more time than the phones show: the last tap is still on its way; no clock at all still ends in 2 minutes,
+      // unless the question is open: then it waits for everyone, or for the host to show the answer)
+      t = o.sec ? setTimeout(w.finish, o.sec * 1000 + 1500) : o.open ? 0 : setTimeout(w.finish, 120000);
       if (!who.size) w.finish();
     });
   }
@@ -368,7 +384,8 @@ var BVPLAY = (() => {
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();
-    // 3, 2, 1
+    // 3, 2, 1 (the lobby tune fades out)
+    SND.music(null, { fadeOut: 2 });
     stage.textContent = '';
     const cv = el('div', 'cover', stage);
     const n = el('div', 'big', cv, '3');
@@ -402,20 +419,73 @@ var BVPLAY = (() => {
       ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: P.f(t[1] + ' team'), av: 'boo:party', photo: '', score: list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
       teamPlace = new Map(ps.map((t, i) => [t.team, i + 1]));
     }
-    stage.textContent = '';
-    const cv = el('div', 'cover', stage);
-    const box2 = el('div', '', cv);
+    // the winner, like a game show's finale: spotlights, light rays turning behind the podium, confetti falling the
+    // whole time, and the podium rising (third, second, then first, with a crown)
     const w = ps[0];
-    el('div', 'muted', box2, await P.tr(teamMode ? 'The winning team' : 'The winner')).style.fontSize = '3.4vh';
-    el('h1', '', box2, w ? w.name : '...');
-    const pod = el('div', 'podium', box2);
-    [ps[1], ps[0], ps[2]].forEach((p, i) => { if (!p) return; const d = el('div', 'p', pod); const im = el('img', '', d); im.src = avatarUrl(p); im.alt = ''; el('b', '', d, p.name).style.fontSize = '3vh'; const blk = el('div', 'blk', d, String([2, 1, 3][i])); blk.style.height = ['16vh', '24vh', '11vh'][i]; el('small', 'muted', d, P.f('{n} points', { n: p.score })).style.fontSize = '2.4vh'; });
-    el('p', '', box2, await P.tr('The host can play again, or pick another game.')).style.marginTop = '4vh';
-    P.confetti(); P.sfx('win'); boo('happy');
+    const k = await P.tr(teamMode ? 'The winning team' : 'The winner'), foot = await P.tr('The host can play again, or pick another game.');
+    // (Trivia without speed points: a point is a right answer, so it says how many were right)
+    const byRight = game.id === 'trivia' && !settings.speed && settings.mode !== 'first' && !teamMode;
+    const unit = byRight ? '{n} correct' : '{n} points';
+    for (const p of ps.slice(0, 3)) await P.tr(unit, { n: p.score });
+    stage.textContent = '';
+    const cv = el('div', 'cover win', stage);
+    el('div', 'rays', cv);
+    el('div', 'beam l', cv); el('div', 'beam r', cv);
+    confettiRain(cv);
+    const box2 = el('div', 'win-box', cv);
+    el('div', 'win-k caps', box2, k);
+    el('h1', 'win-n', box2, w ? w.name : '...');
+    const pod = el('div', 'podium2', box2);
+    [[ps[1], 2, 'two'], [ps[0], 1, 'one'], [ps[2], 3, 'three']].forEach(([p, place, cls]) => {
+      const col = el('div', 'pc ' + cls + (p ? '' : ' empty'), pod);
+      const who = el('div', 'who', col);
+      if (p) {
+        if (place === 1) el('div', 'crown', who, '👑').setAttribute('aria-hidden', 'true');
+        const av = el('div', 'av', who); const im = el('img', '', av); im.src = avatarUrl(p); im.alt = '';
+        el('div', 'nm', who, p.name);
+        el('div', 'sc', who, P.f(unit, { n: p.score }));
+      }
+      el('div', 'blk', col, String(place));
+    });
+    el('p', 'win-foot', cv, foot);
+    boo('happy');
+    if (game.sounds) { SND.music(null, { fadeOut: 0.4 }); SND.sting('win'); } else { SND.music(null); P.sfx('win'); }
     const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
     for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
     say({ k: 'end', ranking: rk.slice(0, 10) });
     sayLobby();
+  }
+  // confetti falling gently over the winner's stage for as long as it shows: a big first wave, then a lighter rain
+  function confettiRain(parent) {
+    try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+    const cv = el('canvas', 'rain', parent);
+    const g = cv.getContext && cv.getContext('2d');
+    if (!g) return;
+    const dpr = Math.min(2, devicePixelRatio || 1);
+    let W = 0, H = 0, k = 1;
+    const size = () => { W = cv.clientWidth || innerWidth; H = cv.clientHeight || innerHeight; k = Math.max(0.6, H / 720); cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); g.setTransform(dpr, 0, 0, dpr, 0, 0); };
+    size();
+    const COLS = ['#ffd166', '#ff5f7e', '#4f8bff', '#2fd59a', '#b46bff', '#ffffff', '#ff9f43'];
+    const bit = y => ({ x: Math.random() * W, y: y != null ? y : -20 - Math.random() * 60, w: (6 + Math.random() * 7) * k, h: (3 + Math.random() * 4) * k, vy: (0.7 + Math.random() * 1.3) * k,
+      vx: (Math.random() - 0.5) * 0.6, a: Math.random() * 6.28, va: (Math.random() - 0.5) * 0.12, f: Math.random() * 6.28, vf: 0.05 + Math.random() * 0.1, c: COLS[(Math.random() * COLS.length) | 0] });
+    const bits = Array.from({ length: 160 }, () => bit(-Math.random() * H * 1.1));
+    const t0 = performance.now();
+    let last = t0;
+    (function frame(t) {
+      if (!cv.isConnected) return;
+      const dt = Math.min(3, (t - last) / 16.7);
+      last = t;
+      if (Math.abs(cv.clientWidth - W) > 1) size();
+      g.clearRect(0, 0, W, H);
+      const calm = t - t0 > 7000;
+      for (let i = bits.length - 1; i >= 0; i--) {
+        const b = bits[i];
+        b.y += b.vy * dt * 1.5; b.x += (b.vx + Math.sin(b.f) * 0.5) * dt; b.a += b.va * dt; b.f += b.vf * dt;
+        if (b.y > H + 20) { if (calm && bits.length > 70) { bits.splice(i, 1); continue; } Object.assign(b, bit()); }
+        g.save(); g.translate(b.x, b.y); g.rotate(b.a); g.scale(1, Math.cos(b.f)); g.fillStyle = b.c; g.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); g.restore();
+      }
+      requestAnimationFrame(frame);
+    })(t0);
   }
   // what a game gets to work with (once a game is over, nothing it does reaches the screen or the phones)
   function kit(my) {
@@ -434,10 +504,13 @@ var BVPLAY = (() => {
       view(title, sub, right) { if (!live()) return el('div'); stage.textContent = ''; if (booEl && booEl.dataset.slot) booEl.hidden = true; if (title != null) top(stage, title, sub, right); const b = el('div', 'body', stage); credit(game); return b; },
       player: id => players.get(id),
       qn: () => (cur.q ? cur.q.n : 0),
+      // (closes a question now: everyone who answered counts)
+      close: n => { const w = pending.get(n); if (w && live()) w.finish(); },
       isHost: id => id === host,
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
+      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null) },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
       over: () => !live()
     };

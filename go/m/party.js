@@ -360,6 +360,7 @@ button.pt-pl:active{transform:scale(.97)}
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
       case 'nextq': return onNextQ(m);
+      case 'revealq': return onRevealQ(m);
       case 'res': return onRes(m);
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
@@ -413,17 +414,28 @@ button.pt-pl:active{transform:scale(.97)}
       if (big) { stopQ(); showLobby(); } else updLobby();
     }
   }
-  // the TV waits for the host to start the next question: one big button on the host's phone, over whatever it shows
-  function onNextQ(m) {
-    if (!G.host || G.phase !== 'play' || !Number.isInteger(m.n) || (G.nextDone === m.n)) return;
-    if (G.ui.next && G.ui.next.isConnected && G.ui.next._n === m.n) return;
+  // the TV waits for the host: one big button on the host's phone, over whatever it shows (Next question, or Show the
+  // answer when a question has no time limit)
+  function hostBar(kind, n, label, icon) {
+    const key = kind + ':' + n;
+    if (G.barDone === key || (G.ui.next && G.ui.next.isConnected && G.ui.next._key === key)) return;
     hideNext();
     const bar = el('div', 'pt-next', document.body);
-    bar._n = m.n;
-    const label = typeof m.label === 'string' && L.clean(m.label, 40) ? L.clean(m.label, 40) : T('Next question');
-    btn('⏭️ ' + label, { kind: 'go', huge: true, full: true }, bar, () => { G.nextDone = m.n; send({ k: 'next', n: m.n }); buzz('tap'); hideNext(); });
+    bar._key = key;
+    btn(icon + ' ' + label, { kind: 'go', huge: true, full: true }, bar, () => { G.barDone = key; send({ k: kind, n }); buzz('tap'); hideNext(); });
     G.ui.next = bar;
     buzz('tap');
+  }
+  const label = (m, fb) => (typeof m.label === 'string' && L.clean(m.label, 40) ? L.clean(m.label, 40) : T(fb));
+  function onNextQ(m) {
+    if (!G.host || G.phase !== 'play' || !Number.isInteger(m.n)) return;
+    hostBar('next', m.n, label(m, 'Next question'), '⏭️');
+  }
+  // (the host answers first; then the button shows)
+  function onRevealQ(m) {
+    if (!G.host || G.phase !== 'play' || !Number.isInteger(m.n) || !G.q || G.q.n !== m.n || G.res) return;
+    G.revealQ = { n: m.n, label: label(m, 'Show the answer') };
+    if (G.answered) hostBar('reveal', m.n, G.revealQ.label, '👀');
   }
   function hideNext() { if (G.ui.next) { G.ui.next.remove(); G.ui.next = null; } }
   function onQ(m) {
@@ -445,6 +457,9 @@ button.pt-pl:active{transform:scale(.97)}
     // (a quick word in the middle of a turn, like "try another one" or "not yet")
     if (m.ok === false && m.pts == null && m.right == null && !m.out && m.note) { toast(L.clean(m.note, 140), 'bad'); buzz('bad'); return; }
     if (G.bingo) { updMe(); return; }
+    // (the answer is out: no more "Show the answer")
+    G.revealQ = null;
+    if (G.ui.next && String(G.ui.next._key).startsWith('reveal:')) hideNext();
     G.res = m;
     showRes(m);
   }
@@ -602,7 +617,8 @@ button.pt-pl:active{transform:scale(.97)}
     sheet(S().pickGame, (sh, close) => { const ls = gameList(sh, games, (G.lobby || {}).game); ls.addEventListener('click', () => setTimeout(close, 150)); });
   }
   // (a setting that only matters for one choice shows only with that choice: "Race to" with the race mode)
-  const shown = (f, set) => !Array.isArray(f.when) || (set && set[f.when[0]] === f.when[1]);
+  // (when: [key, value] shows it with that value; [key, '!value'] with any other)
+  const shown = (f, set) => !Array.isArray(f.when) || (set && (typeof f.when[1] === 'string' && f.when[1][0] === '!' ? set[f.when[0]] !== f.when[1].slice(1) : set[f.when[0]] === f.when[1]));
   const visSig = l => (l && Array.isArray(l.schema) ? l.schema.filter(f => f && shown(f, l.settings)).map(f => f.key + ':' + f.label).join('|') : '');
   function settingsForm(parent, l) {
     const box = el('div', 'card pt-set', parent);
@@ -711,6 +727,7 @@ button.pt-pl:active{transform:scale(.97)}
     const q = G.q;
     if (!q || G.answered || G.locked || !q.who.includes(G.id)) return false;
     G.answered = true;
+    if (G.host && G.revealQ && G.revealQ.n === q.n) setTimeout(() => { if (G.q === q && !G.res && G.revealQ) hostBar('reveal', q.n, G.revealQ.label, '👀'); }, 400);
     const ms = Math.round(performance.now() - G.qAt);
     const m = { k: 'ans', n: q.n, v, ms };
     send(m);

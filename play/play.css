@@ -211,6 +211,13 @@ body.rtl .row .bar { inset: 0 0 0 auto; }
 .howto2 { margin: 0; padding-inline-start: 2.8vh; color: var(--lav); font-size: 2.2vh; line-height: 1.45; display: grid; gap: .6vh; }
 .lob-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 3vw; }
 .lob-foot b { font-size: 2.4vh; font-weight: 700; color: #e9e2ff; }
+.lob-foot .lf { display: flex; align-items: center; gap: 2vh; flex-wrap: wrap; min-width: 0; }
+.snd { display: inline-flex; align-items: center; gap: .8vh; padding: .9vh 2vh; border-radius: 99px; border: .18vh solid rgba(255, 255, 255, .2); background: rgba(255, 255, 255, .09);
+  color: #f1ecff; font: 700 2vh/1 var(--round); cursor: pointer; white-space: nowrap; transition: background .2s, opacity .2s; }
+.snd:hover { background: rgba(255, 255, 255, .16); }
+.snd:focus-visible { outline: .35vh solid var(--gold); outline-offset: .3vh; }
+.snd.off { color: var(--lav); opacity: .8; }
+.snd[hidden] { display: none; }
 .lob-foot small { font-size: 1.5vh; color: rgba(203, 188, 255, .6); text-align: end; max-width: 50%; }
 
 /* ---------- Trivia: a game-show stage (the question and answers in hexagon frames, the scoreboard, a big clock, and
@@ -272,6 +279,11 @@ html[dir="rtl"] .body.tq { flex-direction: row-reverse; }
 .tq-timer .ring .bg { stroke: rgba(255, 255, 255, .06); }
 .tq-timer .ring span { font: 700 12.5vh/1 var(--fun); color: var(--gold); text-shadow: 0 .6vh 2vh rgba(255, 196, 60, .35); }
 .tq-board.many ~ .tq-timer .ring span { font-size: 10vh; }
+.tq-timer .inf { position: absolute; inset: 0; display: grid; place-items: center; padding-bottom: 1vh; font: 700 13vh/1 var(--fun); color: var(--gold);
+  text-shadow: 0 .6vh 2vh rgba(255, 196, 60, .35); box-shadow: inset 0 0 0 1.6vh rgba(255, 209, 102, .08); border-radius: 50%; transition: opacity .5s, transform .5s; }
+.tq-timer .inf.done { opacity: 0; transform: scale(.8); }
+.tq-board.many ~ .tq-timer .inf { font-size: 10.5vh; }
+.body.tq.crowd .tq-timer .inf { font-size: 8.6vh; }
 /* the hexagon frames: an outer layer (the colored edge) and an inner one (the fill), both cut to the same shape */
 .tq-q, .answers.hx .ans { position: relative; isolation: isolate; }
 .tq-q::before, .tq-q::after, .answers.hx .ans::before, .answers.hx .ans::after { content: ""; position: absolute; z-index: -1;
@@ -386,3 +398,61 @@ html[dir="rtl"] .answers.hx .ans { --gdir: 270deg; }
 @keyframes spotIn { from { transform: translateY(2.4vh) scale(.97); opacity: 0; } }
 @keyframes medal { from { transform: scale(.35) rotate(-30deg); opacity: 0; } }
 @keyframes sweep { to { transform: translateX(110%); } }
+
+/* ---------- the winner: a game show's finale (spotlights, light rays, confetti, a podium that rises) ---------- */
+.cover.win { display: block; overflow: hidden; background: radial-gradient(ellipse 80% 70% at 50% 42%, #2b1c6b 0%, #170f3d 48%, #08051c 100%); }
+.cover.win .rays { position: absolute; left: 50%; top: 50%; width: 170vmax; height: 170vmax; margin: -85vmax 0 0 -85vmax; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 220, 150, .09) 0deg 5deg, transparent 5deg 15deg);
+  -webkit-mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .55) 16%, transparent 44%); mask-image: radial-gradient(circle, #000 0, rgba(0, 0, 0, .55) 16%, transparent 44%);
+  animation: raySpin 90s linear infinite; }
+@keyframes raySpin { to { transform: rotate(360deg); } }
+.cover.win .beam { position: absolute; top: -12vh; width: 34vw; height: 135vh; transform-origin: 50% 0; pointer-events: none; mix-blend-mode: screen; filter: blur(1.4vh); opacity: .55;
+  -webkit-clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%); clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%); }
+.cover.win .beam.l { left: -10vw; background: linear-gradient(180deg, rgba(90, 140, 255, .8), rgba(90, 140, 255, 0) 80%); transform: rotate(-22deg); animation: beamL 7s ease-in-out infinite alternate; }
+.cover.win .beam.r { right: -10vw; background: linear-gradient(180deg, rgba(255, 90, 140, .75), rgba(255, 90, 140, 0) 80%); transform: rotate(22deg); animation: beamR 8.5s ease-in-out infinite alternate; }
+@keyframes beamL { from { transform: rotate(-30deg); } to { transform: rotate(-12deg); } }
+@keyframes beamR { from { transform: rotate(30deg); } to { transform: rotate(12deg); } }
+.cover.win .rain { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.win-box { position: absolute; inset: 4.5vh 0 0; display: flex; flex-direction: column; align-items: center; }
+.cover.win .win-k { font: 700 2.6vh/1 var(--fun); color: var(--gold); animation: fade .6s ease .1s both; }
+html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)):not(:lang(hi)):not(:lang(bn)):not(:lang(th)):not([dir="rtl"]) .cover.win .win-k { letter-spacing: .3em; }
+.cover.win .win-n { margin: 1.4vh 0 0; padding: 0 4vw; max-width: 92vw; font: 700 13vh/1.08 var(--fun); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: linear-gradient(100deg, #f5a623 0%, #ffd166 30%, #fff4d1 45%, #ffd166 60%, #ffc23d 100%); background-size: 250% 100%; background-position: 100% 0;
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 .8vh 2.6vh rgba(255, 190, 60, .45)); animation: winIn .9s cubic-bezier(.2, 1.35, .35, 1) .25s both, shine 5s ease-in-out 1.6s infinite; }
+@keyframes winIn { from { transform: scale(.4); opacity: 0; } }
+@keyframes shine { 0%, 50% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+.podium2 { margin-top: auto; display: flex; align-items: flex-end; justify-content: center; gap: 1.6vw; }
+.pc { display: flex; flex-direction: column; align-items: center; --ring: #4f8bff; --top: #93b8ff; --f1: #4f8bff; --f2: #2448b8; --num: #d4e3ff; }
+.pc.one { --ring: #ffc93c; --top: #ffe7a0; --f1: #ffc93c; --f2: #d0820c; --num: #fff5d6; }
+.pc.three { --ring: #2fd59a; --top: #a2f1d1; --f1: #2fd59a; --f2: #11845c; --num: #d3fff0; }
+.pc .who { display: flex; flex-direction: column; align-items: center; gap: 1vh; margin-bottom: 2.6vh; animation: whoIn .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+.pc.three .who { animation-delay: .9s; } .pc.two .who { animation-delay: 1.15s; } .pc.one .who { animation-delay: 1.5s; }
+@keyframes whoIn { from { transform: translateY(4vh) scale(.6); opacity: 0; } }
+.pc .av { width: 12vh; height: 12vh; border-radius: 50%; padding: .5vh; background: var(--ring); box-shadow: 0 0 0 .7vh rgba(255, 255, 255, .06), 0 0 4.5vh var(--ring); }
+.pc .av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; background: #1d1546; border: .4vh solid #1d1546; }
+.pc.one .av { width: 16vh; height: 16vh; }
+.pc .crown { font-size: 5.6vh; line-height: 1; margin-bottom: -.4vh; filter: drop-shadow(0 .6vh 1.4vh rgba(255, 196, 60, .6)); animation: crownIn .7s cubic-bezier(.2, 1.6, .4, 1) 2s both, bob 2.4s ease-in-out 2.7s infinite; }
+@keyframes crownIn { from { transform: translateY(-8vh) rotate(-25deg); opacity: 0; } }
+@keyframes bob { 50% { transform: translateY(-.8vh) rotate(4deg); } }
+.pc .nm { position: relative; isolation: isolate; --tip: 1.7vh; padding: 1vh 3.2vh; max-width: 30vh; font: 700 2.7vh/1.15 var(--fun); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pc .nm::before, .pc .nm::after { content: ""; position: absolute; z-index: -1;
+  -webkit-clip-path: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%);
+  clip-path: polygon(var(--tip) 0, calc(100% - var(--tip)) 0, 100% 50%, calc(100% - var(--tip)) 100%, var(--tip) 100%, 0 50%); }
+.pc .nm::before { inset: 0; background: var(--ring); }
+.pc .nm::after { inset: .28vh; background: #1d1546; }
+.pc.one .nm::before { background: linear-gradient(90deg, #ff5f7e, #b46bff 50%, #4f8bff); }
+.pc .sc { font-size: 1.9vh; font-weight: 700; color: var(--lav); }
+.pc.one .sc { color: var(--gold); }
+.pc .blk { position: relative; width: 23vh; display: grid; place-items: center; font: 700 12vh/1 var(--fun); color: var(--num);
+  background: linear-gradient(180deg, var(--f1), var(--f2)); box-shadow: inset 0 0 0 .2vh rgba(255, 255, 255, .28), inset 0 -4vh 5vh rgba(0, 0, 0, .25), 0 0 6vh rgba(0, 0, 0, .45);
+  text-shadow: 0 .5vh 0 rgba(0, 0, 0, .18); animation: rise .8s cubic-bezier(.2, 1.15, .3, 1) both; }
+.pc .blk::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 2.6vh; background: var(--top);
+  -webkit-clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%); clip-path: polygon(7% 0, 93% 0, 100% 100%, 0 100%); }
+.pc.one .blk { width: 27vh; height: 28vh; animation-delay: .6s; }
+.pc.two .blk { height: 20vh; animation-delay: .35s; }
+.pc.three .blk { height: 15vh; animation-delay: .15s; }
+@keyframes rise { from { transform: translateY(105%); } }
+.pc.empty .blk { opacity: .35; filter: grayscale(.7); }
+.pc.empty .who { visibility: hidden; }
+.cover.win .win-foot { position: absolute; inset-inline-start: 4vw; bottom: 4vh; max-width: 26vw; margin: 0; text-align: start; font: 700 2.4vh/1.4 var(--round); color: #ece6ff; animation: fade .6s ease 2.2s both; }

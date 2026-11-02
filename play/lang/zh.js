@@ -624,5 +624,18 @@ BVI18N.add("zh", {
 "Wait before the next question": "下一题前等待",
 "seconds": "秒",
 "Next question in {n}": "{n}秒后下一题",
-"Waiting for the host to start the next question": "等待房主开始下一题"
+"Waiting for the host to start the next question": "等待房主开始下一题",
+"No limit": "不限时",
+"No clock: each question waits until everyone answers. The host can show the answer any time.": "不计时：每道题都等大家答完。房主随时可以公布答案。",
+"Show the answer": "公布答案",
+"Difficulty": "难度",
+"Easy to hard": "由易到难",
+"Starts easy and gets harder as you go.": "先易后难，越往后越难。",
+"Only easy questions. Great with kids.": "只出简单题，适合和孩子一起玩。",
+"Only medium questions.": "只出中等题。",
+"Only hard questions, for quiz fans.": "只出困难题，答题高手的最爱。",
+"Click for sound": "点击开启声音",
+"Sound on": "声音已开",
+"Sound off": "声音已关",
+"{n} correct": "答对{n}题"
 });

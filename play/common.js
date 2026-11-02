@@ -133,7 +133,7 @@ var BVPLAYC = (() => {
   let ac = null, muted = false;
   const mute = on => { muted = !!on; };
   function sfx(kind) {
-    if (muted) return;
+    if (muted || (window.BVSOUND && !BVSOUND.enabled())) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();

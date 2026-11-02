@@ -624,5 +624,18 @@ BVI18N.add("hi", {
 "Wait before the next question": "अगले सवाल से पहले का इंतज़ार",
 "seconds": "सेकंड",
 "Next question in {n}": "अगला सवाल {n} सेकंड में",
-"Waiting for the host to start the next question": "होस्ट के अगला सवाल शुरू करने का इंतज़ार है"
+"Waiting for the host to start the next question": "होस्ट के अगला सवाल शुरू करने का इंतज़ार है",
+"No limit": "कोई समय-सीमा नहीं",
+"No clock: each question waits until everyone answers. The host can show the answer any time.": "घड़ी नहीं: हर सवाल तब तक रहेगा जब तक सब जवाब न दे दें। होस्ट कभी भी जवाब दिखा सकते हैं।",
+"Show the answer": "जवाब दिखाएँ",
+"Difficulty": "कठिनाई",
+"Easy to hard": "आसान से मुश्किल",
+"Starts easy and gets harder as you go.": "शुरुआत आसान, फिर धीरे-धीरे मुश्किल।",
+"Only easy questions. Great with kids.": "सिर्फ़ आसान सवाल। बच्चों के साथ बढ़िया।",
+"Only medium questions.": "सिर्फ़ मध्यम सवाल।",
+"Only hard questions, for quiz fans.": "सिर्फ़ मुश्किल सवाल, क्विज़ के शौकीनों के लिए।",
+"Click for sound": "आवाज़ के लिए क्लिक करें",
+"Sound on": "आवाज़ चालू",
+"Sound off": "आवाज़ बंद",
+"{n} correct": "{n} सही जवाब"
 });
