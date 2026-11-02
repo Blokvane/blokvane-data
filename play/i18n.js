@@ -6,7 +6,7 @@
 // when the game runs in Chrome on a computer.
 var BVI18N = (() => {
   'use strict';
-  const V = '7';
+  const V = '8';
   // (in the order people see them, each in its own language)
   const LANGS = [['en', 'English'], ['zh', '中文（普通话）'], ['hi', 'हिन्दी'], ['es', 'Español'], ['ar', 'العربية'], ['fr', 'Français'], ['bn', 'বাংলা']];
   const FULL = new Set(LANGS.map(l => l[0]));

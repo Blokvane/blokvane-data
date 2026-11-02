@@ -22,7 +22,12 @@
     marks: 'The numbers mark themselves', tapNums: 'Tap the numbers the TV calls', stop: 'STOP!', tapFast: 'Tap as fast as you can!', taps: 'taps', lang: 'Language', players: 'Players', pickGame: 'Pick a game',
     picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', of: 'of', first: 'You were the fastest!', youPicked: 'You picked',
     shakeIt: 'Shake', flipIt: 'Flip', tiltIt: 'Tilt', red: 'Red', blue: 'Blue', green: 'Green', yellow: 'Yellow', gold: 'Gold', motionWhy: 'Some games use shaking and tilting your phone.', changeName: 'Change my name or Boo',
-    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', rolling: 'Rolling...', mine: 'That one is yours', imposterSays: 'Category:', helpers1: 'Each helper works once.'
+    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', rolling: 'Rolling...', mine: 'That one is yours', imposterSays: 'Category:', helpers1: 'Each helper works once.',
+    next: 'Next', back: 'Back', stepOf: '{n} of {total}', allSet: 'All set', readyQ: 'Ready to play?', editSet: 'Edit settings', none: 'None', hostBadge: 'Host', readyN: '{n} / {total} ready',
+    myLang: 'Your language', sameTv: 'Same as the TV: {lang}', langFollow: 'The questions and answers show on the TV in {lang}. Pick another language to see them on your phone too.',
+    langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
+    joinAgain: 'Join again', hostTools: 'Host tools', showCode: 'Show the join code on the TV', hideCode: 'Hide the join code', codeOn: 'The join code is on the TV. New players scan it to join.',
+    makeHost: 'Make host', remove: 'Remove', tapAgain: 'Tap again to be sure', newHost: '{name} is the host now.', tvSize: 'TV size', autoSize: 'Auto', more: 'More', youHost: 'You\'re the host now.'
   };
   const AVATARS = ['boo:hi', 'boo:laugh', 'boo:cool', 'boo:love', 'boo:wow', 'boo:party', 'boo:hero', 'boo:legend', 'boo:peek', 'boo:mind', 'boo:scary', 'boo:boo'];
   const ACOL = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8'];
@@ -170,13 +175,144 @@ button.pt-pl:active{transform:scale(.97)}
 .pt-print .c{display:inline-block;margin:8px;page-break-inside:avoid;vertical-align:top}.pt-print table{border-collapse:collapse}
 .pt-print td{width:46px;height:46px;border:2px solid #222;text-align:center;font:700 19px system-ui}.pt-print th{font:900 22px system-ui;height:34px}.pt-print small{display:block;margin-top:4px;font-size:12px}}
 @keyframes pt-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
-@media (prefers-reduced-motion:reduce){.pt-res,.pt-wait .boo{animation:none}}`;
+@media (prefers-reduced-motion:reduce){.pt-res,.pt-wait .boo{animation:none}}
+/* ---------- the party games' night look (the same as the TV's): deep indigo, one warm yellow for what you pick ---------- */
+@font-face{font-family:'BV Fun';font-style:normal;font-weight:300 700;font-display:swap;src:url(../play/fonts/fredoka.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
+html.pt-night{--ink:#140d2e;--panel:#1f1745;--raise:#291f55;--raise2:#352a6b;--line:rgba(255,255,255,.11);--text:#f7f4ff;--dim:#b6add8;--faint:#8077aa;--sun:#ffc93c;--warn:#ffc93c;--lav:#cbbcff;--dk:#2a2150;--fun:'BV Fun',var(--round)}
+html.pt-night body{background:radial-gradient(120% 55% at 0% -5%,rgba(124,92,255,.28),transparent 62%),radial-gradient(90% 45% at 100% 105%,rgba(255,107,150,.13),transparent 70%),linear-gradient(175deg,#221447 0%,#170f33 52%,#110b26 100%) fixed}
+html.pt-night h1,html.pt-night h2,html.pt-night .top .who h1{font-family:var(--fun);font-weight:700}
+html.pt-night .card{background:var(--panel);border-color:rgba(255,255,255,.08)}
+html.pt-night .btn.go{background:var(--sun);color:#2a1d00;box-shadow:0 10px 24px -12px rgba(255,201,60,.75);font-family:var(--fun);font-weight:700}
+html.pt-night .btn.ghost{background:var(--dk);border-color:rgba(255,255,255,.08)}
+html.pt-night .btn.tint{background:var(--sun);color:#2a1d00}
+html.pt-night .sheet{background:#1c143f}
+html.pt-night .seg{background:var(--raise)}
+html.pt-night .seg button[aria-pressed=true]{background:rgba(255,201,60,.16);color:#fff;box-shadow:0 0 0 1.5px var(--sun)}
+html.pt-night .switch input:checked{background:var(--sun)}
+html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
+/* the top: the house and the game on the left, you on the right */
+.pt-top{gap:10px;padding:2px 0 12px}
+.pt-top .pt-home{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:rgba(255,255,255,.07);flex:none;color:#fff}
+.pt-top .pt-home svg{width:19px;height:19px}
+.pt-top .who h1{font-size:20px}
+.pt-chip{display:inline-flex;align-items:center;gap:7px;padding:4px 7px 4px 4px;border-radius:99px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);font:700 13px/1 var(--round);max-width:48%;flex:none}
+.pt-chip img{width:26px;height:26px;border-radius:50%;object-fit:cover;background:#fff;flex:none}
+.pt-chip b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.pt-chip i{font-style:normal;padding:3px 6px;border-radius:6px;background:var(--sun);color:#2a1d00;font:800 10px/1 var(--round);letter-spacing:.06em;text-transform:uppercase;flex:none}
+.pt-more{width:40px;height:40px;border-radius:12px;border:0;background:rgba(255,255,255,.08);color:#fff;display:grid;place-items:center;flex:none}
+.pt-more svg{width:22px;height:22px}
+/* the host's setup, one step at a time */
+.pt-wz{display:flex;flex-direction:column;min-height:calc(100dvh - 92px - var(--safe-t))}
+.pt-prog{display:flex;gap:5px;margin:0 0 16px}
+.pt-prog i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.12)}
+.pt-prog i.on{background:var(--c)}
+.pt-wh{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:0 0 4px}
+.pt-wh h1{font-size:28px;line-height:1.1;margin:0}
+.pt-wh span{color:var(--dim);font:700 13px var(--round);white-space:nowrap}
+.pt-lbl{display:block;margin:16px 2px 8px;color:var(--dim);font:800 12px/1.2 var(--round);letter-spacing:.09em;text-transform:uppercase}
+.pt-list2{display:grid;gap:8px;margin-top:10px}
+.pt-opt{display:flex;align-items:center;gap:12px;width:100%;text-align:start;padding:11px 14px;border-radius:14px;border:1.5px solid rgba(255,255,255,.08);background:var(--panel);color:var(--text);transition:border-color .15s,background .15s}
+.pt-opt b{display:block;font:700 16px/1.2 var(--fun)}
+.pt-opt small{display:block;color:var(--dim);font-size:13px;line-height:1.35;margin-top:2px}
+.pt-opt .ck{margin-inline-start:auto;flex:none;width:24px;height:24px;border-radius:50%;border:2px solid rgba(255,255,255,.25);display:grid;place-items:center;font:900 13px/1 var(--round);color:transparent}
+.pt-opt[aria-pressed=true]{border-color:var(--sun);background:linear-gradient(180deg,rgba(255,201,60,.14),rgba(255,201,60,.04)),var(--panel)}
+.pt-opt[aria-pressed=true] .ck{background:var(--sun);border-color:var(--sun);color:#2a1d00}
+.pt-grid{display:grid;gap:8px}
+.pt-box{min-height:52px;padding:8px 6px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:var(--panel);color:var(--text);font:700 15px/1.2 var(--fun);display:grid;place-items:center;text-align:center;overflow-wrap:anywhere;transition:border-color .15s,background .15s}
+.pt-box.num{font-size:22px;min-height:58px}
+.pt-grid.many .pt-box{min-height:46px;font-size:13.5px;padding:6px 4px}
+.pt-box[aria-pressed=true]{border-color:var(--sun);background:linear-gradient(180deg,rgba(255,201,60,.17),rgba(255,201,60,.05)),var(--panel);color:#fff}
+.pt-info{display:flex;gap:10px;align-items:flex-start;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:var(--dim);font-size:13.5px;line-height:1.4}
+.pt-info::before{content:"i";flex:none;width:18px;height:18px;border-radius:50%;background:var(--sun);color:#2a1d00;font:900 12px/18px var(--round);text-align:center;margin-top:1px}
+.pt-info[hidden]{display:none}
+.pt-tg{display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08);margin-top:10px;cursor:pointer}
+.pt-tg b{display:block;font:700 16px/1.2 var(--fun)}
+.pt-tg small{display:block;color:var(--dim);font-size:13px;margin-top:3px;line-height:1.35}
+.pt-tg input{appearance:none;-webkit-appearance:none;margin-inline-start:auto;width:50px;height:30px;border-radius:15px;background:rgba(255,255,255,.16);position:relative;flex:none;transition:background .15s}
+.pt-tg input::after{content:"";position:absolute;top:3px;inset-inline-start:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s}
+.pt-tg input:checked{background:var(--sun)}
+.pt-tg input:checked::after{transform:translateX(20px)}
+[dir=rtl] .pt-tg input:checked::after{transform:translateX(-20px)}
+.pt-step{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px;border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08)}
+.pt-step button{width:50px;height:46px;border-radius:11px;border:0;background:var(--raise);color:#fff;font:700 24px/1 var(--round);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.pt-step button:active{background:var(--raise2)}
+.pt-step span{display:flex;align-items:baseline;gap:6px}
+.pt-step b{font:700 26px/1 var(--fun)}
+.pt-step small{color:var(--dim);font-size:14px}
+.pt-text{min-height:120px;font-size:16px}
+.pt-langrow{display:flex;align-items:center;gap:12px;margin:10px 0 0;padding:6px 6px 6px 14px;border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08)}
+[dir=rtl] .pt-langrow{padding:6px 14px 6px 6px}
+.pt-langrow>span:first-child{font:700 15px var(--fun);white-space:nowrap}
+.pt-langrow .pt-sel{flex:1;min-width:0}
+.pt-sel{position:relative;display:block}
+.pt-sel select{appearance:none;-webkit-appearance:none;width:100%;min-height:46px;padding:0 40px 0 12px;border-radius:11px;border:1.5px solid rgba(255,255,255,.1);background:var(--raise);color:var(--text);font:700 15px var(--fun)}
+[dir=rtl] .pt-sel select{padding:0 12px 0 40px}
+.pt-sel::after{content:"";position:absolute;inset-inline-end:16px;top:50%;width:8px;height:8px;border:solid var(--dim);border-width:0 2px 2px 0;transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.pt-nav{position:sticky;bottom:0;display:flex;gap:10px;padding:14px 0 calc(4px + var(--safe-b));margin-top:auto;background:linear-gradient(180deg,transparent,rgba(20,13,46,.92) 32%)}
+.pt-nav .bk{flex:0 0 31%;min-height:54px;border-radius:12px;border:0;background:var(--dk);color:#fff;font:700 16px var(--fun)}
+.pt-nav .bk.sp{opacity:.5}
+.pt-nav .nx{flex:1;min-height:54px;border:0;background:var(--sun);color:#2a1d00;font:700 17px var(--fun);clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%)}
+.pt-nav .nx:active,.pt-nav .bk:active{transform:scale(.98)}
+/* the last step: everything at a glance, then Start */
+.pt-ready{text-align:center;margin:6px 0 14px}
+.pt-ready small{display:block;color:var(--sun);font:800 12px var(--round);letter-spacing:.12em;text-transform:uppercase}
+.pt-ready h1{font-size:30px;line-height:1.15;margin:4px 0 0}
+.pt-sum{border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08);padding:2px 14px}
+.pt-sum div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:14px}
+.pt-sum div:last-child{border-bottom:0}
+.pt-sum span{color:var(--dim);flex:none}
+.pt-sum b{font:700 14px/1.3 var(--fun);text-align:end;min-width:0}
+.pt-edit{display:block;margin:10px auto 0;padding:6px 10px;border:0;background:none;color:var(--lav);font:700 14px var(--fun);text-decoration:underline;text-underline-offset:3px}
+.pt-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 2px 10px}
+.pt-ph h2{font-size:18px;margin:0}
+.pt-ph span{color:var(--ok);font:700 13px var(--round);white-space:nowrap}
+.pt-pl small.lg{position:absolute;top:6px;inset-inline-start:6px;padding:2px 5px;border-radius:6px;background:var(--violet);color:#fff;font:800 10px/1 var(--round)}
+.pt-pl .cr~small.lg{top:auto;bottom:6px}
+.pt-tv{display:flex;align-items:center;gap:10px;margin:14px 0 0;padding:8px 8px 8px 14px;border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08)}
+[dir=rtl] .pt-tv{padding:8px 14px 8px 8px}
+.pt-tv>span:first-child{font:700 15px var(--fun);flex:1;min-width:0}
+.pt-tv small{color:var(--dim);font:700 12px var(--round)}
+.pt-tvb{display:flex;gap:6px}
+.pt-tvb button{min-width:46px;height:40px;padding:0 10px;border-radius:10px;border:0;background:var(--raise);color:#fff;font:800 14px var(--round)}
+.pt-start{position:relative;display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;margin-top:16px;border:3px solid transparent;border-radius:18px;color:#2a1d00;font:700 20px var(--fun);
+  background:linear-gradient(var(--sun),var(--sun)) padding-box,linear-gradient(90deg,#ff5f7e,#b46bff 30%,#4f8bff 55%,#2fd59a 80%,#ffc93c) border-box;box-shadow:0 10px 30px -10px rgba(255,201,60,.6)}
+.pt-start:active{transform:scale(.98)}
+.pt-start svg{width:22px;height:22px;flex:none}
+.pt-startbar{position:sticky;bottom:0;z-index:5;padding:12px 0 calc(4px + var(--safe-b));margin-top:4px;background:linear-gradient(180deg,transparent,rgba(20,13,46,.94) 30%)}
+.pt-startbar .pt-start{margin-top:0}
+.pt-players.many{grid-template-columns:repeat(5,1fr);gap:6px}
+.pt-players.many .pt-pl{padding:7px 2px 6px;border-radius:12px;gap:4px;font-size:11px;border-width:1.5px}
+.pt-players.many .pt-pl img{width:34px;height:34px}
+.pt-players.many .pt-pl .cr{font-size:11px;top:1px;inset-inline-start:3px}
+.pt-players.many .pt-pl .ok{font-size:11px;top:2px;inset-inline-end:4px}
+.pt-pair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.pt-pair.one{grid-template-columns:1fr}
+.pt-dk{min-height:52px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:var(--dk);color:#fff;font:700 15px/1.2 var(--fun);padding:8px 10px}
+.pt-dk:active{transform:scale(.98)}
+.pt-dk.bad{color:#ff8f8a}
+/* the players' lobby: the game, your language, Ready */
+.pt-gcard{display:flex;gap:14px;align-items:center;padding:14px 16px;border-radius:16px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08);margin-bottom:12px}
+.pt-gcard .e{font-size:36px;flex:none;width:46px;text-align:center}
+.pt-gcard b{display:block;font:700 19px var(--fun)}
+.pt-gcard small{color:var(--dim);font-size:14px;line-height:1.35}
+.pt-lang{padding:14px}
+.pt-lang h2{font-size:17px;margin:0 0 10px}
+.pt-adm{display:grid;gap:8px}
+.pt-adm .r{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:14px;background:var(--panel);border:1px solid rgba(255,255,255,.07)}
+.pt-adm .r img{width:38px;height:38px;border-radius:50%;object-fit:cover;background:#fff;flex:none}
+.pt-adm .r b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:700 15px var(--fun)}
+.pt-adm .r button{min-height:38px;padding:0 10px;border-radius:10px;border:0;background:var(--raise);color:#fff;font:700 13px var(--round);flex:none}
+.pt-adm .r button.bad{color:#ff8f8a}
+.pt-adm .r i{font-style:normal;padding:3px 6px;border-radius:6px;background:var(--sun);color:#2a1d00;font:800 10px/1 var(--round);text-transform:uppercase}
+.pt-h{font-size:26px;margin:4px 0 6px}
+`;
   }
 
   // ---------- the game, as this phone sees it ----------
   const G = { R: null, s: '', tv: '', me: null, id: '', name: '', av: 'boo:hi', photo: '', joined: false, host: false, color: '', team: '', ready: false, lobby: null, phase: 'join',
     q: null, qAt: 0, answered: false, locked: false, res: null, endRes: null, ranking: null, score: 0, lives: null, out: false, used: new Set(), secret: null, bingo: null, paper: null,
-    S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null };
+    S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null,
+    wiz: 0, wizGame: '', plang: '', plangSent: '', kicked: false, key: '', again: false };
   const S = () => G.S;
   // a line in the game's language, with its {parts} filled in
   function T(text, vars) {
@@ -201,6 +337,13 @@ button.pt-pl:active{transform:scale(.97)}
     document.documentElement.dir = i && i.RTL.has(c) ? 'rtl' : 'ltr';
   }
   const loadI18n = () => GO.script('../play/i18n.js?v=' + GO.VERSION).catch(() => {});
+  // The language this phone shows: the game's (the host picks it), or, in a game that has it (Trivia), the player's own
+  // pick: then their phone shows each question and its answers in it, while the TV stays in the game's language. The
+  // host's phone always follows the game.
+  const tvLangOf = l => (l && typeof l.lang === 'string' && /^[a-z]{2}$/.test(l.lang) ? l.lang : 'en');
+  const ownLang = l => (!G.host && l && l.mlang && G.plang && G.plang !== tvLangOf(l) && I() && I().FULL.has(G.plang) ? G.plang : '');
+  const effLang = l => ownLang(l) || tvLangOf(l);
+  const langName = c => ([...langsFull(), ...langsMore()].find(x => x[0] === c) || [c, c])[1];
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
   const gameName = () => (G.lobby && G.lobby.gname) || T('Party games');
@@ -214,21 +357,50 @@ button.pt-pl:active{transform:scale(.97)}
     set(k, v) { try { sessionStorage.setItem('bvgo:' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { sessionStorage.removeItem('bvgo:' + k); } catch (e) {} }
   };
+  // (and on this phone too, for 4 hours: a page closed by mistake, opened again, is the same player with the same score.
+  // A tab that's open says so every few seconds, so a second tab of the same game is a second player.)
+  const LIVE = k => 'party:live:' + k;
+  const claimMe = () => { if (G.key) store.set(LIVE(G.key), Date.now()); };
+  const releaseMe = () => { if (G.key) store.del(LIVE(G.key)); };
+  setInterval(() => { if (G.key && G.R && G.joined && !document.hidden) claimMe(); }, 4000);
+  function forgetOld() {
+    try {
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const k = localStorage.key(i) || '';
+        if (k.startsWith('bvgo:party:me:')) { const v = JSON.parse(localStorage.getItem(k) || 'null'); if (!v || !(Date.now() - v.at < 4 * 3600e3)) localStorage.removeItem(k); }
+        else if (k.startsWith('bvgo:party:live:') && !(Date.now() - (+localStorage.getItem(k) || 0) < 60000)) localStorage.removeItem(k);
+      }
+    } catch (e) {}
+  }
   async function memberFor(key) {
-    const jwk = tabStore.get(key);
+    G.key = key;
+    let jwk = tabStore.get(key);
+    if (!jwk) {
+      const kept = store.get('party:me:' + key, null);
+      const busy = Date.now() - (+store.get(LIVE(key), 0) || 0) < 10000;
+      if (kept && kept.jwk && Date.now() - kept.at < 4 * 3600e3 && !busy) jwk = kept.jwk;
+    }
     let me = null;
     try { me = await C.newMember(jwk || undefined); } catch (e) { me = null; }
-    if (!me || !jwk) { me = me || await C.newMember(); tabStore.set(key, me.jwk); }
+    if (!me) me = await C.newMember();
+    tabStore.set(key, me.jwk);
+    store.set('party:me:' + key, { jwk: me.jwk, at: Date.now() });
+    claimMe();
     return me;
   }
+  // the game this phone is in, for "Back to the game" on Blokvane's first page (until 3 hours after it was last here)
+  function keepBack() { if (G.s && G.tv) store.set('party:back', { s: G.s, tv: G.tv, lg: tvLangOf(G.lobby), name: gameName(), at: Date.now() }); }
+  const dropBack = () => { const b = store.get('party:back', null); if (b && b.s === G.s) store.del('party:back'); };
   async function start(parts) {
     css();
     await loadI18n();
     const [s, tv, lg] = parts;
+    forgetOld();
+    G.plang = I() && I().FULL.has(store.get('party:plang', '')) ? store.get('party:plang', '') : '';
     await useLang(I() && I().ok(lg) ? lg : I() ? I().pick() : 'en');
     GO.say = T;
     if (!s || !/^[A-Za-z0-9_-]{16,64}$/.test(s) || !L.okId(tv)) {
-      const v = view(T('Party games'), { tint: 'pink' });
+      const v = view(T('Party games'), { tint: 'sun', night: true });
       hero(v.body, T('This code isn\'t complete'), T('Scan the QR code on the TV again, or type the 6 letters under it.'), { sleepy: true });
       btn(T('Type the code'), { kind: 'go', full: true }, v.body, () => codeScreen());
       return;
@@ -239,15 +411,15 @@ button.pt-pl:active{transform:scale(.97)}
     G.av = AVATARS.includes(store.get('party:av', '')) ? store.get('party:av', '') : 'boo:hi';
     // (back in the same game after a reload or a dead battery: straight in, as yourself. A game this phone just started
     // from Blokvane: straight in too, so this phone is the first one there, the host.)
-    const last = tabStore.get('party:in');
-    if (last && last.s === s.slice(0, 10) && Date.now() - last.at < 4 * 3600e3 && G.name) return connect();
+    const last = tabStore.get('party:in'), back = store.get('party:back', null);
+    if (G.name && ((last && last.s === s.slice(0, 10) && Date.now() - last.at < 4 * 3600e3) || (back && back.s === s && Date.now() - back.at < 3 * 3600e3))) return connect();
     if (G.autoJoin && G.autoJoin === s.slice(0, 10) && G.name) { G.autoJoin = ''; return connect(); }
     joinScreen();
   }
 
   // ---------- joining ----------
   function joinScreen(editing) {
-    const v = view(editing ? S().changeName : T('Party games'), { tint: 'pink', back: editing ? () => showLobby() : null });
+    const v = view(editing ? S().changeName : T('Party games'), { tint: 'sun', night: true, back: editing ? () => backToNow() : null });
     if (!editing) hero(v.body, S().join, T('Pick a name and a Boo. The game itself is on the TV.'), { node: booPic('boo:party', 'float') });
     const card = el('div', 'card', v.body);
     const ni = input({ value: G.name, placeholder: S().name, max: 16 });
@@ -293,15 +465,17 @@ button.pt-pl:active{transform:scale(.97)}
       const changed = name !== G.name || av !== G.av || photo !== G.photo;
       G.name = name; G.av = av; G.photo = photo;
       store.set('party:name', name); store.set('party:av', av);
-      if (editing) { if (changed) { send({ k: 'join', name, av }); if (photo) sendPhoto(); } showLobby(); return; }
+      if (editing) { if (changed) { send({ k: 'join', name, av, cap: 2, lg: ownLang(G.lobby) }); if (photo) sendPhoto(); } backToNow(); return; }
       await connect();
     });
     go.style.marginTop = '6px';
     ni.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     if (!G.name) setTimeout(() => ni.focus(), 300);
   }
-  async function connect() {
-    const v = view(gameName(), { tint: 'pink' });
+  async function connect(o) {
+    G.again = !!(o && o.again);
+    G.kicked = false;
+    const v = view(gameName(), { tint: 'sun', night: true });
     const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     G.me = await memberFor('g:' + G.s.slice(0, 10));
@@ -312,16 +486,19 @@ button.pt-pl:active{transform:scale(.97)}
     const hi = () => {
       if (G.joined) return;
       if (++G.tries > 30) { notFound(); return; }
-      send({ k: 'join', name: G.name, av: G.av });
+      send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '', again: G.again || undefined });
       if (G.tries === 6) { const p = h.querySelector('p'); if (p) p.textContent = T('Still looking. Is the game open on the TV?'); }
       setTimeout(hi, G.tries < 4 ? 1500 : 3000);
     };
     hi();
     keepAwake();
   }
+  // (back to whatever this phone was showing: the lobby, the question, or the end)
+  function backToNow() { if (G.phase === 'end') showEnd(); else if (G.phase === 'play' && G.q) showQ(); else if (G.phase === 'play') showWait(S().look); else showLobby(); }
   function notFound() {
     tabStore.del('party:in');
-    const v = view(T('Party games'), { tint: 'pink' });
+    dropBack();
+    const v = view(T('Party games'), { tint: 'sun', night: true });
     hero(v.body, T('Can\'t find the game'), T('Check that the game is open on the TV, and that this phone is online. Then try again.'), { sleepy: true });
     btn(T('Try again'), { kind: 'go', full: true, huge: true }, v.body, () => connect());
     btn(T('Type the code instead'), { kind: 'ghost', full: true }, v.body, () => codeScreen()).style.marginTop = '10px';
@@ -336,11 +513,16 @@ button.pt-pl:active{transform:scale(.97)}
   function keepAwake() {
     try { if (navigator.wakeLock && !wl) navigator.wakeLock.request('screen').then(x => { wl = x; x.addEventListener('release', () => { wl = null; }); }).catch(() => {}); } catch (e) {}
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && G.R && G.joined) { send({ k: 'sync' }); keepAwake(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && G.R && G.joined) { send({ k: 'sync' }); keepAwake(); claimMe(); } });
+  // (the page is closing: the TV takes this phone off a question that waits for it; if the page comes back, so does it)
+  addEventListener('pagehide', () => { if (G.R && G.joined) { try { G.R.send({ k: 'bye' }).catch(() => {}); } catch (e) {} } releaseMe(); });
+  addEventListener('pageshow', e => { if (e.persisted && G.R && G.joined) { claimMe(); send({ k: 'sync' }); } });
   setInterval(() => {
     if (!G.R || !G.joined) return;
     const quiet = Date.now() - G.lastHeard;
     if (quiet > 20000) send({ k: 'sync' });
+    // (still here: "Back to the game" keeps pointing at this game)
+    if (Date.now() - (G.backAt || 0) > 60000) { G.backAt = Date.now(); keepBack(); }
     // (the TV went quiet for a minute: say so, once a minute, instead of a screen that just waits)
     if (quiet > 60000 && Date.now() - (G.warned || 0) > 60000) { G.warned = Date.now(); toast(T('Can\'t reach the TV. Is the game still open on it?'), 'bad'); }
   }, 10000);
@@ -353,11 +535,14 @@ button.pt-pl:active{transform:scale(.97)}
         if (m.id !== G.id) return;
         const first = !G.joined;
         G.joined = true; G.color = typeof m.color === 'string' ? m.color : ''; G.host = !!m.host;
-        if (first) { tabStore.set('party:in', { s: G.s.slice(0, 10), at: Date.now() }); if (G.photo) sendPhoto(); buzz('ok'); }
+        if (first) { tabStore.set('party:in', { s: G.s.slice(0, 10), at: Date.now() }); G.backAt = Date.now(); keepBack(); if (G.photo) sendPhoto(); buzz('ok'); }
         if (G.phase === 'join') { G.phase = 'lobby'; if (G.lobby) onLobby(G.lobby, true); else showLobby(); }
         return;
       }
-      case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'pink' }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
+      // ("still there?" from the TV, while a question with no clock waits for this phone)
+      case 'ping': send({ k: 'pong' }); return;
+      case 'kicked': return kickedScreen();
+      case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
       case 'nextq': return onNextQ(m);
@@ -390,7 +575,8 @@ button.pt-pl:active{transform:scale(.97)}
     const prev = G.lobby, was = G.phase;
     G.lobby = m;
     if (m.strings && typeof m.strings === 'object') G.tvStrings = m.strings;
-    const lg = typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) ? m.lang : 'en';
+    G.host = m.host === G.id;
+    const lg = effLang(m);
     // (a new language: its words load first, then this screen shows again in it)
     if (lg !== G.lang) return useLang(lg).then(() => { if (G.lobby === m) onLobbyNow(m, prev, G.phase, true); });
     // (a language Chrome translates on the TV: its words may have just come in)
@@ -403,6 +589,13 @@ button.pt-pl:active{transform:scale(.97)}
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
     if (!G.joined) return;
+    // (this phone's own language, the way the TV should have it: said again whenever the TV has it wrong)
+    if (mine) { const want = ownLang(m), tag = want + '|' + tvLangOf(m); if ((mine.lg || '') !== want && G.plangSent !== tag) { G.plangSent = tag; send({ k: 'plang', v: want }); } }
+    if (prev && prev.host !== m.host && G.host) { toast(S().youHost, 'ok'); buzz('ok'); }
+    // ("Back to the game" says which game)
+    if (!prev || prev.gname !== m.gname) keepBack();
+    // (after a game, "Play again": the host's phone opens on the last step, everything as it was, ready to start)
+    if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
       if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; showWait(S().look, 'boo:hi'); }
       else updMe();
@@ -410,7 +603,7 @@ button.pt-pl:active{transform:scale(.97)}
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
       else if (prev && prev.host !== m.host) showEnd();
     } else {
-      const big = force || was !== 'lobby' || !prev || prev.game !== m.game || prev.host !== m.host || prev.lang !== m.lang || visSig(prev) !== visSig(m) || !!(prev.settings && prev.settings.teams) !== !!(m.settings && m.settings.teams);
+      const big = force || was !== 'lobby' || !prev || prev.game !== m.game || prev.host !== m.host || prev.lang !== m.lang || visSig(prev) !== visSig(m) || teamsOn(prev) !== teamsOn(m) || !!prev.mlang !== !!m.mlang;
       G.phase = 'lobby'; G.q = null;
       if (big) { stopQ(); showLobby(); } else updLobby();
     }
@@ -466,22 +659,75 @@ button.pt-pl:active{transform:scale(.97)}
   }
 
   // ---------- the screens ----------
+  // the top of every game page: the house and the game on the left, you (with a Host badge on the host's phone) on the
+  // right; during a game, the ⋯ instead
+  function partyView(title, o) {
+    o = o || {};
+    const v = view(title, { tint: 'sun', night: true, back: o.back || null });
+    v.top.classList.add('pt-top');
+    if (!o.back) { const b = v.top.querySelector('.boo'); if (b) b.remove(); const h = el('span', 'pt-home'); h.appendChild(GO.icon('home')); v.top.insertBefore(h, v.top.firstChild); }
+    if (G.joined && o.chip !== false) v.top.appendChild(chip());
+    return v;
+  }
+  function chip() {
+    const c = el('span', 'pt-chip');
+    const im = el('img', '', c); im.src = G.photo || booUri(G.av) || booUri('boo:hi'); im.alt = '';
+    el('b', '', c, G.name);
+    if (G.host) el('i', '', c, S().hostBadge);
+    return c;
+  }
   function gameView() {
-    const v = view(gameName(), { tint: 'pink' });
-    // (the host can end a game early: the scores so far count)
-    if (G.host && G.phase === 'play') {
-      const x = el('button', 'icon-btn', v.top);
-      x.type = 'button'; x.title = S().endGame; x.setAttribute('aria-label', S().endGame);
-      x.appendChild(GO.icon('x'));
-      x.onclick = () => sheet(S().endGame, (sh, close) => {
-        el('p', '', sh, S().endSure);
-        const row = el('div', 'grid2', sh); row.style.marginTop = '12px';
-        btn(S().endGame, { kind: 'bad' }, row, () => { send({ k: 'stop' }); close(); });
-        btn(S().keepPlaying, { kind: 'ghost' }, row, () => close());
-      });
+    const v = partyView(gameName(), { chip: false });
+    // (behind the ⋯: the host's tools, or your own language)
+    const l = G.lobby || {};
+    if (G.host || l.mlang) {
+      const x = el('button', 'pt-more', v.top);
+      x.type = 'button'; x.title = S().more; x.setAttribute('aria-label', G.host ? S().hostTools : S().myLang);
+      x.appendChild(GO.icon('dots'));
+      x.onclick = () => toolsSheet();
     }
     meRow(v.body);
     return v;
+  }
+  // the host's tools during a game: let more people join (the join code on the TV again), the players (make one the
+  // host, or take one out), the TV's size, end the game. A player: their own language.
+  function toolsSheet() {
+    const l = G.lobby || {};
+    sheet(G.host ? S().hostTools : S().myLang, (sh, close) => {
+      if (G.host) {
+        const on = !!l.joinOn;
+        btn(on ? S().hideCode : S().showCode, { kind: on ? 'ghost' : 'go', full: true, icon: 'phone' }, sh, () => { send({ k: 'showjoin', on: !on }); if (!on) toast(S().codeOn, 'ok'); close(); });
+        el('label', 'pt-lbl', sh, S().players);
+        const adm = el('div', 'pt-adm', sh);
+        for (const p of Array.isArray(l.players) ? l.players : []) {
+          const r = el('div', 'r', adm);
+          const im = el('img', '', r); im.src = booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); im.alt = '';
+          el('b', '', r, p.id === G.id ? S().you : L.clean(p.name, 16));
+          if (p.id === l.host) { el('i', '', r, S().hostBadge); continue; }
+          const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
+          twice(mk, () => { send({ k: 'makehost', id: p.id }); close(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
+          const rm = el('button', 'bad', r); rm.type = 'button'; el('span', '', rm, S().remove);
+          twice(rm, () => { send({ k: 'kick', id: p.id }); r.remove(); });
+        }
+        tvSizeRow(sh, l);
+      }
+      if (l.mlang && !G.host) langCard(sh, l, close);
+      if (G.host && G.phase === 'play') {
+        const eb = el('button', 'pt-dk bad', sh); eb.type = 'button'; el('span', '', eb, S().endGame);
+        eb.style.cssText = 'width:100%;margin-top:16px';
+        twice(eb, () => { send({ k: 'stop' }); close(); });
+      }
+    });
+  }
+  // taken out of the game by the host: say so, and offer to join again
+  function kickedScreen() {
+    if (G.kicked) return;
+    G.kicked = true; G.joined = false; G.tries = 99;
+    stopQ(); hideNext();
+    tabStore.del('party:in'); dropBack(); releaseMe();
+    const v = view(gameName(), { tint: 'sun', night: true });
+    hero(v.body, S().removed, S().removedWhy, { sleepy: true });
+    btn(S().joinAgain, { kind: 'go', huge: true, full: true }, v.body, () => connect({ again: true }));
   }
   function meRow(parent) {
     const r = el('div', 'pt-me', parent);
@@ -512,16 +758,17 @@ button.pt-pl:active{transform:scale(.97)}
     return v;
   }
 
-  // the lobby: pick the game (the host), get ready (everyone)
+  // the lobby: the host sets the game up (in steps), everyone else picks their language and gets ready
   function showLobby() {
     stopQ();
-    G.ui = {};
     const l = G.lobby || {};
-    const v = view(l.gname || T('Party games'), { tint: 'pink' });
-    meRow(v.body);
+    if (G.host && l.game) return wizard(l);
+    G.ui = {};
+    const v = partyView(l.gname || T('Party games'));
     const games = Array.isArray(l.games) ? l.games : [];
     if (!l.game) {
       if (G.host) {
+        el('h1', 'pt-h', v.body, S().pickGame);
         el('p', 'lead', v.body, T('You\'re the host. Pick a game:'));
         gameList(v.body, games, '');
       } else {
@@ -529,42 +776,30 @@ button.pt-pl:active{transform:scale(.97)}
         w.appendChild(booPic('boo:mind'));
         el('h1', '', w, S().picking);
       }
-    } else {
-      const g = games.find(x => x.id === l.game) || { e: '🎲', name: l.gname || '', sub: '' };
-      const gc = el('div', 'pt-game', v.body);
-      gc.setAttribute('aria-pressed', 'true');
-      el('span', 'e', gc, g.e || '🎲');
-      const t = el('span', '', gc); el('b', '', t, g.name); el('small', '', t, g.sub || '');
-      gc.style.marginBottom = '14px';
-      if (G.host) settingsForm(v.body, l);
-      else { const w = el('p', 'pt-note', v.body, S().hostWait); w.style.margin = '6px 0 14px'; }
-      if (l.settings && l.settings.teams && (l.schema || []).some(f => f.key === 'teams')) {
-        const box = el('div', 'card', v.body);
-        el('h2', '', box, S().team);
-        const n = Math.min(4, +(l.settings.teamN) || 2);
-        G.ui.team = seg(TEAMS.slice(0, n).map(t2 => [t2[0], S()[t2[1]] || t2[1]]), G.team, team => { send({ k: 'team', team }); G.team = team; buzz('tap'); }, box);
-      }
-      if (MOTION_GAMES.includes(l.game) && motion.needsAsk() && !motion.ok) {
-        const box = el('div', 'card', v.body);
-        el('p', '', box, S().motionWhy);
-        btn(S().motion, { kind: 'tint', full: true, icon: 'phone' }, box, async () => { const ok = await motion.ask(); toast(ok ? '✓' : T('Motion is off. You can still play with taps.'), ok ? 'ok' : 'bad'); if (ok) box.remove(); });
-      }
-      if (!G.host) G.ui.ready = btn(G.ready ? '✓ ' + S().ready : S().ready, { kind: G.ready ? 'tint' : 'go', huge: true, full: true }, v.body, () => { G.ready = !G.ready; send({ k: 'ready', on: G.ready }); paintReady(); buzz('tap'); });
-      if (G.host) {
-        const st = btn(S().start, { kind: 'go', huge: true, full: true, icon: 'play' }, v.body, () => { send({ k: 'start' }); buzz('ok'); });
-        G.ui.start = st;
-        G.ui.need = el('p', 'pt-note', v.body, '');
-        const og = btn(S().otherGame, { kind: 'ghost', full: true }, v.body, () => pickGameSheet(games));
-        og.style.marginTop = '10px';
-      }
+      pair(v.body, [[S().changeName, () => joinScreen(true)]]);
+      return;
     }
-    const pc = el('div', 'card', v.body);
-    pc.style.marginTop = '16px';
-    G.ui.pHead = el('h2', '', pc, S().players);
-    G.ui.players = el('div', 'pt-players', pc);
-    const ch = btn(S().changeName, { kind: 'ghost', full: true }, v.body, () => joinScreen(true));
-    ch.style.marginTop = '12px';
-    updLobby();
+    const g = games.find(x => x.id === l.game) || { e: '🎲', name: l.gname || '', sub: '' };
+    const gc = el('div', 'pt-gcard', v.body);
+    el('span', 'e', gc, g.e || '🎲');
+    const t = el('span', '', gc); el('b', '', t, g.name); el('small', '', t, S().hostWait);
+    // your own language (Trivia: the questions and answers on your phone in it)
+    if (l.mlang) langCard(v.body, l);
+    if (teamsOn(l)) {
+      const box = el('div', 'card', v.body);
+      el('h2', '', box, S().team);
+      const n = Math.min(4, +(l.settings && l.settings.teamN) || 2);
+      G.ui.team = seg(TEAMS.slice(0, n).map(t2 => [t2[0], S()[t2[1]] || t2[1]]), G.team, team => { send({ k: 'team', team }); G.team = team; buzz('tap'); }, box);
+    }
+    if (MOTION_GAMES.includes(l.game) && motion.needsAsk() && !motion.ok) {
+      const box = el('div', 'card', v.body);
+      el('p', '', box, S().motionWhy);
+      btn(S().motion, { kind: 'tint', full: true, icon: 'phone' }, box, async () => { const ok = await motion.ask(); toast(ok ? '✓' : T('Motion is off. You can still play with taps.'), ok ? 'ok' : 'bad'); if (ok) box.remove(); });
+    }
+    G.ui.ready = btn(G.ready ? '✓ ' + S().ready : S().ready, { kind: G.ready ? 'tint' : 'go', huge: true, full: true }, v.body, () => { G.ready = !G.ready; send({ k: 'ready', on: G.ready }); paintReady(); buzz('tap'); });
+    G.ui.pb = el('div', '', v.body);
+    fillPlayers(G.ui.pb, l, false);
+    pair(v.body, [[S().changeName, () => joinScreen(true)]]);
   }
   function paintReady() {
     const b = G.ui.ready;
@@ -574,34 +809,280 @@ button.pt-pl:active{transform:scale(.97)}
   }
   function updLobby() {
     const l = G.lobby || {};
+    // (the host's steps show again as they are now, unless the host is typing in one)
+    if (G.ui.wiz) {
+      const a = document.activeElement;
+      if (a && a.closest && a.closest('.pt-wz') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') return;
+      wizard(l, true);
+      return;
+    }
     paintReady();
     updMe();
-    const ps = Array.isArray(l.players) ? l.players : [];
-    if (G.ui.pHead) G.ui.pHead.textContent = T('Players ({n})', { n: ps.length });
-    if (G.ui.players) {
-      G.ui.players.textContent = '';
-      for (const p of ps) {
-        const c = el('div', 'pt-pl', G.ui.players);
-        if (p.id === l.host) el('span', 'cr', c, '👑');
-        if (p.ready) el('span', 'ok', c, '✓');
-        const im = el('img', '', c); im.src = booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); im.alt = '';
-        if (p.color) im.style.boxShadow = '0 0 0 3px ' + p.color;
-        el('b', '', c, p.id === G.id ? S().you : L.clean(p.name, 16));
-      }
-    }
+    if (G.ui.pb && G.ui.pb.isConnected) fillPlayers(G.ui.pb, l, false);
     if (G.ui.team && G.team) G.ui.team.set(G.team);
-    if (G.ui.need) {
-      const min = { imposter: 3, boowho: 2, hotboo: 2, fakeout: 2 }[l.game] || 1;
-      G.ui.need.textContent = ps.length < min ? S().needMore + ` (${ps.length}/${min})` : `${ps.filter(p => p.ready).length} / ${ps.length} ✓`;
-    }
-    // (the settings the host sees follow what the TV kept)
-    for (const [key, ctl] of Object.entries(G.ui.sets || {})) {
-      const val = l.settings ? l.settings[key] : undefined;
-      if (ctl.set) ctl.set(val);
-      else if (ctl.type === 'checkbox') ctl.checked = !!val;
-      else if (document.activeElement !== ctl && ctl.dataset.dirty !== '1') ctl.value = val == null ? '' : String(val);
-    }
   }
+  const teamsOn = l => !!l && (typeof l.teams === 'boolean' ? l.teams : !!(l.settings && l.settings.teams && (l.schema || []).some(f => f && f.key === 'teams')));
+  // the players: who's in, who's ready (the host taps one to make them the host or take them out)
+  function fillPlayers(box, l, admin) {
+    box.textContent = '';
+    const ps = Array.isArray(l.players) ? l.players : [];
+    const hd = el('div', 'pt-ph', box);
+    el('h2', '', hd, T('Players ({n})', { n: ps.length }));
+    el('span', '', hd, T(STR0.readyN, { n: ps.filter(p => p.ready).length, total: ps.length }) + ' ✓');
+    // (a full room: smaller tiles, five in a row)
+    const g = el('div', 'pt-players' + (ps.length > 9 ? ' many' : ''), box);
+    for (const p of ps) {
+      const c = el(admin && p.id !== G.id ? 'button' : 'div', 'pt-pl', g);
+      if (c.tagName === 'BUTTON') { c.type = 'button'; c.onclick = () => playerSheet(p); }
+      if (p.id === l.host) el('span', 'cr', c, '👑');
+      if (p.ready) el('span', 'ok', c, '✓');
+      const im = el('img', '', c); im.src = booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); im.alt = '';
+      if (p.color) im.style.boxShadow = '0 0 0 3px ' + p.color;
+      el('b', '', c, p.id === G.id ? S().you : L.clean(p.name, 16));
+      if (p.lg && l.mlang) el('small', 'lg', c, String(p.lg).toUpperCase().slice(0, 2));
+    }
+    const min = { imposter: 3, boowho: 2, hotboo: 2, fakeout: 2 }[l.game] || 1;
+    if (admin && ps.length < min) el('p', 'pt-note', box, S().needMore + ` (${ps.length}/${min})`);
+  }
+  // two buttons side by side (or one), for the things you might also want to do
+  function pair(parent, items) {
+    const row = el('div', 'pt-pair' + (items.length === 1 ? ' one' : ''), parent);
+    for (const [t, fn, cls] of items) { const b = el('button', 'pt-dk' + (cls ? ' ' + cls : ''), row, t); b.type = 'button'; b.onclick = () => { buzz('tap'); fn(); }; }
+    return row;
+  }
+  // (a button that needs a second tap, for what can't be undone)
+  function twice(b, fn) {
+    const sp = b.querySelector('span') || b, label = sp.textContent;
+    let armed = 0;
+    b.onclick = () => {
+      if (Date.now() - armed < 3500) { armed = 0; fn(); return; }
+      armed = Date.now(); sp.textContent = S().tapAgain; buzz('tap');
+      setTimeout(() => { if (sp.isConnected && Date.now() - armed >= 3400) sp.textContent = label; }, 3500);
+    };
+  }
+  // the host taps a player: make them the host, or take them out of the game
+  function playerSheet(p) {
+    sheet(L.clean(p.name, 16), (sh, close) => {
+      const row = el('div', 'pt-pair', sh);
+      const mk = el('button', 'pt-dk', row); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
+      twice(mk, () => { send({ k: 'makehost', id: p.id }); close(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
+      const rm = el('button', 'pt-dk bad', row); rm.type = 'button'; el('span', '', rm, S().remove);
+      twice(rm, () => { send({ k: 'kick', id: p.id }); close(); });
+    });
+  }
+  // the TV's size, for a TV nobody can click on: smaller, bigger, or back to fitting by itself
+  function tvSizeRow(parent, l) {
+    const r = el('div', 'pt-tv', parent);
+    el('span', '', r, '📺 ' + S().tvSize);
+    if (l.zoom) el('small', '', r, l.zoom + '%');
+    const g = el('span', 'pt-tvb', r);
+    for (const [t, d] of [['A−', -1], [S().autoSize, 0], ['A+', 1]]) { const b = el('button', '', g, t); b.type = 'button'; b.onclick = () => { send({ k: 'zoom', d }); buzz('tap'); }; }
+    return r;
+  }
+  // your own language, for a game that has it: the TV stays in the game's language, your phone shows each question and
+  // its answers in yours
+  function langCard(parent, l, after) {
+    const tv = tvLangOf(l), mine = ownLang(l);
+    const box = el('div', 'card pt-lang', parent);
+    el('h2', '', box, '🌐 ' + S().myLang);
+    const w = el('span', 'pt-sel', box);
+    const sel = el('select', '', w);
+    const o0 = el('option', '', sel, T(STR0.sameTv, { lang: langName(tv) })); o0.value = '';
+    for (const [code, nm] of langsFull()) { if (code === tv) continue; const o = el('option', '', sel, nm); o.value = code; }
+    sel.value = mine;
+    el('p', 'pt-info', box, mine ? T(STR0.langMine, { lang: langName(mine), tv: langName(tv) }) : T(STR0.langFollow, { lang: langName(tv) }));
+    sel.onchange = async () => {
+      G.plang = sel.value;
+      store.set('party:plang', G.plang);
+      G.plangSent = G.plang + '|' + tv;
+      send({ k: 'plang', v: G.plang });
+      buzz('tap');
+      await useLang(effLang(G.lobby || l));
+      if (after) after();
+      backToNow();
+    };
+    return box;
+  }
+
+  // ---------- the host sets the game up: one thing at a time, then everything at a glance, and Start ----------
+  const WZC = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8', '#33d1c4', '#ff9f43'];
+  function wizSteps(l) {
+    const schema = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string');
+    const keys = schema.map(f => f.key);
+    let steps = Array.isArray(l.steps) ? l.steps.filter(x => x && Array.isArray(x.keys)).map(x => ({ t: L.clean(x.t, 40), s: L.clean(x.s || x.t, 30), keys: x.keys.filter(k => k === 'lang' || keys.includes(k)) })) : [];
+    // (a game without steps of its own: its settings, about three to a page, the language on the first; each page's row
+    // on the last step is named after its first setting)
+    if (!steps.length) {
+      const pages = [];
+      let cur = ['lang'], w = 1;
+      for (const f of schema) {
+        const cost = f.type === 'toggle' ? 0.5 : f.type === 'text' ? 1.5 : Array.isArray(f.options) && f.options.length > 6 ? 2 : 1;
+        if (w + cost > 3.01 && cur.length) { pages.push(cur); cur = []; w = 0; }
+        cur.push(f.key); w += cost;
+      }
+      if (cur.length) pages.push(cur);
+      steps = pages.map(ks => { const f = schema.find(x => x.key === ks.find(k => k !== 'lang')); return { t: S().settings, s: f ? L.clean(f.label, 30) : S().lang, keys: ks }; });
+    }
+    // (a setting no step names goes on the last one; the language goes on the first)
+    const named = new Set(steps.flatMap(x => x.keys));
+    for (const k of keys) if (!named.has(k)) steps[steps.length - 1].keys.push(k);
+    if (!named.has('lang')) steps[0].keys.unshift('lang');
+    const on = k => k === 'lang' || shown(schema.find(f => f.key === k), l.settings);
+    return steps.map(x => Object.assign({}, x, { keys: x.keys.filter(on) })).filter(x => x.keys.length);
+  }
+  function wizard(l, keep) {
+    stopQ();
+    const steps = wizSteps(l);
+    if (G.wizGame !== l.game) { G.wizGame = l.game; G.wiz = 0; }
+    G.wiz = Math.max(0, Math.min(steps.length, G.wiz | 0));
+    const k = G.wiz, last = k === steps.length, N = steps.length + 1;
+    const y = keep ? window.scrollY : 0;
+    G.ui = { wiz: true };
+    const v = partyView(l.gname || T('Party games'));
+    const wz = el('div', 'pt-wz', v.body);
+    const pr = el('div', 'pt-prog', wz);
+    pr.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < N; i++) { const x = el('i', i <= k ? 'on' : '', pr); x.style.setProperty('--c', WZC[i % WZC.length]); }
+    const go = n => { G.wiz = n; buzz('tap'); wizard(G.lobby || l); window.scrollTo(0, 0); };
+    if (!last) {
+      const st = steps[k];
+      const hd = el('div', 'pt-wh', wz);
+      el('h1', '', hd, st.t);
+      el('span', '', hd, T(STR0.stepOf, { n: k + 1, total: N }));
+      for (const key of st.keys) {
+        if (key === 'lang') langRow(wz, l);
+        else setCtl(wz, l.schema.find(f => f.key === key), l);
+      }
+      const nav = el('div', 'pt-nav', wz);
+      if (k > 0) { const b = el('button', 'bk', nav, S().back); b.type = 'button'; b.onclick = () => go(k - 1); }
+      else { const b = el('button', 'bk sp', nav, S().back); b.type = 'button'; b.disabled = true; }
+      const n = el('button', 'nx', nav, S().next); n.type = 'button'; n.onclick = () => go(k + 1);
+    } else readyPage(wz, l, steps, () => go(0));
+    if (keep) window.scrollTo(0, y);
+  }
+  // the game's language, for the TV and every phone (the host picks it on the first step)
+  function langRow(parent, l) {
+    const row = el('div', 'pt-langrow', parent);
+    el('span', '', row, '🌐 ' + S().lang);
+    const w = el('span', 'pt-sel', row);
+    const sel = el('select', '', w);
+    for (const [code, name] of langsFull()) { const o = el('option', '', sel, name); o.value = code; }
+    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const o = el('option', '', og, name); o.value = code; } }
+    sel.value = [...langsFull(), ...langsMore()].some(x => x[0] === l.lang) ? l.lang : 'en';
+    sel.onchange = () => { send({ k: 'set', key: 'lang', v: sel.value }); buzz('tap'); sel.blur(); };
+  }
+  // one setting, the way the design shows it
+  function setCtl(parent, f, l) {
+    if (!f) return;
+    const cur = l.settings && f.key in l.settings ? l.settings[f.key] : f.default;
+    const put = v => { send({ k: 'set', key: f.key, v }); buzz('tap'); };
+    const desc = typeof f.desc === 'string' && f.desc ? L.clean(f.desc, 200) : '';
+    const label = L.clean(f.label, 80);
+    if (f.type === 'toggle') {
+      const row = el('label', 'pt-tg', parent);
+      const t = el('span', '', row); el('b', '', t, label); if (desc) el('small', '', t, desc);
+      const i = el('input', '', row); i.type = 'checkbox'; i.checked = !!cur;
+      i.onchange = () => put(i.checked);
+      return;
+    }
+    if (f.look !== 'list') el('label', 'pt-lbl', parent, label);
+    if (f.type === 'number') {
+      const lo = Number.isFinite(+f.min) ? +f.min : 0, hi = Number.isFinite(+f.max) ? +f.max : 999;
+      let val = Math.max(lo, Math.min(hi, Math.round(+(cur != null ? cur : f.default)) || lo));
+      const row = el('div', 'pt-step', parent);
+      const minus = el('button', '', row, '−'); minus.type = 'button'; minus.setAttribute('aria-label', '−');
+      const mid = el('span', '', row); const vb = el('b', '', mid, String(val)); if (f.unit) el('small', '', mid, L.clean(f.unit, 20));
+      const plus = el('button', '', row, '+'); plus.type = 'button'; plus.setAttribute('aria-label', '+');
+      let tm = 0;
+      const step = d => { const nv = Math.max(lo, Math.min(hi, val + d)); if (nv === val) return; val = nv; vb.textContent = String(val); clearTimeout(tm); tm = setTimeout(() => send({ k: 'set', key: f.key, v: val }), 400); buzz('tap'); };
+      // (hold to keep going, faster and faster)
+      for (const [b, d] of [[minus, -1], [plus, 1]]) {
+        let rt = 0, n = 0;
+        const stop = () => { clearTimeout(rt); rt = 0; };
+        const run = () => { step(d); n++; rt = setTimeout(run, n < 4 ? 320 : n < 12 ? 140 : 60); };
+        b.addEventListener('pointerdown', e => { e.preventDefault(); n = 0; stop(); run(); });
+        for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+        b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); step(d); } });
+      }
+      if (desc) el('p', 'pt-info', parent, desc);
+      return;
+    }
+    if (f.type === 'text') {
+      const t = input({ multi: true, max: 1500, value: cur || '' });
+      t.classList.add('pt-text');
+      parent.appendChild(t);
+      let tm = 0;
+      t.oninput = () => { t.dataset.dirty = '1'; clearTimeout(tm); tm = setTimeout(() => { send({ k: 'set', key: f.key, v: t.value }); t.dataset.dirty = ''; }, 700); };
+      if (desc) el('p', 'pt-info', parent, desc);
+      return;
+    }
+    if (!Array.isArray(f.options)) return;
+    const opts = f.options.filter(o => Array.isArray(o)).map(o => [o[0], L.clean(o[1], 48), o[2] ? L.clean(o[2], 200) : '']);
+    // a choice with a line about each (a game mode): cards, the picked one with a check
+    if (f.look === 'list') {
+      const ls = el('div', 'pt-list2', parent);
+      for (const [v, t, d] of opts) {
+        const b = el('button', 'pt-opt', ls); b.type = 'button';
+        b.setAttribute('aria-pressed', String(String(v) === String(cur)));
+        const tx = el('span', '', b); el('b', '', tx, t); if (d) el('small', '', tx, d);
+        el('span', 'ck', b, '✓');
+        b.onclick = () => { for (const x of ls.children) x.setAttribute('aria-pressed', String(x === b)); put(v); };
+      }
+      if (desc) el('p', 'pt-info', parent, desc);
+      return;
+    }
+    // the others: boxes (up to four short ones in a row; two or four longer ones two by two; more in rows of three), and
+    // a line under them that says what the picked one does
+    const short = opts.every(o => [...o[1]].length <= 9);
+    const cols = opts.length <= 4 && short ? opts.length : (opts.length === 2 || opts.length === 4) ? 2 : 3;
+    const g = el('div', 'pt-grid' + (opts.length > 9 ? ' many' : ''), parent);
+    g.style.gridTemplateColumns = 'repeat(' + cols + ', minmax(0, 1fr))';
+    const info = opts.some(o => o[2]) ? el('p', 'pt-info', null) : null;
+    const showInfo = v => { if (!info) return; const o = opts.find(x => String(x[0]) === String(v)); info.textContent = o && o[2] ? o[2] : ''; info.hidden = !info.textContent; };
+    for (const [v, t] of opts) {
+      const b = el('button', 'pt-box' + (/^\d+$/.test(t) ? ' num' : ''), g, t); b.type = 'button';
+      b.setAttribute('aria-pressed', String(String(v) === String(cur)));
+      b.onclick = () => { for (const x of g.children) x.setAttribute('aria-pressed', String(x === b)); showInfo(v); put(v); };
+    }
+    if (info) { parent.appendChild(info); showInfo(cur); }
+    if (desc) el('p', 'pt-info', parent, desc);
+  }
+  // the last step: everything at a glance, who's in, the TV's size, and Start
+  function readyPage(wz, l, steps, edit) {
+    const hd = el('div', 'pt-ready', wz);
+    el('small', '', hd, S().allSet);
+    el('h1', '', hd, S().readyQ);
+    const sum = el('div', 'pt-sum', wz);
+    for (const st of steps) {
+      const vals = [];
+      let toggles = 0, lang = '';
+      for (const key of st.keys) {
+        if (key === 'lang') { lang = langName(l.lang || 'en'); continue; }
+        const f = l.schema.find(y => y.key === key);
+        if (!f) continue;
+        const v = l.settings && key in l.settings ? l.settings[key] : f.default;
+        if (f.type === 'toggle') { toggles++; if (v) vals.push(L.clean(f.label, 40)); }
+        else if (f.type === 'number') vals.push(v + (f.unit ? ' ' + L.clean(f.unit, 20) : ''));
+        else if (f.type === 'text') { const n = String(v || '').split('\n').filter(Boolean).length; if (n) vals.push('✍️ ' + n); }
+        else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push(L.clean(o[1], 40)); }
+      }
+      if (!vals.length && toggles) vals.push(S().none);
+      if (lang) vals.push(lang);
+      const r = el('div', '', sum); el('span', '', r, st.s || st.t); el('b', '', r, vals.join(' · ') || '·');
+    }
+    const ed = el('button', 'pt-edit', wz, S().editSet); ed.type = 'button'; ed.onclick = edit;
+    tvSizeRow(wz, l);
+    G.ui.pb = el('div', '', wz);
+    fillPlayers(G.ui.pb, l, true);
+    // (Start stays at the bottom of the screen while the players scroll by)
+    const bar = el('div', 'pt-startbar', wz);
+    const st = el('button', 'pt-start', bar); st.type = 'button';
+    st.appendChild(GO.icon('play'));
+    el('span', '', st, S().start);
+    st.onclick = () => { send({ k: 'start' }); buzz('ok'); };
+    pair(wz, [[S().otherGame, () => pickGameSheet(Array.isArray(l.games) ? l.games : [])], [S().changeName, () => joinScreen(true)]]);
+  }
+
   function gameList(parent, games, current) {
     const ls = el('div', 'pt-games', parent);
     for (const g of games) {
@@ -617,76 +1098,17 @@ button.pt-pl:active{transform:scale(.97)}
   function pickGameSheet(games) {
     sheet(S().pickGame, (sh, close) => { const ls = gameList(sh, games, (G.lobby || {}).game); ls.addEventListener('click', () => setTimeout(close, 150)); });
   }
-  // (a setting that only matters for one choice shows only with that choice: "Race to" with the race mode)
-  // (when: [key, value] shows it with that value; [key, '!value'] with any other)
-  const shown = (f, set) => !Array.isArray(f.when) || (set && (typeof f.when[1] === 'string' && f.when[1][0] === '!' ? set[f.when[0]] !== f.when[1].slice(1) : set[f.when[0]] === f.when[1]));
+  // (a setting that only matters for some choices shows only with them: "Race to" with the race mode. when: [key, value]
+  // shows it with that value, [key, '!value'] with any other, [key, [a, b]] with one of those; a list of them, all)
+  const cond = (c, set) => {
+    if (!Array.isArray(c) || typeof c[0] !== 'string') return true;
+    const v = set ? set[c[0]] : undefined, w = c[1];
+    if (Array.isArray(w)) return w.some(x => String(x) === String(v));
+    if (typeof w === 'string' && w[0] === '!') return String(v) !== w.slice(1);
+    return v === w;
+  };
+  const shown = (f, set) => !f || !Array.isArray(f.when) || (Array.isArray(f.when[0]) ? f.when.every(c => cond(c, set)) : cond(f.when, set));
   const visSig = l => (l && Array.isArray(l.schema) ? l.schema.filter(f => f && shown(f, l.settings)).map(f => f.key + ':' + f.label).join('|') : '');
-  function settingsForm(parent, l) {
-    const box = el('div', 'card pt-set', parent);
-    el('h2', '', box, S().settings);
-    G.ui.sets = {};
-    for (const f of (l.schema || [])) {
-      if (!f || typeof f.key !== 'string' || !shown(f, l.settings)) continue;
-      const row = el('div', '', box);
-      const cur = l.settings ? l.settings[f.key] : f.default;
-      if (f.type === 'toggle') {
-        G.ui.sets[f.key] = toggle(L.clean(f.label, 80), cur, on => send({ k: 'set', key: f.key, v: on }), row);
-        if (typeof f.desc === 'string' && f.desc) el('p', 'pt-desc', row, L.clean(f.desc, 160));
-      } else if (f.type === 'text') {
-        el('label', 'lbl', row, L.clean(f.label, 80));
-        const t = input({ multi: true, max: 1500, value: cur || '' });
-        row.appendChild(t);
-        let tm = 0;
-        t.oninput = () => { t.dataset.dirty = '1'; clearTimeout(tm); tm = setTimeout(() => { send({ k: 'set', key: f.key, v: t.value }); t.dataset.dirty = ''; }, 700); };
-        G.ui.sets[f.key] = t;
-      } else if (f.type === 'number') {
-        // (type any number, or tap one of the quick ones)
-        el('label', 'lbl', row, L.clean(f.label, 80));
-        const wrap = el('div', 'pt-num', row);
-        const t = el('input', 'input', wrap);
-        t.type = 'number'; t.inputMode = 'numeric'; t.step = '1';
-        const lo = Number.isFinite(+f.min) ? +f.min : 0, hi = Number.isFinite(+f.max) ? +f.max : 999;
-        t.min = String(lo); t.max = String(hi);
-        t.value = String(cur != null ? cur : f.default);
-        if (f.unit) el('span', 'u', wrap, L.clean(f.unit, 20));
-        let tm = 0;
-        const push = () => { const n = Math.round(+t.value); if (!Number.isFinite(n) || t.value === '') return; const c = Math.max(lo, Math.min(hi, n)); send({ k: 'set', key: f.key, v: c }); t.dataset.dirty = ''; };
-        t.oninput = () => { t.dataset.dirty = '1'; clearTimeout(tm); tm = setTimeout(push, 700); };
-        t.onchange = () => { clearTimeout(tm); push(); };
-        t.onblur = () => { const n = Math.round(+t.value); t.value = String(Number.isFinite(n) && t.value !== '' ? Math.max(lo, Math.min(hi, n)) : (cur != null ? cur : f.default)); };
-        if (Array.isArray(f.quick) && f.quick.length) {
-          const qk = el('div', 'chips pt-quick', row);
-          for (const n of f.quick.slice(0, 6)) { if (!Number.isFinite(+n)) continue; const c = el('button', 'chip', qk, String(+n)); c.type = 'button'; c.onclick = () => { t.value = String(+n); clearTimeout(tm); push(); buzz('tap'); }; }
-        }
-        G.ui.sets[f.key] = t;
-      } else if (Array.isArray(f.options)) {
-        el('label', 'lbl', row, L.clean(f.label, 80));
-        // (a choice with a short explanation: one quiet line under the buttons says what the picked one does)
-        const descs = f.options.some(o => Array.isArray(o) && o[2]) ? new Map(f.options.map(o => [String(o[0]), o[2] ? L.clean(o[2], 160) : ''])) : null;
-        let dEl = null, shownFor = null;
-        const showDesc = val => {
-          if (!dEl || String(val) === shownFor) return;
-          shownFor = String(val);
-          const t = descs.get(String(val)) || '';
-          dEl.textContent = t; dEl.hidden = !t;
-          dEl.style.animation = 'none'; void dEl.offsetWidth; dEl.style.animation = '';
-        };
-        const ctl = seg(f.options.map(o => [o[0], L.clean(o[1], 40)]), cur, val => { send({ k: 'set', key: f.key, v: val }); buzz('tap'); showDesc(val); }, row);
-        if (descs) { dEl = el('p', 'pt-desc', row); showDesc(cur); const set0 = ctl.set; ctl.set = val => { set0(val); showDesc(val); }; }
-        if (typeof f.desc === 'string' && f.desc) el('p', 'pt-desc', row, L.clean(f.desc, 160));
-        G.ui.sets[f.key] = ctl;
-      }
-    }
-    // the language of the whole game, on the TV and every phone: seven languages fully, and more that Chrome
-    // translates when the game runs in Chrome on a computer
-    const lr = el('div', '', box);
-    el('label', 'lbl', lr, S().lang);
-    const sel = el('select', 'input', lr);
-    for (const [code, name] of langsFull()) { const o = el('option', '', sel, name); o.value = code; }
-    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const o = el('option', '', og, name); o.value = code; } }
-    sel.value = [...langsFull(), ...langsMore()].some(x => x[0] === l.lang) ? l.lang : 'en';
-    sel.onchange = () => { send({ k: 'set', key: 'lang', v: sel.value }); buzz('tap'); };
-  }
 
   // a question
   function showQ() {
@@ -706,9 +1128,12 @@ button.pt-pl:active{transform:scale(.97)}
     const b = v.body;
     if (q.sec > 0 && !ex.hot) timerBar(b, q.sec);
     if (ex.hot) { const h = el('div', 'pill warn', b, '🤧 ' + S().yourTurn); h.style.cssText = 'display:block;text-align:center;font-size:18px;margin:0 auto 12px;width:max-content'; buzz('long'); }
-    const prompt = L.clean(q.prompt, 300);
+    // (Trivia: the question is only on the TV, so everyone looks up and the phone has the answers; a player who picked
+    // another language gets the question and its answers here, in theirs)
+    const mine = trOf(q);
+    const prompt = L.clean(mine && mine.p ? mine.p : q.prompt, 300);
     if (prompt && q.kind !== 'pin') { const p = el('div', 'pt-q', b, prompt); if (/^[\p{Extended_Pictographic}‍️\s]+$/u.test(prompt)) p.classList.add('emoji'); }
-    // (Trivia: the question is only on the TV, so everyone looks up; the phone has the answers)
+    else if (ex.tv && mine && mine.q) el('div', 'pt-q', b, L.clean(mine.q, 300));
     else if (ex.tv) el('div', 'pt-look', b, '📺 ' + S().look);
     G.ui.body = b;
     switch (q.kind) {
@@ -759,9 +1184,18 @@ button.pt-pl:active{transform:scale(.97)}
       }
     });
   }
+  // (the question in this phone's own language, when the TV sent it: { q, o: answers, p: prompt })
+  function trOf(q) {
+    const ex = (q && q.extra) || {};
+    if (!ex.tr || typeof ex.tr !== 'object' || G.lang === tvLangOf(G.lobby)) return null;
+    const t = ex.tr[G.lang];
+    return t && typeof t === 'object' ? t : null;
+  }
   function choiceQ(b, q) {
     const ex = q.extra || {};
-    const opts = (Array.isArray(q.opts) ? q.opts : []).slice(0, 6).map(o => L.clean(o, 140));
+    const mine = trOf(q);
+    const src = mine && Array.isArray(mine.o) && Array.isArray(q.opts) && mine.o.length === q.opts.length ? mine.o : q.opts;
+    const opts = (Array.isArray(src) ? src : []).slice(0, 6).map(o => L.clean(o, 140));
     const short = opts.every(o => [...o].length <= 4);
     const grid = el('div', 'pt-ans' + (ex.two || (opts.length <= 2 && !short) ? ' one' : ''), b);
     const own = ex.own && typeof ex.own === 'object' ? ex.own[G.id] : undefined;
@@ -1117,9 +1551,8 @@ button.pt-pl:active{transform:scale(.97)}
     if (G.host) {
       const again = btn(S().again, { kind: 'go', huge: true, full: true, icon: 'refresh' }, v.body, () => { send({ k: 'again' }); buzz('ok'); });
       again.style.marginTop = '16px';
-      const og = btn(S().otherGame, { kind: 'ghost', full: true }, v.body, () => pickGameSheet((G.lobby || {}).games || []));
-      og.style.marginTop = '10px';
-    } else el('p', 'pt-note', v.body, S().hostAgain);
+      pair(v.body, [[S().otherGame, () => pickGameSheet((G.lobby || {}).games || [])], [S().changeName, () => joinScreen(true)]]);
+    } else { el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]); }
   }
 
   // Bingo Night: this phone's card(s)
@@ -1250,7 +1683,7 @@ button.pt-pl:active{transform:scale(.97)}
     let lang = (i18 && i18.ok(store.get('party:lang', ''))) ? store.get('party:lang', '') : (i18 ? i18.pick() : 'en');
     let where = store.get('party:where', 'here');
     document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en';
-    const v = view('Party games', { tint: 'pink', back });
+    const v = view('Party games', { tint: 'sun', night: true, back });
     hero(v.body, 'Start a party game', 'Pick a game and where it shows. Everyone else joins by scanning the code on that screen: no app, no account.', { node: booPic('boo:party', 'float') });
     // 1. the game
     const c1 = el('div', 'card', v.body);
@@ -1306,7 +1739,7 @@ button.pt-pl:active{transform:scale(.97)}
       store.set('party:last', gameId); store.set('party:lang', lang); store.set('party:where', where);
       const code = L.shortCode(6);
       const r = await pc.ask('partyOpen', { game: gameId, lang, where, code }, { timeout: 20000 });
-      const w = view('Party games', { tint: 'pink' });
+      const w = view('Party games', { tint: 'sun', night: true });
       const h = hero(w.body, 'Opening the game...', where === 'here' ? 'It opens on ' + (pc.name || 'your computer') + '. This phone joins by itself in a moment.' : 'It opens on ' + (r && r.where ? r.where : 'the TV') + '. This phone joins by itself in a moment.', { node: booPic('boo:party', 'float') });
       const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
       try {
@@ -1330,7 +1763,7 @@ button.pt-pl:active{transform:scale(.97)}
     await loadI18n();
     if (G.lang === 'en' && I()) await useLang(I().pick());
     GO.say = T;
-    const v = view(T('Join a game'), { tint: 'pink', back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    const v = view(T('Join a game'), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: booPic('boo:party', 'float') });
     const card = el('div', 'card', v.body);
     const ci = input({ placeholder: 'ABC DEF', max: 7 });

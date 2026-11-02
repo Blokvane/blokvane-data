@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '7';
+  const VERSION = '8';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -183,6 +183,8 @@
   function view(title, o = {}) {
     app.textContent = '';
     app.className = 'app';
+    // (the party games have their own night look: on for their pages, off for every other one)
+    document.documentElement.classList.toggle('pt-night', !!o.night);
     document.documentElement.style.setProperty('--tint', o.tint ? `var(--${o.tint})` : 'var(--coral)');
     const top = el('header', 'top', app);
     if (o.back) {
@@ -593,11 +595,13 @@
       btn('Type a game code', { kind: 'tint', full: true, icon: 'game' }, c, async () => (await need('party'))('code', []));
     };
     if (!list.length) {
+      backCard(v.body);
       hero(v.body, 'Blokvane on your phone', 'Connect this phone to Blokvane on your computer: there, open Blokvane, then Connect, and scan the QR code with this phone\'s camera.');
       gameCard();
       foot();
       return;
     }
+    backCard(v.body);
     el('p', 'lead', v.body, 'Pick a computer');
     const ls = el('div', 'list', v.body);
     for (const p of list) {
@@ -613,9 +617,22 @@
     foot();
   }
 
+  // a party game this phone was in a little while ago (its page was closed by mistake, say): one tap goes back in, as
+  // the same player, with the same score
+  function backCard(parent) {
+    const b = store.get('party:back', null);
+    if (!b || typeof b.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(b.s) || !L.okId(b.tv) || !(Date.now() - (+b.at || 0) < 3 * 3600e3)) return null;
+    const c = el('div', 'card', parent);
+    c.style.borderColor = 'color-mix(in srgb, var(--pink) 45%, var(--line))';
+    el('h2', '', c, '🎉 ' + (typeof b.name === 'string' && b.name ? L.clean(b.name, 40) : 'Party game'));
+    el('p', 'muted', c, 'You were in this game a little while ago. Go back in as yourself, with your score.');
+    btn('Back to the game', { kind: 'go', full: true, icon: 'play' }, c, () => { location.hash = '#game.' + b.s + '.' + b.tv + (typeof b.lg === 'string' && /^[a-z]{2}$/.test(b.lg) ? '.' + b.lg : ''); });
+    return c;
+  }
+
   // ---------- off we go ----------
   window.GO = { el, icon, boo, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, say: null, get pc() { return pc; } };
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, say: null, get pc() { return pc; } };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });

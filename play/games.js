@@ -32,7 +32,12 @@
     }
     return cells;
   }
-  function showWho(K, cell, ids) { for (const id of ids.slice(0, 8)) { const p = K.player(id); if (!p) continue; const im = K.el('img', '', cell.who); im.src = K.avatarUrl(p); im.alt = ''; } }
+  // who picked an answer: their faces on it (up to 6, then "+12": with a full room, the rest are a number)
+  function showWho(K, cell, ids) {
+    const ps = ids.map(id => K.player(id)).filter(Boolean);
+    for (const p of ps.slice(0, ps.length > 7 ? 6 : 7)) { const im = K.el('img', '', cell.who); im.src = K.avatarUrl(p); im.alt = ''; }
+    if (ps.length > 7) K.el('span', 'more', cell.who, '+' + K.num(ps.length - 6));
+  }
   async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; f.append('⚡ ' + await K.tr('First: {name} ({s} s)', { name: '\u2068' + p.name + '\u2069', s: K.num(Math.round(ms / 100) / 10) })); return f; }
   // the first letter of an answer as a reader sees it (one whole letter in Hindi or Bengali, with its vowel sign)
   function firstLetter(text) {
@@ -83,6 +88,27 @@
   }
   // the categories a language has questions for
   const qCats = lang => (QI && QI.n && QI.n[lang] ? Object.keys(QI.n[lang]).map(Number).filter(c => PK.cats.some(x => x[0] === c)) : []);
+  // one question in another language (the same id in every language), for a player who reads that one
+  const qIdx = new Map();
+  function qOne(lang, id) {
+    const cat = +String(id).split('.')[0];
+    if (!cat || !qCats(lang).includes(cat)) return Promise.resolve(null);
+    const k = lang + '|' + cat;
+    if (!qIdx.has(k)) qIdx.set(k, qFile(lang, cat).then(l => (l ? new Map(l.map(x => [x.id, x])) : null)).then(m => { if (!m) qIdx.delete(k); return m; }));
+    return qIdx.get(k).then(m => (m && m.get(id)) || null);
+  }
+  // the question and its four answers (in the same order as on the TV) for each language the players picked for their
+  // phones: { fr: { q, o: [...] } }, or null when nobody needs it. A language that's slow to load waits 2 seconds at most.
+  async function qTrans(K, q, perm, ps) {
+    const langs = [...new Set(ps.map(p => K.langOf(p.id)).filter(l => l && l !== K.lang))];
+    if (!langs.length || !/^\d+\.\d+$/.test(String(q.id))) return null;
+    const out = {};
+    await Promise.all(langs.map(async lg => {
+      const x = await Promise.race([qOne(lg, q.id), new Promise(r => setTimeout(() => r(null), 2000))]);
+      if (x && x.w && x.w.length >= 3) { const src = [x.a, ...x.w]; out[lg] = { q: x.q, o: perm.map(j => src[j]) }; }
+    }));
+    return Object.keys(out).length ? out : null;
+  }
   // (if the files can't load: the few questions built into the game, remembered the same way)
   function qBuiltIn(LP) {
     const CAT = { Animals: 27, Food: 9, Science: 17, General: 9, Math: 19, Geography: 22, Music: 12 };
@@ -101,9 +127,11 @@
     const by = new Map();
     for (const q of pool) { const k = q.cat + '|' + q.d; if (!by.has(k)) by.set(k, []); by.get(k).push(q); }
     const cats = [...new Set(pool.map(q => q.cat))];
-    const used = new Set(), answers = new Set();
+    // (never twice in one game: the same question, the same words asked another way in another category, or the same
+    // answer)
+    const used = new Set(), answers = new Set(), texts = new Set();
     let lastCat = 0;
-    const ok = q => !used.has(q.id) && !answers.has(P.norm(q.a));
+    const ok = q => !used.has(q.id) && !answers.has(P.norm(q.a)) && !texts.has(P.norm(q.q));
     const has = (c, d) => (by.get(c + '|' + d) || []).some(ok);
     function from(c, d) {
       const list = (by.get(c + '|' + d) || []).filter(ok);
@@ -133,7 +161,7 @@
           if (q) break;
         }
         if (!q) return null;
-        used.add(q.id); answers.add(P.norm(q.a)); lastCat = q.cat;
+        used.add(q.id); answers.add(P.norm(q.a)); texts.add(P.norm(q.q)); lastCat = q.cat;
         return q;
       }
     };
@@ -178,10 +206,19 @@
     // (the question first; then the four answers pop in one by one)
     const cells = await answersGrid(K, main, o.opts, true, true);
     await tqLadder(K, body, o);
+    fitTq(body);
     async function showAnswers(gap) {
       for (const c of cells) { if (K.over()) break; c.node.classList.remove('pre'); c.node.classList.add('pop'); await K.sleep(gap); }
     }
     return { body, main, board, ring, inf, q, fx, cells, showAnswers };
+  }
+  // (everything on one screen: if the question screen is still too tall for this one, like four players on a short
+  // screen, the question and answers get smaller, then the scoreboard's rows and the clock)
+  function fitTq(body) {
+    const st = body.parentElement;
+    if (!st) return;
+    const over = () => st.scrollHeight > st.clientHeight + 1;
+    for (const k of ['packed', 'crowd', 'squeeze']) { if (!over()) return; body.classList.add(k); }
   }
   // before each question: which one it is, big, while its sound plays ("every 5 questions" on the 1st, 5th, 10th...,
   // "next question" on the others), with a ribbon for the last two
@@ -192,10 +229,11 @@
     const box = K.el('div', 'tqi-box' + (o.big ? ' big' : '') + (o.last ? ' fin' : ''), body);
     const hex = K.el('div', 'tqi-hex', box);
     K.el('b', '', hex, K.num(o.num));
-    K.el('div', 'tqi-t', box, await K.tr('Question {n} / {total}', { n: K.num(o.num), total: K.num(o.total) }));
+    // (a race has no last question: it goes on until someone gets there)
+    K.el('div', 'tqi-t', box, o.total ? await K.tr('Question {n} / {total}', { n: K.num(o.num), total: K.num(o.total) }) : await K.tr('Question {n}', { n: K.num(o.num) }));
     const cat = o.q.c ? await K.tr(o.q.c) : '', dif = DIFF[o.q.d] ? await K.tr(DIFF[o.q.d]) : '';
     if (cat || dif) K.el('div', 'tqi-c caps', box, [cat, dif].filter(Boolean).join(' · '));
-    if (o.last) K.el('div', 'tqi-rib', box, await K.tr(o.last === 1 ? 'Last question!' : 'Last 2 questions!'));
+    if (o.last) K.el('div', 'tqi-rib', box, await K.tr(o.race ? 'One more right answer wins!' : o.last === 1 ? 'Last question!' : 'Last 2 questions!'));
   }
   // which third of the game a question is in (its tune, and its level in an "easy to hard" game): for 15 questions
   // 1-5, 6-10 and 11-15; for any other number, three parts as equal as they can be
@@ -247,6 +285,9 @@
     // answered: who has answered this question; res (after it): right, miss or out for each player
     const draw = (answered, res) => {
       const ps = K.players().slice().sort((a, c) => (c.score - a.score) || ((a.out ? 1 : 0) - (c.out ? 1 : 0)));
+      // (someone who left is off the board; someone who joined is on it)
+      for (const [id, r] of rows) if (!ps.some(p => p.id === id)) { r.remove(); rows.delete(id); }
+      if (!few) list.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(ps.length / cols)) + ', auto)';
       for (const p of ps) {
         const r = row(p);
         list.appendChild(r);
@@ -271,6 +312,23 @@
     draw(new Set());
     return { node: b, draw };
   }
+  // a race's ladder: the finish line on top, and each player's face on the step they've reached (their right answers
+  // so far). Up to 10 steps: racing to 15 or 20, a step is two right answers.
+  function raceLadder(K, lad, target) {
+    const box = K.el('div', 'tq-steps race', lad);
+    const per = target > 10 ? 2 : 1, rows = Math.ceil(target / per);
+    const ps = K.players().slice().sort((a, b) => b.right - a.right);
+    const lead = ps.length ? ps[0].right : 0;
+    for (let k = rows; k >= 1; k--) {
+      const hi = Math.min(target, k * per), lo = (k - 1) * per + 1;
+      const here = ps.filter(p => p.right >= lo && p.right <= hi);
+      const r = K.el('div', (k === rows ? 'mile fin' : '') + (lead >= lo && lead <= hi ? ' now' : lead > hi ? ' past' : ''), box);
+      K.el('b', '', r, (k === rows ? '🏁 ' : '') + K.num(hi));
+      const f = K.el('span', 'faces', r);
+      for (const p of here.slice(0, here.length > 4 ? 3 : 4)) { const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; }
+      if (here.length > 4) K.el('i', '', f, '+' + K.num(here.length - 3));
+    }
+  }
   async function tqLadder(K, parent, o) {
     const lad = K.el('div', 'tq-lad', parent);
     // the helpers (each player has each one once, on their phone): asking everyone waits until someone is out
@@ -280,6 +338,7 @@
       for (const [t, off] of [['50:50', false], ['Hint', false], ['For me', false], ['Ask all', !someoneOut]]) K.el('span', off ? 'off' : '', life, await K.tr(t));
       K.el('div', 'tq-note', lad, await K.tr(someoneOut ? 'Each helper works once.' : 'Ask everyone works once someone is out.'));
     }
+    if (o.race) return raceLadder(K, lad, o.race);
     const steps = K.el('div', 'tq-steps', lad);
     const n = o.qs.length, cur = o.i;
     // (up to 15 steps show: with more questions, the ones around this one)
@@ -308,96 +367,122 @@
     // third of the game and one for the last two questions, "correct" and "wrong", time's up, between questions, the winner
     sounds: ['theme', 'every5', 'next', 'easy', 'medium', 'hard', 'last2', 'correct', 'wrong', 'between', 'timesup', 'win'],
     credit: 'Questions written by Blokvane.',
-    // (the questions start loading in the lobby, while people join)
+    // (the questions start loading in the lobby, while people join; and in a player's own language once they pick it)
     prep: lang => { for (const c of qCats(lang)) qFile(lang, c); },
+    mlang: true,
+    langPrep: lang => { for (const c of qCats(lang)) qFile(lang, c); },
+    // (a race is everyone for themselves)
+    teamsOn: s => s.mode !== 'race',
+    // the host's phone sets the game up in these steps, then a last one to check it all and start
+    steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'Questions', keys: ['count', 'raceTo', 'level'] }, { t: 'Category', keys: ['cat', 'wheel'] },
+      { t: 'Timing', s: 'Time', keys: ['sec', 'next', 'wait'] }, { t: 'Extras', keys: ['speed', 'teams', 'teamN'] }],
     rules: ['A question shows on the TV with four answers.', 'Tap your answer on your phone before time runs out.', 'Each helper works once: remove two, a hint, answer it for me, ask everyone.'],
     // the TV's lobby explains the mode the host picked, and changes as soon as they pick another
     spot: s => {
       const m = TRIVIA_MODES.find(x => x[0] === s.mode) || TRIVIA_MODES[0];
+      const race = m[0] === 'race';
       const help = ['💡', '4 helpers on your phone, each works once'], allPlay = ['🙌', 'Nobody goes out: everyone plays to the end'];
+      const teams = !!s.teams && !race;
       // (three short rules that add to the mode's own line; a tie for first ends with one number question, without teams)
-      const tie = s.teams ? allPlay : ['🤝', 'A tie for first? A number question decides'];
+      const tie = teams ? allPlay : ['🤝', 'A tie for first? A number question decides'];
       const bullets = {
         most: [s.speed ? ['⚡', 'Faster right answers score more'] : ['✅', 'Every right answer scores a point'], help, tie],
         knockout: [help, ['🤝', 'If everyone misses, nobody goes out'], ['🗳️', 'Players who are out help with Ask everyone']],
         lives: [['❤️', 'Everyone starts with 3 hearts'], ['💔', 'Each wrong answer costs a heart'], ['🏆', 'The last one with a heart left wins']],
-        race: [['🎯', 'First to {n} right answers wins'], help, allPlay],
+        race: [['🎯', 'First to {n} right answers wins'], ['⚡', 'Two get there at once? The faster answer wins'], help],
         first: [allPlay, ['🎯', 'A wrong answer costs nothing'], help],
         family: [['🔊', 'The TV reads each question out loud'], ['🧸', 'Easy questions, great with kids'], allPlay]
       }[m[0]];
       const family = m[0] === 'family';
       const cat = s.wheel ? 'Category wheel' : catName(+s.cat) || 'Everything (mixed)';
-      const facts = [['❓', '{n} questions', { n: family ? 10 : +s.count }], family || !+s.sec ? ['⏳', 'No timer'] : ['⏱️', '{n} s', { n: +s.sec }], ['🗂️', cat]];
+      const facts = [race ? ['🎯', 'Race to {n}', { n: +s.raceTo }] : ['❓', '{n} questions', { n: family ? 10 : +s.count }], family || !+s.sec ? ['⏳', 'No timer'] : ['⏱️', '{n} s', { n: +s.sec }], ['🗂️', cat]];
       if (!family && ['easy', 'medium', 'hard'].includes(s.level)) facts.splice(1, 0, ['🎯', DIFF[s.level]]);
-      if (s.teams) facts.push(['👥', 'Teams']);
+      if (teams) facts.push(['👥', 'Teams']);
       return { key: m[0], icon: { most: '🏆', knockout: '⚔️', lives: '❤️', race: '🏁', first: '⚡', family: '🏡' }[m[0]], label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: +s.raceTo }, facts };
     },
     // (the categories this language has questions for: all of them)
     langOptions: { cat: (lang, opts) => { const have = qCats(lang); return opts.filter(o => o[0] === 0 || (have.length ? have.includes(o[0]) : BANK_CATS.has(o[0]))); } },
     settings: [
-      { key: 'mode', label: 'Game mode', type: 'seg', options: TRIVIA_MODES, default: 'most' },
-      { key: 'count', label: 'Questions', type: 'seg', options: [[10, '10'], [15, '15'], [20, '20'], [30, '30']], default: 15 },
+      { key: 'mode', label: 'Game mode', type: 'seg', look: 'list', options: TRIVIA_MODES, default: 'most' },
+      // (a race has no number of questions: it goes on until someone gets there; Family mode always has 10)
+      { key: 'count', label: 'How many questions', type: 'seg', options: [[10, '10'], [15, '15'], [20, '20'], [30, '30']], default: 15, when: ['mode', ['most', 'knockout', 'lives', 'first']] },
+      { key: 'raceTo', label: 'Race to', type: 'seg', options: [[5, '5'], [10, '10'], [15, '15'], [20, '20']], default: 10, when: ['mode', 'race'], desc: 'The first player to get this many right answers wins. The questions keep coming until someone does.' },
       { key: 'level', label: 'Difficulty', type: 'seg', options: [['mix', 'Easy to hard', 'Starts easy and gets harder as you go.'], ['easy', 'Easy', 'Only easy questions. Great with kids.'],
         ['medium', 'Medium', 'Only medium questions.'], ['hard', 'Hard', 'Only hard questions, for quiz fans.']], default: 'mix', when: ['mode', '!family'] },
-      { key: 'raceTo', label: 'Race to', type: 'seg', options: [[5, '5'], [10, '10'], [20, '20']], default: 10, when: ['mode', 'race'] },
-      { key: 'cat', label: 'Category', type: 'seg', options: PK.cats.map(c => [c[0], c[1]]), default: 0 },
-      { key: 'wheel', label: 'Category wheel (a new category every 5 questions)', type: 'toggle', default: false },
-      { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s'], [0, 'No limit', 'No clock: each question waits until everyone answers. The host can show the answer any time.']], default: 20 },
+      { key: 'cat', label: 'Pick a category', type: 'seg', options: PK.cats.map(c => [c[0], c[1]]), default: 0 },
+      { key: 'wheel', label: 'Category wheel', type: 'toggle', default: false, desc: 'A new category every 5 questions.' },
+      { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s'], [0, 'No limit', 'No clock: each question waits until everyone answers. The host can show the answer any time.']], default: 20, when: ['mode', '!family'] },
       // (after each answer: the next question comes by itself after a wait the host picks, or when the host taps for it)
       { key: 'next', label: 'Next question', type: 'seg', options: [['auto', 'Automatic', 'The next question starts by itself after a short wait.'], ['host', 'The host starts it', 'The host taps Next question on their phone when everyone is ready.']], default: 'auto' },
       { key: 'wait', label: 'Wait before the next question', type: 'number', min: 1, max: 120, quick: [3, 5, 10, 15], unit: 'seconds', default: 5, when: ['next', 'auto'] },
-      { key: 'speed', label: 'Speed points (faster answers score more)', type: 'toggle', default: false },
-      { key: 'teams', label: 'Teams', type: 'toggle', default: false, desc: 'Phones join a color team, and each team\'s points are added up.' },
-      { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: ['teams', true] }
+      { key: 'speed', label: 'Speed points', type: 'toggle', default: false, desc: 'Faster right answers score more' },
+      { key: 'teams', label: 'Teams', type: 'toggle', default: false, desc: 'Phones join a color team, and each team\'s points are added up.', when: ['mode', '!race'] },
+      { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: [['teams', true], ['mode', '!race']] }
     ],
     async tv(K) {
-      const s = K.settings, family = s.mode === 'family';
-      const n = family ? 10 : +s.count;
+      const s = K.settings, family = s.mode === 'family', race = s.mode === 'race';
+      // (a race goes on until someone gets there: this many questions only stops a race nobody can finish)
+      const target = Math.max(1, +s.raceTo || 10);
+      const n = family ? 10 : race ? target * 6 : +s.count;
       const LP = K.packs;
       // the questions: Blokvane's own, written in this language, picked at random for every game (easy, then medium,
-      // then hard; or one level only), the ones this screen hasn't asked yet first
+      // then hard; or one level only), the ones this screen hasn't asked yet first. Never the same one twice in a game.
       const cat = s.wheel ? 0 : +s.cat;
       const level = family ? 'easy' : LV.includes(s.level) ? s.level : 'mix';
       const have = qCats(K.lang);
       let pool = (await Promise.all((cat && have.includes(cat) ? [cat] : have).map(c => qFile(K.lang, c)))).flat().filter(Boolean);
       if (!pool.length) pool = qBuiltIn(LP);
       const pk = qPicker(pool);
-      const levels = qLevels(n, level);
-      let qs = levels.map(d => pk.take(d, cat));
+      // (a race gets harder as the leader gets closer: easy for the first third of the way, then medium, then hard)
+      const lead = () => Math.max(0, ...K.players().map(p => p.right));
+      const raceStage = () => { const r = lead(); return r < target / 3 ? 'easy' : r < 2 * target / 3 ? 'medium' : 'hard'; };
+      const levels = race ? [] : qLevels(n, level);
+      let qs = race ? [] : levels.map(d => pk.take(d, cat));
       if (qs.indexOf(null) >= 0) qs = qs.slice(0, qs.indexOf(null));
+      const total = race ? 0 : qs.length;
       const wheelCats = P.shuffle(PK.cats.filter(c => c[0] && pool.some(q => q.cat === c[0]))).slice(0, 8);
+      let wheelCat = 0, winner = null;
       const sec = family ? 0 : +s.sec;
-      for (let i = 0; i < qs.length; i++) {
-        if (K.over()) break;
+      for (let i = 0; i < (race ? n : qs.length); i++) {
+        if (K.over() || winner) break;
         const live = K.alive();
         if ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && live.length <= 1) break;
-        if (s.mode === 'race' && K.players().some(p => p.right >= +s.raceTo)) break;
         // the category wheel: every 5 questions the TV spins for the next ones
         if (s.wheel && i >= 5 && (i - 5) % 5 === 0) {
           const wc = await wheel(K, wheelCats);
+          wheelCat = wc[0];
           for (let j = i; j < Math.min(i + 5, qs.length); j++) qs[j] = pk.take(levels[j], wc[0]) || qs[j];
         }
+        if (race) { qs[i] = pk.take(level === 'mix' ? raceStage() : level, wheelCat || cat); if (!qs[i]) break; }
         const q = qs[i];
         markAsked(q.id);
-        const opts = P.shuffle([q.a, ...q.w]).slice(0, 4);
-        const ok = opts.indexOf(q.a);
-        // (the words are translated before the clock starts)
+        // (the four answers in a new order every time: the same order on the TV and on every phone, in every language)
+        const perm = P.shuffle([0, 1, 2, 3]);
+        const src = [q.a, ...q.w];
+        const opts = perm.map(j => src[j]);
+        const ok = perm.indexOf(0);
+        // (the words are translated before the clock starts; players who picked their own language get the question
+        // and its answers in it, on their phone)
         const tq = await K.tr(q.q), tOpts = await Promise.all(opts.map(o => K.tr(o)));
+        const trs = await qTrans(K, q, perm, live);
+        const rightIn = id => { const t = trs && trs[K.langOf(id)]; return t ? t.o[ok] : tOpts[ok]; };
         // 1. its sound first ("every 5 questions" on the 1st, 5th, 10th..., "next question" on the others), while the
         // TV shows which question it is and the phones say "look at the TV"
-        const num = i + 1, toGo = qs.length - i, big = num === 1 || num % 5 === 0, loud = K.snd.on();
+        const num = i + 1, big = num === 1 || num % 5 === 0, loud = K.snd.on();
+        // (the last two questions; in a race, when someone needs just one more right answer)
+        const lastN = race ? (lead() >= target - 1 ? 1 : 0) : (qs.length - i <= 2 ? qs.length - i : 0);
         K.wait();
         K.snd.music(null, { fadeOut: 0.8 });
         K.snd.sting(big ? 'every5' : 'next');
-        await tqIntro(K, { num, total: qs.length, q, big, last: toGo <= 2 ? toGo : 0 });
+        await tqIntro(K, { num, total, q, big, last: lastN, race });
         await K.sleep(loud ? (big ? 5000 : 4700) : 1800);
         if (K.over()) break;
         // 2. the question, then its four answers one by one. Its tune: easy, medium or hard for the first, middle and
-        // last third of the game, the "last two questions" tune for the last two (softer in Family mode, under the voice
-        // that reads the question)
-        const v = await tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, live, goal: s.mode === 'race' ? +s.raceTo : qs.length });
+        // last third of the game (a race: of the way to the finish), the "last two questions" tune at the end (softer in
+        // Family mode, under the voice that reads the question)
+        const v = await tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, live, goal: race ? target : qs.length, race: race ? target : 0 });
         const qt = v.q, cells = v.cells;
-        K.snd.music(toGo <= 2 ? 'last2' : stageOf(i, qs.length), { fadeIn: 1.2, vol: family ? 0.4 : 1 });
+        K.snd.music(lastN ? 'last2' : race ? raceStage() : stageOf(i, qs.length), { fadeIn: 1.2, vol: family ? 0.4 : 1 });
         if (family) K.speak(qt.textContent);
         await K.sleep(family ? 2600 : Math.min(2600, 1100 + [...tq].length * 14));
         await v.showAnswers(family ? 700 : 520);
@@ -406,36 +491,52 @@
         if (v.ring) v.ring.go();
         const answered = new Set();
         let qn = -1;
+        // (someone leaves, comes back or joins: the scoreboard shows who's playing now)
+        const offPlayers = K.onPlayers(() => v.board.draw(answered));
         // the helpers (each player, each once): remove two, a hint, answer it for me, ask everyone (the players who are out vote)
         const outs = () => K.players().filter(p => p.out);
         const offHelp = K.on('help', async (m, p) => {
           if (+m.n !== qn || p.out || p.helpers[m.h] || !['fifty', 'hint', 'auto', 'ask'].includes(m.h)) return;
-          if (m.h === 'ask' && !outs().length) { K.sayTo(p.id, { k: 'helped', n: qn, h: 'ask', no: true, note: await K.tr('Ask everyone works once someone is out.') }); return; }
+          const lg = K.langOf(p.id), mine = trs && lg ? trs[lg] : null;
+          if (m.h === 'ask' && !outs().length) { K.sayTo(p.id, { k: 'helped', n: qn, h: 'ask', no: true, note: await K.trFor(lg, 'Ask everyone works once someone is out.') }); return; }
           p.helpers[m.h] = true;
           if (m.h === 'fifty') { const wrong = P.shuffle([0, 1, 2, 3].filter(x => x !== ok && x < opts.length)).slice(0, 2); K.sayTo(p.id, { k: 'helped', n: qn, h: 'fifty', hide: wrong }); }
-          else if (m.h === 'hint') K.sayTo(p.id, { k: 'helped', n: qn, h: 'hint', text: await hint(K, q, opts[ok], tOpts[ok]) });
+          else if (m.h === 'hint') K.sayTo(p.id, { k: 'helped', n: qn, h: 'hint', text: await hint(K, q, opts[ok], mine ? mine.o[ok] : tOpts[ok], mine ? lg : '') });
           else if (m.h === 'auto') K.sayTo(p.id, { k: 'helped', n: qn, h: 'auto', pick: ok });
           else if (m.h === 'ask') {
-            const votes = await K.ask({ kind: 'choice', prompt: await K.tr('Help {name}: which answer is right?', { name: p.name }), opts: tOpts, sec: 10, who: outs().map(x => x.id), extra: { letters: true, helpOnly: true } });
+            // (the players who vote see it in their own language too)
+            let vtr = null;
+            for (const x of outs()) {
+              const xl = K.langOf(x.id);
+              if (xl && trs && trs[xl] && !(vtr && vtr[xl])) { vtr = vtr || {}; vtr[xl] = Object.assign({}, trs[xl], { p: await K.trFor(xl, 'Help {name}: which answer is right?', { name: p.name }) }); }
+            }
+            const ex = { letters: true, helpOnly: true };
+            if (vtr) ex.tr = vtr;
+            const votes = await K.ask({ kind: 'choice', prompt: await K.tr('Help {name}: which answer is right?', { name: p.name }), opts: tOpts, sec: 10, who: outs().map(x => x.id), extra: ex });
             const tally = opts.map((_, j) => [...votes.values()].filter(a => +a.v === j).length);
             K.sayTo(p.id, { k: 'helped', n: qn, h: 'ask', tally });
           }
         });
         // (no time limit: the question stays open until everyone answers, or the host shows the answer from their phone.
-        // The phones get the four answers, not the question: that one is on the TV.)
+        // A phone that leaves meanwhile doesn't hold it up. The phones get the four answers, not the question: that one
+        // is on the TV, unless a player picked another language.)
         const open = !family && !sec;
-        const asking = K.ask({ kind: 'choice', prompt: '', opts: tOpts, sec, open, extra: { letters: true, helpers: !family, tv: 1 }, onAns: id => { answered.add(id); v.board.draw(answered); } });
+        const extra = { letters: true, helpers: !family, tv: 1 };
+        if (trs) extra.tr = trs;
+        const asking = K.ask({ kind: 'choice', prompt: '', opts: tOpts, sec, open, extra, onAns: id => { answered.add(id); v.board.draw(answered); } });
         qn = K.qn();
         const stopReveal = open ? hostReveal(K, qn) : null;
         // (the clock hits zero with answers missing: the tune stops and "time's up" plays)
-        let closed = false, timeUp = false;
-        const tuT = sec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; timeUp = true; K.snd.music(null, { fadeOut: 0.25 }); K.snd.sting('timesup'); }, sec * 1000) : 0;
+        let closed = false;
+        const tuT = sec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; K.snd.music(null, { fadeOut: 0.25 }); K.snd.sting('timesup'); }, sec * 1000) : 0;
         const answers = await asking;
         closed = true; clearTimeout(tuT);
         if (stopReveal) stopReveal();
         offHelp();
         if (v.ring) v.ring.stop();
         if (v.inf) v.inf.classList.add('done');
+        // (a player who left during the question isn't counted: no point, and nothing lost)
+        const inPlay = live.filter(p => answers.has(p.id) || !p.away);
         // 4. the sound first, then the right answer: "correct" when anyone got it, "wrong" when everyone playing missed
         const rightN = [...answers.values()].filter(a => +a.v === ok).length;
         K.snd.music(null, { fadeOut: 0.3 });
@@ -445,10 +546,10 @@
         for (let j = 0; j < opts.length; j++) showWho(K, cells[j], [...answers].filter(([, a]) => +a.v === j).map(([id]) => id));
         let first = null;
         // (everyone still in got it wrong at once: nobody goes out or loses a life this time)
-        const spare = (s.mode === 'knockout' || s.mode === 'lives') && live.length > 1 && !live.some(p => answers.has(p.id) && +answers.get(p.id).v === ok);
+        const spare = (s.mode === 'knockout' || s.mode === 'lives') && inPlay.length > 1 && !inPlay.some(p => answers.has(p.id) && +answers.get(p.id).v === ok);
         if (spare) K.el('div', 'pill', v.fx, await K.tr('Everyone missed that one, so nobody goes out.'));
         const res = new Map();
-        for (const p of live) {
+        for (const p of inPlay) {
           const a = answers.get(p.id);
           const good = a && +a.v === ok;
           let pts = 0;
@@ -461,15 +562,22 @@
             if (s.mode === 'knockout' && !spare) p.out = true;
             if (s.mode === 'lives' && !spare) { p.lives--; if (p.lives <= 0) p.out = true; }
           }
-          K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: tOpts[ok] });
+          K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: rightIn(p.id) });
           res.set(p.id, good ? 'right' : p.out ? 'out' : 'miss');
         }
-        if (first) { if (s.mode === 'first') { first.p.score += 1; K.result(first.p.id, { ok: true, pts: 1, score: first.p.score, first: true, right: tOpts[ok] }); } await firstBadge(K, v.fx, first.p, first.ms); }
-        K.boo(rightN >= live.length / 2 ? 'happy' : 'sad');
+        if (first) { if (s.mode === 'first') { first.p.score += 1; K.result(first.p.id, { ok: true, pts: 1, score: first.p.score, first: true, right: rightIn(first.p.id) }); } await firstBadge(K, v.fx, first.p, first.ms); }
+        // (a race: whoever got there wins; two on the same question, the faster answer)
+        if (race) {
+          const msOf = p => (answers.get(p.id) || { ms: 1e9 }).ms;
+          const done = inPlay.filter(p => p.right >= target).sort((a, b) => msOf(a) - msOf(b));
+          if (done.length) { winner = done[0]; K.el('div', 'pill', v.fx, '🏁 ' + await K.tr('{name} crossed the finish line!', { name: '⁨' + winner.name + '⁩' })); }
+        }
+        K.boo(rightN >= inPlay.length / 2 ? 'happy' : 'sad');
         v.board.draw(null, res);
+        offPlayers();
         // the next question: by itself after the wait the host picked, or when the host taps Next question on their phone
         // (after the last question, or once the game is decided, the winner comes after a short pause)
-        const last = i >= qs.length - 1 || ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && K.alive().length <= 1) || (s.mode === 'race' && K.players().some(p => p.right >= +s.raceTo));
+        const last = !!winner || (!race && i >= qs.length - 1) || (race && i >= n - 1) || ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && K.alive().length <= 1);
         // (between questions, while the answer shows and the next one is on its way, its own tune plays, once the
         // "correct" or "wrong" sound is over; it fades out when the next question's sound starts. After the last one it
         // plays until the winner's fanfare.)
@@ -478,9 +586,10 @@
         else if (s.next === 'host') await hostNext(K, v, qn);
         else await nextIn(K, v, Math.max(1, Math.min(120, Math.round(+s.wait) || 5)));
       }
-      // a tie for first: one number question, the closest guess wins
+      // the winner first: a race's, or the most points (and a tie for first: one number question, the closest guess wins)
       let ps = K.players().slice().sort((a, b) => b.score - a.score);
-      if (!s.teams && ps.length > 1 && ps[0].score === ps[1].score && !K.over()) {
+      if (race) ps = K.players().slice().sort((a, b) => (b === winner) - (a === winner) || b.right - a.right || b.score - a.score);
+      if (!winner && !K.teamsOn() && ps.length > 1 && ps[0].score === ps[1].score && !K.over()) {
         const tied = ps.filter(p => p.score === ps[0].score);
         const [qq, real] = P.pick(LP ? LP.numbers : PK.numbers);
         // (the same show as a question: its sound first, then the question on the TV, then the clock; the "last two
@@ -538,16 +647,19 @@
     const label = await K.tr('Next question');
     let go = false;
     const off = K.on('next', (m, p) => { if (+m.n === n && K.isHost(p.id)) go = true; });
+    // (if the host's phone is gone, the host passes to someone who's here, and their phone gets the button)
+    K.hostWait(true);
     for (let k = 0; !go && !K.over(); k++) {
       if (k % 8 === 0) { const h = K.players().find(p => K.isHost(p.id)); if (h) K.sayTo(h.id, { k: 'nextq', n, label }); }
       await K.sleep(500);
     }
+    K.hostWait(false);
     off();
   }
   // a hint: Chrome's built-in AI on computers that have it (English games), or simply the first letter (and how many
   // words, where words have spaces between them)
-  async function hint(K, q, answer, shown) {
-    if (K.lang === 'en') {
+  async function hint(K, q, answer, shown, lg) {
+    if (K.lang === 'en' && !lg) {
       try {
         const LM = self.LanguageModel || (self.ai && self.ai.languageModel);
         if (LM && (!LM.availability || (await LM.availability()) === 'available')) {
@@ -557,9 +669,11 @@
         }
       } catch (e) {}
     }
+    // (for a player who reads another language: in theirs, from the answer in theirs)
     const a = String(shown || answer).trim();
-    const words = K.lang === 'zh' ? 1 : a.split(/\s+/).length;
-    return K.tr(words > 1 ? 'It starts with "{c}" and has {n} words.' : 'It starts with "{c}".', { c: firstLetter(a), n: words });
+    const words = (lg || K.lang) === 'zh' ? 1 : a.split(/\s+/).length;
+    const t = words > 1 ? 'It starts with "{c}" and has {n} words.' : 'It starts with "{c}".';
+    return lg ? K.trFor(lg, t, { c: firstLetter(a), n: words }) : K.tr(t, { c: firstLetter(a), n: words });
   }
   async function wheel(K, cats) {
     const v = await qView(K, { title: await K.tr('Category wheel'), sub: await K.tr('Spinning for the next round...'), board: false });

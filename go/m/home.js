@@ -59,6 +59,8 @@ GO.def('home', (pair) => {
     hb.type = 'button'; hb.title = 'What each button does'; hb.setAttribute('aria-label', 'What each button does');
     hb.appendChild(icon('help'));
     hb.onclick = () => helpSheet();
+    // (a party game this phone was in a little while ago: one tap goes back in)
+    if (GO.backCard) GO.backCard(v.body);
     const perms = pc.perms();
     const list = TILES.filter(t => !perms || perms.includes(t.perm));
     const normal = list.filter(t => !WIDE.has(t.id));
