@@ -640,5 +640,8 @@ BVI18N.add("es", {
 "{n} correct": "Aciertos: {n}",
 "Click anywhere on this screen to turn on the sound": "Haz clic en cualquier parte de la pantalla para activar el sonido",
 "Last question!": "¡Última pregunta!",
-"Last 2 questions!": "¡Las 2 últimas preguntas!"
+"Last 2 questions!": "¡Las 2 últimas preguntas!",
+"Screen size": "Tamaño de pantalla",
+"Smaller": "Más pequeño",
+"Bigger": "Más grande"
 });

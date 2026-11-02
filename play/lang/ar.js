@@ -640,5 +640,8 @@ BVI18N.add("ar", {
 "{n} correct": "الإجابات الصحيحة: {n}",
 "Click anywhere on this screen to turn on the sound": "انقر في أي مكان على الشاشة لتشغيل الصوت",
 "Last question!": "السؤال الأخير!",
-"Last 2 questions!": "آخر سؤالين!"
+"Last 2 questions!": "آخر سؤالين!",
+"Screen size": "حجم الشاشة",
+"Smaller": "أصغر",
+"Bigger": "أكبر"
 });

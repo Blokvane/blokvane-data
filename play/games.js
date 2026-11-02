@@ -778,7 +778,7 @@
         const ps = K.players();
         let v = await qView(K, { title: await K.tr(last ? 'Round {n} / {total} · double points!' : 'Round {n} / {total}', { n: r + 1, total: qs.length }), sec: s.kids ? 0 : 45 });
         K.el('div', 'question', v.main, await K.tr(q.q));
-        K.el('div', 'muted', v.main, await K.tr('Write a fake answer on your phone that sounds real.')).style.fontSize = '3vh';
+        K.el('div', 'muted', v.main, await K.tr('Write a fake answer on your phone that sounds real.')).style.fontSize = 'calc(3 * var(--u))';
         const fakes = await K.ask(s.kids ? { kind: 'choice', prompt: await K.tr('Pick a fake answer'), opts: await Promise.all(q.w.map(x => K.tr(x))), sec: 0 }
           : { kind: 'text', prompt: await K.tr(q.q), sec: 45, extra: { max: 40, suggest: await Promise.all(q.w.map(x => K.tr(x))), place: await K.tr('A believable fake answer') } });
         // the fakes (filtered, never the real answer, no doubles) mixed with the real one
@@ -816,7 +816,7 @@
             const o = mix[j];
             if (!o.by || !o.by.length) continue;
             const fooled = [...votes].filter(([, a]) => +a.v === j).map(([id]) => (K.player(id) || {}).name).filter(Boolean);
-            if (fooled.length) K.el('div', 'pill', cells[j].node, await K.tr('{a} fooled {b}', { a: o.by.map(id => (K.player(id) || {}).name).join(', '), b: fooled.join(', ') })).style.cssText = 'position:absolute;bottom:-1.6vh;inset-inline-start:2vh;font-size:2vh;background:#000a';
+            if (fooled.length) K.el('div', 'pill', cells[j].node, await K.tr('{a} fooled {b}', { a: o.by.map(id => (K.player(id) || {}).name).join(', '), b: fooled.join(', ') })).style.cssText = 'position:absolute;bottom:calc(-1.6 * var(--u));inset-inline-start:calc(2 * var(--u));font-size:calc(2 * var(--u));background:#000a';
           }
         }
         K.boo('laugh');
@@ -872,7 +872,7 @@
         const until = Date.now() + fuse;
         const v = await qView(K, { title: await K.tr('Hot Boo'), sub: await K.tr('Pass him before he sneezes!'), lives: true });
         const hot = K.el('div', 'center grow', v.main);
-        const face = K.el('img', '', hot); face.alt = ''; face.style.cssText = 'width:34vh;height:34vh;transition:filter .5s';
+        const face = K.el('img', '', hot); face.alt = ''; face.style.cssText = 'width:calc(34 * var(--u));height:calc(34 * var(--u));transition:filter .5s';
         face.src = P.booUri('boo:scary');
         const who = K.el('div', 'question', hot, '');
         const tick = setInterval(() => { const left = (until - Date.now()) / fuse; face.style.filter = `hue-rotate(${-(1 - left) * 40}deg) saturate(${1 + (1 - left) * 2})`; face.animate([{ transform: 'rotate(-4deg)' }, { transform: 'rotate(4deg)' }], { duration: Math.max(120, 600 * left), iterations: 1 }); P.sfx('tick'); }, 900);
@@ -942,10 +942,10 @@
         if (!says && mv[0] === 'still') mv = P.pick(pool.filter(m => m[0] !== 'still'));
         const v = await qView(K, { title: await K.tr('Round {n}', { n: r + 1 }), board: true });
         const big = K.el('div', 'center grow', v.main);
-        K.el('div', 'big', big, mv[3]).style.fontSize = '18vh';
+        K.el('div', 'big', big, mv[3]).style.fontSize = 'calc(18 * var(--u))';
         const line = await K.tr(says ? mv[2] : mv[1]);
         K.el('div', 'question', big, line);
-        const face = K.el('img', '', big); face.alt = ''; face.src = P.booUri('boo:hi'); face.style.cssText = 'width:16vh;height:16vh';
+        const face = K.el('img', '', big); face.alt = ''; face.src = P.booUri('boo:hi'); face.style.cssText = 'width:calc(16 * var(--u));height:calc(16 * var(--u))';
         K.speak(line);
         const got = await K.ask({ kind: 'move', prompt: line, sec: Math.ceil(sec), extra: { taps: !!s.taps } });
         const caught = [];
@@ -996,7 +996,7 @@
         const it = pool[r];
         const v = await qView(K, { title: await K.tr('Riddle {n}', { n: r + 1 }), sub: await K.tr(PACK[it.pack] || it.pack), sec });
         const big = K.el('div', 'center', v.main);
-        const em = K.el('div', 'big', big, it.e); em.style.fontSize = '20vh';
+        const em = K.el('div', 'big', big, it.e); em.style.fontSize = 'calc(20 * var(--u))';
         em.animate([{ transform: 'scale(.4) rotate(-10deg)', opacity: 0 }, { transform: 'scale(1.1)', opacity: 1 }, { transform: 'scale(1)' }], { duration: 700, easing: 'cubic-bezier(.2,1.4,.4,1)' });
         const ansT = await K.tr(it.a);
         let opts = [], ok = -1;
@@ -1037,7 +1037,7 @@
           if (!e || !ans || !/\p{Extended_Pictographic}/u.test(e)) continue;
           const others = K.players().filter(p => p.id !== author);
           const v2 = await qView(K, { title: await K.tr('A riddle by {name}', { name: (K.player(author) || {}).name }), sec: 25 });
-          K.el('div', 'big', K.el('div', 'center', v2.main), e).style.fontSize = '18vh';
+          K.el('div', 'big', K.el('div', 'center', v2.main), e).style.fontSize = 'calc(18 * var(--u))';
           const g = await K.ask({ kind: 'text', prompt: e, sec: 25, who: others.map(p => p.id), extra: { max: 60 } });
           const right = [...g].filter(([, x]) => P.close(x.v, ans)).map(([id]) => id);
           for (const id of right) { const p = K.player(id); p.score += 50; K.result(id, { ok: true, pts: 50, score: p.score, right: ans }); }
@@ -1208,7 +1208,7 @@
       const order = P.shuffle(Array.from({ length: max }, (_, i) => i + 1));
       const v = K.view(await K.tr('Bingo Night'), s.prize ? await K.tr('Prize: {x}', { x: P.safe(s.prize, 80) }) : await K.tr(({ line: 'Get a line', corners: 'Get the four corners', x: 'Make an X', full: 'Fill the whole card' })[s.pattern]));
       const main = K.el('div', 'col grow', v);
-      const ballBox = K.el('div', 'center', main); ballBox.style.minHeight = '34vh';
+      const ballBox = K.el('div', 'center', main); ballBox.style.minHeight = 'calc(34 * var(--u))';
       const calls = K.el('div', 'bingo-calls', main);
       const cells = [];
       for (let i = 1; i <= max; i++) cells.push(K.el('span', '', calls, String(i)));
@@ -1318,11 +1318,11 @@
           if (K.over()) return [];
           v = K.view(await K.tr('Clues'), await K.tr('Round {n} / {total}', { n: t + 1, total: s.turns }));
           const box = K.el('div', 'center grow', v);
-          const im = K.el('img', '', box); im.src = K.avatarUrl(p); im.alt = ''; im.style.cssText = 'width:24vh;height:24vh;border-radius:50%;object-fit:cover;border:1vh solid ' + p.color;
+          const im = K.el('img', '', box); im.src = K.avatarUrl(p); im.alt = ''; im.style.cssText = 'width:calc(24 * var(--u));height:calc(24 * var(--u));border-radius:50%;object-fit:cover;border:calc(1 * var(--u)) solid ' + p.color;
           K.el('div', 'question', box, await K.tr(s.clues === 'type' ? '{name}: type one word about it' : '{name}: say one word about it', { name: p.name }));
           const rg = K.ring(box, +s.clueSec);
           const shown = K.el('div', 'players', box);
-          for (const [id, list] of clues) for (const w of list) { const cl = K.el('div', 'pill', shown, (K.player(id) || {}).name + ': ' + w); cl.style.fontSize = '2.6vh'; }
+          for (const [id, list] of clues) for (const w of list) { const cl = K.el('div', 'pill', shown, (K.player(id) || {}).name + ': ' + w); cl.style.fontSize = 'calc(2.6 * var(--u))'; }
           if (s.clues === 'type') {
             const a = (await K.ask({ kind: 'text', prompt: await K.tr('One word about it'), sec: +s.clueSec, who: [p.id], extra: { max: 24 } })).get(p.id);
             const w = a ? P.safe(a.v, 24, '***') : '...';
@@ -1360,7 +1360,7 @@
           // one last chance: guess the word
           const opts = P.shuffle([word, ...P.shuffle(pairs.filter(x => x[0] !== pair[0]).map(x => x[0])).slice(0, 5)]);
           const tOpts = await Promise.all(opts.map(o => K.tr(o)));
-          K.el('div', 'muted', um, await K.tr('{name} was caught... but can steal the win by guessing the word!', { name: caught.name })).style.fontSize = '3vh';
+          K.el('div', 'muted', um, await K.tr('{name} was caught... but can steal the win by guessing the word!', { name: caught.name })).style.fontSize = 'calc(3 * var(--u))';
           const g = (await K.ask({ kind: 'choice', prompt: await K.tr('Guess the secret word!'), opts: tOpts, sec: 20, who: [caught.id] })).get(caught.id);
           if (g && tOpts[+g.v] === word) { impWins = true; K.el('div', 'question', um, await K.tr('Stolen! The imposter guessed it!')); P.sfx('win'); }
           else { K.el('div', 'question', um, await K.tr('Caught! The players win!')); P.sfx('right'); }
@@ -1450,7 +1450,7 @@
             if (ans && opts[+ans.v] === q[1]) { p.score += 4; text = await K.tr('Right! +4 candy'); } else text = await K.tr('Not this time. It was {x}', { x: await K.tr(q[1]) });
           }
           B.mid.textContent = '';
-          K.el('div', 'big', B.mid, e).style.fontSize = '14vh';
+          K.el('div', 'big', B.mid, e).style.fontSize = 'calc(14 * var(--u))';
           K.el('div', 'question', B.mid, text);
           B.b.draw();
           K.result(p.id, { ok: true, score: p.score, note: text });
@@ -1473,7 +1473,7 @@
     else if (kind === 'memory') {
       const set = P.shuffle(['🍕', '🐶', '🚀', '🎈', '🌵', '🐙', '🍩', '🎸', '⚽', '🦄', '🍎', '🌙']);
       const shown = set.slice(0, 4);
-      const big = K.el('div', 'big', box, shown.join(' ')); big.style.fontSize = '14vh';
+      const big = K.el('div', 'big', box, shown.join(' ')); big.style.fontSize = 'calc(14 * var(--u))';
       await K.sleep(3500);
       big.textContent = '❓';
       const opts = P.shuffle([shown[Math.floor(Math.random() * 4)], ...set.slice(4, 7)]);

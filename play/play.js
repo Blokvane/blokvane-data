@@ -167,8 +167,46 @@ var BVPLAY = (() => {
   }
   // The lobby, like a game show's welcome screen: how to join (the QR code and the code, as tiles), the steps, everyone
   // who is in (with a check once they're ready, and empty seats waiting), and what's special about the game.
+  // ---------- the size of everything on this screen. It fits any screen by itself (play.css); Ctrl + and Ctrl - (or Ctrl
+  // with the mouse wheel, or the A- and A+ buttons in the lobby) make it bigger or smaller, Ctrl 0 puts it back. This
+  // screen remembers it. ----------
+  const ZK = 'bvplay:zoom', ZMIN = 0.6, ZMAX = 1.5;
+  let zoom = 1, zoomTip = null, zoomT = 0;
+  const zoomSubs = new Set();
+  try { const z = +localStorage.getItem(ZK); if (z) zoom = z; } catch (e) {}
+  function setZoom(z, show) {
+    zoom = Math.round(Math.min(ZMAX, Math.max(ZMIN, z)) * 10) / 10;
+    document.documentElement.style.setProperty('--z', String(zoom));
+    document.documentElement.classList.toggle('zoomed', zoom > 1);
+    try { localStorage.setItem(ZK, String(zoom)); } catch (e) {}
+    for (const f of zoomSubs) { try { f(); } catch (e) {} }
+    if (show) {
+      if (!zoomTip) zoomTip = el('div', 'zm-tip', document.body);
+      zoomTip.textContent = '🔍 ' + Math.round(zoom * 100) + '%';
+      zoomTip.classList.add('on');
+      clearTimeout(zoomT); zoomT = setTimeout(() => zoomTip.classList.remove('on'), 1400);
+    }
+  }
+  const zoomBy = d => setZoom(d ? zoom + d * 0.1 : 1, true);
+  setZoom(zoom, false);
+  addEventListener('keydown', e => {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomBy(1); }
+    else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomBy(-1); }
+    else if (e.key === '0') { e.preventDefault(); zoomBy(0); }
+  }, true);
+  let wheelSum = 0;
+  addEventListener('wheel', e => {
+    if (!e.ctrlKey) return;
+    e.preventDefault();
+    wheelSum += e.deltaY;
+    if (Math.abs(wheelSum) >= 60) { zoomBy(wheelSum < 0 ? 1 : -1); wheelSum = 0; }
+  }, { passive: false });
+  // (the same keys pressed in Blokvane's own window around the game, when it is the one listening)
+  addEventListener('message', e => { const m = e.data; if (e.source === parent && parent !== window && m && typeof m.bvZoom === 'number') zoomBy(Math.sign(m.bvZoom)); });
+
   // music and sound effects (sound.js); a quiet stand-in if it didn't load
-  const SND = window.BVSOUND || { preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
+  const SND = window.BVSOUND ||{ preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
   let sndOff = null;
   // A browser keeps a page quiet until someone clicks it (or presses a key) once, and the players only touch their
   // phones: so a game with sounds shows a hint at the top until then. Any click anywhere turns the sound on.
@@ -269,6 +307,16 @@ var BVPLAY = (() => {
     const paint = () => { const st = SND.state(); sb.hidden = st === 'none'; sb.textContent = sw[st] || ''; sb.classList.toggle('off', st !== 'on'); };
     sb.onclick = () => { const st = SND.state(); if (st === 'locked') SND.unlock(); else SND.setOn(st !== 'on'); };
     paint();
+    // the screen size: smaller, bigger (Ctrl - and Ctrl + do the same)
+    const zs = el('span', 'zm', fl);
+    zs.title = await T('Screen size');
+    const zb = async (t, lab, d) => { const b = el('button', '', zs, t); b.type = 'button'; b.setAttribute('aria-label', await T(lab)); b.onclick = () => zoomBy(d); };
+    await zb('A−', 'Smaller', -1);
+    const zv = el('span', 'zv', zs);
+    await zb('A+', 'Bigger', 1);
+    const zpaint = () => { zv.textContent = Math.round(zoom * 100) + '%'; };
+    zpaint();
+    zoomSubs.clear(); zoomSubs.add(zpaint);
     const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit);
     if (c) el('small', '', ft, P.f(c));
     if (my !== lobbyRun || phase === 'play') return;
@@ -368,7 +416,7 @@ var BVPLAY = (() => {
     booEl.hidden = false;
     const id = { happy: 'boo:party', sad: 'boo:sad', wow: 'boo:wow', laugh: 'boo:laugh', scary: 'boo:scary', cool: 'boo:cool', hi: 'boo:hi', love: 'boo:love', mind: 'boo:mind' }[mood] || 'boo:hi';
     booEl.firstChild.src = P.booUri(id);
-    booEl.animate([{ transform: 'scale(.6) translateY(4vh)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { duration: 600, easing: 'cubic-bezier(.2,1.4,.4,1)' });
+    booEl.animate([{ transform: 'scale(.6) translateY(18%)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { duration: 600, easing: 'cubic-bezier(.2,1.4,.4,1)' });
   }
 
   // ---------- asking every phone at once ----------

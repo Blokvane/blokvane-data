@@ -640,5 +640,8 @@ BVI18N.add("fr", {
 "{n} correct": "Bonnes réponses : {n}",
 "Click anywhere on this screen to turn on the sound": "Clique n'importe où sur l'écran pour activer le son",
 "Last question!": "Dernière question !",
-"Last 2 questions!": "Les 2 dernières questions !"
+"Last 2 questions!": "Les 2 dernières questions !",
+"Screen size": "Taille de l'écran",
+"Smaller": "Plus petit",
+"Bigger": "Plus grand"
 });

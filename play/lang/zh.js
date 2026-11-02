@@ -640,5 +640,8 @@ BVI18N.add("zh", {
 "{n} correct": "答对{n}题",
 "Click anywhere on this screen to turn on the sound": "点一下屏幕任意位置即可开启声音",
 "Last question!": "最后一题！",
-"Last 2 questions!": "最后 2 题！"
+"Last 2 questions!": "最后 2 题！",
+"Screen size": "画面大小",
+"Smaller": "缩小",
+"Bigger": "放大"
 });
