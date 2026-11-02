@@ -88,6 +88,9 @@ GO.def('home', (pair) => {
     const row = el('div', 'grid2', more);
     btn('Rename this phone', { kind: 'ghost' }, row, () => rename());
     btn('Other computers', { kind: 'ghost' }, row, () => { GO.store.set('pick', 1); location.hash = ''; });
+    // (the computer stopped answering: start the connection over; or connect again with a new code from the computer)
+    btn('Reconnect to ' + pc.name, { kind: 'ghost', full: true, icon: 'refresh' }, more, () => { toast('Reconnecting...'); GO.reconnect(); }).style.marginTop = '10px';
+    btn('Connect again with a new code', { kind: 'ghost', full: true, icon: 'phone' }, more, () => againSheet()).style.marginTop = '10px';
     btn('Join a game with a code', { kind: 'ghost', full: true, icon: 'game' }, more, async () => (await GO.need('party'))('code', [])).style.marginTop = '10px';
     btn('What each button does', { kind: 'ghost', full: true, icon: 'help' }, more, () => helpSheet()).style.marginTop = '10px';
     GO.foot();
@@ -106,6 +109,17 @@ GO.def('home', (pair) => {
         el('p', '', d, t.help);
       }
       el('p', 'muted small', sh, 'Something not working? Make sure the computer is on, with Chrome open. The dot at the top turns green when it answers.').style.marginTop = '14px';
+    });
+  }
+  // when Reconnect isn't enough (the computer removed this phone, or was set up again): a new code from the computer
+  function againSheet() {
+    sheet('Connect again', sh => {
+      el('p', '', sh, 'If Reconnect doesn\'t help, connect this phone again with a new code. It takes one scan:');
+      const ol = el('ol', 'steps-pic', sh);
+      for (const [ic, t, sub] of [['laptop', 'On your computer, open Blokvane', 'Then Connect, then Your phone.'], ['monitor', 'Click "Connect your phone"', 'A code shows up on the computer.'], ['camera', 'Scan it with this phone\'s camera', 'Tap the link that shows up. This phone connects by itself.']]) {
+        const li = el('li', '', ol); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); el('small', '', d, sub);
+      }
+      el('p', 'muted small', sh, 'Make sure Chrome is open on the computer, and that both have internet.').style.marginTop = '14px';
     });
   }
   function rename() {

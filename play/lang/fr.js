@@ -637,5 +637,6 @@ BVI18N.add("fr", {
 "Click for sound": "Clique pour activer le son",
 "Sound on": "Son activé",
 "Sound off": "Son coupé",
-"{n} correct": "Bonnes réponses : {n}"
+"{n} correct": "Bonnes réponses : {n}",
+"Click anywhere on this screen to turn on the sound": "Clique n'importe où sur l'écran pour activer le son"
 });

@@ -198,7 +198,8 @@ var BVLIVE = (() => {
     const pipeOpen = id => { const p = pipes.get(id); return !!(p && p.open()); };
 
     // ---------- what comes in ----------
-    handlers.set(topic, bytes => { take(bytes).catch(() => {}); });
+    const onBytes = bytes => { take(bytes).catch(() => {}); };
+    handlers.set(topic, onBytes);
     async function take(bytes) {
       if (closed) return;
       const m = await gate(bytes);
@@ -514,7 +515,8 @@ var BVLIVE = (() => {
         closed = true;
         clearInterval(helloT); clearInterval(sweepT);
         for (const p of [...pipes.values()]) p.close();
-        setTimeout(() => { handlers.delete(topic); net.leave(topic); }, 400);
+        // (unless a new room took this topic meanwhile, like joining again right away to reconnect: then it stays)
+        setTimeout(() => { if (handlers.get(topic) === onBytes) { handlers.delete(topic); net.leave(topic); } }, 400);
       }
     });
   }

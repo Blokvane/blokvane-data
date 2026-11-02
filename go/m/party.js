@@ -199,7 +199,7 @@ button.pt-pl:active{transform:scale(.97)}
     document.documentElement.lang = c;
     document.documentElement.dir = i && i.RTL.has(c) ? 'rtl' : 'ltr';
   }
-  const loadI18n = () => GO.script('../play/i18n.js').catch(() => {});
+  const loadI18n = () => GO.script('../play/i18n.js?v=' + GO.VERSION).catch(() => {});
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
   const gameName = () => (G.lobby && G.lobby.gname) || T('Party games');

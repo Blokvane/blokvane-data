@@ -170,6 +170,20 @@ var BVPLAY = (() => {
   // music and sound effects (sound.js); a quiet stand-in if it didn't load
   const SND = window.BVSOUND || { preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
   let sndOff = null;
+  // A browser keeps a page quiet until someone clicks it (or presses a key) once, and the players only touch their
+  // phones: so a game with sounds shows a hint at the top until then. Any click anywhere turns the sound on.
+  let hintEl = null, hintRun = 0;
+  async function soundHint() {
+    const my = ++hintRun;
+    const show = !!(game && game.sounds) && SND.state() === 'locked';
+    if (!show) { if (hintEl) hintEl.hidden = true; return; }
+    const text = '🔈 ' + await P.tr('Click anywhere on this screen to turn on the sound');
+    if (my !== hintRun) return;
+    if (!hintEl) { hintEl = el('button', 'snd-hint', document.body); hintEl.type = 'button'; hintEl.dataset.snd = '1'; hintEl.onclick = () => SND.unlock(); }
+    hintEl.textContent = text;
+    hintEl.hidden = false;
+  }
+  SND.onChange(() => soundHint());
   // (it's built off screen, then shown in one go: a newer lobby, like one more player joining, replaces it)
   let lobbyRun = 0, lastSpot = '';
   async function lobby() {
@@ -251,7 +265,7 @@ var BVPLAY = (() => {
     // the sound button: "Click for sound" until the browser lets this page play sound, then on or off
     const sw = { locked: '🔈 ' + await T('Click for sound'), on: '🔊 ' + await T('Sound on'), off: '🔇 ' + await T('Sound off') };
     const sb = el('button', 'snd', fl);
-    sb.type = 'button';
+    sb.type = 'button'; sb.dataset.snd = '1';
     const paint = () => { const st = SND.state(); sb.hidden = st === 'none'; sb.textContent = sw[st] || ''; sb.classList.toggle('off', st !== 'on'); };
     sb.onclick = () => { const st = SND.state(); if (st === 'locked') SND.unlock(); else SND.setOn(st !== 'on'); };
     paint();
@@ -262,6 +276,7 @@ var BVPLAY = (() => {
     stage.append(...page.childNodes);
     if (sndOff) sndOff();
     sndOff = SND.onChange(paint);
+    soundHint();
     // the game's own lobby tune (Trivia), loaded with its other sounds while people join
     if (g && g.sounds) { SND.preload(g.sounds); SND.music('theme', { fadeIn: 1.5 }); } else SND.music(null);
     const sp = stage.querySelector('.spot');

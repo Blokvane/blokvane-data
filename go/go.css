@@ -37,6 +37,7 @@ body.rtl .top .back svg { transform: scaleX(-1); }
 .dot.on { background: var(--ok); box-shadow: 0 0 0 4px rgba(54, 214, 165, .16); }
 .dot.wait { background: var(--warn); animation: blink 1.2s ease-in-out infinite; }
 .dot.off { background: var(--bad); }
+.top .who p .re { margin-inline-start: 4px; padding: 4px 11px; border: 0; border-radius: 12px; background: var(--coral); color: #fff; font: 700 13px/1.2 var(--sans); flex: none; }
 @keyframes blink { 50% { opacity: .35; } }
 .boo { width: 52px; height: 52px; flex: none; position: relative; }
 .boo img, .boo svg { width: 100%; height: 100%; }

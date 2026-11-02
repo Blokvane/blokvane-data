@@ -1,5 +1,5 @@
 // Blokvane party games: the music and sound effects on the TV (Trivia's game-show sounds: the lobby tune, a tune for
-// easy, medium and hard questions, "next question", "time's up" and the winner). They play with the Web Audio API, so
+// easy, medium and hard questions, a tune between questions, "next question", "time's up" and the winner). They play with the Web Audio API, so
 // they fade in and out smoothly, loop without a gap and never pile up on each other. A browser keeps a page quiet
 // until someone clicks or presses a key on it once: until then the lobby shows a "Click for sound" button, and the
 // same button turns the sound off (or on again) on this screen. The phones stay quiet.
@@ -14,7 +14,8 @@ var BVSOUND = (() => {
     easy: ['q-easy.mp3', 0.46, 'loop'],
     medium: ['q-medium.mp3', 0.5, { skip: 0.62, tail: 0.25, xf: 1.6 }],
     hard: ['q-hard.mp3', 0.5, { skip: 0.38, tail: 0.25, xf: 1.6 }],
-    next: ['next.mp3', 0.78],
+    between: ['between.mp3', 0.4, { skip: 0.1, tail: 0.3, xf: 0.9 }],
+    next: ['next.mp3', 1.15],
     timesup: ['times-up.mp3', 0.85],
     win: ['win.mp3', 0.7]
   };
@@ -50,9 +51,13 @@ var BVSOUND = (() => {
     return p;
   }
   function preload(names) { for (const n of [].concat(names || [])) if (FILES[n]) load(n); }
-  // (the first click or key press on this page lets it play sound; a TV remote's OK button counts too)
+  // (the first click or key press on this page lets it play sound; a TV remote's OK button counts too. The sound
+  // button itself is left to do its own job, so that first click doesn't turn the sound off again.)
   function unlock() { const c = ctx(); if (c && c.state !== 'running') c.resume().then(changed, () => {}); }
-  for (const e of ['pointerdown', 'keydown', 'touchstart']) addEventListener(e, unlock, { passive: true, capture: true });
+  const onGesture = e => { const t = e && e.target; if (t && t.closest && t.closest('[data-snd]')) return; unlock(); };
+  for (const e of ['pointerdown', 'keydown', 'touchstart']) addEventListener(e, onGesture, { passive: true, capture: true });
+  // (where sound is allowed right away, like the game opened from Blokvane on a computer, it simply starts)
+  setTimeout(unlock, 0);
 
   function fadeStop(node, t) {
     node.dead = true;

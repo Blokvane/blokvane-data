@@ -637,5 +637,6 @@ BVI18N.add("zh", {
 "Click for sound": "点击开启声音",
 "Sound on": "声音已开",
 "Sound off": "声音已关",
-"{n} correct": "答对{n}题"
+"{n} correct": "答对{n}题",
+"Click anywhere on this screen to turn on the sound": "点一下屏幕任意位置即可开启声音"
 });

@@ -637,5 +637,6 @@ BVI18N.add("bn", {
 "Click for sound": "শব্দ চালু করতে ক্লিক করুন",
 "Sound on": "শব্দ চালু",
 "Sound off": "শব্দ বন্ধ",
-"{n} correct": "{n}টি সঠিক উত্তর"
+"{n} correct": "{n}টি সঠিক উত্তর",
+"Click anywhere on this screen to turn on the sound": "শব্দ চালু করতে স্ক্রিনের যেকোনো জায়গায় ক্লিক করুন"
 });

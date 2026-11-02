@@ -210,7 +210,7 @@
     id: 'trivia', name: 'Trivia', emoji: '🧠', sub: 'Questions on the TV, answers on your phone.', teams: true, teamsWin: true,
     step: ['Tap {letters}', 'Answer on your phone before time runs out.'], deco: 'letters', helpers: ['Remove two', 'Hint', 'Answer it for me', 'Ask everyone'],
     // its own sounds on the TV (sound.js): the lobby tune, a tune for each difficulty, next question, time's up, the winner
-    sounds: ['theme', 'next', 'easy', 'medium', 'hard', 'timesup', 'win'],
+    sounds: ['theme', 'next', 'easy', 'medium', 'hard', 'between', 'timesup', 'win'],
     credit: lang => (lang === 'en' ? 'Questions: Open Trivia Database (opentdb.com), CC BY-SA 4.0. The first five: Blokvane.' : 'Questions written by Blokvane.'),
     rules: ['A question shows on the TV with four answers.', 'Tap your answer on your phone before time runs out.', 'Each helper works once: remove two, a hint, answer it for me, ask everyone.'],
     // the TV's lobby explains the mode the host picked, and changes as soon as they pick another
@@ -371,6 +371,9 @@
         // the next question: by itself after the wait the host picked, or when the host taps Next question on their phone
         // (after the last question, or once the game is decided, the winner comes after a short pause)
         const last = i >= qs.length - 1 || ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && K.alive().length <= 1) || (s.mode === 'race' && K.players().some(p => p.right >= +s.raceTo));
+        // (between questions, while the answer shows and the next one is on its way, its own tune plays; it fades out
+        // when "next question" sounds)
+        if (!last) K.snd.music('between', { delay: timeUp ? 2.5 : 1.2, fadeIn: 1.5, fadeOut: 0.6 });
         if (last) await K.sleep(5000);
         else if (s.next === 'host') await hostNext(K, v, qn);
         else await nextIn(K, v, Math.max(1, Math.min(120, Math.round(+s.wait) || 5)));

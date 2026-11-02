@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '2';
+  const VERSION = '5';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -324,6 +324,7 @@
     return self;
   }
   // the dot and words at the top: connected, looking, or not answering
+  let autoRe = false;
   function bindStatus(dot, text, sub) {
     if (!pc) { sub.hidden = true; return; }
     const started = Date.now();
@@ -333,6 +334,12 @@
       if (pc.here()) { dot.className = 'dot on'; text.textContent = 'Connected'; }
       else if (Date.now() - started < 15000) { dot.className = 'dot wait'; text.textContent = 'Looking for your computer...'; }
       else { dot.className = 'dot off'; text.textContent = 'Not answering. Is it on, with Chrome open?'; }
+      // (not answering: once by itself, with every relay tried again; after that, one tap to try again)
+      if (!pc.here() && Date.now() - started >= 15000 && !autoRe) { autoRe = true; off(); setTimeout(reconnect, 200); return; }
+      let re = sub.querySelector('.re');
+      if (!pc.here() && Date.now() - started >= 15000) {
+        if (!re) { re = el('button', 're', sub, 'Reconnect'); re.type = 'button'; re.onclick = () => reconnect(); }
+      } else if (re) re.remove();
     });
   }
 
@@ -423,9 +430,11 @@
   // ---------- pairing (from the QR code on the computer: #p1.<pairing secret>.<computer id>) ----------
   async function pair(parts, how = {}) {
     const [s, cid] = parts;
-    // (this phone already knows that computer, like an app icon added on this page: straight to it)
+    // (this phone already knows that computer, like an app icon added on this page: straight to it. The code is still
+    // tried quietly: the computer may be showing it because it wants this phone again, for example after the phone
+    // was removed there; then the new pairing replaces the old one and the phone connects with it)
     const known = L.okId(cid) && pairs().find(p => p.cid === cid);
-    if (known) { history.replaceState(null, '', '#c1.' + known.s + '.' + known.cid); return (await need('home'))(known); }
+    if (known) { history.replaceState(null, '', '#c1.' + known.s + '.' + known.cid); if (s) quietPair(s, known); return (await need('home'))(known); }
     // first: as an app icon, or in the browser (once per code; never inside the app itself)
     if (s && L.okId(cid) && !standalone() && !ss.get('how:' + String(s).slice(0, 10))) return chooseHow(parts);
     const v = view('Connect your phone');
@@ -465,6 +474,40 @@
       t = setTimeout(ask, tries < 4 ? 1500 : 4000);
     };
     t = setTimeout(ask, 900);
+  }
+  async function quietPair(s, known) {
+    const cid = known.cid;
+    let done = false, room = null;
+    try {
+      const me = await member(cid);
+      room = await L.room({ secret: s, label: 'bvpair', me, name: deviceName(), role: 'phone', owner: cid, open: false,
+        onMsg: m => {
+          if (done || m.f !== cid) return;
+          if (m.k === 'paired' && m.boxed && typeof m.s === 'string' && /^[A-Za-z0-9_-]{22,64}$/.test(m.s)) {
+            done = true; room.close();
+            const now = pairs().find(p => p.cid === cid) || known;
+            if (m.s !== now.s) {
+              savePair({ s: m.s, cid, name: m.name || now.name, kind: m.kind || now.kind });
+              if (pc && pc.cid === cid) pc.close();
+              history.replaceState(null, '', '#c1.' + m.s + '.' + cid);
+              route();
+            }
+            toast('Connected to ' + L.clean(m.name || now.name, 40) + '.', 'ok');
+          } else if (m.k === 'nopair') { done = true; room.close(); }
+        } });
+      for (let i = 0; i < 12 && !done; i++) { room.send({ k: 'pair', name: deviceName(), plat: plat() }).catch(() => {}); await new Promise(r => setTimeout(r, i < 4 ? 1500 : 4000)); }
+    } catch (e) {}
+    if (!done && room) room.close();
+  }
+  // Reconnect: every relay is tried again (even ones that seemed down on this phone), and the room with the computer
+  // starts over
+  function reconnect() {
+    try { localStorage.removeItem('bvlive:relays'); } catch (e) {}
+    try { const n = L.relays(); if (n && n._health) n._health.clear(); } catch (e) {}
+    if (pc) pc.close();
+    buzz('tap');
+    // (a moment for the old room to finish leaving)
+    setTimeout(route, 600);
   }
   function celebrate(name, kind, how = {}) {
     const v = view('All set');
@@ -572,7 +615,7 @@
 
   // ---------- off we go ----------
   window.GO = { el, icon, boo, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, say: null, get pc() { return pc; } };
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, say: null, get pc() { return pc; } };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });

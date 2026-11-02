@@ -456,3 +456,10 @@ html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)):not(:lang(hi)):not(:lang(bn)):
 .pc.empty .blk { opacity: .35; filter: grayscale(.7); }
 .pc.empty .who { visibility: hidden; }
 .cover.win .win-foot { position: absolute; inset-inline-start: 4vw; bottom: 4vh; max-width: 26vw; margin: 0; text-align: start; font: 700 2.4vh/1.4 var(--round); color: #ece6ff; animation: fade .6s ease 2.2s both; }
+
+/* the hint to click once for sound (a browser keeps a page quiet until then) */
+.snd-hint { position: fixed; top: 1.6vh; left: 50%; transform: translateX(-50%); z-index: 40; max-width: 80vw; padding: 1.1vh 2.6vh; border-radius: 99px; cursor: pointer;
+  border: .2vh solid rgba(255, 209, 102, .6); background: rgba(29, 21, 70, .92); color: #fff5d6; font: 700 2.2vh/1.2 var(--round); box-shadow: 0 1vh 3vh rgba(0, 0, 0, .4);
+  animation: hintGlow 2.4s ease-in-out infinite; }
+.snd-hint[hidden] { display: none; }
+@keyframes hintGlow { 50% { box-shadow: 0 1vh 3vh rgba(0, 0, 0, .4), 0 0 0 .8vh rgba(255, 209, 102, .18); } }

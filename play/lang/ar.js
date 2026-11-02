@@ -637,5 +637,6 @@ BVI18N.add("ar", {
 "Click for sound": "انقر لتشغيل الصوت",
 "Sound on": "الصوت يعمل",
 "Sound off": "الصوت متوقف",
-"{n} correct": "الإجابات الصحيحة: {n}"
+"{n} correct": "الإجابات الصحيحة: {n}",
+"Click anywhere on this screen to turn on the sound": "انقر في أي مكان على الشاشة لتشغيل الصوت"
 });
