@@ -7,9 +7,10 @@
   'use strict';
   const { el, view, btn, toast, buzz, hero, input, store, seg, toggle, sheet, confetti } = GO;
   const L = BVLIVE, C = BVWT_CORE;
-  GO.def('party', async (kind, parts) => (kind === 'code' ? codeScreen() : start(parts)));
+  GO.def('party', async (kind, parts, o) => (kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : start(parts)));
 
-  // the words (English; the TV sends them in the game's language)
+  // The words. The seven game languages have their own (../play/i18n.js and ../play/lang/*.js, the same words the TV
+  // uses); for any other language the TV sends these translated by Chrome on a computer.
   const STR0 = {
     join: 'Join the game', name: 'Your name', pickBoo: 'Pick your Boo', selfie: 'Take a selfie', ready: 'I\'m ready!', notReady: 'Not ready yet', host: 'You\'re the host', hostWait: 'Waiting for the host to start',
     start: 'Start the game', settings: 'Game settings', look: 'Look at the TV!', answered: 'Got it! Waiting for the others...', right: 'Right!', wrong: 'Not this time', out: 'You\'re out, but you can still help!',
@@ -27,8 +28,10 @@
   const ACOL = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8'];
   const SHAPES = ['▲', '◆', '●', '■', '★', '♥'];
   const TEAMS = [['red', 'red', '#ff5f57'], ['blue', 'blue', '#3d8bff'], ['gold', 'gold', '#ffbf3c'], ['green', 'green', '#2fd59a']];
-  const LANGS = [['en', 'English'], ['es', 'Español'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'], ['pt', 'Português'], ['nl', 'Nederlands'], ['pl', 'Polski'], ['sv', 'Svenska'], ['tr', 'Türkçe'], ['el', 'Ελληνικά'],
-    ['ru', 'Русский'], ['uk', 'Українська'], ['ar', 'العربية'], ['he', 'עברית'], ['fa', 'فارسی'], ['ur', 'اردو'], ['hi', 'हिन्दी'], ['bn', 'বাংলা'], ['zh', '中文'], ['ja', '日本語'], ['ko', '한국어'], ['vi', 'Tiếng Việt'], ['th', 'ไทย'], ['id', 'Bahasa Indonesia']];
+  // the languages (loaded with ../play/i18n.js): the seven full ones first, then the ones Chrome translates
+  const I = () => window.BVI18N || null;
+  const langsFull = () => (I() ? I().LANGS : [['en', 'English']]);
+  const langsMore = () => (I() ? I().MORE : []);
   const MOTION_GAMES = ['boosays', 'party'];
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
   function booPic(id, cls) {
@@ -123,7 +126,7 @@ button.pt-pl:active{transform:scale(.97)}
 .pt-peek b{display:block;font:900 36px/1.15 var(--round);margin:6px 0}
 .pt-peek .pic{font-size:90px;line-height:1}
 .pt-peek small{color:var(--dim);font-size:15px}
-.pt-bingo{display:grid;gap:5px}
+.pt-bingo{display:grid;gap:5px;direction:ltr}
 .pt-bingo button{aspect-ratio:1;border:0;border-radius:11px;background:var(--raise2);color:var(--text);font:800 18px var(--sans);padding:0;min-width:0}
 .pt-bingo.n90 button{font-size:14px;border-radius:8px}
 .pt-bingo button.hd{background:transparent;color:var(--sun);font:900 22px var(--round)}
@@ -139,10 +142,17 @@ button.pt-pl:active{transform:scale(.97)}
 .pt-game b{display:block;font:800 18px var(--round)}
 .pt-game small{color:var(--dim);font-size:14px;line-height:1.35}
 .pt-game[aria-pressed=true]{border-color:var(--tint);background:color-mix(in srgb,var(--tint) 18%,var(--raise))}
+.pt-game:disabled{opacity:.45}
+.pt-where{display:grid;gap:10px;margin-top:4px}
+.pt-games .pt-game,.pt-where .pt-game{transition:transform .12s}
+.pt-game:active{transform:scale(.98)}
 .pt-set{display:grid;gap:14px}
 .pt-set .seg{flex-wrap:wrap}
 .pt-set .seg button{flex:1 0 28%}
 .pt-set label.lbl{display:block;color:var(--dim);font-size:15px;font-weight:600;margin-bottom:7px}
+.pt-desc{display:flex;gap:8px;align-items:flex-start;margin:8px 2px 0;padding:9px 12px;border-radius:12px;background:color-mix(in srgb,var(--tint) 9%,var(--raise));border-inline-start:3px solid color-mix(in srgb,var(--tint) 65%,transparent);color:var(--dim);font-size:14px;line-height:1.4;animation:pt-fade .28s ease}
+.pt-desc::before{content:"💡";font-size:13px;line-height:1.5;flex:none}
+@keyframes pt-fade{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 .pt-list{display:grid;gap:8px}
 .pt-list .r{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:16px;background:var(--raise)}
 .pt-list .r b{flex:1}
@@ -159,10 +169,34 @@ button.pt-pl:active{transform:scale(.97)}
   // ---------- the game, as this phone sees it ----------
   const G = { R: null, s: '', tv: '', me: null, id: '', name: '', av: 'boo:hi', photo: '', joined: false, host: false, color: '', team: '', ready: false, lobby: null, phase: 'join',
     q: null, qAt: 0, answered: false, locked: false, res: null, endRes: null, ranking: null, score: 0, lives: null, out: false, used: new Set(), secret: null, bingo: null, paper: null,
-    S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0 };
+    S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null };
   const S = () => G.S;
+  // a line in the game's language, with its {parts} filled in
+  function T(text, vars) {
+    const i = I();
+    if (i && (G.lang === 'en' || i.FULL.has(G.lang))) return i.t(G.lang, text, vars);
+    return vars ? String(text).replace(/\{(\w+)\}/g, (m, k) => (vars[k] != null ? String(vars[k]) : m)) : String(text);
+  }
+  // the words for the game's language (the full ones load their file once; the others use what the TV sent)
+  async function useLang(code) {
+    const i = I();
+    const c = i && i.ok(code) ? code : 'en';
+    if (i && i.FULL.has(c) && c !== 'en') await i.load(c, false);
+    G.lang = c;
+    const full = !i || c === 'en' || i.FULL.has(c);
+    const t = Object.assign({}, STR0);
+    for (const k of Object.keys(STR0)) {
+      if (full) t[k] = i ? i.t(c, STR0[k]) : STR0[k];
+      else if (G.tvStrings && typeof G.tvStrings[k] === 'string' && G.tvStrings[k]) t[k] = L.clean(G.tvStrings[k], 140);
+    }
+    G.S = t;
+    document.documentElement.lang = c;
+    document.documentElement.dir = i && i.RTL.has(c) ? 'rtl' : 'ltr';
+  }
+  const loadI18n = () => GO.script('../play/i18n.js').catch(() => {});
+  const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
-  const gameName = () => (G.lobby && G.lobby.gname) || 'Party games';
+  const gameName = () => (G.lobby && G.lobby.gname) || T('Party games');
   const after = (ms, fn) => { const t = setTimeout(fn, ms); G.timers.push(t); return t; };
   function stopQ() { for (const t of G.timers) clearTimeout(t); G.timers = []; for (const f of G.stops) { try { f(); } catch (e) {} } G.stops = []; }
 
@@ -182,27 +216,32 @@ button.pt-pl:active{transform:scale(.97)}
   }
   async function start(parts) {
     css();
-    const [s, tv] = parts;
+    await loadI18n();
+    const [s, tv, lg] = parts;
+    await useLang(I() && I().ok(lg) ? lg : I() ? I().pick() : 'en');
+    GO.say = T;
     if (!s || !/^[A-Za-z0-9_-]{16,64}$/.test(s) || !L.okId(tv)) {
-      const v = view('Party games', { tint: 'pink' });
-      hero(v.body, 'This code isn\'t complete', 'Scan the QR code on the TV again, or type the 6 letters under it.', { sleepy: true });
-      btn('Type the code', { kind: 'go', full: true }, v.body, () => codeScreen());
+      const v = view(T('Party games'), { tint: 'pink' });
+      hero(v.body, T('This code isn\'t complete'), T('Scan the QR code on the TV again, or type the 6 letters under it.'), { sleepy: true });
+      btn(T('Type the code'), { kind: 'go', full: true }, v.body, () => codeScreen());
       return;
     }
     await GO.script('watch-boo.js').catch(() => {});
     G.s = s; G.tv = tv;
     G.name = store.get('party:name', '');
     G.av = AVATARS.includes(store.get('party:av', '')) ? store.get('party:av', '') : 'boo:hi';
-    // (back in the same game after a reload or a dead battery: straight in, as yourself)
+    // (back in the same game after a reload or a dead battery: straight in, as yourself. A game this phone just started
+    // from Blokvane: straight in too, so this phone is the first one there, the host.)
     const last = tabStore.get('party:in');
     if (last && last.s === s.slice(0, 10) && Date.now() - last.at < 4 * 3600e3 && G.name) return connect();
+    if (G.autoJoin && G.autoJoin === s.slice(0, 10) && G.name) { G.autoJoin = ''; return connect(); }
     joinScreen();
   }
 
   // ---------- joining ----------
   function joinScreen(editing) {
-    const v = view(editing ? S().changeName : 'Party games', { tint: 'pink', back: editing ? () => showLobby() : null });
-    if (!editing) hero(v.body, S().join, 'Pick a name and a Boo. The game itself is on the TV.', { node: booPic('boo:party', 'float') });
+    const v = view(editing ? S().changeName : T('Party games'), { tint: 'pink', back: editing ? () => showLobby() : null });
+    if (!editing) hero(v.body, S().join, T('Pick a name and a Boo. The game itself is on the TV.'), { node: booPic('boo:party', 'float') });
     const card = el('div', 'card', v.body);
     const ni = input({ value: G.name, placeholder: S().name, max: 16 });
     ni.autocapitalize = 'words';
@@ -214,7 +253,7 @@ button.pt-pl:active{transform:scale(.97)}
     for (const id of AVATARS) {
       const b = el('button', 'pt-av', avs);
       b.type = 'button'; b.dataset.id = id;
-      b.setAttribute('aria-label', 'Boo ' + id.slice(4));
+      b.setAttribute('aria-label', T('Pick this Boo'));
       const im = el('img', '', b); im.src = booUri(id); im.alt = '';
       b.onclick = () => { av = id; photo = ''; mark(); selfieRow.hidden = true; buzz('tap'); };
     }
@@ -227,7 +266,7 @@ button.pt-pl:active{transform:scale(.97)}
     const selfieRow = el('div', 'pt-selfie', card);
     selfieRow.style.marginTop = '12px';
     const sImg = el('img', '', selfieRow); sImg.alt = '';
-    el('small', 'muted', selfieRow, 'Your selfie only goes to the TV, for this game. It is never saved.');
+    el('small', 'muted', selfieRow, T('Your selfie only goes to the TV, for this game. It is never saved.'));
     selfieRow.hidden = !photo;
     if (photo) sImg.src = photo;
     pick.onclick = () => {
@@ -237,13 +276,13 @@ button.pt-pl:active{transform:scale(.97)}
         const file = f.files && f.files[0];
         if (!file) return;
         try { photo = await L.shrink(file, 200, 0.72); if (photo.length > 58000) photo = await L.shrink(file, 140, 0.6); sImg.src = photo; selfieRow.hidden = false; mark(); }
-        catch (e) { toast('That picture didn\'t work. Try another.', 'bad'); }
+        catch (e) { toast(T('That picture didn\'t work. Try another.'), 'bad'); }
       };
       f.click();
     };
     const go = btn(editing ? S().done : S().join, { kind: 'go', huge: true, full: true }, v.body, async () => {
       const name = L.clean(ni.value, 16);
-      if (!name) { toast('Type your name first.', 'bad'); ni.focus(); return; }
+      if (!name) { toast(T('Type your name first.'), 'bad'); ni.focus(); return; }
       const changed = name !== G.name || av !== G.av || photo !== G.photo;
       G.name = name; G.av = av; G.photo = photo;
       store.set('party:name', name); store.set('party:av', av);
@@ -256,7 +295,7 @@ button.pt-pl:active{transform:scale(.97)}
   }
   async function connect() {
     const v = view(gameName(), { tint: 'pink' });
-    const h = hero(v.body, 'Joining the game...', 'Finding the TV. Keep this page open.', { node: booPic('boo:hi', 'float') });
+    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     G.me = await memberFor('g:' + G.s.slice(0, 10));
     G.id = G.me.id;
@@ -267,7 +306,7 @@ button.pt-pl:active{transform:scale(.97)}
       if (G.joined) return;
       if (++G.tries > 30) { notFound(); return; }
       send({ k: 'join', name: G.name, av: G.av });
-      if (G.tries === 6) { const p = h.querySelector('p'); if (p) p.textContent = 'Still looking. Is the game open on the TV?'; }
+      if (G.tries === 6) { const p = h.querySelector('p'); if (p) p.textContent = T('Still looking. Is the game open on the TV?'); }
       setTimeout(hi, G.tries < 4 ? 1500 : 3000);
     };
     hi();
@@ -275,10 +314,10 @@ button.pt-pl:active{transform:scale(.97)}
   }
   function notFound() {
     tabStore.del('party:in');
-    const v = view('Party games', { tint: 'pink' });
-    hero(v.body, 'Can\'t find the game', 'Check that the game is open on the TV, and that this phone is online. Then try again.', { sleepy: true });
-    btn('Try again', { kind: 'go', full: true, huge: true }, v.body, () => connect());
-    btn('Type the code instead', { kind: 'ghost', full: true }, v.body, () => codeScreen()).style.marginTop = '10px';
+    const v = view(T('Party games'), { tint: 'pink' });
+    hero(v.body, T('Can\'t find the game'), T('Check that the game is open on the TV, and that this phone is online. Then try again.'), { sleepy: true });
+    btn(T('Try again'), { kind: 'go', full: true, huge: true }, v.body, () => connect());
+    btn(T('Type the code instead'), { kind: 'ghost', full: true }, v.body, () => codeScreen()).style.marginTop = '10px';
   }
   async function sendPhoto() {
     if (!G.photo || !L.okPicture(G.photo)) return;
@@ -296,7 +335,7 @@ button.pt-pl:active{transform:scale(.97)}
     const quiet = Date.now() - G.lastHeard;
     if (quiet > 20000) send({ k: 'sync' });
     // (the TV went quiet for a minute: say so, once a minute, instead of a screen that just waits)
-    if (quiet > 60000 && Date.now() - (G.warned || 0) > 60000) { G.warned = Date.now(); toast('Can\'t reach the TV. Is the game still open on it?', 'bad'); }
+    if (quiet > 60000 && Date.now() - (G.warned || 0) > 60000) { G.warned = Date.now(); toast(T('Can\'t reach the TV. Is the game still open on it?'), 'bad'); }
   }, 10000);
 
   // ---------- what the TV says ----------
@@ -311,7 +350,7 @@ button.pt-pl:active{transform:scale(.97)}
         if (G.phase === 'join') { G.phase = 'lobby'; if (G.lobby) onLobby(G.lobby, true); else showLobby(); }
         return;
       }
-      case 'full': if (!G.joined) { G.tries = 99; const v = view('Party games', { tint: 'pink' }); hero(v.body, 'This game is full', 'It already has 40 players. Ask for a new game on the TV.', { sleepy: true }); } return;
+      case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'pink' }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
       case 'res': return onRes(m);
@@ -331,7 +370,7 @@ button.pt-pl:active{transform:scale(.97)}
           if (G.bingo.auto) for (const n of G.bingo.called) G.bingo.marks.add(n);
           paintBingo(true);
           // (a TV that can't speak: the host's phone reads the numbers out instead)
-          if (G.host && m.spoke === false) { try { const u = new SpeechSynthesisUtterance((G.bingo.style === '75' ? 'BINGO'[Math.min(4, Math.floor((m.n - 1) / 15))] + ' ' : '') + m.n); u.lang = document.documentElement.lang || 'en'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) {} }
+          if (G.host && m.spoke === false && I()) I().speak((G.bingo.style === '75' && ['en', 'es', 'fr'].includes(G.lang) ? 'BINGO'[Math.min(4, Math.floor((m.n - 1) / 15))] + ' ' : '') + m.n, G.lang);
         }
         return;
       case 'bingo-paper': if (m.boxed && Array.isArray(m.cards)) { G.paper = m; if (G.bingo) showBingo(); } return;
@@ -341,9 +380,15 @@ button.pt-pl:active{transform:scale(.97)}
   function onLobby(m, force) {
     const prev = G.lobby, was = G.phase;
     G.lobby = m;
-    if (m.strings && typeof m.strings === 'object') { const t = Object.assign({}, STR0); for (const k of Object.keys(STR0)) if (typeof m.strings[k] === 'string' && m.strings[k]) t[k] = L.clean(m.strings[k], 140); G.S = t; }
-    document.documentElement.dir = m.rtl ? 'rtl' : 'ltr';
-    document.documentElement.lang = typeof m.lang === 'string' && /^[a-z]{2}/.test(m.lang) ? m.lang : 'en';
+    if (m.strings && typeof m.strings === 'object') G.tvStrings = m.strings;
+    const lg = typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) ? m.lang : 'en';
+    // (a new language: its words load first, then this screen shows again in it)
+    if (lg !== G.lang) return useLang(lg).then(() => { if (G.lobby === m) onLobbyNow(m, prev, G.phase, true); });
+    // (a language Chrome translates on the TV: its words may have just come in)
+    if (I() && lg !== 'en' && !I().FULL.has(lg)) useLang(lg);
+    return onLobbyNow(m, prev, was, force);
+  }
+  function onLobbyNow(m, prev, was, force) {
     G.host = m.host === G.id;
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
@@ -434,12 +479,12 @@ button.pt-pl:active{transform:scale(.97)}
     stopQ();
     G.ui = {};
     const l = G.lobby || {};
-    const v = view(l.gname || 'Party games', { tint: 'pink' });
+    const v = view(l.gname || T('Party games'), { tint: 'pink' });
     meRow(v.body);
     const games = Array.isArray(l.games) ? l.games : [];
     if (!l.game) {
       if (G.host) {
-        el('p', 'lead', v.body, S().host + '. ' + S().pickGame + ':');
+        el('p', 'lead', v.body, T('You\'re the host. Pick a game:'));
         gameList(v.body, games, '');
       } else {
         const w = el('div', 'pt-wait', v.body);
@@ -464,7 +509,7 @@ button.pt-pl:active{transform:scale(.97)}
       if (MOTION_GAMES.includes(l.game) && motion.needsAsk() && !motion.ok) {
         const box = el('div', 'card', v.body);
         el('p', '', box, S().motionWhy);
-        btn(S().motion, { kind: 'tint', full: true, icon: 'phone' }, box, async () => { const ok = await motion.ask(); toast(ok ? '✓' : 'Motion is off. You can still play with taps.', ok ? 'ok' : 'bad'); if (ok) box.remove(); });
+        btn(S().motion, { kind: 'tint', full: true, icon: 'phone' }, box, async () => { const ok = await motion.ask(); toast(ok ? '✓' : T('Motion is off. You can still play with taps.'), ok ? 'ok' : 'bad'); if (ok) box.remove(); });
       }
       if (!G.host) G.ui.ready = btn(G.ready ? '✓ ' + S().ready : S().ready, { kind: G.ready ? 'tint' : 'go', huge: true, full: true }, v.body, () => { G.ready = !G.ready; send({ k: 'ready', on: G.ready }); paintReady(); buzz('tap'); });
       if (G.host) {
@@ -494,7 +539,7 @@ button.pt-pl:active{transform:scale(.97)}
     paintReady();
     updMe();
     const ps = Array.isArray(l.players) ? l.players : [];
-    if (G.ui.pHead) G.ui.pHead.textContent = `${S().players} (${ps.length})`;
+    if (G.ui.pHead) G.ui.pHead.textContent = T('Players ({n})', { n: ps.length });
     if (G.ui.players) {
       G.ui.players.textContent = '';
       for (const p of ps) {
@@ -547,6 +592,7 @@ button.pt-pl:active{transform:scale(.97)}
       const cur = l.settings ? l.settings[f.key] : f.default;
       if (f.type === 'toggle') {
         G.ui.sets[f.key] = toggle(L.clean(f.label, 80), cur, on => send({ k: 'set', key: f.key, v: on }), row);
+        if (typeof f.desc === 'string' && f.desc) el('p', 'pt-desc', row, L.clean(f.desc, 160));
       } else if (f.type === 'text') {
         el('label', 'lbl', row, L.clean(f.label, 80));
         const t = input({ multi: true, max: 1500, value: cur || '' });
@@ -556,15 +602,30 @@ button.pt-pl:active{transform:scale(.97)}
         G.ui.sets[f.key] = t;
       } else if (Array.isArray(f.options)) {
         el('label', 'lbl', row, L.clean(f.label, 80));
-        G.ui.sets[f.key] = seg(f.options.map(o => [o[0], L.clean(o[1], 40)]), cur, val => { send({ k: 'set', key: f.key, v: val }); buzz('tap'); }, row);
+        // (a choice with a short explanation: one quiet line under the buttons says what the picked one does)
+        const descs = f.options.some(o => Array.isArray(o) && o[2]) ? new Map(f.options.map(o => [String(o[0]), o[2] ? L.clean(o[2], 160) : ''])) : null;
+        let dEl = null, shownFor = null;
+        const showDesc = val => {
+          if (!dEl || String(val) === shownFor) return;
+          shownFor = String(val);
+          const t = descs.get(String(val)) || '';
+          dEl.textContent = t; dEl.hidden = !t;
+          dEl.style.animation = 'none'; void dEl.offsetWidth; dEl.style.animation = '';
+        };
+        const ctl = seg(f.options.map(o => [o[0], L.clean(o[1], 40)]), cur, val => { send({ k: 'set', key: f.key, v: val }); buzz('tap'); showDesc(val); }, row);
+        if (descs) { dEl = el('p', 'pt-desc', row); showDesc(cur); const set0 = ctl.set; ctl.set = val => { set0(val); showDesc(val); }; }
+        if (typeof f.desc === 'string' && f.desc) el('p', 'pt-desc', row, L.clean(f.desc, 160));
+        G.ui.sets[f.key] = ctl;
       }
     }
-    // the language the TV shows the game in (Chrome on a computer translates it)
+    // the language of the whole game, on the TV and every phone: seven languages fully, and more that Chrome
+    // translates when the game runs in Chrome on a computer
     const lr = el('div', '', box);
     el('label', 'lbl', lr, S().lang);
     const sel = el('select', 'input', lr);
-    for (const [code, name] of LANGS) { const o = el('option', '', sel, name); o.value = code; }
-    sel.value = LANGS.some(x => x[0] === l.lang) ? l.lang : 'en';
+    for (const [code, name] of langsFull()) { const o = el('option', '', sel, name); o.value = code; }
+    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const o = el('option', '', og, name); o.value = code; } }
+    sel.value = [...langsFull(), ...langsMore()].some(x => x[0] === l.lang) ? l.lang : 'en';
     sel.onchange = () => { send({ k: 'set', key: 'lang', v: sel.value }); buzz('tap'); };
   }
 
@@ -617,7 +678,7 @@ button.pt-pl:active{transform:scale(.97)}
     if (G.ui.body && G.ui.body.isConnected) {
       let n = G.ui.body.querySelector('.pt-note.sent');
       if (!n) { n = el('p', 'pt-note sent', G.ui.body); }
-      n.textContent = (shown ? S().youPicked + ': ' + shown + '. ' : '') + S().answered;
+      n.textContent = (shown ? T('You picked: {x}.', { x: shown }) + ' ' : '') + S().answered;
       for (const x of G.ui.body.querySelectorAll('input, textarea, .pt-colors button, .pt-moves button, .btn.go')) x.disabled = true;
     }
     return true;
@@ -642,14 +703,16 @@ button.pt-pl:active{transform:scale(.97)}
     const short = opts.every(o => [...o].length <= 4);
     const grid = el('div', 'pt-ans' + (ex.two || (opts.length <= 2 && !short) ? ' one' : ''), b);
     const own = ex.own && typeof ex.own === 'object' ? ex.own[G.id] : undefined;
+    // (the same letters as on the TV, in the game's language: A B C D, أ ب ج د, क ख ग घ, ক খ গ ঘ)
+    const LETS = I() ? I().letters(G.lang) : ['A', 'B', 'C', 'D', 'E', 'F'];
     G.ui.ans = opts.map((o, i) => {
       const a = el('button', 'pt-a' + (i === 2 || i === 3 ? ' dark' : '') + (short ? ' big' : ''), grid);
       a.type = 'button';
       a.style.setProperty('--c', ACOL[i]);
-      el('span', 'l', a, SHAPES[i]);
+      el('span', 'l', a, LETS[i] || SHAPES[i]);
       el('span', '', a, o);
       if (own === i) { a.classList.add('gone'); el('small', '', a, S().mine); }
-      a.onclick = () => { if (answer(i, ex.letters ? SHAPES[i] : '')) { a.classList.add('mine'); for (const x of G.ui.ans) if (x !== a) x.classList.add('dim'); } };
+      a.onclick = () => { if (answer(i, ex.letters ? (LETS[i] || SHAPES[i]) : '')) { a.classList.add('mine'); for (const x of G.ui.ans) if (x !== a) x.classList.add('dim'); } };
       return a;
     });
     // Trivia's helpers: each works once per game
@@ -718,7 +781,7 @@ button.pt-pl:active{transform:scale(.97)}
       const n = parseFloat(String(i.value).replace(/[\s,]/g, '').replace(/[^\d.-]/g, ''));
       if (!isFinite(n)) { toast(S().guess, 'bad'); i.focus(); return; }
       const v = Math.max(isFinite(+ex.min) ? +ex.min : -1e12, Math.min(isFinite(+ex.max) ? +ex.max : 1e12, n));
-      answer(v, v.toLocaleString());
+      answer(v, numFmt(v));
     });
     go.style.marginTop = '12px';
     i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
@@ -731,7 +794,7 @@ button.pt-pl:active{transform:scale(.97)}
     const r = el('input', 'pt-slider', b);
     r.type = 'range'; r.min = String(min); r.max = String(max); r.step = String(Math.max(1, Math.round((max - min) / 400)));
     r.value = String(Math.round((min + max) / 2));
-    const paint = () => { show.textContent = Number(r.value).toLocaleString() + (unit ? ' ' + unit : ''); };
+    const paint = () => { show.textContent = numFmt(r.value) + (unit ? ' ' + unit : ''); };
     r.oninput = () => { paint(); if (+r.value % 10 === 0) buzz('tap'); };
     paint();
     const row = el('div', 'grid2', b); row.style.marginTop = '12px';
@@ -760,7 +823,7 @@ button.pt-pl:active{transform:scale(.97)}
     el('div', 'pt-q', b, L.clean(q.prompt, 120) || S().dropPin);
     const box = el('div', 'pt-map', b);
     const wait = el('div', 'spin', box); wait.style.cssText = 'position:absolute;left:50%;top:50%;margin:-13px';
-    try { await GO.script('../play/world.js'); } catch (e) { box.textContent = 'The map didn\'t load. Check the internet.'; return; }
+    try { await GO.script('../play/world.js'); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
     if (G.q !== q || !box.isConnected) return;
     wait.remove();
     const NS = 'http://www.w3.org/2000/svg';
@@ -823,7 +886,7 @@ button.pt-pl:active{transform:scale(.97)}
     box.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY > 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
     // (big + and - for anyone who'd rather not pinch)
     const zm = el('div', 'zm', box);
-    for (const [t, k] of [['+', 1 / 1.6], ['−', 1.6]]) { const z = el('button', '', zm, t); z.type = 'button'; z.setAttribute('aria-label', t === '+' ? 'Zoom in' : 'Zoom out'); z.onclick = () => { const r = box.getBoundingClientRect(); zoomAt(k, r.left + r.width / 2, r.top + r.height / 2); }; }
+    for (const [t, k] of [['+', 1 / 1.6], ['−', 1.6]]) { const z = el('button', '', zm, t); z.type = 'button'; z.setAttribute('aria-label', T(t === '+' ? 'Zoom in' : 'Zoom out')); z.onclick = () => { const r = box.getBoundingClientRect(); zoomAt(k, r.left + r.width / 2, r.top + r.height / 2); }; }
     el('p', 'muted small center', b, S().zoom).style.margin = '8px 0';
     const lock = btn(S().lockPin, { kind: 'go', huge: true, full: true, icon: 'check' }, b, () => {
       if (!at) return;
@@ -917,7 +980,7 @@ button.pt-pl:active{transform:scale(.97)}
     x.type = 'button';
     x.addEventListener('pointerdown', e => { e.preventDefault(); if (G.answered || G.locked) return; n++; x.textContent = String(n); if (n % 10 === 0) buzz('tap'); });
     // (the count goes in just before time's up)
-    after(Math.max(600, (q.sec || 10) * 1000 - 450), () => { answer(n, n + ' ' + S().taps); });
+    after(Math.max(600, (q.sec || 10) * 1000 - 450), () => { answer(n, T('{n} taps', { n })); });
   }
   function barQ(b, q) {
     void q;
@@ -939,8 +1002,8 @@ button.pt-pl:active{transform:scale(.97)}
     const hidden = () => { box.className = 'pt-peek'; box.textContent = ''; el('div', '', box, '🙈'); el('b', '', box, S().peek); el('small', '', box, S().holdTip); };
     const shown = () => {
       box.className = 'pt-peek on'; box.textContent = '';
-      if (s.imp) { el('div', 'pic', box, s.kids ? '❓' : '🕵️'); el('b', '', box, S().imposter); el('small', '', box, s.cat ? S().imposterSays + ' ' + L.clean(s.cat, 40) : S().noWord); }
-      else { if (s.pic) { el('div', 'pic', box, L.clean(s.word, 12)); } else { el('small', '', box, S().word); el('b', '', box, L.clean(s.word, 40)); } if (s.cat) el('small', '', box, S().category + ': ' + L.clean(s.cat, 40)); }
+      if (s.imp) { el('div', 'pic', box, s.kids ? '❓' : '🕵️'); el('b', '', box, S().imposter); el('small', '', box, s.cat ? T('Category: {x}', { x: L.clean(s.cat, 40) }) : S().noWord); }
+      else { if (s.pic) { el('div', 'pic', box, L.clean(s.word, 12)); } else { el('small', '', box, S().word); el('b', '', box, L.clean(s.word, 40)); } if (s.cat) el('small', '', box, T('Category: {x}', { x: L.clean(s.cat, 40) })); }
       buzz('tap');
     };
     hidden();
@@ -963,8 +1026,8 @@ button.pt-pl:active{transform:scale(.97)}
     const box = el('div', 'pt-res ' + (ok ? 'ok' : some ? 'mid' : 'bad'), v.body);
     box.appendChild(booPic(ok ? (m.first ? 'boo:hero' : 'boo:party') : m.out ? 'boo:boo' : some ? 'boo:hi' : 'boo:sad'));
     el('h1', '', box, typeof m.title === 'string' && m.title ? L.clean(m.title, 60) : ok ? (m.first ? S().first : S().right) : m.out ? S().out : S().wrong);
-    if (m.pts) el('div', 'pts', box, '+' + m.pts + ' ' + S().points);
-    if (m.right != null && m.right !== '') el('p', '', box, S().theRight + ' ' + L.clean(m.right, 140));
+    if (m.pts) el('div', 'pts', box, T('+{n} points', { n: m.pts }));
+    if (m.right != null && m.right !== '') el('p', '', box, T('The right answer: {x}', { x: L.clean(m.right, 140) }));
     if (m.note) el('p', '', box, L.clean(m.note, 160));
     el('p', 'muted small', box, S().look).style.marginTop = '14px';
     buzz(ok ? 'ok' : 'bad');
@@ -977,7 +1040,7 @@ button.pt-pl:active{transform:scale(.97)}
     const r = G.endRes;
     const box = el('div', 'pt-res ' + (r && r.place === 1 ? 'ok' : ''), v.body);
     box.appendChild(booPic(r && r.place === 1 ? 'boo:legend' : r && r.place <= 3 ? 'boo:party' : 'boo:love'));
-    if (r && r.place) { el('p', '', box, S().yourPlace); const h = el('h1', '', box, `${r.place === 1 ? '🏆 ' : r.place === 2 ? '🥈 ' : r.place === 3 ? '🥉 ' : ''}${r.place} ${S().of} ${r.of}`); h.style.fontSize = '40px'; el('div', 'pts', box, (r.score || 0) + ' ' + S().points); }
+    if (r && r.place) { el('p', '', box, S().yourPlace); const h = el('h1', '', box, `${r.place === 1 ? '🏆 ' : r.place === 2 ? '🥈 ' : r.place === 3 ? '🥉 ' : ''}` + T('{a} of {b}', { a: r.place, b: r.of })); h.style.fontSize = '40px'; el('div', 'pts', box, T('{n} points', { n: r.score || 0 })); }
     else el('h1', '', box, S().look);
     if (r && r.place === 1 && !G.endFx) { G.endFx = true; confetti(); buzz('long'); }
     if (Array.isArray(G.ranking) && G.ranking.length) {
@@ -1024,7 +1087,7 @@ button.pt-pl:active{transform:scale(.97)}
         };
         G.ui.cells.push([n, x]);
       }
-      el('small', 'muted', card, 'Card ' + c.no).style.cssText = 'display:block;margin-top:8px;text-align:center';
+      el('small', 'muted', card, T('Card {no}', { no: c.no })).style.cssText = 'display:block;margin-top:8px;text-align:center';
     }
     const bb = btn(S().bingo, { kind: 'go', huge: true, full: true }, v.body, () => {
       if (b.wait > Date.now()) return;
@@ -1089,55 +1152,160 @@ button.pt-pl:active{transform:scale(.97)}
     for (const c of p.cards) {
       if (!c || !Array.isArray(c.cells)) continue;
       const box = el('div', 'c', area);
-      const t = el('table', '', box);
+      const t = el('table', '', box); t.dir = 'ltr';
       if (style === '75') { const hr = el('tr', '', t); for (const ch of 'BINGO') el('th', '', hr, ch); }
-      for (let r = 0; r < c.cells.length / cols; r++) { const tr = el('tr', '', t); for (let k = 0; k < cols; k++) { const n = c.cells[r * cols + k]; el('td', '', tr, n === 0 ? 'FREE' : n < 0 ? '' : String(n)); } }
-      el('small', '', box, 'Card ' + c.no + ' · Blokvane Bingo Night');
+      for (let r = 0; r < c.cells.length / cols; r++) { const tr = el('tr', '', t); for (let k = 0; k < cols; k++) { const n = c.cells[r * cols + k]; el('td', '', tr, n === 0 ? T('FREE') : n < 0 ? '' : String(n)); } }
+      el('small', '', box, T('Card {no} · Blokvane Bingo Night', { no: c.no }));
     }
     addEventListener('afterprint', () => { const a = document.getElementById('pt-print'); if (a) a.remove(); }, { once: true });
     setTimeout(() => { try { window.print(); } catch (e) {} }, 60);
   }
 
-  // ---------- joining with the 6 letters on the TV ----------
-  function codeScreen() {
+  // ---------- starting a game from this phone (your computer's page here: Party games) ----------
+  // Pick a game, its language and where it shows: on the computer, or on one of its TV screens. The computer opens it
+  // there with a join code this phone made, and this phone joins it by itself, as the host. Everyone else scans the
+  // code on that screen.
+  const GAME_LIST = [
+    ['trivia', '🧠', 'Trivia', 'Questions on the TV, answers on the phones. Knockout, teams, family mode and more.'],
+    ['boowho', '👻', 'Boo Who?', '"Who is most likely to..." Vote for each other. No right answers, just laughs.'],
+    ['world', '🌍', 'Where in the World?', 'Drop a pin on the map. The closest pin wins.'],
+    ['fakeout', '🎭', 'Fake Out', 'Make up a fake answer, then spot the real one.'],
+    ['hotboo', '🤧', 'Hot Boo', 'Pass Boo on before he sneezes on you.'],
+    ['boosays', '🙋', 'Boo Says', 'Simon Says with your phone: shake it, flip it, tap it.'],
+    ['emoji', '🦁', 'Emoji Riddles', 'Guess the movie, food or saying from a row of emoji.'],
+    ['higher', '⚖️', 'Higher or Lower', 'Which one is bigger? Two cards, one tap.'],
+    ['party', '🏚️', 'Boo Party', 'A board game around a haunted house, with mini games.'],
+    ['bingo', '🎱', 'Bingo Night', 'The TV calls the numbers; every phone is a bingo card.'],
+    ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.']
+  ];
+  async function startScreen(o) {
     css();
-    const v = view('Join a game', { tint: 'pink', back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
-    hero(v.body, 'Type the code on the TV', 'The 6 letters under the QR code.', { node: booPic('boo:party', 'float') });
+    await loadI18n();
+    const pc = o.pc, back = o.back || (() => GO.route());
+    if (!pc) { codeScreen(); return; }
+    const i18 = I();
+    let gameId = GAME_LIST.some(g => g[0] === store.get('party:last', '')) ? store.get('party:last', '') : 'trivia';
+    let lang = (i18 && i18.ok(store.get('party:lang', ''))) ? store.get('party:lang', '') : (i18 ? i18.pick() : 'en');
+    let where = store.get('party:where', 'here');
+    document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en';
+    const v = view('Party games', { tint: 'pink', back });
+    hero(v.body, 'Start a party game', 'Pick a game and where it shows. Everyone else joins by scanning the code on that screen: no app, no account.', { node: booPic('boo:party', 'float') });
+    // 1. the game
+    const c1 = el('div', 'card', v.body);
+    el('h2', '', c1, '1. Pick a game');
+    const ls = el('div', 'pt-games', c1);
+    const gameBtns = [];
+    for (const [id, e, name, sub] of GAME_LIST) {
+      const b = el('button', 'pt-game', ls);
+      b.type = 'button';
+      el('span', 'e', b, e);
+      const t = el('span', '', b); el('b', '', t, name); el('small', '', t, sub);
+      b.onclick = () => { gameId = id; mark(); buzz('tap'); };
+      gameBtns.push([id, b]);
+    }
+    const mark = () => { for (const [id, b] of gameBtns) b.setAttribute('aria-pressed', String(id === gameId)); };
+    mark();
+    // 2. the language (the whole game: the screen and every phone)
+    const c2 = el('div', 'card', v.body);
+    el('h2', '', c2, '2. Language');
+    el('p', 'muted small', c2, 'The whole game shows in it: the screen and every phone. The host can change it later.');
+    const sel = el('select', 'input', c2);
+    for (const [code, name] of langsFull()) { const op = el('option', '', sel, name); op.value = code; }
+    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = 'More languages (translated by Chrome on a computer)'; for (const [code, name] of langsMore()) { const op = el('option', '', og, name); op.value = code; } }
+    sel.value = lang;
+    sel.onchange = () => { lang = sel.value; };
+    // 3. where it shows: the computer, or one of its TV screens (the ones that are on right now)
+    const c3 = el('div', 'card', v.body);
+    el('h2', '', c3, '3. Where should it show?');
+    const wl = el('div', 'pt-where', c3);
+    const choices = [['here', '💻', pc.name || 'Your computer', 'In its own window. Put that window on a TV or a big screen if you like.', true]];
+    const paint = () => {
+      wl.textContent = '';
+      for (const [id, e, name, sub, on] of choices) {
+        const b = el('button', 'pt-game', wl);
+        b.type = 'button';
+        b.disabled = !on;
+        b.setAttribute('aria-pressed', String(id === where));
+        el('span', 'e', b, e);
+        const t = el('span', '', b); el('b', '', t, name); el('small', '', t, sub);
+        b.onclick = () => { where = id; paint(); buzz('tap'); };
+      }
+    };
+    paint();
+    const looking = el('p', 'muted small', c3, 'Looking for your TV screens...');
+    pc.ask('screens', {}).then(list => {
+      looking.remove();
+      for (const sc of (Array.isArray(list) ? list : []).slice(0, 20)) choices.push([sc.id, '📺', L.clean(sc.name, 40) || 'A TV screen', sc.on ? 'On right now' + (sc.show ? ': ' + L.clean(sc.show, 40) : '') : 'Off right now', !!sc.on]);
+      if (!choices.some(c => c[0] === where && c[4])) where = 'here';
+      paint();
+    }).catch(() => { looking.textContent = 'TV screens: allow Screen check for this phone on the computer (Connect, then Your phone) to start games on them from here.'; });
+    // start
+    const go = btn('Start the game', { kind: 'go', huge: true, full: true, icon: 'play' }, v.body, async () => {
+      store.set('party:last', gameId); store.set('party:lang', lang); store.set('party:where', where);
+      const code = L.shortCode(6);
+      const r = await pc.ask('partyOpen', { game: gameId, lang, where, code }, { timeout: 20000 });
+      const w = view('Party games', { tint: 'pink' });
+      const h = hero(w.body, 'Opening the game...', where === 'here' ? 'It opens on ' + (pc.name || 'your computer') + '. This phone joins by itself in a moment.' : 'It opens on ' + (r && r.where ? r.where : 'the TV') + '. This phone joins by itself in a moment.', { node: booPic('boo:party', 'float') });
+      const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
+      try {
+        const link = await byCode(code, 24);
+        buzz('ok');
+        G.autoJoin = link.s.slice(0, 10);
+        location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+      } catch (e) {
+        sp.remove();
+        hero((w.body.textContent = '', w.body), 'The game didn\'t answer', 'It may still be opening. Scan the code on the screen with this phone, or type the 6 letters under it.', { sleepy: true });
+        btn('Type the code', { kind: 'go', full: true, huge: true }, w.body, () => codeScreen());
+        btn('Back', { kind: 'ghost', full: true }, w.body, () => back()).style.marginTop = '10px';
+      }
+    });
+    go.style.marginTop = '6px';
+  }
+
+  // ---------- joining with the 6 letters on the TV ----------
+  async function codeScreen() {
+    css();
+    await loadI18n();
+    if (G.lang === 'en' && I()) await useLang(I().pick());
+    GO.say = T;
+    const v = view(T('Join a game'), { tint: 'pink', back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: booPic('boo:party', 'float') });
     const card = el('div', 'card', v.body);
     const ci = input({ placeholder: 'ABC DEF', max: 7 });
     ci.autocapitalize = 'characters';
     ci.style.cssText = 'font:800 34px/1 var(--round);letter-spacing:.18em;text-align:center;text-transform:uppercase';
     card.appendChild(ci);
     ci.oninput = () => { const t = ci.value.toUpperCase().replace(/[^A-Z]/g, '').slice(0, 6); const show = t.length > 3 ? t.slice(0, 3) + ' ' + t.slice(3) : t; if (ci.value !== show) ci.value = show; };
-    const go = btn('Join', { kind: 'go', huge: true, full: true }, v.body, async () => {
+    const go = btn(T('Join'), { kind: 'go', huge: true, full: true }, v.body, async () => {
       const c = L.normShort(ci.value, 6);
-      if (!c) { toast('Type all 6 letters from the TV.', 'bad'); ci.focus(); return; }
+      if (!c) { toast(T('Type all 6 letters from the TV.'), 'bad'); ci.focus(); return; }
       const sp = el('div', 'spin', card); sp.style.margin = '14px auto 0';
-      try { const link = await byCode(c); location.hash = '#game.' + link.s + '.' + link.tv; }
+      try { const link = await byCode(c); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
       finally { sp.remove(); }
     });
     go.style.marginTop = '6px';
     ci.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     setTimeout(() => { try { ci.focus(); } catch (e) {} }, 300);
   }
-  async function byCode(c) {
+  // the game a code belongs to (tries: how many times to ask; a game that is still opening needs a little longer)
+  async function byCode(c, tries) {
     const me = await C.newMember();
     let done = false, t = 0, R2 = null;
     const found = new Promise(res => {
       L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true, onMsg: m => {
         if (done || m.k !== 'link' || typeof m.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(m.s) || !L.okId(m.tv)) return;
-        done = true; res({ s: m.s, tv: m.tv });
+        done = true; res({ s: m.s, tv: m.tv, lang: typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) && m.lang !== 'en' ? m.lang : '' });
       } })).then(r => {
         R2 = r;
         let n = 0;
-        const ask = () => { if (done) return; if (++n > 9) { done = true; res(null); return; } r.send({ k: 'link?' }).catch(() => {}); t = setTimeout(ask, 1500); };
+        const ask = () => { if (done) return; if (++n > (tries || 9)) { done = true; res(null); return; } r.send({ k: 'link?' }).catch(() => {}); t = setTimeout(ask, 1500); };
         ask();
       }).catch(() => { done = true; res(null); });
     });
     const link = await found;
     clearTimeout(t);
     if (R2) setTimeout(() => R2.close(), 500);
-    if (!link) throw new Error('No game with that code right now. Check the letters on the TV.');
+    if (!link) throw new Error(T('No game with that code right now. Check the letters on the TV.'));
     return link;
   }
 })();

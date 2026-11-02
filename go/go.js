@@ -8,11 +8,13 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '1';
+  const VERSION = '2';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
   // ---------- small helpers ----------
+  // (a page in another language, like a party game in Spanish, says these few shared words its way: GO.say)
+  const say = t => { try { return window.GO && typeof GO.say === 'function' ? GO.say(t) : t; } catch (e) { return t; } };
   function el(tag, cls, parent, text) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -40,7 +42,8 @@
     cast: 'M3 16a5 5 0 0 1 5 5M3 12a9 9 0 0 1 9 9M3 8V5h18v14h-6', full: 'M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5', home: 'M4 11l8-7 8 7v9h-5.5v-6h-5v6H4z', moon: 'M19 14.5A7.5 7.5 0 0 1 9.5 5 7.5 7.5 0 1 0 19 14.5z',
     wifi: 'M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01', globe: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3z',
     clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2', mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21', star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z',
-    scroll: 'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4', draw: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3', ghost: 'M12 3a7 7 0 0 1 7 7v10l-2.3-1.7L14.3 20 12 18.3 9.7 20l-2.4-1.7L5 20V10a7 7 0 0 1 7-7zM9.5 10h.01M14.5 10h.01'
+    scroll: 'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4', draw: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3',
+    share: 'M12 15V3M7.5 7.5L12 3l4.5 4.5M6 11H4.5v10h15V11H18', dots: 'M12 5h.01M12 12h.01M12 19h.01', addbox: 'M5 4h14v16H5zM12 8.5v7M8.5 12h7', ghost: 'M12 3a7 7 0 0 1 7 7v10l-2.3-1.7L14.3 20 12 18.3 9.7 20l-2.4-1.7L5 20V10a7 7 0 0 1 7-7zM9.5 10h.01M14.5 10h.01'
   };
   function icon(name, cls) {
     const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -99,7 +102,7 @@
     if (onClick) b.addEventListener('click', async e => {
       if (b.getAttribute('aria-busy') === 'true') return;
       b.setAttribute('aria-busy', 'true');
-      try { await onClick(e); } catch (er) { toast(er && er.message ? er.message : 'That didn\'t work. Try again.', 'bad'); } finally { b.removeAttribute('aria-busy'); }
+      try { await onClick(e); } catch (er) { toast(er && er.message ? er.message : say('That didn\'t work. Try again.'), 'bad'); } finally { b.removeAttribute('aria-busy'); }
     });
     return b;
   }
@@ -129,11 +132,42 @@
     i.onchange = () => onChange(i.checked);
     return i;
   }
+  // What keeps this phone connected to your computers (the pairings, this phone's keys and name) is kept in two private
+  // places on the phone (localStorage and IndexedDB): if one is cleared, the other brings it back. It is never put in a
+  // cookie, because a cookie goes to the website's server with every visit; these never leave the phone.
+  const KEEP = k => k === 'pairs' || k === 'name' || k.startsWith('me:');
+  const idb = (() => {
+    let dbp = null;
+    const open = () => dbp || (dbp = new Promise((res, rej) => {
+      try { const r = indexedDB.open('blokvane-go', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); } catch (e) { rej(e); }
+    }));
+    const write = (fn) => open().then(db => new Promise(res => { const t = db.transaction('kv', 'readwrite'); fn(t.objectStore('kv')); t.oncomplete = () => res(true); t.onerror = t.onabort = () => res(false); })).catch(() => false);
+    return {
+      set: (k, v) => write(st => st.put(v, k)),
+      del: k => write(st => st.delete(k)),
+      all: () => open().then(db => new Promise(res => { const out = {}; const t = db.transaction('kv', 'readonly'); const c = t.objectStore('kv').openCursor(); c.onsuccess = () => { const x = c.result; if (x) { out[x.key] = x.value; x.continue(); } }; t.oncomplete = () => res(out); t.onerror = () => res(out); })).catch(() => ({}))
+    };
+  })();
   const store = {
     get(k, d) { try { const v = localStorage.getItem('bvgo:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem('bvgo:' + k, JSON.stringify(v)); } catch (e) {} },
-    del(k) { try { localStorage.removeItem('bvgo:' + k); } catch (e) {} }
+    set(k, v) { try { localStorage.setItem('bvgo:' + k, JSON.stringify(v)); } catch (e) {} if (KEEP(k)) idb.set(k, v); },
+    del(k) { try { localStorage.removeItem('bvgo:' + k); } catch (e) {} if (KEEP(k)) idb.del(k); }
   };
+  // on opening: a phone whose first copy is gone gets it back from the second; one that has it makes sure the second
+  // copy is there too (pairings made before this existed)
+  async function keepConnected() {
+    try {
+      const have = pairsRaw();
+      if (have.length) { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k && k.startsWith('bvgo:') && KEEP(k.slice(5))) idb.set(k.slice(5), JSON.parse(localStorage.getItem(k))); } return; }
+      const all = await Promise.race([idb.all(), new Promise(r => setTimeout(() => r({}), 1500))]);
+      if (!all || !Array.isArray(all.pairs) || !all.pairs.length) return;
+      for (const [k, v] of Object.entries(all)) if (KEEP(k)) localStorage.setItem('bvgo:' + k, JSON.stringify(v));
+    } catch (e) {}
+  }
+  const pairsRaw = () => { try { return JSON.parse(localStorage.getItem('bvgo:pairs') || '[]') || []; } catch (e) { return []; } };
+  // (and the browser is asked to keep this page's storage even when the phone is low on space; Firefox would ask
+  // the person with a pop-up, so it is skipped there)
+  function askToKeep() { try { if (navigator.storage && navigator.storage.persist && !/Firefox\//.test(navigator.userAgent)) navigator.storage.persisted().then(p => { if (!p) navigator.storage.persist().catch(() => {}); }).catch(() => {}); } catch (e) {} }
   // a name for this phone, shown on the computer ("Sam's phone")
   function deviceName() {
     const n = store.get('name', '');
@@ -153,7 +187,7 @@
     const top = el('header', 'top', app);
     if (o.back) {
       const b = el('button', 'back', top);
-      b.type = 'button'; b.setAttribute('aria-label', 'Back');
+      b.type = 'button'; b.setAttribute('aria-label', say('Back'));
       b.appendChild(icon('back'));
       b.onclick = () => { if (o.onBack) o.onBack(); o.back(); };
     } else top.appendChild(boo('float'));
@@ -302,9 +336,98 @@
     });
   }
 
+  // ---------- Blokvane as an app icon on the home screen ----------
+  // Android (Chrome, Edge, Samsung Internet) can add it for real with one tap: the browser offers it to this page and we
+  // show its own "Install" window. iPhones don't let a page do that: there, three picture steps show how (Share, then
+  // Add to Home Screen). Either way it is the same page, with its own icon, opening full screen.
+  let installEvt = null;
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  addEventListener('appinstalled', () => { installEvt = null; store.set('appAdded', 1); });
+  const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  async function installApp(o = {}) {
+    if (installEvt) {
+      const e = installEvt; installEvt = null;
+      try {
+        const shown = e.prompt();
+        if (shown && shown.catch) shown.catch(() => {});
+        const c = await e.userChoice;
+        if (c && c.outcome === 'accepted') { store.set('appAdded', 1); toast('Blokvane is on your home screen now.', 'ok'); return true; }
+        return false;
+      } catch (er) {}
+    }
+    installSteps(o);
+    return false;
+  }
+  function installSteps(o = {}) {
+    const ua = navigator.userAgent, ios = plat() === 'ios';
+    const otherIos = /CriOS|FxiOS|EdgiOS/.test(ua), samsung = /SamsungBrowser/.test(ua);
+    const steps = ios
+      ? [['share', 'Tap the Share button', otherIos ? 'The square with an arrow, next to the address at the top.' : 'The square with an arrow, at the bottom of Safari.'],
+        ['addbox', 'Tap "Add to Home Screen"', 'Scroll down the list a little if you don\'t see it.'],
+        ['check', 'Tap "Add"', 'At the top right. Blokvane is now on your home screen.']]
+      : plat() === 'android'
+        ? [['dots', 'Open the browser menu', samsung ? 'The three lines at the bottom right.' : 'The three dots at the top right.'],
+          ['addbox', 'Tap "Install app" or "Add to Home screen"', ''],
+          ['check', 'Tap "Install" or "Add"', 'Blokvane is now on your home screen.']]
+        : [['addbox', 'In Chrome or Edge: the install icon in the address bar', 'Or the browser menu, then "Install".'], ['check', 'Click "Install"', 'Blokvane gets its own window and icon.']];
+    sheet('Add Blokvane to your home screen', (sh, close) => {
+      el('p', 'muted', sh, 'It opens like an app, with its own icon, in one tap. Nothing to download from a store.');
+      const ls = el('ol', 'steps-pic', sh);
+      steps.forEach(([ic, t, sub]) => { const li = el('li', '', ls); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); if (sub) el('small', '', d, sub); });
+      if (o.note) el('p', 'install-note', sh, o.note);
+      if (o.instead) btn('Use it in the browser instead', { kind: 'ghost', full: true }, sh, () => { close(); o.instead(); }).style.marginTop = '12px';
+      else btn('Got it', { kind: 'go', full: true }, sh, () => close()).style.marginTop = '12px';
+    });
+  }
+  // a small card on the home page (until it's added, or "Not now" for three weeks)
+  function installCard(parent) {
+    if (standalone() || store.get('appAdded', 0) || store.get('installHide', 0) > Date.now()) return null;
+    const c = el('div', 'card install', parent);
+    const r = el('div', 'install-row', c);
+    const ic = el('img', 'install-ic', r); ic.src = 'icon-192.png'; ic.alt = '';
+    const t = el('div', '', r); el('b', '', t, 'Make Blokvane an app'); el('p', 'muted small', t, 'Add it to your home screen: it opens in one tap, full screen, and stays connected.');
+    const row = el('div', 'grid2', c); row.style.marginTop = '12px';
+    btn('Add to home screen', { kind: 'tint', icon: 'addbox' }, row, () => installApp());
+    btn('Not now', { kind: 'ghost' }, row, () => { store.set('installHide', Date.now() + 21 * 864e5); c.remove(); });
+    return c;
+  }
+  const ss = { get: k => { try { return sessionStorage.getItem('bvgo:' + k); } catch (e) { return null; } }, set: (k, v) => { try { sessionStorage.setItem('bvgo:' + k, v); } catch (e) {} } };
+  // right after scanning the code on the computer: as an app icon, or in the browser?
+  function chooseHow(parts) {
+    const [s] = parts;
+    const v = view('Connect your phone');
+    const h = hero(v.body, 'How do you want Blokvane on this phone?', 'Both work the same way. You can add the app icon later too.');
+    h.querySelector('.boo').classList.add('wave');
+    const ls = el('div', 'how', v.body);
+    const app = el('button', 'how-o rec', ls); app.type = 'button';
+    const ai = el('span', 'how-ic appic', app); const im = el('img', '', ai); im.src = 'icon-192.png'; im.alt = '';
+    const at = el('span', 'how-t', app); el('b', '', at, 'Add it to my home screen'); el('small', '', at, 'Opens like an app, with its own icon, in one tap. Best for every day.');
+    el('span', 'how-tag', app, 'Best');
+    const web = el('button', 'how-o', ls); web.type = 'button';
+    const wi = el('span', 'how-ic', web); wi.appendChild(icon('globe'));
+    const wt = el('span', 'how-t', web); el('b', '', wt, 'Use it in the browser'); el('small', '', wt, 'Works right away, nothing to add.');
+    const mark = how => ss.set('how:' + String(s).slice(0, 10), how);
+    web.onclick = () => { mark('web'); buzz('tap'); pair(parts); };
+    app.onclick = () => {
+      mark('app'); buzz('tap');
+      // Android: its own Install window, while this page connects
+      if (installEvt) { installApp(); pair(parts, { added: true }); return; }
+      // iPhone: add it first; the new icon then connects by itself (this code works for 10 minutes)
+      if (plat() === 'ios') { installSteps({ note: 'Then open Blokvane from your home screen: it finishes connecting by itself. Do it in the next few minutes, while this code works.', instead: () => { mark('web'); pair(parts); } }); return; }
+      // other browsers: connect here, then the steps
+      pair(parts, { steps: true });
+    };
+    foot();
+  }
+
   // ---------- pairing (from the QR code on the computer: #p1.<pairing secret>.<computer id>) ----------
-  async function pair(parts) {
+  async function pair(parts, how = {}) {
     const [s, cid] = parts;
+    // (this phone already knows that computer, like an app icon added on this page: straight to it)
+    const known = L.okId(cid) && pairs().find(p => p.cid === cid);
+    if (known) { history.replaceState(null, '', '#c1.' + known.s + '.' + known.cid); return (await need('home'))(known); }
+    // first: as an app icon, or in the browser (once per code; never inside the app itself)
+    if (s && L.okId(cid) && !standalone() && !ss.get('how:' + String(s).slice(0, 10))) return chooseHow(parts);
     const v = view('Connect your phone');
     if (!s || !L.okId(cid)) { hero(v.body, 'This code isn\'t complete', 'Scan the QR code on your computer again: in Blokvane, open Connect, then Your phone.', { sleepy: true }); return; }
     const h = hero(v.body, 'Connecting to your computer', 'Keep this page open for a moment.');
@@ -327,7 +450,8 @@
           history.replaceState(null, '', '#c1.' + m.s + '.' + cid);
           room.close();
           buzz('ok');
-          celebrate(m.name || 'your computer', m.kind);
+          askToKeep();
+          celebrate(m.name || 'your computer', m.kind, how);
         } else if (m.k === 'nopair') {
           done = true; clearTimeout(t); room.close();
           hero((v.body.textContent = '', v.body), 'That code was already used', 'Each QR code connects one phone. Make a new one on your computer: Connect, then Your phone.', { sleepy: true });
@@ -342,13 +466,15 @@
     };
     t = setTimeout(ask, 900);
   }
-  function celebrate(name, kind) {
+  function celebrate(name, kind, how = {}) {
     const v = view('All set');
-    const h = hero(v.body, 'Connected to ' + name, kind === 'kid' ? 'Kid mode requests from that computer come to this phone. You can allow or deny them here.' : 'This phone is now a remote and more for your computer. Add this page to your home screen to open it in one tap.');
+    const h = hero(v.body, 'Connected to ' + name, kind === 'kid' ? 'Kid mode requests from that computer come to this phone. You can allow or deny them here.' : 'This phone is now a remote and more for your computer. It stays connected: you don\'t need to scan again.');
     h.querySelector('.boo').classList.add('wave');
     btn('Start', { kind: 'go', huge: true, full: true }, v.body, () => route());
-    if (plat() === 'ios') el('p', 'muted small center', v.body, 'On iPhone: tap Share, then Add to Home Screen.');
-    else if (plat() === 'android') el('p', 'muted small center', v.body, 'On Android: open the browser menu, then Add to Home screen.');
+    // (the app icon: added already, the steps now, or a card to add it)
+    if (how.added || standalone()) el('p', 'muted small center', v.body, standalone() ? 'You\'re in the Blokvane app.' : 'Blokvane is on your home screen too: open it from there next time.');
+    else if (how.steps) installSteps();
+    else installCard(v.body);
     confetti();
   }
   // a short burst of confetti (one moment, never in a loop)
@@ -373,6 +499,7 @@
 
   // ---------- where to go ----------
   async function route() {
+    if (window.GO) GO.say = null;
     const h = L.parse(location.hash);
     try {
       if (!h) return home();
@@ -445,12 +572,15 @@
 
   // ---------- off we go ----------
   window.GO = { el, icon, boo, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, get pc() { return pc; } };
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, say: null, get pc() { return pc; } };
+  // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
+  try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });
   if (!(window.crypto && crypto.subtle) || typeof BigInt !== 'function' || !window.WebSocket) {
     const v = view('Blokvane');
     hero(v.body, 'This browser is too old for this', 'Open this link in Chrome, Safari, Edge or Firefox.', { sleepy: true });
     return;
   }
-  route();
+  // (first the connection, from the second copy if the first is gone; then the page)
+  keepConnected().finally(() => { route(); if (pairs().length) askToKeep(); });
 })();

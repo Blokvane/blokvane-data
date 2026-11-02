@@ -10,7 +10,8 @@ var BVPLAY = (() => {
   const stage = document.getElementById('stage');
   const games = new Map();
   const players = new Map();      // id -> { id, name, av, photo, color, team, ready, score, right, lives, out, streak, away, at, helpers }
-  let R = null, CR = null, code = '', host = '', game = null, settings = {}, phase = 'lobby', lang = 'en', strings = Object.assign({}, P.STR), round = 0;
+  let R = null, CR = null, code = '', host = '', game = null, settings = {}, phase = 'lobby', lang = 'en', strings = Object.assign({}, P.STR), round = 0, secret = '';
+  const I18N = BVI18N;
   const handlers = new Map();     // message kind -> fn(m, player) (a game listens while it runs)
   const pending = new Map();      // round -> { who: Set, got: Map, done, onAns }
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
@@ -22,15 +23,29 @@ var BVPLAY = (() => {
   const pub = p => ({ id: p.id, name: p.name, av: p.av, ph: !!p.photo, color: p.color, team: p.team, ready: !!p.ready || p.id === host, score: p.score, lives: p.lives, out: !!p.out });
 
   // ---------- the room ----------
-  async function open() {
+  async function open(given) {
     const me = await C.newMember();
-    const s = L.newSecret();
+    const s = secret = L.newSecret();
     R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
-    R.link = GO + '#game.' + s + '.' + R.id;
-    // a short code for phones that can't scan: a room of its own that only hands out the link
-    code = L.shortCode(6);
-    CR = await L.room({ secret: await L.codeSecret(code, 'play'), label: 'bvplaycode', me, name: 'TV', role: 'tv', open: true, onMsg: m => { if (m.k === 'link?') CR.send({ k: 'link', s, tv: R.id }, m.f).catch(() => {}); } });
+    // a short code for phones that can't scan: a room of its own that only hands out the link. (A phone that started
+    // this game from Blokvane made the code itself, so it joins by itself as the host.)
+    code = given || L.shortCode(6);
+    CR = await L.room({ secret: await L.codeSecret(code, 'play'), label: 'bvplaycode', me, name: 'TV', role: 'tv', open: true, onMsg: m => { if (m.k === 'link?') CR.send({ k: 'link', s, tv: R.id, lang }, m.f).catch(() => {}); } });
     setInterval(() => { if (phase !== 'end') sayLobby(); }, 12000);
+  }
+  // what the phones scan: the game's room, and the language the game is in (so a phone shows it from the first screen)
+  const linkNow = () => GO + '#game.' + secret + '.' + R.id + (lang !== 'en' ? '.' + lang : '');
+  // the game's language, everywhere on this screen
+  async function setLang(v) {
+    lang = v;
+    await P.useLang(lang);
+    strings = await P.trAll(P.STR);
+    document.documentElement.lang = lang;
+    document.documentElement.dir = P.RTL.has(lang) ? 'rtl' : 'ltr';
+    document.body.classList.toggle('rtl', P.RTL.has(lang));
+    document.title = P.f('Blokvane party games');
+    // (a setting that the new language doesn't have, like a Trivia category with no questions in it, goes back)
+    if (game && game.langOptions) for (const [key, fn] of Object.entries(game.langOptions)) { const f = game.settings.find(x => x.key === key); if (f && !fn(lang, f.options).some(o => String(o[0]) === String(settings[key]))) settings[key] = f.default; }
   }
   function sweep() {
     // someone whose phone went quiet for a while is away (they come back as themselves)
@@ -104,7 +119,7 @@ var BVPLAY = (() => {
   // what the phones show in the lobby (the game, its settings, the players, the host)
   function sayLobby(to) {
     const tt = tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
-    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : game.name) : '', games: (tx.lang === lang && tx.games) || [...games.values()].map(g => ({ id: g.id, name: g.name, e: g.emoji, sub: g.sub })),
+    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', games: (tx.lang === lang && tx.games) || [...games.values()].map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
       players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : game.settings) : [], lang, rtl: P.RTL.has(lang), strings };
     if (to) sayTo(to, m); else say(m);
   }
@@ -113,14 +128,17 @@ var BVPLAY = (() => {
   async function retranslate() {
     const want = (game ? game.id : '') + '|' + lang;
     const gl = await Promise.all([...games.values()].map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
-    const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), options: f.options ? await Promise.all(f.options.map(async o => [o[0], await P.tr(String(o[1]))])) : undefined }))) : null;
+    const optsOf = f => (game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options);
+    // (each choice keeps its short explanation, and a setting its own, in the game's language)
+    const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined,
+      options: f.options ? await Promise.all(optsOf(f).map(async o => (o[2] ? [o[0], await optLabel(o[1]), await P.tr(o[2])] : [o[0], await optLabel(o[1])]))) : undefined }))) : null;
     const name = game ? await P.tr(game.name) : '';
     if (want !== (game ? game.id : '') + '|' + lang) return;
     Object.assign(tx, { key: want, lang, games: gl, name, schema });
     sayLobby();
   }
   async function setOne(key, v) {
-    if (key === 'lang') { if (typeof v === 'string' && /^[a-z]{2}(-[A-Z]{2})?$/.test(v)) { lang = v; await P.useLang(lang); strings = await P.trAll(P.STR); document.documentElement.lang = lang; document.documentElement.dir = P.RTL.has(lang) ? 'rtl' : 'ltr'; document.body.classList.toggle('rtl', P.RTL.has(lang)); } lobby(); sayLobby(); retranslate(); return; }
+    if (key === 'lang') { if (I18N.ok(v)) await setLang(v); lobby(); sayLobby(); retranslate(); return; }
     const f = game && game.settings.find(x => x.key === key);
     if (!f) return;
     if (f.type === 'toggle') settings[key] = !!v;
@@ -146,47 +164,132 @@ var BVPLAY = (() => {
     if (right) for (const r of [].concat(right)) t.appendChild(r);
     return t;
   }
+  // The lobby, like a game show's welcome screen: how to join (the QR code and the code, as tiles), the steps, everyone
+  // who is in (with a check once they're ready, and empty seats waiting), and what's special about the game.
+  // (it's built off screen, then shown in one go: a newer lobby, like one more player joining, replaces it)
+  let lobbyRun = 0, lastSpot = '';
   async function lobby() {
-    stage.textContent = '';
+    const my = ++lobbyRun;
+    const page = document.createElement('div');
     const g = game;
-    top(stage, g ? await P.tr(g.name) : await P.tr('Party games'), await P.tr(g ? g.sub : 'Scan the code to join. The first phone in picks the game.'));
-    const body = el('div', 'body', stage);
-    const left = el('div', 'col', body); left.style.width = '42vw';
+    const T = (t, v) => P.tr(t, v);
+    const LET = I18N.letters(lang);
+    // the top: Boo, the game, and the game's own little sign on the right
+    const t = top(page, await T(g ? g.name : 'Party games'), await T(g ? g.sub : 'Scan the code to join. The first phone in picks the game.'));
+    t.classList.add('lob-top');
+    const deco = el('div', 'deco', t);
+    const dk = g && g.deco ? g.deco : 'letters';
+    if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
+    else if (dk === 'bingo') for (const x of 'BINGO') el('span', 'tile-b', deco, x);
+    else for (const x of [...dk.matchAll(/\p{Extended_Pictographic}(‍\p{Extended_Pictographic}|️)*/gu)].map(m => m[0]).slice(0, 4)) el('span', 'tile-e', deco, x);
+    const body = el('div', 'body lob', page);
+    // left: the steps
+    const left = el('div', 'col lob-l', body);
     const jc = el('div', 'card join', left);
     const q = el('div', 'qr', jc);
-    try { q.appendChild(BVQR.svgOf(R.link, { border: 1 })); } catch (e) {}
-    const jt = el('div', '', jc);
-    el('div', 'muted', jt, await P.tr('Scan with your phone\'s camera')).style.fontSize = '2.6vh';
-    el('div', 'muted', jt, await P.tr('or open Blokvane on your phone and type')).style.cssText = 'font-size:2.2vh;margin-top:2vh';
-    el('div', 'code', jt, code.slice(0, 3) + ' ' + code.slice(3));
-    const rules = el('div', 'card', left);
-    const ol = el('ol', 'howto', rules);
-    for (const r of (g ? g.rules : ['Everyone scans the code and picks a name.', 'The first phone in is the host: it picks the game and starts it.', 'Answer on your phone, and watch the TV.'])) el('li', '', ol, await P.tr(r));
-    const right = el('div', 'col grow', body);
+    try { q.appendChild(BVQR.svgOf(linkNow(), { border: 1 })); } catch (e) {}
+    const jt = el('div', 'jt', jc);
+    const s1 = el('div', 'stp', jt); el('span', 'n', s1, '1'); el('b', '', s1, await T('Scan with your camera'));
+    el('div', 'muted or', jt, await T('or open Blokvane and type'));
+    const ct = el('div', 'codetiles', jt);
+    ct.setAttribute('aria-label', code);
+    for (const ch of code) el('span', '', ct, ch);
+    const two = el('div', 'steps2', left);
+    const st2 = el('div', 'card stp-c', two);
+    const s2 = el('div', 'stp', st2); el('span', 'n', s2, '2'); el('b', '', s2, await T('Name + selfie'));
+    el('p', '', st2, await T('Take a photo or pick a Boo, then tap Ready.'));
+    const st3 = el('div', 'card stp-c', two);
+    const step = g && g.step ? g.step : ['Pick a game', 'The first phone in is the host and picks the game.'];
+    const s3 = el('div', 'stp', st3); el('span', 'n', s3, '3'); el('b', '', s3, await T(step[0], { letters: LET.slice(0, 4).join(' ') }));
+    el('p', '', st3, await T(step[1]));
+    // right: who's in
+    const right = el('div', 'col grow lob-r', body);
     const ps = list();
-    const head = el('div', 'top', right);
-    el('h1', 'grow', head, ps.length ? `${ps.length} ` + await P.tr(ps.length === 1 ? 'player' : 'players') : await P.tr('Waiting for players...')).style.fontSize = '3.6vh';
+    const head = el('div', 'ph', right);
+    el('h2', '', head, ps.length ? await T(ps.length === 1 ? '1 player' : '{n} players', { n: ps.length }) : await T('Waiting for players...'));
     const hp = players.get(host);
-    if (hp) el('div', 'pill', head, (await P.tr('Host')) + ': ' + hp.name);
-    const grid = el('div', 'players', right);
-    if (!ps.length) el('div', 'empty', grid, await P.tr('Nobody yet. Scan the code to be first!'));
+    if (hp) el('div', 'pill', head, await T('Host: {name}', { name: hp.name }));
+    const cols = ps.length <= 8 ? 4 : ps.length <= 15 ? 5 : ps.length <= 24 ? 6 : 8;
+    const grid = el('div', 'slots', right);
+    grid.style.setProperty('--cols', cols);
+    grid.classList.toggle('small', cols > 5);
     for (const p of ps) {
-      const c = el('div', 'player', grid);
+      const c = el('div', 'seat', grid);
       c.style.setProperty('--pc', p.color);
-      if (p.id === host) el('span', 'crown', c, '👑');
       const av = el('div', 'av', c); const im = el('img', '', av); im.src = avatarUrl(p); im.alt = '';
+      if (p.ready || p.id === host) el('span', 'ok', av, '✓');
       el('b', '', c, p.name);
-      if (p.team) { const t = P.TEAMS.find(x => x[0] === p.team); if (t) { const tb = el('small', '', c, t[1]); tb.style.color = t[2]; } }
-      if (p.ready) el('span', 'ok', c, '✓');
+      if (p.team) { const tm = P.TEAMS.find(x => x[0] === p.team); if (tm) { const tb = el('small', 'team', c, await T(tm[1])); tb.style.color = tm[2]; } }
     }
-    el('div', 'foot', stage, g ? await P.tr(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await P.tr('Made by Blokvane. No app, no account: your phone and this screen talk straight to each other.'));
-    credit(g);
+    // (empty seats fill the rows; the first ones invite people in)
+    // (with the game mode card below, one row is enough while everyone fits, plus a free seat)
+    const seats = g && g.spot ? Math.max(cols, Math.ceil((ps.length + 1) / cols) * cols) : Math.max(cols * 2, Math.ceil(ps.length / cols) * cols);
+    const joinWord = await T('join');
+    for (let i = ps.length; i < seats; i++) { const e = el('div', 'seat empty', grid); if (i < ps.length + 2) el('span', '', e, joinWord); }
+    // what's special about this game: the mode the host picked, explained (Trivia), its helpers, or how it plays
+    if (g && g.spot) { body.classList.add('has-spot'); await spotCard(right, g.spot(settings)); }
+    else if (g) {
+      const ex = el('div', 'lob-x', right);
+      if (g.helpers) {
+        el('div', 'lbl', ex, await T('4 helpers · each works once'));
+        const chips = el('div', 'chips', ex);
+        for (const h of g.helpers) el('span', 'chip', chips, await T(h));
+      } else if (g.rules && g.rules.length) {
+        el('div', 'lbl', ex, await T('How to play'));
+        const ol = el('ol', 'howto2', ex);
+        for (const r of g.rules) el('li', '', ol, await T(r));
+      }
+    }
+    // the bottom: what happens next, and the credit
+    const ft = el('div', 'lob-foot', page);
+    el('b', '', ft, g ? await T(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await T('Made by Blokvane. No app, no account: your phone and this screen talk straight to each other.'));
+    const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit);
+    if (c) el('small', '', ft, P.f(c));
+    if (my !== lobbyRun || phase === 'play') return;
+    stage.textContent = '';
+    stage.append(...page.childNodes);
+    const sp = stage.querySelector('.spot');
+    if (sp) { requestAnimationFrame(() => fitSpot(sp)); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fitSpot(sp)).catch(() => {}); }
   }
-  function credit(g) { if (g && g.credit) el('div', 'credit', stage, g.credit); }
+  // (less room on this screen, or longer words in this language: the rules go side by side, then the settings go,
+  // then the rules, then the medal gets smaller, until the card fits)
+  function fitSpot(c) {
+    if (!c.isConnected) return;
+    for (const k of ['s1', 's2', 's3', 's4']) { if (c.scrollHeight <= c.clientHeight + 1) return; c.classList.add(k); }
+  }
+  // the game mode, explained on the TV while the host picks it: a medal, its name and what it means, three short rules,
+  // and the main settings. It plays a short reveal when the host picks another mode.
+  async function spotCard(parent, sp) {
+    const T = (t, v) => P.tr(t, v);
+    const c = el('div', 'spot', parent);
+    const key = game.id + '|' + sp.key;
+    if (key !== lastSpot) c.classList.add('fresh');
+    lastSpot = key;
+    const hd = el('div', 'spot-top', c);
+    el('div', 'spot-ic', hd, sp.icon).setAttribute('aria-hidden', 'true');
+    const tx = el('div', 'spot-t', hd);
+    el('span', 'caps', tx, await T(sp.label));
+    el('b', '', tx, await T(sp.name));
+    el('p', '', tx, await T(sp.desc));
+    const facts = el('div', 'spot-f', c);
+    for (const [ic, t2, v] of sp.facts) el('span', '', facts, ic + ' ' + await optLabel2(t2, v));
+    const bl = el('div', 'spot-b', c);
+    for (const [ic, t2] of sp.bullets) { const d = el('div', '', bl); el('i', '', d, ic).setAttribute('aria-hidden', 'true'); el('span', '', d, await T(t2, sp.vars)); }
+  }
+  const optLabel2 = (t, v) => (v ? P.tr(t, v) : optLabel(t));
+  function credit(g) { const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit); if (c) el('div', 'credit', stage, P.f(c)); }
+  // a setting's choice in the game's language ("15 s", "2.5 min" and "75 balls" keep their number)
+  function optLabel(t) {
+    const x = String(t);
+    let m = /^(\d+(?:\.\d+)?) s$/.exec(x); if (m) return P.tr('{n} s', { n: m[1] });
+    m = /^(\d+(?:\.\d+)?) min$/.exec(x); if (m) return P.tr('{n} min', { n: m[1] });
+    m = /^(\d+) balls$/.exec(x); if (m) return P.tr('{n} balls', { n: m[1] });
+    return P.tr(x);
+  }
   // the scoreboard: score bars slide, out players fade (sorted, the leader on top)
   function board(parent, o = {}) {
     const b = el('div', 'board', parent);
-    el('h2', '', b, o.title || 'Scoreboard');
+    el('h2', '', b, o.title || P.f('Scoreboard'));
     const rows = new Map();
     const draw = (answered) => {
       const ps = list().slice().sort((a, b2) => (b2.score - a.score) || (a.out - b2.out));
@@ -218,6 +321,14 @@ var BVPLAY = (() => {
   let booEl = null;
   function boo(mood) {
     if (!booEl || !booEl.isConnected) { booEl = el('div', 'boo', document.body); el('img', '', booEl).alt = ''; }
+    // (a screen can keep a spot for Boo, like the clock on a Trivia question; otherwise the corner)
+    const slot = stage.querySelector('.boo-slot');
+    if (slot) {
+      const r = slot.getBoundingClientRect(), z = Math.round(r.width * 0.92);
+      booEl.style.cssText = 'left:' + Math.round(r.left + (r.width - z) / 2) + 'px;top:' + Math.round(r.top + (r.height - z) / 2) + 'px;width:' + z + 'px;height:' + z + 'px;right:auto;bottom:auto';
+      booEl.dataset.slot = '1';
+    } else if (booEl.dataset.slot) { booEl.style.cssText = ''; delete booEl.dataset.slot; }
+    booEl.hidden = false;
     const id = { happy: 'boo:party', sad: 'boo:sad', wow: 'boo:wow', laugh: 'boo:laugh', scary: 'boo:scary', cool: 'boo:cool', hi: 'boo:hi', love: 'boo:love', mind: 'boo:mind' }[mood] || 'boo:hi';
     booEl.firstChild.src = P.booUri(id);
     booEl.animate([{ transform: 'scale(.6) translateY(4vh)' }, { transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { duration: 600, easing: 'cubic-bezier(.2,1.4,.4,1)' });
@@ -287,7 +398,7 @@ var BVPLAY = (() => {
     let teamPlace = null;
     if (teamMode) {
       // (the team's points are everyone's on it added up; each player's place is the team's)
-      ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: t[1], av: 'boo:party', photo: '', score: list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
+      ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: P.f(t[1] + ' team'), av: 'boo:party', photo: '', score: list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
       teamPlace = new Map(ps.map((t, i) => [t.team, i + 1]));
     }
     stage.textContent = '';
@@ -295,9 +406,9 @@ var BVPLAY = (() => {
     const box2 = el('div', '', cv);
     const w = ps[0];
     el('div', 'muted', box2, await P.tr(teamMode ? 'The winning team' : 'The winner')).style.fontSize = '3.4vh';
-    el('h1', '', box2, w ? (teamMode ? await P.tr(w.name) : w.name) : '...');
+    el('h1', '', box2, w ? w.name : '...');
     const pod = el('div', 'podium', box2);
-    [ps[1], ps[0], ps[2]].forEach((p, i) => { if (!p) return; const d = el('div', 'p', pod); const im = el('img', '', d); im.src = avatarUrl(p); im.alt = ''; el('b', '', d, p.name).style.fontSize = '3vh'; const blk = el('div', 'blk', d, String([2, 1, 3][i])); blk.style.height = ['16vh', '24vh', '11vh'][i]; el('small', 'muted', d, p.score + ' ' + strings.points).style.fontSize = '2.4vh'; });
+    [ps[1], ps[0], ps[2]].forEach((p, i) => { if (!p) return; const d = el('div', 'p', pod); const im = el('img', '', d); im.src = avatarUrl(p); im.alt = ''; el('b', '', d, p.name).style.fontSize = '3vh'; const blk = el('div', 'blk', d, String([2, 1, 3][i])); blk.style.height = ['16vh', '24vh', '11vh'][i]; el('small', 'muted', d, P.f('{n} points', { n: p.score })).style.fontSize = '2.4vh'; });
     el('p', '', box2, await P.tr('The host can play again, or pick another game.')).style.marginTop = '4vh';
     P.confetti(); P.sfx('win'); boo('happy');
     const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
@@ -310,19 +421,23 @@ var BVPLAY = (() => {
     const live = () => my === run && phase === 'play';
     const nop = () => {};
     return {
-      players: list, alive, get settings() { return settings; }, lang, tr: P.tr, P, el, strings, top, stage, avatarUrl,
+      players: list, alive, get settings() { return settings; }, lang, tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
+      // the game's own questions, words and places, written for its language (null: English, the packs in packs.js)
+      packs: lang === 'en' ? null : I18N.packs(lang),
       sleep: ms => (live() ? sleep(ms) : Promise.resolve()),
       say: m => (live() ? say(m) : nop()), sayTo: (id, m) => (live() ? sayTo(id, m) : nop()), box: (id, m) => (live() ? box(id, m) : Promise.resolve(false)),
       ask: o => (live() ? ask(o) : Promise.resolve(new Map())), wait: (t, x) => (live() ? wait(t, x) : nop()), result: (id, r) => (live() ? result(id, r) : nop()),
       on: (k, fn) => (live() ? on(k, fn) : nop), boo: mood => (live() ? boo(mood) : nop()),
       ring: (parent, sec) => (live() ? ring(parent, sec) : { node: el('div'), stop: nop }), board: (parent, o) => board(live() ? parent : el('div'), o),
-      view(title, sub, right) { if (!live()) return el('div'); stage.textContent = ''; top(stage, title, sub, right); const b = el('div', 'body', stage); credit(game); return b; },
+      // (no title: a screen that makes its own top, like Trivia's questions)
+      view(title, sub, right) { if (!live()) return el('div'); stage.textContent = ''; if (booEl && booEl.dataset.slot) booEl.hidden = true; if (title != null) top(stage, title, sub, right); const b = el('div', 'body', stage); credit(game); return b; },
       player: id => players.get(id),
       qn: () => (cur.q ? cur.q.n : 0),
       isHost: id => id === host,
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
+      num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
       over: () => !live()
     };
   }
@@ -332,13 +447,17 @@ var BVPLAY = (() => {
   async function boot() {
     stage.textContent = '';
     const c = el('div', 'cover', stage);
-    el('h1', '', c, 'Blokvane party games');
-    el('p', '', c, 'Getting the room ready...');
-    if (!(window.crypto && crypto.subtle) || typeof BigInt !== 'function' || !window.WebSocket) { c.lastChild.textContent = 'This browser is too old for party games. Try Chrome, Edge, Safari or a newer TV.'; return; }
-    await open();
-    // #trivia or #trivia.es: that game, in that language
+    // #trivia, #trivia.es or #trivia.es.ABCDEF (the code a phone picked to join with), or #.es: the game, its language
+    // (no language in the link: this screen's own, when it's one of the seven) and its join code
     const h = location.hash.replace(/^#/, '').split('.');
-    if (h[1] && /^[a-z]{2}$/.test(h[1])) { lang = h[1]; await P.useLang(lang); strings = await P.trAll(P.STR); document.documentElement.lang = lang; document.documentElement.dir = P.RTL.has(lang) ? 'rtl' : 'ltr'; document.body.classList.toggle('rtl', P.RTL.has(lang)); }
+    const want = I18N.ok(h[1]) ? h[1] : I18N.pick();
+    await setLang(want).catch(() => {});
+    const t1 = el('h1', '', c, P.f('Blokvane party games'));
+    el('p', '', c, P.f('Getting the room ready...'));
+    void t1;
+    if (!(window.crypto && crypto.subtle) || typeof BigInt !== 'function' || !window.WebSocket) { c.lastChild.textContent = P.f('This browser is too old for party games. Try Chrome, Edge, Safari or a newer TV.'); return; }
+    const given = h[2] && /^[A-Z]{6}$/.test(h[2]) ? L.normShort(h[2], 6) : '';
+    await open(given || '');
     if (games.has(h[0])) choose(h[0]); else { lobby(); retranslate(); }
   }
   setTimeout(boot, 0);
