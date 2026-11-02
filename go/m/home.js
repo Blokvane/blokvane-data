@@ -116,7 +116,7 @@ GO.def('home', (pair) => {
     sheet('Connect again', sh => {
       el('p', '', sh, 'If Reconnect doesn\'t help, connect this phone again with a new code. It takes one scan:');
       const ol = el('ol', 'steps-pic', sh);
-      for (const [ic, t, sub] of [['laptop', 'On your computer, open Blokvane', 'Then Connect, then Your phone.'], ['monitor', 'Click "Connect your phone"', 'A code shows up on the computer.'], ['camera', 'Scan it with this phone\'s camera', 'Tap the link that shows up. This phone connects by itself.']]) {
+      for (const [ic, t, sub] of [['laptop', 'On your computer, open Blokvane', 'Then Connect, then Your phone.'], ['monitor', 'Click "Connect another phone"', 'It says "Connect your phone" if no phone is listed there. This phone won\'t be added twice.'], ['camera', 'Scan the code with this phone\'s camera', 'Tap the link that shows up. This phone connects by itself.']]) {
         const li = el('li', '', ol); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); el('small', '', d, sub);
       }
       el('p', 'muted small', sh, 'Make sure Chrome is open on the computer, and that both have internet.').style.marginTop = '14px';
