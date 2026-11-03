@@ -444,7 +444,7 @@ var BVPLAY = (() => {
   addEventListener('beforeunload', e => { if (back.going || back.dlg || !busy()) return; e.preventDefault(); e.returnValue = ''; });
 
   // music and sound effects (sound.js); a quiet stand-in if it didn't load
-  const SND = window.BVSOUND ||{ preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
+  const SND = window.BVSOUND ||{ preload() {}, music() {}, sting() {}, fx() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };
   let sndOff = null;
   // A browser keeps a page quiet until someone clicks it (or presses a key) once, and the players only touch their
   // phones: so a game with sounds shows a hint at the top until then. Any click anywhere turns the sound on.
@@ -930,7 +930,7 @@ var BVPLAY = (() => {
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
-      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), on: () => SND.state() === 'on' },
+      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), fx: (n, o) => (live() && SND.fx ? SND.fx(n, o) : null), on: () => SND.state() === 'on' },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
       over: () => !live()
     };

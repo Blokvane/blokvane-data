@@ -23,7 +23,13 @@ var BVSOUND = (() => {
     correct: ['correct.mp3', 0.66],
     wrong: ['wrong.mp3', 0.69],
     timesup: ['times-up.mp3', 0.85],
-    win: ['win.mp3', 0.7]
+    win: ['win.mp3', 0.7],
+    // Where in the World?'s own effects (several can sound at once: see fx below)
+    whoosh: ['w-whoosh.mp3', 0.46], plane: ['w-plane.mp3', 0.6], ping: ['w-ping.mp3', 0.55], stamp: ['w-stamp.mp3', 0.9], shutter: ['w-shutter.mp3', 0.94],
+    static: ['w-static.mp3', 0.62], neon: ['w-neon.mp3', 0.67], print: ['w-print.mp3', 0.68], spot: ['w-spot.mp3', 0.85], sparkle: ['w-sparkle.mp3', 0.51],
+    flip: ['w-flip.mp3', 0.85], flutter: ['w-flutter.mp3', 0.56], pop: ['w-pop.mp3', 0.6], tick: ['w-tick.mp3', 0.9], hint: ['w-hint.mp3', 0.5],
+    drumroll: ['w-drumroll.mp3', 0.57], land: ['w-land.mp3', 0.65], zip: ['w-zip.mp3', 0.53], bull: ['w-bull.mp3', 0.6], globe: ['w-globe.mp3', 0.63],
+    focus: ['w-focus.mp3', 0.6], coin: ['w-coin.mp3', 0.66]
   };
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};
   const bufs = new Map(), loading = new Map(), stings = new Set(), subs = new Set();
@@ -143,6 +149,24 @@ var BVSOUND = (() => {
     s.start(ac.currentTime + (o.delay || 0));
     stings.add(node);
   }
+  // a little sound that may overlap others (a pin landing, a tick, a stamp): it doesn't stop what's playing.
+  // o: { delay (s), vol (0..1), rate (speed: 1.2 is higher) }. One that hasn't loaded yet is skipped.
+  const fxs = new Set();
+  function fx(name, o = {}) {
+    if (!FILES[name] || !ready()) return;
+    const b = bufs.get(name);
+    if (!b) { load(name); return; }
+    if (fxs.size > 10) return;
+    const g = ac.createGain();
+    g.gain.value = FILES[name][1] * (o.vol != null ? o.vol : 1);
+    g.connect(master);
+    const s = ac.createBufferSource();
+    s.buffer = b; s.connect(g);
+    if (o.rate) s.playbackRate.value = Math.max(0.5, Math.min(2, +o.rate || 1));
+    fxs.add(s);
+    s.onended = () => { fxs.delete(s); try { g.disconnect(); } catch (e) {} };
+    s.start(ac.currentTime + (o.delay || 0));
+  }
   // sound on or off on this screen (kept for next time)
   function setOn(v) {
     on = !!v;
@@ -153,5 +177,5 @@ var BVSOUND = (() => {
   }
   // 'on', 'off', 'locked' (waiting for a first click or key press) or 'none' (this browser can't play it)
   const state = () => (!ctx() ? 'none' : !on ? 'off' : ready() ? 'on' : 'locked');
-  return { preload, music, sting, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); } };
+  return { preload, music, sting, fx, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); } };
 })();

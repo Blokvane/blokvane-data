@@ -126,11 +126,26 @@
 .pt-pl .cr{position:absolute;top:2px;inset-inline-start:6px}
 .pt-pl[aria-pressed=true]{border-color:var(--tint);background:color-mix(in srgb,var(--tint) 20%,var(--raise))}
 button.pt-pl:active{transform:scale(.97)}
-.pt-map{position:relative;border-radius:22px;overflow:hidden;background:radial-gradient(circle at 50% 40%,#21507f,#123355);touch-action:none;height:min(58vh,520px);border:1px solid var(--line);user-select:none;-webkit-user-select:none}
-.pt-map svg{width:100%;height:100%;display:block}
-.pt-map .land{fill:#6fa36b;stroke:#3c6b44;stroke-width:.35;vector-effect:non-scaling-stroke}
-.pt-map .zm{position:absolute;inset-inline-end:10px;bottom:10px;display:flex;flex-direction:column;gap:8px}
-.pt-map .zm button{width:48px;height:48px;border-radius:50%;border:0;background:rgba(11,15,23,.75);color:#fff;font:800 24px var(--sans)}
+.pt-map{position:relative;border-radius:22px;overflow:hidden;background:#0b2043;touch-action:none;height:clamp(300px,46vh,430px);border:1px solid rgba(255,255,255,.12);user-select:none;-webkit-user-select:none;box-shadow:0 14px 30px -18px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.04)}
+.pt-map .bvmap{border-radius:inherit}
+.pt-mypin{--pw:38px}
+.pt-trow{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.pt-trow .pt-timer{flex:1;margin:0}
+.pt-trow b{font:700 17px/1 var(--fun,var(--round));color:var(--sun);min-width:24px;text-align:end}
+.pt-trow b.low{color:var(--bad)}
+.pt-flag{display:block;max-width:150px;max-height:84px;margin:0 auto 8px;border-radius:8px;box-shadow:0 8px 18px -8px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.15)}
+.pt-wq{font:700 18px/1.25 var(--fun,var(--round));text-align:center;color:var(--dim);margin:0 6px 4px;overflow-wrap:anywhere}
+.pt-drop{font:700 25px/1.15 var(--fun,var(--round));text-align:center;margin:2px 0 12px}
+.pt-hints{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:-4px 0 10px}
+.pt-hints:empty{display:none}
+.pt-hint{display:inline-flex;align-items:center;gap:7px;padding:6px 12px 6px 9px;border-radius:999px;background:rgba(255,201,60,.14);border:1px solid rgba(255,201,60,.45);color:#ffeab0;font:700 14px/1.2 var(--round);animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.pt-hint i{font-style:normal}
+.pt-hint img{height:16px;border-radius:3px}
+.btn .pt-lockpin{width:22px;height:29px;display:inline-block;margin-inline-end:8px;vertical-align:middle;filter:drop-shadow(0 3px 4px rgba(0,0,0,.25))}
+.btn .pt-lockpin svg{width:100%;height:100%}
+.pt-map .zm{position:absolute;inset-inline-end:10px;bottom:10px;display:flex;flex-direction:column;gap:8px;z-index:3}
+.pt-map .zm button{width:46px;height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(18,12,44,.82);color:#fff;font:700 24px/1 var(--fun,var(--round));box-shadow:0 6px 14px -6px rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.pt-map .zm button:active{transform:scale(.94)}
 .pt-slider{width:100%;height:56px;accent-color:var(--tint);margin:6px 0}
 .pt-colors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .pt-colors button{min-height:118px;border:0;border-radius:24px;font:800 22px var(--round);color:#fff;box-shadow:0 6px 0 rgba(0,0,0,.3);text-shadow:0 1px 2px rgba(0,0,0,.35)}
@@ -644,6 +659,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       case 'q': return onQ(m);
       case 'nextq': return onNextQ(m);
       case 'revealq': return onRevealQ(m);
+      case 'hint': return onHint(m);
       case 'res': return onRes(m);
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
@@ -1238,8 +1254,8 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const mine = trOf(q);
     const prompt = L.clean(mine && mine.p ? mine.p : q.prompt, 300);
     if (prompt && q.kind !== 'pin') { const p = el('div', 'pt-q', b, prompt); if (/^[\p{Extended_Pictographic}‍️\s]+$/u.test(prompt)) p.classList.add('emoji'); }
-    else if (ex.tv && mine && mine.q) el('div', 'pt-q', b, L.clean(mine.q, 300));
-    else if (ex.tv) el('div', 'pt-look', b, '📺 ' + S().look);
+    else if (ex.tv && mine && mine.q && q.kind !== 'pin') el('div', 'pt-q', b, L.clean(mine.q, 300));
+    else if (ex.tv && q.kind !== 'pin') el('div', 'pt-look', b, '📺 ' + S().look);
     G.ui.body = b;
     switch (q.kind) {
       case 'choice': choiceQ(b, q); break;
@@ -1418,83 +1434,77 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     });
   }
 
-  // drop a pin on the map (Where in the World?)
+  // drop a pin on the map (Where in the World?): the question (with the flag), the clock, the hints as the TV sends
+  // them, and the world map (../play/map.js: pinch, drag, + and -). The map starts on the part of the world the host
+  // picked and fills its box.
   async function pinQ(b, q) {
     const ex = q.extra || {};
-    el('div', 'pt-q', b, L.clean(q.prompt, 120) || S().dropPin);
+    const mine = trOf(q);
+    // (the clock: the bar, and the seconds beside it)
+    const tm = b.querySelector('.pt-timer');
+    if (tm && q.sec > 0) {
+      const row = el('div', 'pt-trow'); tm.replaceWith(row); row.appendChild(tm);
+      const num = el('b', '', row, String(q.sec));
+      const t0 = Date.now();
+      const iv = setInterval(() => { if (!num.isConnected) { clearInterval(iv); return; } const left = Math.max(0, q.sec - Math.floor((Date.now() - t0) / 1000)); num.textContent = String(left); num.classList.toggle('low', left <= 5); if (!left) clearInterval(iv); }, 250);
+    }
+    if (typeof ex.flag === 'string' && /^flags\/[a-z-]{2,6}\.png$/.test(ex.flag)) { const f = el('img', 'pt-flag', b); f.src = '../play/' + ex.flag; f.alt = ''; }
+    const qt = L.clean((mine && mine.q) || ex.q || '', 160);
+    if (qt) el('div', 'pt-wq', b, qt).dir = 'auto';
+    el('h2', 'pt-drop', b, S().dropPin);
+    G.ui.hints = el('div', 'pt-hints', b);
+    G.ui.hintN = q.n;
     const box = el('div', 'pt-map', b);
     const wait = el('div', 'spin', box); wait.style.cssText = 'position:absolute;left:50%;top:50%;margin:-13px';
-    try { await GO.script('../play/world.js'); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
+    try { if (!window.BVMAP) await GO.script('../play/map.js'); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
     if (G.q !== q || !box.isConnected) return;
     wait.remove();
-    const NS = 'http://www.w3.org/2000/svg';
-    const svg = document.createElementNS(NS, 'svg');
-    svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-    box.appendChild(svg);
-    const land = document.createElementNS(NS, 'path'); land.setAttribute('d', BV_WORLD.d); land.setAttribute('class', 'land'); svg.appendChild(land);
-    const pin = document.createElementNS(NS, 'g'); pin.style.display = 'none'; svg.appendChild(pin);
-    const ring = document.createElementNS(NS, 'circle'); ring.setAttribute('fill', G.color || '#ff6b5e'); ring.setAttribute('stroke', '#fff'); pin.appendChild(ring);
-    const us = ex.map === 'us';
-    // (the whole area it can show, from the TV: the world, one continent or the US; the view keeps the shape of the
-    // box, so the map always fills it)
-    const okArea = a => a && Array.isArray(a.full) && a.full.length === 4 && a.full.every(n => isFinite(n)) && Array.isArray(a.start) && a.start.length === 3 && a.start.every(n => isFinite(n));
-    const ar = okArea(ex.area) ? ex.area : null;
-    const full = ar ? ar.full.map(Number) : us ? [60, 50, 330, 170] : [0, 0, 1000, 500];
-    const asp = () => Math.max(0.4, Math.min(2.5, (box.clientHeight || 320) / (box.clientWidth || 320)));
-    const w0 = ar ? Math.max(20, Math.min(1000, +ar.start[2])) : us ? 190 : 1000, c0 = ar ? [+ar.start[0], +ar.start[1]] : us ? [238, 146] : [500, 245];
-    let vb = [c0[0] - w0 / 2, c0[1] - w0 * asp() / 2, w0, w0 * asp()];
-    let at = null;
-    const set = () => { svg.setAttribute('viewBox', vb.join(' ')); if (at) { ring.setAttribute('cx', at[0]); ring.setAttribute('cy', at[1]); ring.setAttribute('r', String(vb[2] / 60)); ring.setAttribute('stroke-width', String(vb[2] / 280)); } };
-    const clamp = () => {
-      const cx = vb[0] + vb[2] / 2, cy = vb[1] + vb[3] / 2;
-      const w = Math.max(full[2] / 16, Math.min(ar || us ? full[2] * 1.15 : 1000, vb[2]));
-      const h = w * asp();
-      const nx = Math.max(full[0], Math.min(full[0] + full[2], cx)), ny = Math.max(full[1], Math.min(full[1] + full[3], cy));
-      vb = [nx - w / 2, ny - h / 2, w, h];
-    };
-    clamp(); set();
-    addEventListener('resize', () => { if (box.isConnected) { clamp(); set(); } });
-    const toSvg = (x, y, inv) => { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(inv || svg.getScreenCTM().inverse()); };
-    const zoomAt = (k, cx, cy, from, inv) => { const m = toSvg(cx, cy, inv); const o = from || vb; vb = [m.x - (m.x - o[0]) * k, m.y - (m.y - o[1]) * k, o[2] * k, o[3] * k]; clamp(); set(); };
-    const pts = new Map();
-    let start = null, moved = false, pinch = null;
-    box.addEventListener('pointerdown', e => {
-      if (e.target.closest('.zm')) return;
-      try { box.setPointerCapture(e.pointerId); } catch (er) {}
-      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size === 1) { start = { x: e.clientX, y: e.clientY, vb: vb.slice(), inv: svg.getScreenCTM().inverse() }; moved = false; }
-      else if (pts.size === 2) { const [a, c] = [...pts.values()]; pinch = { d: Math.hypot(a.x - c.x, a.y - c.y) || 1, vb: vb.slice(), cx: (a.x + c.x) / 2, cy: (a.y + c.y) / 2, inv: svg.getScreenCTM().inverse() }; moved = true; }
+    const M = window.BVMAP;
+    const ok = a => Array.isArray(a) && a.length === 4 && a.every(n => Number.isFinite(+n));
+    const area = ok(ex.area) ? ex.area.map(Number) : [0, 0, M.W, M.H];
+    // (it can move a little past the host's area, never off the map)
+    const w = area[2] - area[0], h = area[3] - area[1];
+    const lim = [Math.max(0, area[0] - w * 0.35), Math.max(0, area[1] - h * 0.35), Math.min(M.W, area[2] + w * 0.35), Math.min(M.H, area[3] + h * 0.35)];
+    let at = null, mk = null;
+    const lock = btn(S().lockPin, { kind: 'go', huge: true, full: true }, null, () => {
+      if (!at) return;
+      const [lon, lat] = M.ll(at[0], at[1]);
+      answer([Math.round(lon * 1000) / 1000, Math.round(lat * 1000) / 1000]);
     });
-    box.addEventListener('pointermove', e => {
-      if (!pts.has(e.pointerId)) return;
-      pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size >= 2 && pinch) { const [a, c] = [...pts.values()]; const d = Math.hypot(a.x - c.x, a.y - c.y) || 1; zoomAt(pinch.d / d, pinch.cx, pinch.cy, pinch.vb, pinch.inv); }
-      else if (pts.size === 1 && start) {
-        if (Math.hypot(e.clientX - start.x, e.clientY - start.y) > 9) moved = true;
-        if (moved) { const a = toSvg(start.x, start.y, start.inv), c = toSvg(e.clientX, e.clientY, start.inv); vb = [start.vb[0] - (c.x - a.x), start.vb[1] - (c.y - a.y), start.vb[2], start.vb[3]]; clamp(); set(); }
+    const map = M.create(box, {
+      touch: true, bounds: lim, maxS: 2.6, out: 1,
+      onTap: (x, y) => {
+        if (G.answered || G.locked) return;
+        at = [x, y];
+        if (mk) mk.move(x, y);
+        else mk = map.add(M.pin({ color: G.color || '#ff5a6e', cls: 'pt-mypin' }), x, y);
+        try { mk.node.animate([{ transform: 'translate(-50%,-100%) translateY(-18px) scale(.8)' }, { transform: 'translate(-50%,-100%)' }], { duration: 380, easing: 'cubic-bezier(.3,1.6,.5,1)' }); } catch (e) {}
+        lock.disabled = false;
+        buzz('tap');
       }
     });
-    const up = e => {
-      const tap = pts.size === 1 && !moved && start && e.type === 'pointerup';
-      pts.delete(e.pointerId);
-      if (pts.size < 2) pinch = null;
-      if (pts.size === 1) { const [p] = [...pts.values()]; start = { x: p.x, y: p.y, vb: vb.slice(), inv: svg.getScreenCTM().inverse() }; }
-      if (!pts.size) start = null;
-      if (tap && !G.answered && !G.locked) { const p = toSvg(e.clientX, e.clientY); at = [Math.max(0, Math.min(1000, p.x)), Math.max(0, Math.min(500, p.y))]; pin.style.display = ''; set(); lock.disabled = false; buzz('tap'); }
-    };
-    box.addEventListener('pointerup', up);
-    box.addEventListener('pointercancel', up);
-    box.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY > 0 ? 1.15 : 1 / 1.15, e.clientX, e.clientY); }, { passive: false });
+    map.fit(area, { pad: 4 });
     // (big + and - for anyone who'd rather not pinch)
     const zm = el('div', 'zm', box);
-    for (const [t, k] of [['+', 1 / 1.6], ['−', 1.6]]) { const z = el('button', '', zm, t); z.type = 'button'; z.setAttribute('aria-label', T(t === '+' ? 'Zoom in' : 'Zoom out')); z.onclick = () => { const r = box.getBoundingClientRect(); zoomAt(k, r.left + r.width / 2, r.top + r.height / 2); }; }
-    el('p', 'muted small center', b, S().zoom).style.margin = '8px 0';
-    const lock = btn(S().lockPin, { kind: 'go', huge: true, full: true, icon: 'check' }, b, () => {
-      if (!at) return;
-      const lon = Math.round((at[0] / 1000 * 360 - 180) * 1000) / 1000, lat = Math.round((90 - at[1] / 500 * 180) * 1000) / 1000;
-      answer([lon, lat]);
-    });
+    for (const [t, k] of [['+', 1.7], ['\u2212', 1 / 1.7]]) { const z = el('button', '', zm, t); z.type = 'button'; z.setAttribute('aria-label', T(t === '+' ? 'Zoom in' : 'Zoom out')); z.onclick = () => map.zoomBy(k, null, null, 260); }
+    el('p', 'muted small center', b, S().zoom).style.margin = '8px 0 10px';
+    b.appendChild(lock);
+    // (Boo's pin on the button)
+    const pi = document.createElement('span'); pi.className = 'pt-lockpin'; pi.innerHTML = '<svg viewBox="0 0 64 84"><path d="M32 83C32 83 5 53 5 31.5A27 27 0 1 1 59 31.5C59 53 32 83 32 83Z" fill="#ff5a6e" stroke="#fff" stroke-width="4"/><path d="M32 14c-8 0-12 6-12 13v20q2.6-3 5.3 0t5.3 0t5.3 0t5.3 0t2.8 0V27c0-7-4-13-12-13z" fill="#fff"/><circle cx="27.5" cy="29" r="2.4" fill="#24164a"/><circle cx="36.5" cy="29" r="2.4" fill="#24164a"/></svg>';
+    lock.insertBefore(pi, lock.firstChild);
     lock.disabled = true;
+  }
+  // a hint from the TV, in this phone's language when it sent one
+  function onHint(m) {
+    const hb = G.ui && G.ui.hints;
+    if (!hb || !hb.isConnected || !G.q || G.q.n !== m.n || !Number.isInteger(m.i) || hb.querySelector('[data-i="' + m.i + '"]')) return;
+    const text = L.clean((m.tr && typeof m.tr === 'object' && typeof m.tr[G.lang] === 'string' ? m.tr[G.lang] : m.text) || '', 120);
+    if (!text) return;
+    const c = el('div', 'pt-hint', hb); c.dataset.i = String(m.i);
+    if (typeof m.flag === 'string' && /^flags\/[a-z-]{2,6}\.png$/.test(m.flag)) { const im = el('img', '', c); im.src = '../play/' + m.flag; im.alt = ''; }
+    else el('i', '', c, typeof m.icon === 'string' ? m.icon.slice(0, 4) : '💡');
+    el('span', '', c, text).dir = 'auto';
+    buzz('tap');
   }
 
   // Boo Says: shake, flip, tilt or tap a color
@@ -1625,7 +1635,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     // (not right, but some points anyway, like a pin that was close: a friendlier screen)
     const some = !ok && +m.pts > 0 && !m.out;
     const box = el('div', 'pt-res ' + (ok ? 'ok' : some ? 'mid' : 'bad'), v.body);
-    box.appendChild(booPic(ok ? (m.first ? 'boo:hero' : 'boo:party') : m.out ? 'boo:boo' : some ? 'boo:hi' : 'boo:sad'));
+    box.appendChild(booPic(typeof m.boo === 'string' && /^boo:[a-z]{2,12}$/.test(m.boo) ? m.boo : ok ? (m.first ? 'boo:hero' : 'boo:party') : m.out ? 'boo:boo' : some ? 'boo:hi' : 'boo:sad'));
     el('h1', '', box, typeof m.title === 'string' && m.title ? L.clean(m.title, 60) : ok ? (m.first ? S().first : S().right) : m.out ? S().out : S().wrong);
     if (m.pts) el('div', 'pts', box, T('+{n} points', { n: m.pts }));
     if (m.right != null && m.right !== '') el('p', '', box, T('The right answer: {x}', { x: L.clean(m.right, 140) }));
