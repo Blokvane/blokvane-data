@@ -685,5 +685,15 @@ BVI18N.add("es", {
 "TV size": "Tamaño en la tele",
 "Auto": "Auto",
 "More": "Más",
-"You're the host now.": "Ahora tú diriges la partida."
+"You're the host now.": "Ahora tú diriges la partida.",
+"Leave the game?": "¿Salir de la partida?",
+"Your score stays, and you can come back while the game is on.": "Tus puntos se guardan y puedes volver mientras la partida siga.",
+"You're the host. If you leave, someone else becomes the host.": "Tú diriges la partida. Si sales, otra persona pasará a dirigirla.",
+"Stay": "Quedarme",
+"Leave": "Salir",
+"The game was closed on the TV": "La partida se cerró en la tele",
+"Thanks for playing!": "¡Gracias por jugar!",
+"If you leave, the game closes for everyone.": "Si sales, la partida se cierra para todos.",
+"The game is closed": "La partida está cerrada",
+"Start a new game": "Empezar una partida nueva"
 });

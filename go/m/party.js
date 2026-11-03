@@ -27,7 +27,9 @@
     myLang: 'Your language', sameTv: 'Same as the TV: {lang}', langFollow: 'The questions and answers show on the TV in {lang}. Pick another language to see them on your phone too.',
     langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
     joinAgain: 'Join again', hostTools: 'Host tools', showCode: 'Show the join code on the TV', hideCode: 'Hide the join code', codeOn: 'The join code is on the TV. New players scan it to join.',
-    makeHost: 'Make host', remove: 'Remove', tapAgain: 'Tap again to be sure', newHost: '{name} is the host now.', tvSize: 'TV size', autoSize: 'Auto', more: 'More', youHost: 'You\'re the host now.'
+    makeHost: 'Make host', remove: 'Remove', tapAgain: 'Tap again to be sure', newHost: '{name} is the host now.', tvSize: 'TV size', autoSize: 'Auto', more: 'More', youHost: 'You\'re the host now.',
+    leaveQ: 'Leave the game?', leaveWhy: 'Your score stays, and you can come back while the game is on.', leaveHost: 'You\'re the host. If you leave, someone else becomes the host.',
+    stay: 'Stay', leave: 'Leave', closedT: 'The game was closed on the TV', thanks: 'Thanks for playing!'
   };
   const AVATARS = ['boo:hi', 'boo:laugh', 'boo:cool', 'boo:love', 'boo:wow', 'boo:party', 'boo:hero', 'boo:legend', 'boo:peek', 'boo:mind', 'boo:scary', 'boo:boo'];
   const ACOL = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8'];
@@ -305,6 +307,12 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 .pt-adm .r button.bad{color:#ff8f8a}
 .pt-adm .r i{font-style:normal;padding:3px 6px;border-radius:6px;background:var(--sun);color:#2a1d00;font:800 10px/1 var(--round);text-transform:uppercase}
 .pt-h{font-size:26px;margin:4px 0 6px}
+/* "Leave the game?" (the phone's Back button during a game) */
+.pt-leave{text-align:center;padding-top:18px}
+.pt-leave .boo{width:92px;height:92px;margin:0 auto 6px}
+.pt-leave h2{font:700 26px/1.15 var(--fun);margin:0 0 8px}
+.pt-leave-p{color:var(--dim);font-size:16px;line-height:1.45;max-width:30em;margin:0 auto 18px}
+.pt-leave .pt-pair{margin-top:10px}
 `;
   }
 
@@ -312,7 +320,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   const G = { R: null, s: '', tv: '', me: null, id: '', name: '', av: 'boo:hi', photo: '', joined: false, host: false, color: '', team: '', ready: false, lobby: null, phase: 'join',
     q: null, qAt: 0, answered: false, locked: false, res: null, endRes: null, ranking: null, score: 0, lives: null, out: false, used: new Set(), secret: null, bingo: null, paper: null,
     S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null,
-    wiz: 0, wizGame: '', plang: '', plangSent: '', kicked: false, key: '', again: false };
+    wiz: 0, wizGame: '', plang: '', plangSent: '', kicked: false, key: '', again: false, closed: false };
   const S = () => G.S;
   // a line in the game's language, with its {parts} filled in
   function T(text, vars) {
@@ -474,7 +482,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   }
   async function connect(o) {
     G.again = !!(o && o.again);
-    G.kicked = false;
+    G.kicked = false; G.closed = false;
     const v = view(gameName(), { tint: 'sun', night: true });
     const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
@@ -517,6 +525,84 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   // (the page is closing: the TV takes this phone off a question that waits for it; if the page comes back, so does it)
   addEventListener('pagehide', () => { if (G.R && G.joined) { try { G.R.send({ k: 'bye' }).catch(() => {}); } catch (e) {} } releaseMe(); });
   addEventListener('pageshow', e => { if (e.persisted && G.R && G.joined) { claimMe(); send({ k: 'sync' }); } });
+
+  // ---------- the phone's Back button (or a back swipe) during a game asks first ----------
+  // Back would close this page and drop you out of the game, so while you're in one it asks "Leave the game?": Stay
+  // keeps playing, Leave says goodbye to the TV (your score stays, and you can come back) and goes back. Back again
+  // while it asks leaves too. (A browser only keeps the extra step that makes this work when a tap added it, so it's
+  // added at a tap.)
+  const trap = { on: false, ask: null, going: false, popping: false };
+  const inGame = () => !!(G.R && G.joined && !G.kicked && !G.closed);
+  function armBack() {
+    if (trap.on || trap.going || !inGame()) return;
+    if (history.state && history.state.bvBack) { trap.on = true; return; }
+    const ua = navigator.userActivation;
+    if (ua && !ua.hasBeenActive) return;
+    try { history.pushState({ bvBack: 1 }, '', location.href); trap.on = true; } catch (e) {}
+  }
+  // (out of the game another way, like the TV closing it: the extra step goes, so the next Back isn't lost on it)
+  function disarmBack() {
+    if (!trap.on) return;
+    trap.on = false;
+    if (history.state && history.state.bvBack) { trap.popping = true; history.back(); }
+  }
+  for (const ev of ['pointerup', 'keydown', 'click']) addEventListener(ev, armBack, true);
+  addEventListener('popstate', e => {
+    if (trap.popping) { trap.popping = false; return; }
+    if (e.state && e.state.bvBack) { trap.on = true; return; }
+    if (!trap.on) return;
+    trap.on = false;
+    if (trap.going) return;
+    if (inGame()) askLeave(); else history.back();
+  });
+  function askLeave() {
+    if (trap.ask) return;
+    buzz('tap');
+    let leaving = false;
+    trap.ask = sheet(S().leaveQ, (sh, close) => {
+      sh.classList.add('pt-leave');
+      sh.insertBefore(booPic('boo:sad', 'float'), sh.querySelector('h2'));
+      el('p', 'pt-leave-p', sh, G.host ? S().leaveHost : S().leaveWhy);
+      btn(S().stay, { kind: 'go', full: true, huge: true }, sh, () => close());
+      pair(sh, [[S().leave, () => { leaving = true; close(); leaveNow(); }, 'bad']]);
+    }, { onClose: () => { trap.ask = null; if (!leaving) armBack(); } });
+  }
+  // Leave: goodbye to the TV, then where Back was going (the Blokvane home when this game was the first page here)
+  function leaveNow() {
+    trap.going = true;
+    quitParty();
+    const here = location.href;
+    try { history.back(); } catch (e) {}
+    setTimeout(() => {
+      trap.going = false;
+      if (location.href === here) { history.replaceState(null, '', location.pathname); GO.route(); }
+    }, 500);
+  }
+  // out of this game: the TV hears goodbye (unless it's the one that closed), and this phone stops listening
+  function quitParty(quiet) {
+    const r = G.R;
+    if (!r) return;
+    if (!quiet && G.joined) { try { r.send({ k: 'bye' }).catch(() => {}); } catch (e) {} }
+    G.R = null; G.joined = false; G.phase = 'join';
+    stopQ(); hideNext();
+    tabStore.del('party:in'); releaseMe();
+    if (trap.ask) { const c = trap.ask; trap.ask = null; c(); }
+    if (wl) { try { wl.release(); } catch (e) {} wl = null; }
+    setTimeout(() => { try { r.close(); } catch (e) {} }, 1500);
+  }
+  // (another page here, like the Blokvane home after a second Back, or another game: out of this one)
+  addEventListener('hashchange', () => { if (G.R && G.s && location.hash.indexOf('#game.' + G.s) !== 0) quitParty(); });
+  // the TV closed the game (someone left it there, or closed its page): say so, and offer another game
+  function closedScreen() {
+    if (G.closed) return;
+    G.closed = true;
+    disarmBack();
+    quitParty(true);
+    dropBack();
+    const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    hero(v.body, S().closedT, S().thanks, { node: booPic('boo:love', 'float') });
+    btn(T('Join a game'), { kind: 'go', huge: true, full: true }, v.body, () => codeScreen());
+  }
   setInterval(() => {
     if (!G.R || !G.joined) return;
     const quiet = Date.now() - G.lastHeard;
@@ -529,19 +615,21 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 
   // ---------- what the TV says ----------
   function take(m) {
+    if (!G.R) return;
     G.lastHeard = Date.now();
     switch (m.k) {
       case 'you': {
         if (m.id !== G.id) return;
         const first = !G.joined;
         G.joined = true; G.color = typeof m.color === 'string' ? m.color : ''; G.host = !!m.host;
-        if (first) { tabStore.set('party:in', { s: G.s.slice(0, 10), at: Date.now() }); G.backAt = Date.now(); keepBack(); if (G.photo) sendPhoto(); buzz('ok'); }
+        if (first) { tabStore.set('party:in', { s: G.s.slice(0, 10), at: Date.now() }); G.backAt = Date.now(); keepBack(); if (G.photo) sendPhoto(); buzz('ok'); armBack(); }
         if (G.phase === 'join') { G.phase = 'lobby'; if (G.lobby) onLobby(G.lobby, true); else showLobby(); }
         return;
       }
       // ("still there?" from the TV, while a question with no clock waits for this phone)
       case 'ping': send({ k: 'pong' }); return;
       case 'kicked': return kickedScreen();
+      case 'closed': return closedScreen();
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
@@ -723,6 +811,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   function kickedScreen() {
     if (G.kicked) return;
     G.kicked = true; G.joined = false; G.tries = 99;
+    disarmBack();
     stopQ(); hideNext();
     tabStore.del('party:in'); dropBack(); releaseMe();
     const v = view(gameName(), { tint: 'sun', night: true });

@@ -140,6 +140,8 @@ var BVPLAY = (() => {
   }
   function take(m, peer) {
     if (!m || typeof m.k !== 'string' || !L.okId(m.f)) return;
+    // (the game was closed here: a phone that comes back hears so)
+    if (phase === 'closed') { if (m.k === 'join' || m.k === 'sync') sayTo(m.f, { k: 'closed' }); return; }
     const p = players.get(m.f);
     // (anything from a phone says it's here; one that had left is back)
     if (p) { p.heard = Date.now(); if (p.gone) { p.gone = false; setTimeout(sweep, 0); } }
@@ -233,7 +235,8 @@ var BVPLAY = (() => {
   }
   // what the phones show in the lobby (the game, its settings, the players, the host)
   function sayLobby(to) {
-    const tt = tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
+    if (phase === 'closed') return;
+    const tt =tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
     const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', games: (tx.lang === lang && tx.games) || [...games.values()].map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
       players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : game.settings) : [], lang, rtl: P.RTL.has(lang), strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
@@ -271,7 +274,8 @@ var BVPLAY = (() => {
     settings = {};
     for (const f of game.settings) settings[f.key] = f.default;
     phase = 'lobby';
-    try { history.replaceState(null, '', '#' + id + (lang !== 'en' ? '.' + lang : '')); } catch (e) {}
+    // (the same step in the browser's history, kept as it is: see the Back button below)
+    try { history.replaceState(history.state, '', '#' + id + (lang !== 'en' ? '.' + lang : '')); } catch (e) {}
     lobby(); sayLobby(); retranslate();
   }
 
@@ -345,6 +349,94 @@ var BVPLAY = (() => {
   addEventListener('dblclick', e => { if (e.target && e.target.closest && e.target.closest('button, a, input, select')) return; fullScreen(); });
   addEventListener('keydown', e => { if ((e.key === 'f' || e.key === 'F') && !e.ctrlKey && !e.metaKey && !e.altKey && !(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) fullScreen(); });
   for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) document.addEventListener(ev, () => { if (fsPaint) fsPaint(); requestAnimationFrame(() => fitLobby()); });
+  // ---------- the Back button (a TV remote's, or the browser's) while people are in the game asks first ----------
+  // Back would close this page, and the game with it, for everyone. So with players in, it asks "Leave the game?":
+  // Keep playing is picked already (OK on a remote keeps playing; the arrows move to Leave), or Leave: every phone
+  // hears the game was closed, then Back goes on. Back again while it asks leaves too. (A browser only keeps the extra
+  // step that makes this work once someone has pressed or clicked something on this page, so it's added then.)
+  const back = { on: false, dlg: null, going: false, said: false, t: 0 };
+  const busy = () => !!R && phase !== 'closed' && (phase === 'play' || list().length > 0);
+  function armBack() {
+    if (back.on || back.going || phase === 'closed') return;
+    if (history.state && history.state.bvBack) { back.on = true; return; }
+    const ua = navigator.userActivation;
+    if (ua && !ua.hasBeenActive) return;
+    try { history.pushState({ bvBack: 1 }, '', location.href); back.on = true; } catch (e) {}
+  }
+  for (const ev of ['pointerup', 'keydown', 'click']) addEventListener(ev, armBack, true);
+  addEventListener('popstate', e => {
+    if (e.state && e.state.bvBack) { back.on = true; return; }
+    if (!back.on) return;
+    back.on = false;
+    if (back.going) return;
+    // (this step still has the address of the game picked before: it gets the one on now)
+    if (game) { const h = '#' + game.id + (lang !== 'en' ? '.' + lang : ''); if (location.hash !== h) { try { history.replaceState(history.state, '', h); } catch (e2) {} } }
+    if (busy()) askLeave(); else history.back();
+  });
+  async function askLeave() {
+    if (back.dlg) return;
+    const t = await Promise.all(['Leave the game?', 'If you leave, the game closes for everyone.', 'Keep playing', 'Leave'].map(x => P.tr(x)));
+    if (back.dlg || back.going) return;
+    if (!busy()) { history.back(); return; }
+    const ov = el('div', 'leave-ov', document.body);
+    ov.setAttribute('role', 'dialog'); ov.setAttribute('aria-modal', 'true'); ov.setAttribute('aria-label', t[0]);
+    const card = el('div', 'leave-card', ov);
+    const im = el('img', 'leave-boo', card); im.src = P.booUri('boo:sad') || P.booUri('boo:hi'); im.alt = '';
+    el('h2', '', card, t[0]);
+    el('p', '', card, t[1]);
+    const row = el('div', 'leave-row', card);
+    const stay = el('button', 'leave-btn stay', row, t[2]); stay.type = 'button';
+    const go = el('button', 'leave-btn go', row, t[3]); go.type = 'button';
+    back.dlg = ov;
+    const close = () => { clearTimeout(back.t); removeEventListener('keydown', keys, true); ov.remove(); if (back.dlg === ov) back.dlg = null; };
+    // (a remote: the arrows move between the two, OK presses; its Back, or Esc, keeps playing)
+    const keys = e => {
+      const k = e.key, c = e.keyCode;
+      if (/^Arrow/.test(k) || k === 'Tab') { e.preventDefault(); e.stopPropagation(); (document.activeElement === stay ? go : stay).focus(); }
+      else if (k === 'Escape' || k === 'Backspace' || k === 'GoBack' || k === 'BrowserBack' || k === 'XF86Back' || c === 461 || c === 10009) { e.preventDefault(); e.stopPropagation(); close(); armBack(); }
+    };
+    addEventListener('keydown', keys, true);
+    stay.onclick = () => { close(); armBack(); };
+    go.onclick = () => { close(); leaveNow(); };
+    ov.addEventListener('click', e => { if (e.target === ov) stay.onclick(); });
+    stay.focus();
+    // (nobody picked: after half a minute the game is back on screen)
+    back.t = setTimeout(() => { if (back.dlg === ov) stay.onclick(); }, 30000);
+  }
+  // Leave: every phone hears the game was closed, then Back goes on (here when there's nothing before this page)
+  async function leaveNow() {
+    back.going = true;
+    if (R && !back.said) { back.said = true; try { await Promise.race([R.send({ k: 'closed' }), sleep(900)]); } catch (e) {} }
+    const here = location.href;
+    try { history.back(); } catch (e) {}
+    setTimeout(() => { if (location.href === here && document.visibilityState !== 'hidden') closedScreen(); }, 700);
+  }
+  // the game is closed: it stops, the phones were told, and a new game can start from here
+  async function closedScreen() {
+    run++; lobbyRun++;
+    phase = 'closed';
+    handlers.clear(); playerSubs.clear();
+    for (const w of [...pending.values()]) w.finish();
+    cur.q = null; waitHost = false;
+    if (joinEl) { joinEl.remove(); joinEl = null; }
+    if (hintEl) hintEl.hidden = true;
+    if (booEl) booEl.hidden = true;
+    SND.music(null, { fadeOut: 1 }); P.mute(true);
+    const t = await Promise.all(['The game is closed', 'Thanks for playing!', 'Start a new game'].map(x => P.tr(x)));
+    stage.textContent = '';
+    const cv = el('div', 'cover closed', stage);
+    const box2 = el('div', 'cl-box', cv);
+    const im = el('img', 'cl-boo', box2); im.src = P.booUri('boo:love') || P.booUri('boo:hi'); im.alt = '';
+    el('h1', '', box2, t[0]);
+    el('p', '', box2, t[1]);
+    const b = el('button', 'leave-btn stay', box2, t[2]); b.type = 'button';
+    b.onclick = () => { back.going = true; location.reload(); };
+    b.focus();
+  }
+  // (a page that closes any other way, like its tab or window: the phones hear it too, if there's time)
+  addEventListener('pagehide', e => { if (!e.persisted && R && !back.said && phase !== 'closed') { back.said = true; try { R.send({ k: 'closed' }).catch(() => {}); } catch (e2) {} } });
+  // (closing the tab, or reloading, while people play: the browser's own "Leave site?" first)
+  addEventListener('beforeunload', e => { if (back.going || back.dlg || !busy()) return; e.preventDefault(); e.returnValue = ''; });
 
   // music and sound effects (sound.js); a quiet stand-in if it didn't load
   const SND = window.BVSOUND ||{ preload() {}, music() {}, sting() {}, unlock() {}, setOn() {}, enabled: () => false, state: () => 'none', onChange: () => () => {} };

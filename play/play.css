@@ -583,3 +583,26 @@ html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)):not(:lang(hi)):not(:lang(bn)):
 .body.tq.squeeze .tq-fx { min-height: calc(4 * var(--u)); }
 .join-ov .codetiles { flex-wrap: nowrap; gap: calc(.6 * var(--u)); }
 .join-ov .codetiles span { width: calc(4.3 * var(--u)); height: calc(5.6 * var(--u)); font-size: calc(3.1 * var(--u)); }
+/* ---------- "Leave the game?" (the Back button while people are playing), and the screen once the game is closed ---------- */
+.leave-ov { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: calc(3 * var(--u)); background: rgba(8, 5, 22, .74); -webkit-backdrop-filter: blur(calc(.6 * var(--u))); backdrop-filter: blur(calc(.6 * var(--u))); animation: fade .25s ease both; }
+.leave-card { position: relative; width: min(calc(76 * var(--u)), calc(88 * var(--uw))); padding: calc(10 * var(--u)) calc(5 * var(--u)) calc(4.6 * var(--u)); border-radius: calc(4 * var(--u)); text-align: center;
+  background: linear-gradient(180deg, #2e2169 0%, #1d1548 100%); border: calc(.2 * var(--u)) solid rgba(255, 255, 255, .14); box-shadow: 0 calc(3 * var(--u)) calc(10 * var(--u)) rgba(0, 0, 0, .6), inset 0 calc(.2 * var(--u)) 0 rgba(255, 255, 255, .08);
+  animation: leaveIn .38s cubic-bezier(.2, .9, .3, 1.15) both; }
+.leave-boo { position: absolute; left: 50%; top: calc(-9 * var(--u)); width: calc(17 * var(--u)); height: calc(17 * var(--u)); margin-left: calc(-8.5 * var(--u)); filter: drop-shadow(0 calc(1.2 * var(--u)) calc(2.4 * var(--u)) rgba(0, 0, 0, .55)); animation: leaveFloat 3.6s ease-in-out infinite; }
+.leave-card h2 { margin: 0 0 calc(1.4 * var(--u)); font: 700 calc(6.2 * var(--u))/1.1 var(--fun); color: #fff; }
+.leave-card p { margin: 0 auto calc(3.6 * var(--u)); max-width: calc(62 * var(--u)); font: 600 calc(3 * var(--u))/1.4 var(--round); color: var(--dim); }
+.leave-row { display: flex; flex-wrap: wrap; justify-content: center; gap: calc(2.2 * var(--u)); }
+.leave-btn { min-width: calc(26 * var(--u)); padding: calc(2 * var(--u)) calc(4 * var(--u)); border-radius: 99px; border: calc(.25 * var(--u)) solid transparent; font: 700 calc(3.2 * var(--u))/1 var(--fun); cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.leave-btn.stay { background: var(--gold); color: #2a1d00; box-shadow: 0 calc(1.2 * var(--u)) calc(3.4 * var(--u)) rgba(255, 201, 60, .35); }
+.leave-btn.go { background: rgba(255, 255, 255, .07); color: #ffb3ae; border-color: rgba(255, 255, 255, .18); }
+.leave-btn:hover { transform: scale(1.04); }
+.leave-btn.go:hover { background: rgba(255, 95, 87, .16); }
+.leave-btn:focus { outline: none; }
+.leave-btn:focus-visible, .leave-btn:focus { box-shadow: 0 0 0 calc(.5 * var(--u)) #1d1548, 0 0 0 calc(1 * var(--u)) #fff; transform: scale(1.06); }
+@keyframes leaveIn { from { opacity: 0; transform: scale(.86) translateY(calc(3 * var(--u))); } }
+@keyframes leaveFloat { 50% { transform: translateY(calc(-1.2 * var(--u))); } }
+.cover.closed .cl-box { display: flex; flex-direction: column; align-items: center; padding: 0 calc(5 * var(--uw)); animation: leaveIn .5s cubic-bezier(.2, .9, .3, 1.15) both; }
+.cover.closed .cl-boo { width: calc(24 * var(--u)); height: calc(24 * var(--u)); margin-bottom: calc(1 * var(--u)); filter: drop-shadow(0 calc(1.6 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .5)); animation: leaveFloat 3.6s ease-in-out infinite; }
+.cover.closed h1 { margin: calc(1 * var(--u)) 0 calc(1.2 * var(--u)); font: 700 calc(7.6 * var(--u))/1.1 var(--fun); }
+.cover.closed p { margin: 0 0 calc(4.4 * var(--u)); }
+@media (prefers-reduced-motion: reduce) { .leave-ov, .leave-card, .leave-boo, .cover.closed .cl-box, .cover.closed .cl-boo { animation: none; } }

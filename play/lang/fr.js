@@ -685,5 +685,15 @@ BVI18N.add("fr", {
 "TV size": "Taille sur la télé",
 "Auto": "Auto",
 "More": "Plus",
-"You're the host now.": "Tu es maintenant l'hôte."
+"You're the host now.": "Tu es maintenant l'hôte.",
+"Leave the game?": "Quitter la partie ?",
+"Your score stays, and you can come back while the game is on.": "Tes points sont gardés, et tu peux revenir tant que la partie continue.",
+"You're the host. If you leave, someone else becomes the host.": "C'est toi l'hôte. Si tu pars, quelqu'un d'autre deviendra l'hôte.",
+"Stay": "Rester",
+"Leave": "Quitter",
+"The game was closed on the TV": "La partie a été fermée sur la télé",
+"Thanks for playing!": "Merci d'avoir joué !",
+"If you leave, the game closes for everyone.": "Si tu pars, la partie se ferme pour tout le monde.",
+"The game is closed": "La partie est fermée",
+"Start a new game": "Lancer une nouvelle partie"
 });

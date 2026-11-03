@@ -685,5 +685,15 @@ BVI18N.add("ar", {
 "TV size": "حجم التلفاز",
 "Auto": "تلقائي",
 "More": "المزيد",
-"You're the host now.": "أنت المضيف الآن."
+"You're the host now.": "أنت المضيف الآن.",
+"Leave the game?": "هل تريد مغادرة اللعبة؟",
+"Your score stays, and you can come back while the game is on.": "نقاطك محفوظة، ويمكنك العودة ما دامت اللعبة مستمرة.",
+"You're the host. If you leave, someone else becomes the host.": "أنت المضيف. إذا غادرت، فسيصبح شخص آخر هو المضيف.",
+"Stay": "ابقَ في اللعبة",
+"Leave": "غادِر",
+"The game was closed on the TV": "أُغلقت اللعبة على التلفاز",
+"Thanks for playing!": "شكرًا لأنك لعبت معنا!",
+"If you leave, the game closes for everyone.": "إذا غادرت، فستُغلق اللعبة عند الجميع.",
+"The game is closed": "أُغلقت اللعبة",
+"Start a new game": "ابدأ لعبة جديدة"
 });

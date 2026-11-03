@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '8';
+  const VERSION = '9';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -185,6 +185,8 @@
     app.className = 'app';
     // (the party games have their own night look: on for their pages, off for every other one)
     document.documentElement.classList.toggle('pt-night', !!o.night);
+    // (the other pages are in English, left to right, also right after a game in Arabic)
+    if (!o.night) { document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en'; }
     document.documentElement.style.setProperty('--tint', o.tint ? `var(--${o.tint})` : 'var(--coral)');
     const top = el('header', 'top', app);
     if (o.back) {

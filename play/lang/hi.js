@@ -685,5 +685,15 @@ BVI18N.add("hi", {
 "TV size": "टीवी का साइज़",
 "Auto": "ऑटो",
 "More": "और",
-"You're the host now.": "अब आप होस्ट हैं।"
+"You're the host now.": "अब आप होस्ट हैं।",
+"Leave the game?": "गेम छोड़ें?",
+"Your score stays, and you can come back while the game is on.": "आपके अंक बने रहेंगे, और जब तक गेम चल रहा है, आप वापस आ सकते हैं।",
+"You're the host. If you leave, someone else becomes the host.": "आप होस्ट हैं। अगर आप चले गए, तो कोई और होस्ट बन जाएगा।",
+"Stay": "यहीं रहें",
+"Leave": "छोड़ें",
+"The game was closed on the TV": "टीवी पर गेम बंद कर दिया गया",
+"Thanks for playing!": "खेलने के लिए धन्यवाद!",
+"If you leave, the game closes for everyone.": "अगर आप चले गए, तो गेम सबके लिए बंद हो जाएगा।",
+"The game is closed": "गेम बंद हो गया है",
+"Start a new game": "नया गेम शुरू करें"
 });

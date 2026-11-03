@@ -685,5 +685,15 @@ BVI18N.add("zh", {
 "TV size": "电视画面大小",
 "Auto": "自动",
 "More": "更多",
-"You're the host now.": "你现在是房主了。"
+"You're the host now.": "你现在是房主了。",
+"Leave the game?": "要离开游戏吗？",
+"Your score stays, and you can come back while the game is on.": "你的得分会保留，游戏结束前随时可以回来。",
+"You're the host. If you leave, someone else becomes the host.": "你是房主。你离开后，会由其他人来当房主。",
+"Stay": "留下来",
+"Leave": "离开",
+"The game was closed on the TV": "电视上的游戏已关闭",
+"Thanks for playing!": "谢谢你来玩！",
+"If you leave, the game closes for everyone.": "你离开的话，大家的游戏都会关闭。",
+"The game is closed": "游戏已关闭",
+"Start a new game": "开始新游戏"
 });
