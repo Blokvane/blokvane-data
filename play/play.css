@@ -606,3 +606,11 @@ html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)):not(:lang(hi)):not(:lang(bn)):
 .cover.closed h1 { margin: calc(1 * var(--u)) 0 calc(1.2 * var(--u)); font: 700 calc(7.6 * var(--u))/1.1 var(--fun); }
 .cover.closed p { margin: 0 0 calc(4.4 * var(--u)); }
 @media (prefers-reduced-motion: reduce) { .leave-ov, .leave-card, .leave-boo, .cover.closed .cl-box, .cover.closed .cl-boo { animation: none; } }
+/* ---------- each game's own icon: in the header once a game is picked, and over the 3, 2, 1 ---------- */
+.top .logo.gi { width: calc(8.4 * var(--u)); height: calc(8.4 * var(--u)); flex: none; }
+.top .logo.gi img { filter: drop-shadow(0 calc(.7 * var(--u)) calc(1.4 * var(--u)) rgba(0, 0, 0, .45)); }
+.tq-logo.gi { padding: 0; background: none; box-shadow: none; border-radius: 0; }
+.tq-logo.gi img { filter: drop-shadow(0 calc(.5 * var(--u)) calc(1 * var(--u)) rgba(0, 0, 0, .45)); }
+.cover .cd { display: flex; flex-direction: column; align-items: center; gap: calc(1 * var(--u)); }
+.cover .cd-gi { width: calc(20 * var(--u)); height: calc(20 * var(--u)); filter: drop-shadow(0 calc(1.6 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .5)); animation: popIn .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+@media (prefers-reduced-motion: reduce) { .cover .cd-gi { animation: none; } }

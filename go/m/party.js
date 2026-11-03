@@ -41,6 +41,12 @@
   const langsMore = () => (I() ? I().MORE : []);
   const MOTION_GAMES = ['boosays', 'party'];
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
+  // each game's own icon (the TV's pictures, in ../play/icons: the same ones as on the TV and in Blokvane)
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter']);
+  function gameIcon(id, e) {
+    if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
+    return el('span', 'e', null, e || '🎲');
+  }
   function booPic(id, cls) {
     const d = el('div', 'boo' + (cls ? ' ' + cls : ''));
     const src = booUri(id);
@@ -307,6 +313,9 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 .pt-adm .r button.bad{color:#ff8f8a}
 .pt-adm .r i{font-style:normal;padding:3px 6px;border-radius:6px;background:var(--sun);color:#2a1d00;font:800 10px/1 var(--round);text-transform:uppercase}
 .pt-h{font-size:26px;margin:4px 0 6px}
+/* each game's own icon: in the game lists, the lobby's game card and the top left of a game */
+.pt-game .gi,.pt-gcard .gi{width:52px;height:52px;flex:none;filter:drop-shadow(0 6px 10px rgba(0,0,0,.35))}
+.pt-top .pt-home.gi{width:40px;height:40px;padding:0;border-radius:0;background:none;filter:drop-shadow(0 4px 8px rgba(0,0,0,.35))}
 /* "Leave the game?" (the phone's Back button during a game) */
 .pt-leave{text-align:center;padding-top:18px}
 .pt-leave .boo{width:92px;height:92px;margin:0 auto 6px}
@@ -753,7 +762,14 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     o = o || {};
     const v = view(title, { tint: 'sun', night: true, back: o.back || null });
     v.top.classList.add('pt-top');
-    if (!o.back) { const b = v.top.querySelector('.boo'); if (b) b.remove(); const h = el('span', 'pt-home'); h.appendChild(GO.icon('home')); v.top.insertBefore(h, v.top.firstChild); }
+    // (top left: the game's own icon once the host picked one, a little house before)
+    if (!o.back) {
+      const b = v.top.querySelector('.boo'); if (b) b.remove();
+      const gid = G.lobby && G.lobby.game;
+      let h;
+      if (ICONS.has(gid)) { h = gameIcon(gid); h.classList.add('pt-home'); } else { h = el('span', 'pt-home'); h.appendChild(GO.icon('home')); }
+      v.top.insertBefore(h, v.top.firstChild);
+    }
     if (G.joined && o.chip !== false) v.top.appendChild(chip());
     return v;
   }
@@ -870,7 +886,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     }
     const g = games.find(x => x.id === l.game) || { e: '🎲', name: l.gname || '', sub: '' };
     const gc = el('div', 'pt-gcard', v.body);
-    el('span', 'e', gc, g.e || '🎲');
+    gc.appendChild(gameIcon(l.game, g.e));
     const t = el('span', '', gc); el('b', '', t, g.name); el('small', '', t, S().hostWait);
     // your own language (Trivia: the questions and answers on your phone in it)
     if (l.mlang) langCard(v.body, l);
@@ -1178,7 +1194,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       const b = el('button', 'pt-game', ls);
       b.type = 'button';
       b.setAttribute('aria-pressed', String(g.id === current));
-      el('span', 'e', b, g.e || '🎲');
+      b.appendChild(gameIcon(g.id, g.e));
       const t = el('span', '', b); el('b', '', t, L.clean(g.name, 40)); el('small', '', t, L.clean(g.sub, 120));
       b.onclick = () => { send({ k: 'game', id: g.id }); buzz('tap'); for (const x of ls.children) x.setAttribute('aria-pressed', String(x === b)); };
     }
@@ -1782,7 +1798,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     for (const [id, e, name, sub] of GAME_LIST) {
       const b = el('button', 'pt-game', ls);
       b.type = 'button';
-      el('span', 'e', b, e);
+      b.appendChild(gameIcon(id, e));
       const t = el('span', '', b); el('b', '', t, name); el('small', '', t, sub);
       b.onclick = () => { gameId = id; mark(); buzz('tap'); };
       gameBtns.push([id, b]);

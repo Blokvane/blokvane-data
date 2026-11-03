@@ -19,6 +19,9 @@ var BVPLAY = (() => {
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter']);
+  const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
   const avatarUrl = p => p.photo || P.booUri(p.av) || P.booUri('boo:hi');
@@ -282,7 +285,9 @@ var BVPLAY = (() => {
   // ---------- the screen ----------
   function top(parent, title, sub, right) {
     const t = el('header', 'top', parent);
-    const lg = el('div', 'logo', t); const im = el('img', '', lg); im.src = P.booUri('boo:party'); im.alt = '';
+    // (the game's own icon once one is picked; Boo, ready to party, before that)
+    const lg = el('div', 'logo', t); const im = el('img', '', lg); im.alt = '';
+    if (game && ICONS.has(game.id)) { im.src = iconOf(game.id); lg.classList.add('gi'); } else im.src = P.booUri('boo:party');
     const d = el('div', 'grow', t); el('h1', '', d, title); if (sub) el('div', 'sub', d, sub);
     if (right) for (const r of [].concat(right)) t.appendChild(r);
     return t;
@@ -789,7 +794,10 @@ var BVPLAY = (() => {
     if (!game.sounds) SND.music(null, { fadeOut: 2 });
     stage.textContent = '';
     const cv = el('div', 'cover', stage);
-    const n = el('div', 'big', cv, '3');
+    // (the game's icon over the 3, 2, 1)
+    const cd = el('div', 'cd', cv);
+    if (ICONS.has(game.id)) { const gi = el('img', 'cd-gi', cd); gi.src = iconOf(game.id); gi.alt = ''; }
+    const n = el('div', 'big', cd, '3');
     for (const x of ['3', '2', '1']) { n.textContent = x; P.sfx('tick'); await sleep(800); if (my !== run) return; }
     handlers.clear(); playerSubs.clear();
     let ranking = null;

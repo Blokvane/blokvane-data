@@ -44,7 +44,10 @@
     const [s, host] = parts;
     const v = view('Light show', { tint: 'pink' });
     if (!s || !L.okId(host)) { hero(v.body, 'This code isn\'t complete', 'Scan it again.', { sleepy: true }); return; }
-    hero(v.body, 'Ready to glow?', 'Turn your screen brightness all the way up, then tap Start. Hold your phone up with the screen facing out.');
+    // (the light show's own icon, the same as in Blokvane)
+    const ic = el('div', 'boo float'); const im = el('img', '', ic); im.src = '../play/icons/lightshow.webp'; im.alt = '';
+    ic.style.filter = 'drop-shadow(0 10px 16px rgba(236,74,106,.45))';
+    hero(v.body, 'Ready to glow?', 'Turn your screen brightness all the way up, then tap Start. Hold your phone up with the screen facing out.', { node: ic });
     let show = { p: 'glow', sp: 1, c: ['#ff6b5e', '#ffc451', '#36d6a5', '#5bb8ff', '#9a8cff'], t0: 0 }, seat = Math.floor(Math.random() * 20), seats = 20;
     const R = await L.room({ secret: s, label: 'bvlight', me: await C.newMember(), name: '', role: 'phone', owner: host, open: false, onMsg: m => {
       if (m.f !== host) return;

@@ -182,7 +182,8 @@
     body.classList.add('tq');
     const main = K.el('div', 'tq-main', body);
     const top = K.el('div', 'tq-top', main);
-    const lg = K.el('div', 'tq-logo', top); const li = K.el('img', '', lg); li.src = P.booUri('boo:party'); li.alt = '';
+    // (Trivia's own icon, like at the top of every other screen of the game)
+    const lg = K.el('div', 'tq-logo gi', top); const li = K.el('img', '', lg); li.src = 'icons/trivia.webp'; li.alt = '';
     const cat = o.q.c ? await K.tr(o.q.c) : '', dif = DIFF[o.q.d] ? await K.tr(DIFF[o.q.d]) : '';
     K.el('div', 'tq-meta caps grow', top, [cat, dif].filter(Boolean).join(' · '));
     const meta = K.el('div', 'tq-meta caps tq-r', top);
