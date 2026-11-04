@@ -1,8 +1,8 @@
 // Blokvane party games: Where in the World? The TV shows a flag, a city or a famous sight (a real photo, in a new
 // frame every round), everyone drops a pin on the world map on their phone, and the TV flies over the map to the real
 // spot: every pin lands, lines show how far each one was, and the closest pin wins the round. The map is map.js, the
-// places (every flag, 130 cities, 120 sights, names in all seven languages) are world-data.js, the photos come from
-// Wikipedia (free photos from Wikimedia Commons, with their credit on the screen).
+// places (every flag, 130 cities, 120 sights, names in all seven languages, and each place's one checked photo) are
+// world-data.js; the photos are free photos from Wikimedia Commons, with their credit on the screen.
 (() => {
   'use strict';
   const P = BVPLAYC, PK = BVPACKS, M = BVMAP;
@@ -47,8 +47,10 @@
     const flags = D.flags.map(f => ({ kind: 'flag', same: SAME.has(f[0]), id: f[0], key: 'f:' + f[0], cc: f[0], lon: +f[1], lat: +f[2], lv: +f[3] || 3, cont: f[4], names: f[5], me: ME.has(f[0]) }));
     const contOf = {};
     for (const f of flags) contOf[f.cc] = f.cont;
-    const cities = D.cities.map(c => ({ kind: 'city', id: c[0], key: 'c:' + c[0], lon: +c[1], lat: +c[2], lv: +c[3] || 2, cc: c[4], iata: c[5], wiki: c[6], names: c[7], me: c[8] === 'me', cont: contOf[c[4]] }));
-    const sights = D.sights.map(c => ({ kind: 'sight', id: c[0], key: 's:' + c[0], lon: +c[1], lat: +c[2], lv: +c[3] || 2, cc: c[4], emoji: c[5], wiki: c[6], names: c[7], me: c[8] === 'me', cont: contOf[c[4]] }));
+    // (each city and sight has its one checked photo: the file, and where the thing to see is across it)
+    const pic = k => { const p = D.photos && D.photos[k]; return p ? { file: p[0], fx: typeof p[1] === 'number' ? p[1] : null } : null; };
+    const cities = D.cities.map(c => ({ kind: 'city', id: c[0], key: 'c:' + c[0], lon: +c[1], lat: +c[2], lv: +c[3] || 2, cc: c[4], iata: c[5], wiki: c[6], names: c[7], me: c[8] === 'me', cont: contOf[c[4]], photo: pic('c:' + c[0]) }));
+    const sights = D.sights.map(c => ({ kind: 'sight', id: c[0], key: 's:' + c[0], lon: +c[1], lat: +c[2], lv: +c[3] || 2, cc: c[4], emoji: c[5], wiki: c[6], names: c[7], me: c[8] === 'me', cont: contOf[c[4]], photo: pic('s:' + c[0]) }));
     // (US states: from the game's own packs, in the TV's language)
     const LP = K.packs;
     const states = PK.places.states.map((x, i) => ({ kind: 'state', id: x[0], key: 'u:' + x[0], lon: x[1], lat: x[2], lv: i < 9 ? 1 : i < 17 ? 2 : 3, names: LANGS.map((lg, j) => j === 0 ? x[0] : (lg === K.lang && LP && LP.places && LP.places.states && LP.places.states[i]) || x[0]), region: US_REGION[x[0]] }));
@@ -99,13 +101,15 @@
     return out;
   }
 
-  // ---------- real photos from Wikipedia (free photos from Wikimedia Commons only, each with its credit) ----------
+  // ---------- real photos (free photos only, each with its credit) ----------
+  // Every city and sight has one photo that was picked by hand and looked at: its exact file on Wikimedia Commons
+  // (one is on Wikipedia itself). When a game starts, Wikipedia says where a 1280 px copy is, who took it and its
+  // license. Nothing is guessed: a photo that can't be found or loaded leaves that round with a drawn picture.
   const WIKI = 'https://en.wikipedia.org/w/api.php';
-  const PHOTO = 'bvplay:world:photos';
-  const BAD_NAME = /montage|collage|mosaic|composite|map|flag|coat.?of.?arms|seal|logo|locator|location|diagram|chart|plan\b|emblem|symbol|signature|stamp|banknote|coin|portrait|drawing|painting|engraving|lithograph|sketch|icon|svg$|png$|gif$|tiff?$|\b1[5-8]\d\d\b|\b19[0-5]\d\b/i;
-  const GOOD_NAME = /skyline|cityscape|aerial|panorama|view|overview|downtown|centre|center|harbou?r|old.?town|night|sunset|bridge|square|cathedral|mosque|temple|beach|from/i;
+  const PHOTO = 'bvplay:world:photos2';
+  try { localStorage.removeItem('bvplay:world:photos'); } catch (e) {}
   function photoCache() { try { return JSON.parse(localStorage.getItem(PHOTO) || '{}'); } catch (e) { return {}; } }
-  function savePhoto(title, v) { try { const c = photoCache(); c[title] = Object.assign({ t: Date.now() }, v); const keys = Object.keys(c); if (keys.length > 400) for (const k of keys.sort((a, b) => c[a].t - c[b].t).slice(0, keys.length - 400)) delete c[k]; localStorage.setItem(PHOTO, JSON.stringify(c)); } catch (e) {} }
+  function savePhoto(file, v) { try { const c = photoCache(); c[file] = Object.assign({ t: Date.now() }, v); const keys = Object.keys(c); if (keys.length > 400) for (const k of keys.sort((a, b) => c[a].t - c[b].t).slice(0, keys.length - 400)) delete c[k]; localStorage.setItem(PHOTO, JSON.stringify(c)); } catch (e) {} }
   async function wapi(params) {
     const u = new URL(WIKI);
     for (const [k, v] of Object.entries(Object.assign({ action: 'query', format: 'json', formatversion: '2', origin: '*' }, params))) u.searchParams.set(k, v);
@@ -117,88 +121,64 @@
       return await r.json();
     } finally { clearTimeout(t); }
   }
-  const strip = h => { const d = document.createElement('div'); d.innerHTML = String(h || ''); return (d.textContent || '').replace(/\s+/g, ' ').trim(); };
-  // the facts about some files: where a 1600 px copy is, its size, its license and who took it (Commons files only)
+  const strip = h => (new DOMParser().parseFromString('<body>' + String(h || ''), 'text/html').body.textContent || '').replace(/\s+/g, ' ').trim();
+  // (who took it, short: "File:X.jpg: Ann Lee derivative work: Bo" is Ann Lee, "Ann Lee from Paris, France" is Ann Lee)
+  function byWho(a) {
+    let s = String(a || '').replace(/\s+/g, ' ').trim();
+    const tb = s.match(/taken by ([^.,;]+)/i);
+    if (tb) s = tb[1];
+    s = s.split(/\s*derivative work\s*:?/i)[0];
+    s = s.replace(/^(?:file:)?[^:]*\.(?:jpe?g|png|tiff?|webp)\s*:\s*/i, '');
+    s = s.replace(/^(?:photo|photograph|original|author|image)\s*(?:by)?\s*:\s*/i, '').replace(/^photo by\s+/i, '');
+    s = s.replace(/\s*-?\s*https?:\/\/\S+/gi, '').replace(/\s*\((?:flickr|more photos|[^)]*\.(?:com|org|net|de)[^)]*)\)/gi, '');
+    s = s.replace(/,\s*on\s+\S+$/i, '').replace(/\s+from\s+[^,]+(?:,\s*[^,]+)*$/i, '');
+    s = s.replace(/[\s.,;:]+$/, '').trim();
+    if (s.length > 44) { const cut = s.slice(0, 44); s = cut.slice(0, cut.lastIndexOf(' ') > 24 ? cut.lastIndexOf(' ') : 44).trim(); }
+    return s;
+  }
+  // the facts about some files: where a 1280 px copy is, its size, its license and who took it (free files only)
   async function fileInfo(names) {
     const out = new Map();
     for (let i = 0; i < names.length; i += 40) {
       const part = names.slice(i, i + 40);
-      const j = await wapi({ prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: '1600', iiextmetadatafilter: 'LicenseShortName|Artist|NonFree|Credit', titles: part.map(n => 'File:' + n).join('|') });
+      const j = await wapi({ prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: '1280', iiextmetadatafilter: 'LicenseShortName|Artist|NonFree', titles: part.map(n => 'File:' + n).join('|') });
+      const asked = new Map();
+      for (const r of (j.query && j.query.normalized) || []) asked.set(r.to, r.from);
       for (const pg of (j.query && j.query.pages) || []) {
         const ii = pg.imageinfo && pg.imageinfo[0];
-        if (!ii || pg.imagerepository !== 'shared') continue;
+        if (!ii || (pg.imagerepository !== 'shared' && pg.imagerepository !== 'local')) continue;
         const md = ii.extmetadata || {};
         if (md.NonFree && String(md.NonFree.value) === 'true') continue;
         const lic = strip(md.LicenseShortName && md.LicenseShortName.value);
         if (!/^(cc|public domain|pd|gfdl|attribution)/i.test(lic)) continue;
-        const who = strip(md.Artist && md.Artist.value).slice(0, 48);
-        out.set(String(pg.title || '').replace(/^File:/, ''), { src: ii.thumburl || ii.url, w: ii.width, h: ii.height, mime: ii.mime, credit: (who ? who + ', ' : '') + lic + ', Wikimedia Commons' });
+        const who = byWho(strip(md.Artist && md.Artist.value));
+        const v = { src: ii.thumburl || ii.url, w: ii.width, h: ii.height, credit: (who ? who + ', ' : '') + lic + (pg.imagerepository === 'shared' ? ', Wikimedia Commons' : ', Wikipedia') };
+        const t = String(pg.title || '');
+        out.set(t.replace(/^File:/, ''), v);
+        if (asked.has(t)) out.set(asked.get(t).replace(/^File:/, ''), v);
       }
     }
     return out;
   }
-  // one good photo for each place: the article's own photo when it's a real landscape photo; otherwise (a city's
-  // collage, say) the best landscape photo further down the article
+  const withFx = (v, it) => (it.photo.fx != null ? Object.assign({}, v, { fx: it.photo.fx }) : v);
+  // the photos for a game's places (kept for 20 days, so a new game starts at once)
   async function photosFor(items) {
     const cache = photoCache(), out = new Map(), todo = [];
     for (const it of items) {
-      if (!it.wiki) continue;
-      const c = cache[it.wiki];
-      if (c && c.src && Date.now() - c.t < 20 * 86400e3) out.set(it.key, c);
-      else if (!(c && c.none && Date.now() - c.t < 3 * 86400e3)) todo.push(it);
+      if (!it.photo) continue;
+      const c = cache[it.photo.file];
+      if (c && c.src && Date.now() - c.t < 20 * 86400e3) out.set(it.key, withFx(c, it));
+      else todo.push(it);
     }
     if (!todo.length) return out;
     try {
-      const titles = [...new Set(todo.map(it => it.wiki))];
-      const lead = new Map();
-      for (let i = 0; i < titles.length; i += 40) {
-        const j = await wapi({ prop: 'pageimages', piprop: 'name|original', pilicense: 'free', redirects: '1', titles: titles.slice(i, i + 40).join('|') });
-        const back = new Map();
-        for (const r of [...((j.query && j.query.normalized) || []), ...((j.query && j.query.redirects) || [])]) back.set(r.to, back.get(r.from) || r.from);
-        for (const pg of (j.query && j.query.pages) || []) {
-          const asked = back.get(pg.title) || pg.title;
-          if (pg.pageimage) lead.set(asked, { name: pg.pageimage, w: pg.original && pg.original.width, h: pg.original && pg.original.height, page: pg.title });
-        }
-      }
-      const okShape = (w, h) => w && h && w / h >= 1.18 && w / h <= 2.3 && w >= 900;
-      const first = [...lead.values()].filter(x => okShape(x.w, x.h) && !BAD_NAME.test(x.name)).map(x => x.name);
-      const info = first.length ? await fileInfo(first) : new Map();
-      const need = [];
-      for (const t of titles) {
-        const l = lead.get(t);
-        const fi = l && info.get(l.name.replace(/_/g, ' '));
-        if (fi) { savePhoto(t, fi); for (const it of todo) if (it.wiki === t) out.set(it.key, fi); }
-        else need.push(t);
-      }
-      // (the rest: the photos in the article, best first)
-      if (need.length) {
-        const cand = new Map();
-        for (let i = 0; i < need.length; i += 15) {
-          const j = await wapi({ prop: 'images', imlimit: 'max', redirects: '1', titles: need.slice(i, i + 15).join('|') });
-          const back = new Map();
-          for (const r of [...((j.query && j.query.normalized) || []), ...((j.query && j.query.redirects) || [])]) back.set(r.to, back.get(r.from) || r.from);
-          for (const pg of (j.query && j.query.pages) || []) {
-            const asked = back.get(pg.title) || pg.title;
-            const word = asked.split(/[ ,(]/)[0].toLowerCase();
-            const list = (pg.images || []).map(x => String(x.title).replace(/^File:/, '')).filter(n => /\.jpe?g$/i.test(n) && !BAD_NAME.test(n));
-            list.sort((a, b) => score(b, word) - score(a, word));
-            cand.set(asked, list.slice(0, 8));
-          }
-        }
-        const all = [...new Set([...cand.values()].flat())];
-        const inf = all.length ? await fileInfo(all) : new Map();
-        for (const t of need) {
-          const best = (cand.get(t) || []).map(n => inf.get(n.replace(/_/g, ' '))).find(fi => fi && okShape(fi.w, fi.h) && /jpe?g/.test(fi.mime || ''));
-          if (best) { savePhoto(t, best); for (const it of todo) if (it.wiki === t) out.set(it.key, best); }
-          else savePhoto(t, { none: true });
-        }
+      const info = await fileInfo([...new Set(todo.map(it => it.photo.file))]);
+      for (const it of todo) {
+        const v = info.get(it.photo.file);
+        if (v) { savePhoto(it.photo.file, v); out.set(it.key, withFx(v, it)); }
       }
     } catch (e) {}
     return out;
-  }
-  function score(name, word) {
-    const n = name.toLowerCase();
-    return (n.includes(word) ? 3 : 0) + (GOOD_NAME.test(n) ? 2 : 0) + (/night|sunset|aerial|skyline/.test(n) ? 1 : 0) - (/(19|20)\d\d/.test(n) ? 0 : 0);
   }
   // (a photo is used only once it has loaded: wait for it a moment, else the round uses a drawn picture)
   const loaded = new Map();
@@ -228,7 +208,8 @@
   const boo = (cls, at) => div('boo-f' + (cls ? ' ' + cls : ''), at, M.BOO);
   const pinEl = (at, o) => { const w = div('pinw', at); const b = div('bob', w); const p = M.pin(o || {}); b.appendChild(p); return w; };
   const img = (src, at, cls) => { const i = document.createElement('img'); i.src = src; i.alt = ''; i.decoding = 'async'; i.referrerPolicy = 'no-referrer'; if (cls) i.className = cls; at.appendChild(i); return i; };
-  const photo = (c, at, cls) => { const p = div('ph' + (cls ? ' ' + cls : ''), at); img(c.photo.src, p); return p; };
+  // (a photo fills its frame; when the thing to see isn't in the middle, narrow frames slide over to keep it in view)
+  const photo = (c, at, cls) => { const p = div('ph' + (cls ? ' ' + cls : ''), at); const i = img(c.photo.src, p); if (c.photo.fx != null) i.style.objectPosition = (c.photo.fx * 100) + '% 50%'; return p; };
   const flagEl = (c, at) => img(c.flag.src, at, 'fl');
   const PU = c => c.U; // one --u in pixels
   // ---- cities and sights, drawn ----
@@ -850,7 +831,10 @@
       const n = Math.max(1, +s.rounds || 10);
       const rounds = pools.length === 1 ? W.choose(pools[0], n, s.level) : W.interleave(pools.map(p => W.choose(p, n, s.level)), n);
       W.markSeen(rounds.map(r => r.key));
-      const photoP = s.photos !== false && !us ? W.photosFor(rounds.filter(r => r.wiki)) : Promise.resolve(new Map());
+      const photoP = s.photos !== false && !us ? W.photosFor(rounds.filter(r => r.photo)) : Promise.resolve(new Map());
+      // (the first two photos start loading as soon as they're known, then each round loads the next two)
+      const ahead = (m, i) => { for (const r of rounds.slice(i, i + 2)) { const v = m.get(r.key); if (v) W.preload(v.src); } };
+      photoP.then(m => ahead(m, 0)).catch(() => {});
       for (const r of rounds) if (r.kind === 'flag') W.flagImg(r.cc);
       const U = uPx();
       const teamOf = p => (K.teamsOn() && p.team ? ((P.TEAMS.find(t => t[0] === p.team) || [])[2] || '') : '');
@@ -869,6 +853,7 @@
         if (i > 0) { K.snd.music(null, { fadeOut: 0.6 }); plane(); ctx.fx('plane'); await K.sleep(1100); }
         K.wait();
         const photos = (await Promise.race([photoP, W.sleepRaw(1500).then(() => null)])) || new Map();
+        ahead(photos, i + 1);
         let ph = photos.get(it.key) || null;
         if (ph && !(await Promise.race([W.preload(ph.src), W.sleepRaw(2200).then(() => false)]))) ph = null;
         if (K.over()) break;
