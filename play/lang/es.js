@@ -777,5 +777,6 @@ BVI18N.add("es", {
 "{n} rounds": "{n} rondas",
 "The TV shows a flag, a city or a famous sight.": "La tele muestra una bandera, una ciudad o un lugar famoso.",
 "Flags: flagcdn.com (public domain). Photos: Wikimedia Commons.": "Banderas: flagcdn.com (dominio público). Fotos: Wikimedia Commons.",
-"Where are {place}?": "{place}: ¿dónde están?"
+"Where are {place}?": "{place}: ¿dónde están?",
+"Guess on your phone, see who got it right on the TV.": "Adivina en tu teléfono y mira en la tele quién acertó. En inglés y árabe."
 });

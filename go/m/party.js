@@ -42,7 +42,7 @@
   const MOTION_GAMES = ['boosays', 'party'];
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
   // each game's own icon (the TV's pictures, in ../play/icons: the same ones as on the TV and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter']);
+  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter']);
   function gameIcon(id, e) {
     if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
     return el('span', 'e', null, e || '🎲');
@@ -337,6 +337,26 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 .pt-leave h2{font:700 26px/1.15 var(--fun);margin:0 0 8px}
 .pt-leave-p{color:var(--dim);font-size:16px;line-height:1.45;max-width:30em;margin:0 auto 18px}
 .pt-leave .pt-pair{margin-top:10px}
+.pt-clues{list-style:none;margin:-4px 0 14px;padding:0;display:grid;gap:8px}
+.pt-clues li{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--raise);border:1px solid var(--line);font:700 15px/1.35 var(--round)}
+.pt-clues li.new{animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.pt-clues li b{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font:800 14px/1 var(--round);color:#1d1050;background:#ffc93c}
+.pt-clues li:nth-child(2) b{background:#4c8dff;color:#fff}.pt-clues li:nth-child(3) b{background:#34d399}.pt-clues li:nth-child(4) b{background:#ff8a9a}
+.pt-worth{width:max-content;max-width:100%;margin:0 auto 12px;padding:7px 16px;border-radius:999px;background:linear-gradient(180deg,#ffe08a,#ffc93c);color:#3a2400;font:800 15px/1.1 var(--round);box-shadow:0 3px 0 #a86a0a}
+.pt-worth.bump{animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.pt-spin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:min(240px,70vw);aspect-ratio:1;margin:14px auto 6px;border-radius:50%;border:0;color:#fff;font:800 24px/1 var(--round);
+  background:conic-gradient(from -45deg,#ff5a6e 0 25%,#4c8dff 0 50%,#34d399 0 75%,#ffc93c 0);box-shadow:0 0 0 8px #ffc93c,0 0 0 13px rgba(255,201,60,.28),0 14px 30px rgba(0,0,0,.45);animation:ptSpinP 1.6s ease-in-out infinite;cursor:pointer}
+.pt-spin .w{font-size:56px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
+.pt-spin b{background:rgba(20,10,50,.72);padding:8px 18px;border-radius:999px}
+.pt-spin.go{animation:ptSpinGo 1.2s cubic-bezier(.2,.8,.2,1) both}
+@keyframes ptSpinP{50%{transform:scale(1.04)}}
+@keyframes ptSpinGo{to{transform:rotate(720deg) scale(.92)}}
+.pt-helpers button.on:disabled{opacity:1;background:rgba(255,201,60,.18);border-color:#ffc93c}
+.pt-howto h2{margin:0 0 6px}
+.pt-howto .r{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--line);font:600 15px/1.42 var(--round)}
+.pt-howto h2+.r{border-top:0}
+.pt-howto .r i{flex:none;width:26px;font-style:normal;font-size:19px;line-height:1.15;text-align:center}
+.g-gir .pt-howto,.g-gir .pt-lang{border-color:rgba(255,201,60,.45)}
 `;
   }
 
@@ -373,7 +393,8 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   // pick: then their phone shows each question and its answers in it, while the TV stays in the game's language. The
   // host's phone always follows the game.
   const tvLangOf = l => (l && typeof l.lang === 'string' && /^[a-z]{2}$/.test(l.lang) ? l.lang : 'en');
-  const ownLang = l => (!G.host && l && l.mlang && G.plang && G.plang !== tvLangOf(l) && I() && I().FULL.has(G.plang) ? G.plang : '');
+  const ownLang = l => (!G.host && l && l.mlang && G.plang && G.plang !== tvLangOf(l) && I() && I().FULL.has(G.plang) && (!Array.isArray(l.langs) || l.langs.includes(G.plang)) ? G.plang : '');
+  const gameLangs = l => (l && Array.isArray(l.langs) ? l.langs : null);
   const effLang = l => ownLang(l) || tvLangOf(l);
   const langName = c => ([...langsFull(), ...langsMore()].find(x => x[0] === c) || [c, c])[1];
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
@@ -663,6 +684,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       case 'res': return onRes(m);
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
+      case 'gclue': return onClue(m);
       case 'secret': if (m.boxed) { G.secret = m; if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
       case 'bingo-cards':
         if (m.boxed && Array.isArray(m.cards)) {
@@ -698,6 +720,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   }
   function onLobbyNow(m, prev, was, force) {
     G.host = m.host === G.id;
+    document.documentElement.classList.toggle('g-gir', m.game === 'gir');
     if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
@@ -716,7 +739,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
       else if (prev && prev.host !== m.host) showEnd();
     } else {
-      const big = force || was !== 'lobby' || !prev || prev.game !== m.game || prev.host !== m.host || prev.lang !== m.lang || visSig(prev) !== visSig(m) || teamsOn(prev) !== teamsOn(m) || !!prev.mlang !== !!m.mlang;
+      const big = force || was !== 'lobby' || !prev || prev.game !== m.game || prev.host !== m.host || prev.lang !== m.lang || visSig(prev) !== visSig(m) || teamsOn(prev) !== teamsOn(m) || !!prev.mlang !== !!m.mlang || JSON.stringify(prev.howto || null) !== JSON.stringify(m.howto || null);
       G.phase = 'lobby'; G.q = null;
       if (big) { stopQ(); showLobby(); } else updLobby();
     }
@@ -856,13 +879,13 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (G.color) im.style.boxShadow = '0 0 0 3px ' + G.color;
     el('b', '', r, G.name);
     const tm = TEAMS.find(t => t[0] === G.team);
-    if (tm && G.lobby && G.lobby.settings && G.lobby.settings.teams) { const p = el('span', 'pill', r, S()[tm[1]] || tm[1]); p.style.background = tm[2]; }
+    if (tm && G.lobby && teamsOn(G.lobby)) { const p = el('span', 'pill', r, S()[tm[1]] || tm[1]); p.style.background = tm[2]; }
     const hearts = el('span', 'pt-hearts', r);
     const sc = el('span', 'pt-score', r);
     G.ui.me = { sc, hearts };
     updMe();
   }
-  function usesLives() { const l = G.lobby || {}; return l.game === 'hotboo' || (l.game === 'trivia' && l.settings && l.settings.mode === 'lives'); }
+  function usesLives() { const l = G.lobby || {}; return l.game === 'hotboo' || ((l.game === 'trivia' || l.game === 'gir') && l.settings && l.settings.mode === 'lives'); }
   function updMe() {
     const u = G.ui.me;
     if (!u || !u.sc.isConnected) return;
@@ -906,6 +929,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const t = el('span', '', gc); el('b', '', t, g.name); el('small', '', t, S().hostWait);
     // your own language (Trivia: the questions and answers on your phone in it)
     if (l.mlang) langCard(v.body, l);
+    howtoCard(v.body, l);
     if (teamsOn(l)) {
       const box = el('div', 'card', v.body);
       el('h2', '', box, S().team);
@@ -965,6 +989,14 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const min = { imposter: 3, boowho: 2, hotboo: 2, fakeout: 2 }[l.game] || 1;
     if (admin && ps.length < min) el('p', 'pt-note', box, S().needMore + ` (${ps.length}/${min})`);
   }
+  // how to play: a game's own rules for the settings the host picked (Guess It Right!), in this phone's language
+  function howtoCard(parent, l) {
+    if (!Array.isArray(l.howto) || !l.howto.length) return null;
+    const box = el('div', 'card pt-howto', parent);
+    el('h2', '', box, T('How to play'));
+    for (const r of l.howto.slice(0, 8)) { if (!Array.isArray(r) || typeof r[1] !== 'string') continue; const d = el('div', 'r', box); el('i', '', d, L.clean(String(r[0] || ''), 6)); el('span', '', d, L.clean(T(r[1]), 240)); }
+    return box;
+  }
   // two buttons side by side (or one), for the things you might also want to do
   function pair(parent, items) {
     const row = el('div', 'pt-pair' + (items.length === 1 ? ' one' : ''), parent);
@@ -1009,7 +1041,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const w = el('span', 'pt-sel', box);
     const sel = el('select', '', w);
     const o0 = el('option', '', sel, T(STR0.sameTv, { lang: langName(tv) })); o0.value = '';
-    for (const [code, nm] of langsFull()) { if (code === tv) continue; const o = el('option', '', sel, nm); o.value = code; }
+    for (const [code, nm] of langsFull()) { if (code === tv || (gameLangs(l) && !gameLangs(l).includes(code))) continue; const o = el('option', '', sel, nm); o.value = code; }
     sel.value = mine;
     el('p', 'pt-info', box, mine ? T(STR0.langMine, { lang: langName(mine), tv: langName(tv) }) : T(STR0.langFollow, { lang: langName(tv) }));
     sel.onchange = async () => {
@@ -1087,9 +1119,10 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     el('span', '', row, '🌐 ' + S().lang);
     const w = el('span', 'pt-sel', row);
     const sel = el('select', '', w);
-    for (const [code, name] of langsFull()) { const o = el('option', '', sel, name); o.value = code; }
-    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const o = el('option', '', og, name); o.value = code; } }
-    sel.value = [...langsFull(), ...langsMore()].some(x => x[0] === l.lang) ? l.lang : 'en';
+    const only = gameLangs(l);
+    for (const [code, name] of langsFull()) { if (only && !only.includes(code)) continue; const o = el('option', '', sel, name); o.value = code; }
+    if (!only && langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const o = el('option', '', og, name); o.value = code; } }
+    sel.value = [...langsFull(), ...langsMore()].some(x => x[0] === l.lang) && (!only || only.includes(l.lang)) ? l.lang : (only ? only[0] : 'en');
     sel.onchange = () => { send({ k: 'set', key: 'lang', v: sel.value }); buzz('tap'); sel.blur(); };
   }
   // one setting, the way the design shows it
@@ -1192,6 +1225,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       const r = el('div', '', sum); el('span', '', r, st.s || st.t); el('b', '', r, vals.join(' · ') || '·');
     }
     const ed = el('button', 'pt-edit', wz, S().editSet); ed.type = 'button'; ed.onclick = edit;
+    howtoCard(wz, l);
     tvSizeRow(wz, l);
     G.ui.pb = el('div', '', wz);
     fillPlayers(G.ui.pb, l, true);
@@ -1228,7 +1262,8 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (typeof w === 'string' && w[0] === '!') return String(v) !== w.slice(1);
     return v === w;
   };
-  const shown = (f, set) => !f || !Array.isArray(f.when) || (Array.isArray(f.when[0]) ? f.when.every(c => cond(c, set)) : cond(f.when, set));
+  const all = (w, set) => (Array.isArray(w[0]) ? w.every(c => cond(c, set)) : cond(w, set));
+  const shown = (f, set) => !f || !f.when || (Array.isArray(f.when) ? all(f.when, set) : Array.isArray(f.when.any) ? f.when.any.some(w => Array.isArray(w) && all(w, set)) : true);
   const visSig = l => (l && Array.isArray(l.schema) ? l.schema.filter(f => f && shown(f, l.settings)).map(f => f.key + ':' + f.label).join('|') : '');
 
   // a question
@@ -1240,8 +1275,9 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const ex = q.extra || {};
     const inIt = q.who.includes(G.id);
     const imp = G.secret && (G.lobby || {}).game === 'imposter';
+    G.ui.clues = null; G.ui.worth = null;
     if (!inIt || q.kind === 'wait') {
-      const v = showWait(q.kind === 'wait' ? (L.clean(q.prompt, 160) || S().look) : ex.hot ? S().booElse : G.out ? S().out : S().look, ex.hot ? 'boo:peek' : G.out ? 'boo:sad' : ex.peek ? 'boo:peek' : 'boo:hi');
+      const v = showWait(q.kind === 'wait' ? (L.clean(q.prompt, 160) || S().look) : ex.hot ? S().booElse : G.out ? S().out : waitLine(ex) || S().look, ex.hot ? 'boo:peek' : G.out ? 'boo:sad' : ex.peek ? 'boo:peek' : 'boo:hi');
       if (imp) peekBox(v.body);
       return;
     }
@@ -1254,8 +1290,10 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const mine = trOf(q);
     const prompt = L.clean(mine && mine.p ? mine.p : q.prompt, 300);
     if (prompt && q.kind !== 'pin') { const p = el('div', 'pt-q', b, prompt); if (/^[\p{Extended_Pictographic}‍️\s]+$/u.test(prompt)) p.classList.add('emoji'); }
-    else if (ex.tv && mine && mine.q && q.kind !== 'pin') el('div', 'pt-q', b, L.clean(mine.q, 300));
+    else if (ex.tv && mine && mine.q && q.kind !== 'pin') { el('div', 'pt-q', b, L.clean(mine.q, 300)); if (Array.isArray(mine.c)) clueList(b, mine.c, q); }
     else if (ex.tv && q.kind !== 'pin') el('div', 'pt-look', b, '📺 ' + S().look);
+    // (Guess It Right!, clue by clue: what a right answer is worth now)
+    if (ex.gir && ex.clues && q.kind === 'choice') G.ui.worth = el('div', 'pt-worth', b, worthLine(q));
     G.ui.body = b;
     switch (q.kind) {
       case 'choice': choiceQ(b, q); break;
@@ -1268,9 +1306,37 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       case 'tap': tapQ(b, q); break;
       case 'bar': barQ(b, q); break;
       case 'emojimake': emojiMakeQ(b, q); break;
+      case 'spin': spinQ(b, q); break;
       default: el('p', 'pt-note', b, S().look);
     }
     if (imp) peekBox(b);
+  }
+  // (Guess It Right!'s team turns: whose turn it is, while the other teams watch)
+  const waitLine = ex => (Array.isArray(ex.wt) && typeof ex.wt[0] === 'string' ? L.clean(T(ex.wt[0], { team: T(String(ex.wt[1] || '')) }), 160) : '');
+  const worthLine = q => { const ex = q.extra || {}; return L.clean(T(String(ex.wl || '{n} points'), { n: numFmt(+q.w || +ex.w || 100) }), 60); };
+  // (Guess It Right!: the four clues, for a player who reads another language than the TV's; clue by clue, only the
+  // ones the TV shows so far)
+  function clueList(b, cs, q) {
+    const ex = q.extra || {};
+    const ol = el('ol', 'pt-clues', b);
+    G.ui.clues = cs.slice(0, 4).map((c, i) => { const li = el('li', '', ol); el('b', '', li, numFmt(i + 1)); el('span', '', li, L.clean(c, 260)); if (ex.clues && i >= (+q.cn || 1)) li.hidden = true; return li; });
+  }
+  function onClue(m) {
+    const q = G.q;
+    if (!q || m.n !== q.n || !Number.isInteger(m.c)) return;
+    q.cn = m.c; if (Number.isFinite(+m.w)) q.w = +m.w;
+    if (G.ui.clues) G.ui.clues.forEach((li, i) => { if (i < m.c && li.hidden) { li.hidden = false; li.classList.add('new'); } });
+    if (G.ui.worth && G.ui.worth.isConnected) { G.ui.worth.textContent = worthLine(q); G.ui.worth.classList.remove('bump'); void G.ui.worth.offsetWidth; G.ui.worth.classList.add('bump'); }
+  }
+  // (Guess It Right!: a big button that spins the wheel on the TV)
+  function spinQ(b, q) {
+    const ex = q.extra || {};
+    el('p', 'pt-note', b, L.clean(T(String(ex.sl || 'Spin the wheel!')), 60)).style.marginTop = '0';
+    const x = el('button', 'pt-spin', b);
+    x.type = 'button';
+    el('span', 'w', x, '🎡');
+    el('b', '', x, T('Spin!'));
+    x.onclick = () => { if (answer(1, '')) { x.classList.add('go'); x.disabled = true; buzz('long'); } };
   }
   function answer(v, shown) {
     const q = G.q;
@@ -1336,12 +1402,14 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (ex.helpers && !G.out) {
       const hp = el('div', 'pt-helpers', b);
       G.ui.help = {};
-      for (const [h, e] of [['fifty', '✂️'], ['hint', '💡'], ['auto', '🪄'], ['ask', '👥']]) {
+      const HS = Array.isArray(ex.helpers) ? ex.helpers.filter(h => Array.isArray(h) && /^[a-z]{2,8}$/.test(h[0])).slice(0, 4) : [['fifty', '✂️'], ['hint', '💡'], ['auto', '🪄'], ['ask', '👥']];
+      const lab = ex.hlab && typeof ex.hlab === 'object' ? ex.hlab : {};
+      for (const [h, e] of HS) {
         const x = el('button', '', hp);
         G.ui.help[h] = x;
         x.type = 'button';
-        el('span', '', x, e);
-        x.append(S()[h]);
+        el('span', '', x, L.clean(String(e || ''), 6));
+        x.append(typeof lab[h] === 'string' ? L.clean(T(lab[h]), 30) : S()[h] || h);
         x.disabled = G.used.has(h);
         x.onclick = () => { if (G.answered || G.locked || G.used.has(h)) return; G.used.add(h); x.disabled = true; send({ k: 'help', n: q.n, h }); buzz('tap'); };
       }
@@ -1355,6 +1423,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (m.h === 'fifty' && Array.isArray(m.hide)) { for (const i of m.hide) if (G.ui.ans[i]) G.ui.ans[i].classList.add('gone'); buzz('ok'); }
     else if (m.h === 'hint' && typeof m.text === 'string') { const h = el('div', 'pt-hint', G.ui.body, '💡 ' + L.clean(m.text, 200)); h.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); buzz('ok'); }
     else if (m.h === 'auto' && Number.isInteger(m.pick) && G.ui.ans[m.pick]) { G.ui.ans[m.pick].click(); }
+    else if (m.h === 'boost') { const x = G.ui.help && G.ui.help.boost; if (x) x.classList.add('on'); if (typeof m.note === 'string' && m.note) toast(L.clean(m.note, 140), 'ok'); buzz('ok'); }
     else if (m.h === 'ask' && Array.isArray(m.tally)) {
       const total = m.tally.reduce((a, x) => a + (+x || 0), 0) || 1;
       m.tally.forEach((n, i) => { const a = G.ui.ans[i]; if (!a) return; let t = a.querySelector('.tally'); if (!t) t = el('span', 'tally', a); t.textContent = Math.round(100 * (+n || 0) / total) + '%'; });
@@ -1777,6 +1846,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   // code on that screen.
   const GAME_LIST = [
     ['trivia', '🧠', 'Trivia', 'Questions on the TV, answers on the phones. Knockout, teams, family mode and more.'],
+    ['gir', '❓', 'Guess It Right!', 'Four clues from the Stories of the Prophets, in English and Arabic. Guess on your phone.'],
     ['boowho', '👻', 'Boo Who?', '"Who is most likely to..." Vote for each other. No right answers, just laughs.'],
     ['world', '🌍', 'Where in the World?', 'Drop a pin on the map. The closest pin wins.'],
     ['fakeout', '🎭', 'Fake Out', 'Make up a fake answer, then spot the real one.'],
@@ -1788,6 +1858,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     ['bingo', '🎱', 'Bingo Night', 'The TV calls the numbers; every phone is a bingo card.'],
     ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.']
   ];
+  const GAME_LANGS = { gir: ['en', 'ar'] };
   async function startScreen(o) {
     css();
     await loadI18n();
@@ -1813,17 +1884,23 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       b.onclick = () => { gameId = id; mark(); buzz('tap'); };
       gameBtns.push([id, b]);
     }
-    const mark = () => { for (const [id, b] of gameBtns) b.setAttribute('aria-pressed', String(id === gameId)); };
-    mark();
+    const mark = () => { for (const [id, b] of gameBtns) b.setAttribute('aria-pressed', String(id === gameId)); fillLangs(); };
     // 2. the language (the whole game: the screen and every phone)
     const c2 = el('div', 'card', v.body);
     el('h2', '', c2, '2. Language');
     el('p', 'muted small', c2, 'The whole game shows in it: the screen and every phone. The host can change it later.');
     const sel = el('select', 'input', c2);
-    for (const [code, name] of langsFull()) { const op = el('option', '', sel, name); op.value = code; }
-    if (langsMore().length) { const og = el('optgroup', '', sel); og.label = 'More languages (translated by Chrome on a computer)'; for (const [code, name] of langsMore()) { const op = el('option', '', og, name); op.value = code; } }
-    sel.value = lang;
+    // (a game written in only some languages offers only those)
+    function fillLangs() {
+      const only = GAME_LANGS[gameId] || null;
+      sel.textContent = '';
+      for (const [code, name] of langsFull()) { if (only && !only.includes(code)) continue; const op = el('option', '', sel, name); op.value = code; }
+      if (!only && langsMore().length) { const og = el('optgroup', '', sel); og.label = 'More languages (translated by Chrome on a computer)'; for (const [code, name] of langsMore()) { const op = el('option', '', og, name); op.value = code; } }
+      if (only && !only.includes(lang)) { const pk0 = i18 ? i18.pick() : 'en'; lang = only.includes(pk0) ? pk0 : only[0]; }
+      sel.value = lang;
+    }
     sel.onchange = () => { lang = sel.value; };
+    mark();
     // 3. where it shows: the computer, or one of its TV screens (the ones that are on right now)
     const c3 = el('div', 'card', v.body);
     el('h2', '', c3, '3. Where should it show?');

@@ -20,7 +20,7 @@ var BVPLAY = (() => {
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter']);
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter', 'gir']);
   const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
@@ -133,7 +133,7 @@ var BVPLAY = (() => {
   }
   // a player's own language (their phone shows the questions in it): only one of the seven full languages, and only
   // when it isn't the game's
-  const okLang = v => (typeof v === 'string' && I18N.FULL.has(v) && v !== lang ? v : '');
+  const okLang = v => (typeof v === 'string' && I18N.FULL.has(v) && v !== lang && (!game || !game.langs || game.langs.includes(v)) ? v : '');
   function setPlayerLang(p, v) {
     const lg = okLang(v);
     if ((p.lang || '') === lg) return false;
@@ -227,7 +227,7 @@ var BVPLAY = (() => {
   }
   // teams: on when the game has them and the host turned them on (and the game mode allows them: a Trivia race is
   // everyone for themselves)
-  const teamsOn = () => !!(game && game.teams && settings.teams && (!game.teamsOn || game.teamsOn(settings)));
+  const teamsOn = () => !!(game && game.teams && (settings.teams || (game.teamsForce && game.teamsForce(settings))) && (!game.teamsOn || game.teamsOn(settings)));
   // teams: everyone without one (or on a team that's not in the game) joins the smallest team
   function balanceTeams() {
     if (!teamsOn()) return;
@@ -236,21 +236,28 @@ var BVPLAY = (() => {
     for (const p of list()) if (!ids.includes(p.team)) { p.team = ''; }
     for (const p of list()) if (!p.team) p.team = ids.slice().sort((a, b) => size(a) - size(b))[0];
   }
+  // (the games in the order the phones list them: Guess It Right! right after Trivia, the others as they were added)
+  const ORDER = ['trivia', 'gir'];
+  const gameList = () => [...games.values()].map((g, i) => [g, ORDER.includes(g.id) ? ORDER.indexOf(g.id) - 99 : i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   // what the phones show in the lobby (the game, its settings, the players, the host)
   function sayLobby(to) {
     if (phase === 'closed') return;
     const tt =tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
-    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', games: (tx.lang === lang && tx.games) || [...games.values()].map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
+    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', games: (tx.lang === lang && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
       players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : game.settings) : [], lang, rtl: P.RTL.has(lang), strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
-      steps: game && game.steps ? (tt && tt.steps) || game.steps : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn() };
+      steps: game && game.steps ? (tt && tt.steps) || game.steps : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
+      // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
+      langs: game && game.langs ? game.langs : null,
+      // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
+      howto: game && game.howto ? game.howto(settings) : null };
     if (to) sayTo(to, m); else say(m);
   }
   // the game list and the settings in the game's language (the host's phone shows them)
   const tx = { key: '', lang: '', games: null, name: '', schema: null, steps: null };
   async function retranslate() {
     const want = (game ? game.id : '') + '|' + lang;
-    const gl = await Promise.all([...games.values()].map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
+    const gl = await Promise.all(gameList().map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
     const optsOf = f => (game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options);
     // (each choice keeps its short explanation, and a setting its own, in the game's language)
     const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined,
@@ -262,14 +269,15 @@ var BVPLAY = (() => {
     sayLobby();
   }
   async function setOne(key, v) {
-    if (key === 'lang') { if (I18N.ok(v)) await setLang(v); lobby(); sayLobby(); retranslate(); return; }
+    if (key === 'lang') { if (I18N.ok(v) && (!game || !game.langs || game.langs.includes(v))) await setLang(v); lobby(); sayLobby(); retranslate(); return; }
     const f = game && game.settings.find(x => x.key === key);
     if (!f) return;
     if (f.type === 'toggle') settings[key] = !!v;
     else if (f.options && f.options.some(o => String(o[0]) === String(v))) settings[key] = f.options.find(o => String(o[0]) === String(v))[0];
     else if (f.type === 'text') settings[key] = String(v == null ? '' : v).split(/\n/).map(x => P.safe(x, 90)).filter(Boolean).join('\n').slice(0, 1500);
     else if (f.type === 'number') { const n = Math.round(Number(v)); if (!Number.isFinite(n)) return; settings[key] = Math.max(f.min || 0, Math.min(f.max || 999, n)); }
-    if (key === 'teams' || key === 'teamN') balanceTeams();
+    // (a mode can turn teams on by itself, like Guess It Right!'s team turns: everyone gets a team right away)
+    if (key === 'teams' || key === 'teamN' || (key === 'mode' && game.teamsForce)) balanceTeams();
     lobby(); sayLobby();
   }
   function choose(id) {
@@ -277,6 +285,14 @@ var BVPLAY = (() => {
     settings = {};
     for (const f of game.settings) settings[f.key] = f.default;
     phase = 'lobby';
+    // (a game written in only some languages, like Guess It Right! in English and Arabic: the screen switches to one of
+    // them, English unless the screen was in another of the game's own; a player's own language has to be one too)
+    if (game.langs && !game.langs.includes(lang)) {
+      const to = game.langs.includes('en') ? 'en' : game.langs[0];
+      for (const p of players.values()) if (p.lang && !game.langs.includes(p.lang)) p.lang = '';
+      setLang(to).then(() => { if (game && game.id === id) { lobby(); sayLobby(); retranslate(); } }).catch(() => {});
+    }
+    if (game.langs) for (const p of players.values()) if (p.lang && !game.langs.includes(p.lang)) p.lang = '';
     // (the same step in the browser's history, kept as it is: see the Back button below)
     try { history.replaceState(history.state, '', '#' + id + (lang !== 'en' ? '.' + lang : '')); } catch (e) {}
     lobby(); sayLobby(); retranslate();
@@ -427,6 +443,7 @@ var BVPLAY = (() => {
     if (hintEl) hintEl.hidden = true;
     if (booEl) booEl.hidden = true;
     SND.music(null, { fadeOut: 1 }); P.mute(true);
+    document.body.dataset.game = '';
     const t = await Promise.all(['The game is closed', 'Thanks for playing!', 'Start a new game'].map(x => P.tr(x)));
     stage.textContent = '';
     const cv = el('div', 'cover closed', stage);
@@ -461,7 +478,7 @@ var BVPLAY = (() => {
   }
   SND.onChange(() => soundHint());
   // (it's built off screen, then shown in one go: a newer lobby, like one more player joining, replaces it)
-  let lobbyRun = 0, lastSpot = '';
+  let lobbyRun = 0, lastSpot = '', played = false;
   const seen = new Set();   // (players whose seat has already popped in)
   async function lobby() {
     const my = ++lobbyRun;
@@ -518,7 +535,7 @@ var BVPLAY = (() => {
       // (a player whose phone shows the questions in their own language)
       if (p.lang && g && g.mlang) { const lg = el('span', 'lg', av, p.lang.toUpperCase()); lg.title = (I18N.LANGS.find(x => x[0] === p.lang) || [0, ''])[1]; }
       el('b', '', c, p.name);
-      if (p.team && teamsOn()) { const tm = P.TEAMS.find(x => x[0] === p.team); if (tm) { const tb = el('small', 'team', c, await T(tm[1])); tb.style.color = tm[2]; c.style.setProperty('--tc', tm[2]); } }
+      if (p.team && teamsOn()) { const tm = P.TEAMS.find(x => x[0] === p.team); if (tm) { const tb = el('small', 'team', c, await T(tm[1])); tb.style.color = tm[2]; c.style.setProperty('--tc', tm[2]); c.classList.add('tm'); } }
     }
     // (empty seats finish the last row; the first ones invite people in)
     const joinWord = await T('join');
@@ -570,12 +587,13 @@ var BVPLAY = (() => {
     if (c) el('small', '', ft, P.f(c));
     if (my !== lobbyRun || phase === 'play') return;
     stage.textContent = '';
+    document.body.dataset.game = g ? g.id : '';
     stage.append(...page.childNodes);
     if (sndOff) sndOff();
     sndOff = SND.onChange(paint);
     soundHint();
     // the game's own lobby tune (Trivia), loaded with its other sounds while people join
-    if (g && g.sounds) { SND.preload(g.sounds); SND.music('theme', { fadeIn: 1.5 }); } else SND.music(null);
+    if (g && g.sounds) { SND.preload(g.sounds); SND.music(g.music ? (played ? g.music.again : g.music.lobby) : 'theme', { fadeIn: 1.5 }); } else SND.music(null);
     // (and its questions, in the language picked)
     if (g && g.prep) { try { g.prep(lang); } catch (e) {} }
     fitLobby();
@@ -787,6 +805,8 @@ var BVPLAY = (() => {
     const my = ++run;
     P.mute(false);
     phase = 'play';
+    played = true;
+    document.body.dataset.game = game.id;
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();
@@ -827,17 +847,21 @@ var BVPLAY = (() => {
     let teamPlace = null;
     if (teamMode) {
       // (the team's points are everyone's on it added up; each player's place is the team's)
-      ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: P.f(t[1] + ' team'), av: 'boo:party', photo: '', score: list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
+      // (a game can keep each team's points itself, like Guess It Right!'s team turns: a team scores once per question)
+      const tsc = game.teamScore ? game.teamScore() : null;
+      ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: P.f(t[1] + ' team'), av: 'boo:party', photo: '', score: tsc && t[0] in tsc ? tsc[t[0]] : list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
       teamPlace = new Map(ps.map((t, i) => [t.team, i + 1]));
     }
     // the winner, like a game show's finale: spotlights, light rays turning behind the podium, confetti falling the
     // whole time, and the podium rising (third, second, then first, with a crown)
     const w = ps[0];
-    const k = await P.tr(teamMode ? 'The winning team' : 'The winner'), foot = await P.tr('The host can play again, or pick another game.');
+    const k = await P.tr(game.winK ? game.winK(teamMode) : teamMode ? 'The winning team' : 'The winner'), foot = await P.tr('The host can play again, or pick another game.');
     // (Trivia without speed points: a point is a right answer, so it says how many were right)
     const byRight = game.id === 'trivia' && !settings.speed && settings.mode !== 'first' && !teamMode;
     const unit = byRight ? '{n} correct' : '{n} points';
-    for (const p of ps.slice(0, 3)) await P.tr(unit, { n: p.score });
+    // (or the game's own line: Guess It Right! says how many were right when every right answer scored the same)
+    const line = p => (game.winLine ? game.winLine(p) : [unit, { n: p.score }]);
+    for (const p of ps.slice(0, 3)) { const [t2, v2] = line(p); await P.tr(t2, v2); }
     stage.textContent = '';
     const cv = el('div', 'cover win', stage);
     el('div', 'rays', cv);
@@ -854,14 +878,15 @@ var BVPLAY = (() => {
         if (place === 1) el('div', 'crown', who, '👑').setAttribute('aria-hidden', 'true');
         const av = el('div', 'av', who); const im = el('img', '', av); im.src = avatarUrl(p); im.alt = '';
         el('div', 'nm', who, p.name);
-        el('div', 'sc', who, P.f(unit, { n: p.score }));
+        el('div', 'sc', who, P.f(...line(p)));
       }
       el('div', 'blk', col, String(place));
     });
     el('p', 'win-foot', cv, foot);
+    if (game.winDeco) { try { game.winDeco(cv, el); } catch (e) {} }
     boo('happy');
     // (the winner's fanfare, then the lobby tune again: the room never goes quiet)
-    if (game.sounds) { SND.music('theme', { delay: 7, fadeIn: 2.5, fadeOut: 0.4 }); SND.sting('win'); } else { SND.music(null); P.sfx('win'); }
+    if (game.sounds) { const gm = game.music; SND.music(gm ? gm.after : 'theme', { delay: gm ? gm.afterDelay : 7, fadeIn: gm ? 3 : 2.5, fadeOut: gm ? 1 : 0.4 }); SND.sting(gm ? gm.win : 'win'); } else { SND.music(null); P.sfx('win'); }
     const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
     for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
     say({ k: 'end', ranking: rk.slice(0, 10) });
@@ -927,6 +952,7 @@ var BVPLAY = (() => {
       // (closes a question now: everyone who answered counts)
       close: n => { const w = pending.get(n); if (w && live()) w.finish(); },
       isHost: id => id === host,
+      hostId: () => host,
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),

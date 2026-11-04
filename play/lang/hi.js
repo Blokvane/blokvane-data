@@ -777,5 +777,6 @@ BVI18N.add("hi", {
 "{n} rounds": "{n} राउंड",
 "The TV shows a flag, a city or a famous sight.": "टीवी पर कोई झंडा, शहर या मशहूर जगह दिखेगी।",
 "Flags: flagcdn.com (public domain). Photos: Wikimedia Commons.": "झंडे: flagcdn.com (सार्वजनिक डोमेन)। फ़ोटो: Wikimedia Commons।",
-"Where are {place}?": "{place} कहाँ हैं?"
+"Where are {place}?": "{place} कहाँ हैं?",
+"Guess on your phone, see who got it right on the TV.": "अपने फ़ोन पर अंदाज़ा लगाओ, और टीवी पर देखो किसने सही बताया। अंग्रेज़ी और अरबी में।"
 });

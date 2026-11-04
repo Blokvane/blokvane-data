@@ -777,5 +777,6 @@ BVI18N.add("zh", {
 "{n} rounds": "共{n}轮",
 "The TV shows a flag, a city or a famous sight.": "电视上会出现一面国旗、一座城市或一处著名景点。",
 "Flags: flagcdn.com (public domain). Photos: Wikimedia Commons.": "国旗：flagcdn.com（公有领域）。照片：Wikimedia Commons。",
-"Where are {place}?": "{place}在哪儿？"
+"Where are {place}?": "{place}在哪儿？",
+"Guess on your phone, see who got it right on the TV.": "在手机上猜，在电视上看谁猜对了。英语和阿拉伯语。"
 });

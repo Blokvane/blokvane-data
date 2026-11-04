@@ -777,5 +777,6 @@ BVI18N.add("bn", {
 "{n} rounds": "{n} রাউন্ড",
 "The TV shows a flag, a city or a famous sight.": "টিভিতে একটা পতাকা, শহর বা দর্শনীয় স্থান দেখা যাবে।",
 "Flags: flagcdn.com (public domain). Photos: Wikimedia Commons.": "পতাকা: flagcdn.com (পাবলিক ডোমেইন)। ছবি: Wikimedia Commons।",
-"Where are {place}?": "{place} কোথায়?"
+"Where are {place}?": "{place} কোথায়?",
+"Guess on your phone, see who got it right on the TV.": "ফোনে আন্দাজ করো, আর টিভিতে দেখো কে ঠিক বলল। ইংরেজি আর আরবিতে।"
 });

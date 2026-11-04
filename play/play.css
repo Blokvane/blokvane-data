@@ -207,6 +207,9 @@ body.rtl .row .bar { inset: 0 0 0 auto; }
 .seat .ok { position: absolute; right: -4%; bottom: -4%; width: 38%; aspect-ratio: 1; border-radius: 50%; background: var(--ok); color: #fff; display: grid; place-items: center; font-size: calc(2.6 * var(--u)); font-weight: 900; box-shadow: 0 0 0 calc(.45 * var(--u)) #1d1440; animation: popIn .4s cubic-bezier(.2, 1.6, .4, 1) both; }
 .seat b { font: 700 calc(2.5 * var(--u))/1.15 var(--fun); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seat .team { font-size: calc(1.8 * var(--u)); font-weight: 800; margin-top: calc(-.8 * var(--u)); }
+/* (a seat with a team: a smaller face, so the name and the team both fit) */
+.seat b, .seat .team { flex: none; }
+.seat.tm .av { width: 46%; }
 .seat.empty { background: transparent; border: calc(.25 * var(--u)) dashed rgba(255, 255, 255, .16); animation: none; }
 .seat.empty span { color: rgba(203, 188, 255, .55); font-size: calc(2.4 * var(--u)); font-weight: 600; }
 .slots.small .seat b { font-size: calc(2 * var(--u)); } .slots.small .seat .ok { font-size: calc(1.9 * var(--u)); }
@@ -505,6 +508,7 @@ html:not(:lang(zh)):not(:lang(ja)):not(:lang(ko)):not(:lang(hi)):not(:lang(bn)):
 @keyframes rise { from { transform: translateY(105%); } }
 .pc.empty .blk { opacity: .35; filter: grayscale(.7); }
 .pc.empty .who { visibility: hidden; }
+.pc.empty { border: 0; padding: 0; border-radius: 0; }
 .cover.win .win-foot { position: absolute; inset-inline-start: calc(4 * var(--uw)); bottom: calc(4 * var(--u)); max-width: calc(26 * var(--uw)); margin: 0; text-align: start; font: 700 calc(2.4 * var(--u))/1.4 var(--round); color: #ece6ff; animation: fade .6s ease 2.2s both; }
 
 /* the hint to click once for sound (a browser keeps a page quiet until then) */
