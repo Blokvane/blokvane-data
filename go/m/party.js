@@ -344,13 +344,31 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 .pt-clues li:nth-child(2) b{background:#4c8dff;color:#fff}.pt-clues li:nth-child(3) b{background:#34d399}.pt-clues li:nth-child(4) b{background:#ff8a9a}
 .pt-worth{width:max-content;max-width:100%;margin:0 auto 12px;padding:7px 16px;border-radius:999px;background:linear-gradient(180deg,#ffe08a,#ffc93c);color:#3a2400;font:800 15px/1.1 var(--round);box-shadow:0 3px 0 #a86a0a}
 .pt-worth.bump{animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
-.pt-spin{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;width:min(240px,70vw);aspect-ratio:1;margin:14px auto 6px;border-radius:50%;border:0;color:#fff;font:800 24px/1 var(--round);
-  background:conic-gradient(from -45deg,#ff5a6e 0 25%,#4c8dff 0 50%,#34d399 0 75%,#ffc93c 0);box-shadow:0 0 0 8px #ffc93c,0 0 0 13px rgba(255,201,60,.28),0 14px 30px rgba(0,0,0,.45);animation:ptSpinP 1.6s ease-in-out infinite;cursor:pointer}
-.pt-spin .w{font-size:56px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.35))}
-.pt-spin b{background:rgba(20,10,50,.72);padding:8px 18px;border-radius:999px}
-.pt-spin.go{animation:ptSpinGo 1.2s cubic-bezier(.2,.8,.2,1) both}
-@keyframes ptSpinP{50%{transform:scale(1.04)}}
-@keyframes ptSpinGo{to{transform:rotate(720deg) scale(.92)}}
+.pt-spin{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;margin:6px auto 4px;padding:0;border:0;background:none;color:#fff;font:800 22px/1 var(--round);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.pt-wheel{position:relative;width:min(300px,82vw);aspect-ratio:1;margin-top:4%}
+.pt-wheel>*{position:absolute}
+.pt-wheel .pw-glow{inset:-8%;border-radius:50%;background:radial-gradient(circle,rgba(255,201,60,.3),rgba(124,92,255,.12) 45%,transparent 66%);animation:pwGlow 3s ease-in-out infinite}
+.pt-wheel .pw-turn,.pt-wheel .pw-rim{inset:0;width:100%;height:100%}
+.pt-wheel .pw-turn svg{width:100%;height:100%;display:block}
+.pt-wheel .pw-rim{pointer-events:none;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.pt-wheel .pw-hub{left:38.9%;top:38.9%;width:22.2%;height:22.2%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.pt-wheel .pw-boo{left:44%;top:44%;width:12%;height:12%;animation:pwBob 2.4s ease-in-out infinite}
+.pt-wheel .pw-pin{left:50%;top:-3.5%;width:12%;height:auto;z-index:2;transform:translateX(-50%);transform-origin:50% 30%;filter:drop-shadow(0 4px 6px rgba(0,0,0,.55))}
+.pt-wheel .bulb .l,.pt-wheel .bulb .h{animation:pwBlink 1.2s steps(1,end) infinite}
+.pt-wheel .bulb.b1 .l,.pt-wheel .bulb.b1 .h{animation-delay:-.6s}
+.pt-spin.go .pt-wheel .bulb .l,.pt-spin.go .pt-wheel .bulb .h{animation-duration:.24s}
+.pt-spin.go .pt-wheel .bulb.b1 .l,.pt-spin.go .pt-wheel .bulb.b1 .h{animation-delay:-.12s}
+.pt-spin.go .pw-pin{animation:pwTick .13s ease-in-out infinite alternate}
+.pt-spin.done .pw-pin{animation:pwLand .7s cubic-bezier(.2,1.6,.4,1)}
+.pt-spin>b{padding:12px 34px;border-radius:999px;background:linear-gradient(180deg,#ffe684,#ffcd45 48%,#ffb825);color:#1b1240;font:800 22px/1 var(--round);box-shadow:0 4px 0 #b37a12,0 8px 18px rgba(0,0,0,.35);animation:ptSpinP 1.6s ease-in-out infinite}
+.pt-spin:disabled>b{animation:none;opacity:.55}
+@keyframes ptSpinP{50%{transform:scale(1.06)}}
+@keyframes pwGlow{50%{opacity:.55;transform:scale(.97)}}
+@keyframes pwBob{50%{transform:translateY(-6%)}}
+@keyframes pwBlink{0%{opacity:1}50%{opacity:.3}}
+@keyframes pwTick{from{transform:translateX(-50%) rotate(-7deg)}to{transform:translateX(-50%) rotate(5deg)}}
+@keyframes pwLand{0%{transform:translateX(-50%) rotate(-12deg)}60%{transform:translateX(-50%) rotate(6deg)}100%{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.pt-wheel .pw-glow,.pt-wheel .pw-boo,.pt-wheel .bulb .l,.pt-wheel .bulb .h,.pt-spin>b{animation:none}}
 .pt-helpers button.on:disabled{opacity:1;background:rgba(255,201,60,.18);border-color:#ffc93c}
 .pt-howto h2{margin:0 0 6px}
 .pt-howto .r{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-top:1px solid var(--line);font:600 15px/1.42 var(--round)}
@@ -1328,15 +1346,55 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (G.ui.clues) G.ui.clues.forEach((li, i) => { if (i < m.c && li.hidden) { li.hidden = false; li.classList.add('new'); } });
     if (G.ui.worth && G.ui.worth.isConnected) { G.ui.worth.textContent = worthLine(q); G.ui.worth.classList.remove('bump'); void G.ui.worth.offsetWidth; G.ui.worth.classList.add('bump'); }
   }
-  // (Guess It Right!: a big button that spins the wheel on the TV)
+  // (Guess It Right!: the wheel, drawn like the TV's: four colors, a gold rim with lights, Boo in the middle, the pin
+  // on top. A tap spins it here, and the TV shows where it lands)
+  const pwStar = (cx, cy, r1, r2) => { const p = []; for (let i = 0; i < 16; i++) { const a = -Math.PI / 2 + i * Math.PI / 8, r = i % 2 ? r2 : r1; p.push((cx + r * Math.cos(a)).toFixed(2) + ' ' + (cy + r * Math.sin(a)).toFixed(2)); } return 'M' + p.join('L') + 'Z'; };
+  function girWheel() {
+    const CAT = [['#ff5a6e', '#c22a40'], ['#4c8dff', '#1d4fc4'], ['#34d399', '#109466'], ['#ffc93c', '#d08f12']];
+    let defs = '', body = '';
+    CAT.forEach(([col, deep], i) => {
+      const a0 = (-135 + i * 90) * Math.PI / 180, a1 = (-45 + i * 90) * Math.PI / 180, r = 360;
+      const x0 = 450 + r * Math.cos(a0), y0 = 450 + r * Math.sin(a0), x1 = 450 + r * Math.cos(a1), y1 = 450 + r * Math.sin(a1);
+      const mid = (-90 + i * 90) * Math.PI / 180, fx = 450 + 180 * Math.cos(mid), fy = 450 + 180 * Math.sin(mid);
+      const sx = 450 + 230.4 * Math.cos(mid), sy = 450 + 230.4 * Math.sin(mid);
+      defs += '<radialGradient id="pws' + i + '" gradientUnits="userSpaceOnUse" cx="450" cy="450" r="360" fx="' + fx.toFixed(1) + '" fy="' + fy.toFixed(1) + '"><stop offset="0" stop-color="' + col + '"/><stop offset=".75" stop-color="' + col + '"/><stop offset="1" stop-color="' + deep + '"/></radialGradient>';
+      body += '<path d="M450 450L' + x0.toFixed(2) + ' ' + y0.toFixed(2) + 'A360 360 0 0 1 ' + x1.toFixed(2) + ' ' + y1.toFixed(2) + 'Z" fill="url(#pws' + i + ')"/>' +
+        '<path d="' + pwStar(sx, sy, 46, 26) + '" fill="#fff" fill-opacity=".2" stroke="#fff" stroke-opacity=".6" stroke-width="2"/><path d="' + pwStar(sx, sy, 26, 17) + '" fill="none" stroke="#fff" stroke-opacity=".5" stroke-width="1.5"/><circle cx="' + sx.toFixed(1) + '" cy="' + sy.toFixed(1) + '" r="7" fill="#fff" fill-opacity=".65"/>' +
+        [-0.38, 0, 0.38].map(k => { const a = mid + k * 0.42, rr = k ? 312 : 324; return '<circle cx="' + (450 + rr * Math.cos(a)).toFixed(1) + '" cy="' + (450 + rr * Math.sin(a)).toFixed(1) + '" r="4.5" fill="#fff" fill-opacity=".45"/>'; }).join('');
+    });
+    let rays = '';
+    for (const a of [-135, -45, 45, 135]) { const t = a * Math.PI / 180, x = 450 + 360 * Math.cos(t), y = 450 + 360 * Math.sin(t); rays += '<path d="M450 450L' + x.toFixed(2) + ' ' + y.toFixed(2) + '" stroke="#1a0e3e" stroke-width="8" stroke-opacity=".5"/><path d="M450 450L' + x.toFixed(2) + ' ' + y.toFixed(2) + '" stroke="url(#pwg)" stroke-width="4"/>'; }
+    let bulbs = '';
+    for (let i = 0; i < 32; i++) { const t = i * Math.PI / 16, x = (450 + 398 * Math.cos(t)).toFixed(2), y = (450 + 398 * Math.sin(t)).toFixed(2); bulbs += '<g class="bulb ' + (i % 2 ? 'b1' : 'b0') + '"><circle cx="' + x + '" cy="' + y + '" r="14" fill="url(#pwhalo)" class="h"/><circle cx="' + x + '" cy="' + y + '" r="7.5" fill="#5a3a08"/><circle cx="' + x + '" cy="' + y + '" r="6" fill="url(#pwbulb)" class="l"/></g>'; }
+    const grads = '<linearGradient id="pwg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff4c4"/><stop offset=".35" stop-color="#ffc93c"/><stop offset=".7" stop-color="#b9771a"/><stop offset="1" stop-color="#ffe08a"/></linearGradient>' +
+      '<linearGradient id="pwg2" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff4c4"/><stop offset=".5" stop-color="#d89a2a"/><stop offset="1" stop-color="#8a5410"/></linearGradient>' +
+      '<radialGradient id="pwshine" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset=".92" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></radialGradient>' +
+      '<linearGradient id="pwgloss" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".28"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<radialGradient id="pwbulb"><stop offset="0" stop-color="#fff"/><stop offset=".4" stop-color="#fff3c0"/><stop offset="1" stop-color="#ffb31f"/></radialGradient>' +
+      '<radialGradient id="pwhalo"><stop offset="0" stop-color="#ffe08a" stop-opacity=".9"/><stop offset="1" stop-color="#ffc93c" stop-opacity="0"/></radialGradient>';
+    const hub = '<svg class="pw-hub" viewBox="0 0 200 200" aria-hidden="true"><path d="' + pwStar(100, 100, 85, 66) + '" fill="url(#pwg)" stroke="#5a3a08" stroke-width="2"/><path d="' + pwStar(100, 100, 72, 58) + '" fill="none" stroke="#fff4c4" stroke-opacity=".7" stroke-width="1.5"/><circle cx="100" cy="100" r="58" fill="#1d1050" stroke="url(#pwg2)" stroke-width="6"/><circle cx="100" cy="100" r="48" fill="none" stroke="#ffc93c" stroke-opacity=".5" stroke-width="1" stroke-dasharray="2 4"/></svg>' +
+      '<svg class="pw-boo" viewBox="0 0 60 60" aria-hidden="true"><path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff"/><ellipse cx="23.6" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><ellipse cx="35.4" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><circle cx="23.9" cy="22.6" r="1.3" fill="#fff"/><circle cx="35.7" cy="22.6" r="1.3" fill="#fff"/></svg>';
+    const pin = '<svg class="pw-pin" viewBox="0 0 110 140" aria-hidden="true"><path d="M55 136C40 100 14 80 14 50C14 22 32 6 55 6C78 6 96 22 96 50C96 80 70 100 55 136Z" fill="url(#pwg)" stroke="#5a3a08" stroke-width="2.5"/><path d="M55 116C44 92 26 76 26 52C26 30 39 18 55 18C71 18 84 30 84 52C84 76 66 92 55 116Z" fill="#c2306e"/><path d="' + pwStar(55, 50, 18, 9.5) + '" fill="url(#pwg)"/><circle cx="55" cy="50" r="5" fill="#c2306e"/></svg>';
+    return '<div class="pw-glow"></div><div class="pw-turn"><svg viewBox="0 0 900 900" aria-hidden="true"><defs>' + grads + defs + '</defs>' + body + '<circle cx="450" cy="450" r="360" fill="url(#pwshine)"/>' + rays + '</svg></div>' +
+      '<svg class="pw-rim" viewBox="0 0 900 900" aria-hidden="true"><circle cx="450" cy="450" r="420" fill="none" stroke="#0a0620" stroke-width="10" stroke-opacity=".6"/><circle cx="450" cy="450" r="398" fill="none" stroke="url(#pwg2)" stroke-width="44"/><circle cx="450" cy="450" r="398" fill="none" stroke="#2a1660" stroke-width="30"/><circle cx="450" cy="450" r="419" fill="none" stroke="url(#pwg)" stroke-width="3"/><circle cx="450" cy="450" r="377" fill="none" stroke="url(#pwg)" stroke-width="3"/><circle cx="450" cy="450" r="366" fill="none" stroke="url(#pwg2)" stroke-width="12"/><circle cx="450" cy="450" r="360" fill="none" stroke="#1a0e3e" stroke-width="2"/>' + bulbs + '<path d="M90 450A360 360 0 0 1 810 450A432 324 0 0 0 90 450Z" fill="url(#pwgloss)" opacity=".7"/></svg>' + hub + pin;
+  }
   function spinQ(b, q) {
     const ex = q.extra || {};
     el('p', 'pt-note', b, L.clean(T(String(ex.sl || 'Spin the wheel!')), 60)).style.marginTop = '0';
     const x = el('button', 'pt-spin', b);
     x.type = 'button';
-    el('span', 'w', x, '🎡');
+    const w = el('div', 'pt-wheel', x);
+    w.innerHTML = girWheel();
     el('b', '', x, T('Spin!'));
-    x.onclick = () => { if (answer(1, '')) { x.classList.add('go'); x.disabled = true; buzz('long'); } };
+    x.onclick = () => {
+      if (!answer(1, '')) return;
+      x.disabled = true; x.classList.add('go'); buzz('long');
+      // (it turns a few times and slows down, like the TV's)
+      const turn = w.querySelector('.pw-turn'), calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const deg = (calm ? 360 : 360 * 4) + Math.random() * 360;
+      try { turn.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(' + deg + 'deg)' }], { duration: calm ? 900 : 3400, easing: 'cubic-bezier(.12,.72,.08,1)', fill: 'forwards' }); } catch (e) {}
+      setTimeout(() => { x.classList.remove('go'); x.classList.add('done'); }, calm ? 900 : 3400);
+    };
   }
   function answer(v, shown) {
     const q = G.q;

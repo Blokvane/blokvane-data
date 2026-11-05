@@ -541,7 +541,9 @@ var BVPLAY = (() => {
     const joinWord = await T('join');
     for (let i = 0; i < 12; i++) { const e = el('div', 'seat empty', grid); if (i < 2) el('span', '', e, joinWord); }
     // what's special about this game: the mode the host picked, explained (Trivia), its helpers, or how it plays
-    if (g && g.spot) { body.classList.add('has-spot'); await spotCard(crowd ? left : right, g.spot(settings)); }
+    // (a game drawn without that card, like Guess It Right!'s design, gives all the right side to the seats)
+    if (g && g.lobbyCard === false) { /* no card */ }
+    else if (g && g.spot) { body.classList.add('has-spot'); await spotCard(crowd ? left : right, g.spot(settings)); }
     else if (g) {
       const ex = el('div', 'lob-x', crowd ? left : right);
       if (g.helpers) {
@@ -613,7 +615,8 @@ var BVPLAY = (() => {
     const empties = seats.filter(s => s.classList.contains('empty'));
     // (one free seat while there's room; at first a full row, or two rows when there's no card under them)
     const want = Math.max(n < 40 ? n + 1 : n, card ? 4 : 8);
-    const u = stage.clientHeight / 100 * zoom, gap = 1.6 * u, ratio = card ? 0.92 : 1.05;
+    // (a game can ask for taller seats and more room between them: Guess It Right!'s arches)
+    const u = stage.clientHeight / 100 * zoom, gap = ((game && game.seatGap) || 1.6) * u, ratio = card ? 0.92 : (game && game.seatRatio) || 1.05;
     const LV = ['s1', 's2', 's3', 's4'];
     if (card) card.classList.remove(...LV);
     // (everything that isn't a seat takes the room it needs first; the seats share what's left)
@@ -639,7 +642,7 @@ var BVPLAY = (() => {
     grid.style.gap = gap + 'px';
     // (the empty seats finish the last row)
     const free = Math.max(0, best.c * Math.ceil(want / best.c) - n);
-    empties.forEach((e, i) => { e.hidden = i >= free; });
+    empties.forEach((e, i) => { e.hidden = i >= free; e.classList.toggle('r2', n + i >= best.c); });
   }
   // A full room (more than 8): the game mode card sits under the QR code (more compact if it has to be), and the players
   // have the whole right side: as seats while those stay big enough to read from the sofa, otherwise as chips (a face

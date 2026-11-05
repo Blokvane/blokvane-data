@@ -875,5 +875,7 @@ BVI18N.add("ar", {
 "{team} is answering. Watch the TV!": "دور {team} الآن. تابع الشاشة!",
 "{team} is spinning the wheel. Watch the TV!": "{team} يُدير العجلة. تابع الشاشة!",
 "{team}'s turn": "دور {team}",
-"{team}, spin the wheel on your phone!": "{team}، أديروا العجلة من هواتفكم!"
+"{team}, spin the wheel on your phone!": "{team}، أديروا العجلة من هواتفكم!",
+"How long it shows": "مدة العرض",
+"The TV shows how to play for this many seconds, then the first question starts.": "تعرض الشاشة طريقة اللعب طوال هذا العدد من الثواني، ثم يبدأ السؤال الأول."
 });

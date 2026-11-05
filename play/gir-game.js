@@ -153,7 +153,46 @@
 
   // ---------- the screens ----------
   const div = (K, cls, parent, text) => K.el('div', cls, parent, text);
-  const SCORE_STAR = '<svg viewBox="0 0 40 40" aria-hidden="true"><path d="' + star8(20, 20, 19.5, 15.5) + '" fill="#ffc93c" stroke="#8a5410" stroke-width=".8"/><circle cx="20" cy="20" r="13" fill="#1d1050" stroke="#ffe08a" stroke-width=".9"/></svg>';
+  // ---------- the question screen, drawn like the game's design ("Game look") ----------
+  // The banners are drawn in the design's own pixels (the TV at 1379 x 777) and stretch with the screen: the title
+  // 943 x 90, an answer 458 x 61 (its circle covers the right end), a scoreboard row 320 x 68. Right to left as in the
+  // design; English mirrors them.
+  const SH = {
+    T_out: '23.6,1.0 919.4,1.0 941.9,45.0 919.4,89.0 23.6,89.0 1.1,45.0', T_in: '28.2,8.6 914.8,8.6 933.4,45.0 914.8,81.4 28.2,81.4 9.6,45.0',
+    R_out: '22.5,0.9 297.5,0.9 318.9,34.0 297.5,67.1 22.5,67.1 1.1,34.0', R_in: '26.6,6.9 293.4,6.9 310.9,34.0 293.4,61.1 26.6,61.1 9.1,34.0'
+  };
+  // (an answer: its point is straight, then turns smoothly into the top and the bottom, as in the design)
+  const A_OUT = 'M5.5 30.5L24.5 12Q35.6 0.9 48 0.9H419.6L442 30.5L419.6 60.1H48Q35.6 60.1 24.5 49Z';
+  const A_IN = 'M17 30.5L31.5 16Q41.4 6.1 56 6.1H416.6L435.6 30.5L416.6 54.9H56Q41.4 54.9 31.5 45Z';
+  // (the gradients: the title, the answers' colors, the gold of the rings and beads)
+  const grad = (id, c) => '<linearGradient id="' + id + '" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="' + c + '" stop-opacity=".95"/><stop offset=".1" stop-color="' + c + '" stop-opacity=".85"/><stop offset=".14" stop-color="' + c + '" stop-opacity=".78"/><stop offset=".22" stop-color="' + c + '" stop-opacity=".56"/><stop offset=".3" stop-color="' + c + '" stop-opacity=".47"/><stop offset=".4" stop-color="' + c + '" stop-opacity=".38"/><stop offset=".46" stop-color="' + c + '" stop-opacity=".28"/><stop offset=".5" stop-color="' + c + '" stop-opacity=".16"/><stop offset=".535" stop-color="' + c + '" stop-opacity=".05"/><stop offset=".56" stop-color="' + c + '" stop-opacity="0"/></linearGradient>';
+  const lin = (id, a, b, stops) => '<linearGradient id="' + id + '" x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1] + '">' + stops.map(s => '<stop offset="' + s[0] + '" stop-color="' + s[1] + '"/>').join('') + '</linearGradient>';
+  const DEFS = '<svg class="gq-defs" width="0" height="0" aria-hidden="true"><defs>' +
+    lin('gqT', [0, 0], [0, 1], [[0, '#20145a'], [0.5, '#1b114a'], [1, '#110a39']]) +
+    lin('gqR', [0, 0], [0, 1], [[0, '#221749'], [1, '#1c1342']]) +
+    lin('gqGR', [0, 0], [1, 1], [[0, '#fff3a3'], [0.45, '#ffd447'], [1, '#c9901a']]) +
+    lin('gqGL', [0, 0], [1, 0], [[0, '#d49530'], [0.13, '#ddad56'], [0.28, '#ffe594'], [0.38, '#fddb82'], [0.5, '#f2c155'], [0.6, '#e7aa2e'], [0.7, '#efc055'], [0.82, '#fad77d'], [0.92, '#ffe08a'], [1, '#d49530']]) +
+    '<radialGradient id="gqBd" cx=".35" cy=".35" r=".75"><stop offset="0" stop-color="#ffe9a0"/><stop offset=".5" stop-color="#f5be35"/><stop offset="1" stop-color="#c98a1e"/></radialGradient>' +
+    lin('gqSA', [0, 0], [1, 1], [[0, '#ffe377'], [0.5, '#f6c33e'], [1, '#d99a22']]) + lin('gqSB', [0, 0], [1, 1], [[0, '#ffd955'], [0.55, '#e8a92a'], [1, '#c98616']]) +
+    grad('gqA', '#ff5a6e') + grad('gqB', '#4c8dff') + grad('gqC', '#ffc93c') + grad('gqD', '#34d399') + grad('gqOK', '#2fd59a') + '</defs></svg>';
+  const TITLE_SVG = '<svg class="bnr" viewBox="0 0 943 90" preserveAspectRatio="none" aria-hidden="true"><polygon points="' + SH.T_out + '" fill="url(#gqT)"/>' +
+    '<polygon class="o" points="' + SH.T_out + '" fill="none" stroke-width="2"/><polygon class="i" points="' + SH.T_in + '" fill="none" stroke-width="1.1"/></svg>';
+  const ANS_SVG = L => '<svg class="bnr" viewBox="0 0 458 61" preserveAspectRatio="none" aria-hidden="true"><path class="f" d="' + A_OUT + '"/><path class="g" d="' + A_OUT + '" fill="url(#gq' + L + ')"/>' +
+    '<path class="o" d="' + A_OUT + '" fill="none" stroke-width="1.8"/><path class="i" d="' + A_IN + '" fill="none" stroke-width="1.1"/><path class="sp" d="' + star8(21.5, 30.5, 6.4, 2.6) + '"/></svg>';
+  // (the circle of an answer: a dark disc with twelve gold beads, a gold ring, and its color in the middle)
+  let beads = '';
+  for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; beads += '<circle cx="' + (38 + 30 * Math.cos(a)).toFixed(2) + '" cy="' + (38 + 30 * Math.sin(a)).toFixed(2) + '" r="2.5"/>'; }
+  const DOT_SVG = '<svg class="dsk" viewBox="0 0 76 76" aria-hidden="true"><circle cx="38" cy="38" r="34" fill="#0d0826"/><g class="bd" fill="url(#gqBd)">' + beads + '</g>' +
+    '<circle cx="38" cy="38" r="26.1" fill="none" stroke="#000026" stroke-width="1.2"/><circle class="gr" cx="38" cy="38" r="23.6" fill="none" stroke="url(#gqGR)" stroke-width="4.2"/>' +
+    '<circle class="c" cx="38" cy="38" r="21.6"/><circle cx="38" cy="38" r="21" fill="none" stroke="#000" stroke-opacity=".12" stroke-width="1.2"/></svg>';
+  const ROW_SVG = '<svg class="bnr" viewBox="0 0 320 68" preserveAspectRatio="none" aria-hidden="true"><polygon points="' + SH.R_out + '" fill="url(#gqR)"/><polygon class="o" points="' + SH.R_out + '" fill="none" stroke-width="1.8"/><polygon class="i" points="' + SH.R_in + '" fill="none" stroke-width="1"/></svg>';
+  // (the gold star at each end of the title: a dark disc, an orange gold ring, a sharp star with a dot in the middle)
+  const MEDAL = '<svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="16.8" fill="#1a1040" stroke="#e39a22" stroke-width="1.6"/><path d="' + star8(18, 18, 12.9, 6.6) + '" fill="#ffc93c"/><circle cx="18" cy="18" r="3.7" fill="#1a1040"/><circle cx="18" cy="18" r="1.7" fill="#ffc93c"/></svg>';
+  // (the points of a row: two gold squares, one turned, and a dark disc with a thin gold ring)
+  const SCORE_STAR = '<svg viewBox="0 0 58 58" aria-hidden="true"><path d="M29 0.4L57.6 29L29 57.6L0.4 29Z" fill="url(#gqSB)" stroke="#a86d12" stroke-width=".7"/><rect x="8.8" y="8.8" width="40.4" height="40.4" fill="url(#gqSA)" stroke="#a86d12" stroke-width=".7"/>' +
+    '<circle cx="29" cy="29" r="19.3" fill="#1d1048"/><circle cx="29" cy="29" r="16.8" fill="none" stroke="#c9a24e" stroke-width=".9"/></svg>';
+  // (a step of the progress: a sharp gold star when it's done or now, a dark one with a gold outline still to come)
+  const NODE_SVG = '<svg viewBox="0 0 40 40" aria-hidden="true"><path class="s" d="' + star8(20, 20, 19.2, 10.6) + '"/><circle class="r" cx="20" cy="20" r="6.4"/><circle class="d" cx="20" cy="20" r="2.9"/></svg>';
   // the scoreboard on the side of a question: players (or teams), each with a face and points in a gold star
   function sideBoard(K, parent, o) {
     const b = div(K, 'gq-side', parent);
@@ -169,6 +208,8 @@
       if (r) return r;
       r = div(K, 'gq-p', list);
       r.style.setProperty('--pc', color);
+      r.insertAdjacentHTML('afterbegin', ROW_SVG);
+      div(K, 'dm t', r); div(K, 'dm b', r);
       const av = div(K, 'av', r);
       if (avatars.length === 1) { const im = K.el('img', '', av); im.src = avatars[0]; im.alt = ''; }
       else { av.classList.add('team'); for (const a of avatars.slice(0, 4)) { const im = K.el('img', '', av); im.src = a; im.alt = ''; } }
@@ -214,21 +255,27 @@
     div(K, 'gq-boo boo-slot', b);
     return { node: b, draw };
   }
+  // (the question screen has the design's own frame and pattern; the other screens of the game keep the stars)
+  const qMode = on => { document.body.classList.toggle('gir-q', !!on); };
   // the question: the top (which question, the progress, the points, the clock), the scoreboard, the title, the four
   // clues and the four answers
   async function qView(K, o) {
     const body = K.view(null);
     body.classList.add('gq');
+    qMode(true);
     if (o.mode === 'clues') body.classList.add('cluemode');
+    div(K, 'gq-bg', body); div(K, 'gq-frame', body);
+    body.insertAdjacentHTML('beforeend', DEFS);
     const top = div(K, 'gq-top', body);
     const num = div(K, 'gq-num', top);
-    const bi = K.el('img', '', num); bi.src = P.booUri('boo:hi'); bi.alt = '';
+    const bi = K.el('img', '', num); bi.src = P.booUri('boo:party'); bi.alt = '';
     K.el('b', '', num, o.total ? await K.tr('Question {n}/{total}', { n: K.num(o.num), total: K.num(o.total) }) : await K.tr('Question {n}', { n: K.num(o.num) }));
+    // (the progress: a star for the start and one for each question, the line filled up to this one)
     const prog = div(K, 'gq-prog', top);
-    const N = Math.max(1, Math.min(o.total || o.goal || 10, 15)), cur = Math.min(N - 1, Math.floor((o.num - 1) * N / Math.max(1, o.total || o.goal || 10)));
-    for (let k = 0; k < N; k++) {
+    const all = o.total || o.goal || 10, N = Math.min(all, 12), cur = Math.min(N, Math.round(o.num * N / all));
+    for (let k = 0; k <= N; k++) {
       if (k) K.el('i', 'ln' + (k <= cur ? ' on' : ''), prog);
-      const n = div(K, 'nd' + (k < cur ? ' past' : k === cur ? ' now' : ''), prog); n.innerHTML = starSvg('', 'currentColor');
+      const n = div(K, 'nd' + (k < cur ? ' past' : k === cur ? ' now' : ''), prog); n.innerHTML = NODE_SVG;
     }
     const pts = div(K, 'gq-pts', top);
     // (knockout and 3 lives: the points don't decide anything, so they don't show)
@@ -240,30 +287,30 @@
     const mid = div(K, 'gq-mid', body);
     const main = div(K, 'gq-main', mid);
     const board = sideBoard(K, mid, { title: await K.tr('Scoreboard'), teams: o.teams, teamPts: o.teamPts, turn: o.turn, lives: o.mode === 'lives' });
-    // (the title, in its banner; above it the category, and on a team's turn, the team)
+    // (the title, in its banner with a gold star at each end and the pattern inside; on a team's turn, the team above it)
     const tb = div(K, 'gq-title', main);
-    tb.style.setProperty('--cc', CATS[o.q.cat].c);
-    const tags = div(K, 'gq-tags', tb);
-    const ct = K.el('span', 'cat', tags, await K.tr(CATS[o.q.cat].short)); ct.style.setProperty('--cc', CATS[o.q.cat].c);
-    if (o.turn) { const tt = K.el('span', 'turn', tags, await K.tr('{team}\'s turn', { team: await K.tr(o.turn[3]) })); tt.style.setProperty('--tc', o.turn[2]); }
-    for (const k of ['a', 'b']) { const m = div(K, 'med ' + k, tb); m.innerHTML = starSvg('', '#ffc93c'); }
+    tb.insertAdjacentHTML('afterbegin', TITLE_SVG);
+    div(K, 'dm t', tb); div(K, 'dm b', tb);
+    for (const k of ['a', 'b']) { const m = div(K, 'med ' + k, tb); m.innerHTML = MEDAL; }
+    if (o.turn) { const tags = div(K, 'gq-tags', tb); const tt = K.el('span', 'turn', tags, await K.tr('{team}\'s turn', { team: await K.tr(o.turn[3]) })); tt.style.setProperty('--tc', o.turn[2]); }
     const tt2 = K.el('span', 'tt', tb, o.text.title);
     if ([...o.text.title].length > 26) tt2.classList.add('long');
     K.el('div', 'gq-lbl c', main, await K.tr('The four clues:'));
     const cg = div(K, 'gq-clues', main);
-    const clues = o.text.clues.map((c, i) => { const x = div(K, 'gq-clue pre n' + (i + 1), cg); K.el('b', '', x, K.num(i + 1)); const sp = K.el('span', '', x, c); if ([...c].length > 70) x.classList.add('long'); void sp; return x; });
+    const clues = o.text.clues.map((c, i) => { const x = div(K, 'gq-clue pre n' + (i + 1), cg); K.el('b', '', x, K.num(i + 1)); K.el('span', '', x, c); if ([...c].length > 64) x.classList.add('long'); return x; });
     K.el('div', 'gq-lbl a', main, await K.tr('Choose the right answer:'));
     const ag = div(K, 'gq-ans', main);
     const LET = BVI18N.letters(K.lang);
     const cells = o.opts.map((t, i) => {
       const a = div(K, 'gq-a pre ' + 'ABCD'[i], ag);
-      const dot = div(K, 'dot', a); K.el('b', '', dot, LET[i] || 'ABCD'[i]);
-      const sp = K.el('span', 't', a, t); if ([...t].length > 26) a.classList.add('long'); void sp;
+      a.insertAdjacentHTML('afterbegin', ANS_SVG('ABCD'[i]));
+      const dot = div(K, 'dot', a); dot.innerHTML = DOT_SVG; K.el('b', '', dot, LET[i] || 'ABCD'[i]);
+      K.el('span', 't', a, t); if ([...t].length > 24) a.classList.add('long');
       return { node: a, who: K.el('span', 'who', a) };
     });
     const fx = div(K, 'gq-fx', main);
     fitQ(body, main);
-    K.boo('hi');
+    K.boo('happy');
     return {
       body, main, board, ring, inf, cells, clues, fx, clock: tw,
       setPts(n) { ptsT.textContent = n; pts.classList.remove('bump'); void pts.offsetWidth; pts.classList.add('bump'); },
@@ -286,6 +333,7 @@
   async function intro(K, o) {
     const body = K.view(null);
     body.classList.add('gi');
+    qMode(false);
     if (o.big || o.last) div(K, 'gi-rays', body);
     const box = div(K, 'gi-box' + (o.big ? ' big' : '') + (o.last ? ' fin' : ''), body);
     const med = div(K, 'gi-med', box);
@@ -300,6 +348,7 @@
   async function rulesScreen(K, s, secs) {
     const body = K.view(null);
     body.classList.add('gr');
+    qMode(false);
     const box = div(K, 'gr-box', body);
     const hd = div(K, 'gr-hd', box);
     const im = K.el('img', '', hd); im.src = 'icons/gir.webp'; im.alt = '';
@@ -316,6 +365,7 @@
   async function wheel(K, o) {
     const body = K.view(null);
     body.classList.add('gw');
+    qMode(false);
     const side = div(K, 'gw-side', body);
     K.el('h1', '', side, await K.tr('Spin the wheel!'));
     const st = K.el('p', 'gw-st', side, o.who ? await K.tr(o.whoText, o.whoVars) : await K.tr('The wheel picks the category.'));
@@ -364,6 +414,8 @@
   let teamPts = {};
   G({
     id: 'gir', name: 'Guess It Right!', emoji: '❓', sub: 'Guess on your phone, see who got it right on the TV.', teams: true, teamsWin: true,
+    // (the lobby as in the game's design: the QR code and the steps on one side, the players' arches on the other, no card)
+    lobbyCard: false, seatRatio: 1.34, seatGap: 1.9,
     step: ['Send your guess', 'Pick the right answer on your phone before the time runs out.'], deco: 'gir',
     // only in English and in Arabic: the screen and the phones (each player can pick the other one for their phone)
     langs: ['en', 'ar'], mlang: true,
@@ -379,6 +431,7 @@
     winLine: p => (String(p.id).startsWith('team-') || p.score !== (p.right || 0) * 100 ? ['{n} points', { n: p.score }] : ['{n} correct', { n: p.right || 0 }]),
     winDeco: (cv, el) => {
       cv.classList.add('g-win');
+      qMode(false);
       const lan = el('div', 'g-lanterns', cv);
       for (const k of ['a', 'b', 'c', 'd']) {
         const l = el('div', 'g-lan ' + k, lan);
@@ -391,7 +444,7 @@
     howto,
     // the host's phone sets the game up in these steps, then a last one to check it all and start
     steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'Teams and questions', s: 'Questions', keys: ['teams', 'teamN', 'count', 'perTeam', 'raceTo', 'level'] },
-      { t: 'Category', keys: ['cat', 'wheel'] }, { t: 'Timing', s: 'Time', keys: ['sec', 'next', 'wait'] }, { t: 'Extras', keys: ['helpers', 'speed', 'rules'] }],
+      { t: 'Category', keys: ['cat', 'wheel'] }, { t: 'Timing', s: 'Time', keys: ['sec', 'next', 'wait'] }, { t: 'Extras', keys: ['helpers', 'speed', 'rules', 'rulesSec'] }],
     // the TV's lobby explains the mode the host picked
     spot: s => {
       const m = MODES.find(x => x[0] === s.mode) || MODES[0];
@@ -428,7 +481,9 @@
       { key: 'wait', label: 'Wait before the next question', type: 'number', min: 1, max: 120, unit: 'seconds', default: 6, when: ['next', 'auto'] },
       { key: 'helpers', label: 'Helpers', type: 'toggle', default: true, desc: 'Each player can use each helper once: remove two wrong answers, a hint, answer it for me, double points.' },
       { key: 'speed', label: 'Speed points', type: 'toggle', default: false, desc: 'Faster right answers score more', when: ['mode', ['most', 'turns', 'spin']] },
-      { key: 'rules', label: 'How to play first', type: 'toggle', default: true, desc: 'The TV shows how to play before the first question.' }
+      { key: 'rules', label: 'How to play first', type: 'toggle', default: true, desc: 'The TV shows how to play before the first question.' },
+      // (how long the rules stay on the TV, set by the host)
+      { key: 'rulesSec', label: 'How long it shows', type: 'number', min: 5, max: 120, unit: 'seconds', default: 12, when: ['rules', true], desc: 'The TV shows how to play for this many seconds, then the first question starts.' }
     ],
     async tv(K) {
       const s = K.settings, mode = s.mode || 'most';
@@ -439,7 +494,7 @@
       let bank = null;
       try { bank = await Promise.race([loadBank(), new Promise((r, j) => setTimeout(() => j(new Error('slow')), 15000))]); } catch (e) {}
       if (!bank || !Array.isArray(bank.q) || !bank.q.length) {
-        const b = K.view(null); b.classList.add('gr');
+        const b = K.view(null); b.classList.add('gr'); qMode(false);
         const box = div(K, 'gr-box', b); K.el('h1', '', box, await K.tr('The questions didn\'t load. Check the internet, then start the game again.'));
         await K.sleep(7000);
         return K.players().slice().sort((a, c) => c.score - a.score);
@@ -473,7 +528,7 @@
       const teamsShown = showTeams ? TEAMS.filter(t => team ? order.some(o => o[0] === t[0]) : true) : null;
       // our own rules, first (with the game's tune already playing)
       K.snd.music('gPlay', { fadeIn: 1.5, fadeOut: 1.5 });
-      if (s.rules !== false) { K.wait(); await rulesScreen(K, s, 11); await K.sleep(11500); }
+      if (s.rules !== false) { const rs = Math.max(5, Math.min(120, Math.round(+s.rulesSec) || 12)); K.wait(); await rulesScreen(K, s, rs); await K.sleep(rs * 1000 + 500); }
       let cat = fixedCat, winner = null;
       const lead = () => Math.max(0, ...K.players().map(p => p.right));
       for (let i = 0; i < n; i++) {
