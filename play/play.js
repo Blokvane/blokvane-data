@@ -243,7 +243,7 @@ var BVPLAY = (() => {
   function sayLobby(to) {
     if (phase === 'closed') return;
     const tt =tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
-    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', games: (tx.lang === lang && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
+    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', gen: game ? game.name : '', games: (tx.lang === lang && tx.games && tx.games.length && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
       players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : game.settings) : [], lang, rtl: P.RTL.has(lang), strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
       steps: game && game.steps ? (tt && tt.steps) || game.steps : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
@@ -494,6 +494,8 @@ var BVPLAY = (() => {
     if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
     else if (dk === 'bingo') for (const x of 'BINGO') el('span', 'tile-b', deco, x);
     else for (const x of [...dk.matchAll(/\p{Extended_Pictographic}(‍\p{Extended_Pictographic}|️)*/gu)].map(m => m[0]).slice(0, 4)) el('span', 'tile-e', deco, x);
+    // (a game can dress the top in its own design: Who's the Imposter?'s signs and its title's neon word)
+    if (g && g.lobbyTop) { try { g.lobbyTop(t, el); } catch (e) {} }
     const body = el('div', 'body lob', page);
     // (a full room: the QR code and the game mode share the left side, and all of the right is for the players)
     const crowd = list().length > 8;
@@ -550,10 +552,12 @@ var BVPLAY = (() => {
         el('div', 'lbl', ex, await T('4 helpers · each works once'));
         const chips = el('div', 'chips', ex);
         for (const h of g.helpers) el('span', 'chip', chips, await T(h));
-      } else if (g.rules && g.rules.length) {
+      } else if (g.rules && (typeof g.rules === 'function' || g.rules.length)) {
+        // (a game's rules can follow the settings picked: Who's the Imposter?'s game modes)
+        const rl = typeof g.rules === 'function' ? g.rules(settings) : g.rules;
         el('div', 'lbl', ex, await T('How to play'));
         const ol = el('ol', 'howto2', ex);
-        for (const r of g.rules) el('li', '', ol, await T(r));
+        for (const r of rl) el('li', '', ol, await T(r));
       }
     }
     // the bottom: what happens next, and the credit
@@ -606,6 +610,10 @@ var BVPLAY = (() => {
   // (the game mode, or the helpers) always stays whole. When the room is full the card gets more compact first (its
   // rules go side by side, then its settings go, then its rules, then the medal gets smaller), so the seats keep a
   // size people can read from the sofa.
+  function inner(g2) {
+    const cs = getComputedStyle(g2), n = v => parseFloat(v) || 0;
+    return [g2.clientWidth - n(cs.paddingLeft) - n(cs.paddingRight), g2.clientHeight - n(cs.paddingTop) - n(cs.paddingBottom)];
+  }
   function fitLobby() {
     const grid = stage.querySelector('.slots.fit');
     if (!grid || !grid.isConnected || phase === 'play') return;
@@ -624,7 +632,7 @@ var BVPLAY = (() => {
     for (const e of empties) e.hidden = true;
     let best = null;
     for (let lv = 0; ; lv++) {
-      const W = grid.clientWidth, H = grid.clientHeight;
+      const [W, H] = inner(grid);
       best = null;
       for (let c = 2; c <= 10; c++) {
         const r = Math.ceil(want / c);
@@ -662,7 +670,7 @@ var BVPLAY = (() => {
     grid.style.cssText = '';
     grid.classList.remove('chips');
     for (const e of empties) e.hidden = true;
-    const W = grid.clientWidth, H = grid.clientHeight;
+    const [W, H] = inner(grid);
     let best = null;
     for (let c = 2; c <= 10; c++) {
       const r = Math.ceil(want / c), cw = (W - (c - 1) * gap) / c, ch = (H - (r - 1) * gap) / r, sz = Math.min(cw, ch / ratio);
@@ -855,8 +863,17 @@ var BVPLAY = (() => {
       ps = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map(t => ({ id: 'team-' + t[0], team: t[0], name: P.f(t[1] + ' team'), av: 'boo:party', photo: '', score: tsc && t[0] in tsc ? tsc[t[0]] : list().filter(p => p.team === t[0]).reduce((n2, p) => n2 + p.score, 0) })).sort((a, b) => b.score - a.score);
       teamPlace = new Map(ps.map((t, i) => [t.team, i + 1]));
     }
-    // the winner, like a game show's finale: spotlights, light rays turning behind the podium, confetti falling the
-    // whole time, and the podium rising (third, second, then first, with a crown)
+    // (a game with its own last screen keeps it, and its own music: Who's the Imposter?'s winners)
+    const own = !!(ranking && ranking.own && game.ownEnd);
+    if (!own) await podium(ps, teamMode);
+    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
+    for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
+    say({ k: 'end', ranking: rk.slice(0, 10) });
+    sayLobby();
+  }
+  // the winner, like a game show's finale: spotlights, light rays turning behind the podium, confetti falling the
+  // whole time, and the podium rising (third, second, then first, with a crown)
+  async function podium(ps, teamMode) {
     const w = ps[0];
     const k = await P.tr(game.winK ? game.winK(teamMode) : teamMode ? 'The winning team' : 'The winner'), foot = await P.tr('The host can play again, or pick another game.');
     // (Trivia without speed points: a point is a right answer, so it says how many were right)
@@ -889,11 +906,7 @@ var BVPLAY = (() => {
     if (game.winDeco) { try { game.winDeco(cv, el); } catch (e) {} }
     boo('happy');
     // (the winner's fanfare, then the lobby tune again: the room never goes quiet)
-    if (game.sounds) { const gm = game.music; SND.music(gm ? gm.after : 'theme', { delay: gm ? gm.afterDelay : 7, fadeIn: gm ? 3 : 2.5, fadeOut: gm ? 1 : 0.4 }); SND.sting(gm ? gm.win : 'win'); } else { SND.music(null); P.sfx('win'); }
-    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
-    for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
-    say({ k: 'end', ranking: rk.slice(0, 10) });
-    sayLobby();
+    if (game.sounds) { const gm = game.music; if (!gm || gm.win) { SND.music(gm ? gm.after : 'theme', { delay: gm ? gm.afterDelay : 7, fadeIn: gm ? 3 : 2.5, fadeOut: gm ? 1 : 0.4 }); SND.sting(gm ? gm.win : 'win'); } } else { SND.music(null); P.sfx('win'); }
   }
   // confetti falling gently over the winner's stage for as long as it shows: a big first wave, then a lighter rain
   function confettiRain(parent) {
@@ -959,7 +972,9 @@ var BVPLAY = (() => {
       // points with the game's mode: speed points (faster is more), first right gets a bonus
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
-      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), fx: (n, o) => (live() && SND.fx ? SND.fx(n, o) : null), on: () => SND.state() === 'on' },
+      snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), fx: (n, o) => (live() && SND.fx ? SND.fx(n, o) : null), on: () => SND.state() === 'on',
+        // (the moment a tune reaches a second of it: the reveal lands on the music's beat)
+        at: (n, sec) => (live() ? (SND.at ? SND.at(n, sec) : sleep(sec * 1000)) : Promise.resolve()) },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
       over: () => !live()
     };
@@ -983,7 +998,9 @@ var BVPLAY = (() => {
     await open(given || '');
     if (games.has(h[0])) choose(h[0]); else { lobby(); retranslate(); }
   }
-  setTimeout(boot, 0);
+  // (once every game's script has run: on a slow connection the games after this file can still be on their way, and a
+  // link to a game, or the host's list of games, needs them all)
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => setTimeout(boot, 0), { once: true }); else setTimeout(boot, 0);
   // (a TV keeps its screen on while a game is open)
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); document.addEventListener('visibilitychange', () => { if (!document.hidden && navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }); } catch (e) {}
   // (for testing only: with ?debug in the address, the console can see who's in and what's waiting)

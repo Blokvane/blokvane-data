@@ -39,7 +39,18 @@ var BVSOUND = (() => {
     gSnake: ['g-snake.mp3', 0.285, { stream: true, tail: 0.3, xf: 4 }],
     gPlay: ['', 1, { list: ['gSnake', 'gAfter'], xf: 6 }],
     gNext: ['g-next.mp3', 0.61], gEvery5: ['g-every5.mp3', 0.76], gCorrect: ['g-correct.mp3', 0.82], gWrong: ['g-wrong.mp3', 0.86],
-    gTimesup: ['g-timesup.mp3', 0.79], gWin: ['g-win.mp3', 0.88], gSpin: ['g-spin.mp3', 1], gLand: ['g-land.mp3', 1], gTick: ['g-tick.mp3', 0.9]
+    gTimesup: ['g-timesup.mp3', 0.79], gWin: ['g-win.mp3', 0.88], gSpin: ['g-spin.mp3', 1], gLand: ['g-land.mp3', 1], gTick: ['g-tick.mp3', 0.9],
+    // Who's the Imposter?: its lobby tune (also after the reveal, until the next game starts), two game tunes that take
+    // turns while everyone peeks and gives clues, the tune for talking it over and voting, "next player" before each
+    // clue, and The Mask Falls for the reveal: it plays once, the imposter shows exactly 8 seconds in (at() below), and
+    // the lobby tune comes back when it ends.
+    iLobby: ['i-lobby.mp3', 0.3, { stream: true, tail: 0.6, xf: 3 }],
+    iAlibi: ['i-alibi.mp3', 0.28, { stream: true, tail: 0.6, xf: 4 }],
+    iHeart: ['i-heart.mp3', 0.28, { stream: true, tail: 0.6, xf: 4 }],
+    iPlay: ['', 1, { list: ['iAlibi', 'iHeart'], xf: 5 }],
+    iVote: ['i-vote.mp3', 0.3, { stream: true, tail: 0.6, xf: 3 }],
+    iReveal: ['i-reveal.mp3', 0.62, { stream: true, once: true, then: 'iLobby', tail: 0.4 }],
+    iNext: ['i-next.mp3', 0.75]
   };
   const isStream = f => !!(f && f[2] && typeof f[2] === 'object' && (f[2].stream || f[2].list));
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};
@@ -154,10 +165,18 @@ var BVSOUND = (() => {
       const p = e.a.play();
       if (p && p.catch) p.catch(() => {});
       let handed = false;
-      const hand = () => { if (handed) return; handed = true; one(true); };
+      const hand = () => { if (handed) return; handed = true; if (L.once) { done(); return; } one(true); };
+      // (a tune that plays once: when it ends, the next one it names starts, like the lobby tune after the reveal)
+      const done = () => { const mine = bed === node; fadeStop(node, 1.2); if (mine) { bed = null; if (L.then && want === name) music(L.then, { fadeIn: 2.5 }); } };
+      node.el = e;
       const watch = () => {
         if (node.dead || !e.busy || !node.els.has(e)) return;
         const d = e.a.duration;
+        if (L.once) {
+          if (e.a.ended || e.a.error || (isFinite(d) && d > 2 && e.a.currentTime >= d - tail)) { hand(); return; }
+          node.timer = setTimeout(watch, 200);
+          return;
+        }
         if (isFinite(d) && d > xf + tail + 1 && e.a.currentTime >= d - tail - xf) {
           hand();
           const t2 = ac.currentTime;
@@ -174,6 +193,23 @@ var BVSOUND = (() => {
     // (after a delay, like after the winner's fanfare: the tune starts from its beginning when it's heard)
     if (o.delay > 0) node.timer = setTimeout(() => one(false), o.delay * 1000); else one(false);
     bed = node;
+  }
+  // the moment a tune reaches a second of it (on the music's own clock, so a screen can land right on a beat). Without
+  // sound (not allowed yet, or this browser can't), the clock on the wall stands in.
+  function at(name, sec) {
+    const t0 = performance.now();
+    return new Promise(res => {
+      let seen = false;
+      const tick = () => {
+        const e = bed && bed.name === name && bed.el;
+        const a = e && e.busy ? e.a : null;
+        if (a && !a.paused && a.currentTime > 0) { seen = true; if (a.currentTime >= sec) return res(); }
+        else if (!seen && performance.now() - t0 > sec * 1000 + 1200) return res();
+        else if (seen && !(bed && bed.name === name)) return res();
+        setTimeout(tick, 25);
+      };
+      tick();
+    });
   }
   // the tune steps back while a moment plays over it, then comes back up (lv: how loud it stays, 0..1)
   function duck(node, lv, dur) {
@@ -288,5 +324,5 @@ var BVSOUND = (() => {
   }
   // 'on', 'off', 'locked' (waiting for a first click or key press) or 'none' (this browser can't play it)
   const state = () => (!ctx() ? 'none' : !on ? 'off' : ready() ? 'on' : 'locked');
-  return { preload, music, sting, fx, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); } };
+  return { preload, music, sting, fx, at, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); } };
 })();

@@ -261,6 +261,9 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
 .pt-step button:active{background:var(--raise2)}
 .pt-step span{display:flex;align-items:baseline;gap:6px}
 .pt-step b{font:700 26px/1 var(--fun)}
+.pt-step .pt-num{width:3.2em;min-width:0;padding:4px 2px;border:0;border-bottom:2px dashed rgba(255,255,255,.25);background:transparent;color:inherit;font:700 26px/1 var(--fun);text-align:center;outline:none;border-radius:0}
+.pt-step .pt-num:focus{border-bottom-color:var(--sun)}
+.pt-quick0{margin-bottom:8px}
 .pt-step small{color:var(--dim);font-size:14px}
 .pt-text{min-height:120px;font-size:16px}
 .pt-langrow{display:flex;align-items:center;gap:12px;margin:10px 0 0;padding:6px 6px 6px 14px;border-radius:14px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08)}
@@ -417,7 +420,8 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   const langName = c => ([...langsFull(), ...langsMore()].find(x => x[0] === c) || [c, c])[1];
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
-  const gameName = () => (G.lobby && G.lobby.gname) || T('Party games');
+  // (a player who picked their own language sees the game's name in it too, not in the TV's)
+  const gameName = () => { const l = G.lobby || {}; return (ownLang(l) && typeof l.gen === 'string' && l.gen ? T(L.clean(l.gen, 60)) : l.gname) || T('Party games'); };
   const after = (ms, fn) => { const t = setTimeout(fn, ms); G.timers.push(t); return t; };
   function stopQ() { for (const t of G.timers) clearTimeout(t); G.timers = []; for (const f of G.stops) { try { f(); } catch (e) {} } G.stops = []; }
 
@@ -700,10 +704,11 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
       case 'revealq': return onRevealQ(m);
       case 'hint': return onHint(m);
       case 'res': return onRes(m);
+      case 'imp': return isImpGame() ? onImp(m) : undefined;
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
       case 'gclue': return onClue(m);
-      case 'secret': if (m.boxed) { G.secret = m; if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
+      case 'secret': if (m.boxed) { G.secret = m; if (isImpGame()) { if (G.imp && ['peek', 'clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; } if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
       case 'bingo-cards':
         if (m.boxed && Array.isArray(m.cards)) {
           G.bingo = { style: m.style === '90' ? '90' : '75', cards: m.cards.slice(0, 3).filter(c => c && Number.isInteger(c.no) && Array.isArray(c.cells)), auto: !!m.auto, big: !!m.big, pattern: String(m.pattern || 'line'), called: new Set(), marks: new Set(), last: 0, wait: 0 };
@@ -739,6 +744,8 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   function onLobbyNow(m, prev, was, force) {
     G.host = m.host === G.id;
     document.documentElement.classList.toggle('g-gir', m.game === 'gir');
+    document.documentElement.classList.toggle('g-imp', m.game === 'imposter');
+    if (m.game === 'imposter') impLoad();
     if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
@@ -751,7 +758,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     // (after a game, "Play again": the host's phone opens on the last step, everything as it was, ready to start)
     if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; showWait(S().look, 'boo:hi'); }
+      if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1161,12 +1168,30 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     if (f.type === 'number') {
       const lo = Number.isFinite(+f.min) ? +f.min : 0, hi = Number.isFinite(+f.max) ? +f.max : 999;
       let val = Math.max(lo, Math.min(hi, Math.round(+(cur != null ? cur : f.default)) || lo));
+      // (a few ready-made choices to tap, and under them any number: type it, or step it with − and +)
+      const quick = Array.isArray(f.quick) ? f.quick.map(Number).filter(x => Number.isFinite(x) && x >= lo && x <= hi).slice(0, 6) : [];
+      let qb = [];
+      if (quick.length) {
+        const g = el('div', 'pt-grid pt-quick0', parent);
+        g.style.gridTemplateColumns = 'repeat(' + quick.length + ', minmax(0, 1fr))';
+        qb = quick.map(x => { const b = el('button', 'pt-box num', g, String(x)); b.type = 'button'; b.onclick = () => setVal(x, true); return [x, b]; });
+      }
       const row = el('div', 'pt-step', parent);
       const minus = el('button', '', row, '−'); minus.type = 'button'; minus.setAttribute('aria-label', '−');
-      const mid = el('span', '', row); const vb = el('b', '', mid, String(val)); if (f.unit) el('small', '', mid, L.clean(f.unit, 20));
+      const mid = el('span', '', row);
+      const vb = el('input', 'pt-num', mid); vb.type = 'text'; vb.inputMode = 'numeric'; vb.value = String(val); vb.setAttribute('aria-label', label); vb.maxLength = 4;
+      if (f.unit) el('small', '', mid, L.clean(f.unit, 20));
       const plus = el('button', '', row, '+'); plus.type = 'button'; plus.setAttribute('aria-label', '+');
       let tm = 0;
-      const step = d => { const nv = Math.max(lo, Math.min(hi, val + d)); if (nv === val) return; val = nv; vb.textContent = String(val); clearTimeout(tm); tm = setTimeout(() => send({ k: 'set', key: f.key, v: val }), 400); buzz('tap'); };
+      const paintQ = () => { for (const [x, b] of qb) b.setAttribute('aria-pressed', String(x === val)); };
+      function setVal(nv, now) { nv = Math.max(lo, Math.min(hi, Math.round(nv))); if (!Number.isFinite(nv)) return; const same = nv === val; val = nv; vb.value = String(val); paintQ(); clearTimeout(tm); if (!same || now) tm = setTimeout(() => send({ k: 'set', key: f.key, v: val }), now ? 0 : 400); buzz('tap'); }
+      paintQ();
+      vb.addEventListener('focus', () => { try { vb.select(); } catch (e) {} });
+      vb.addEventListener('input', () => { vb.value = vb.value.replace(/[^0-9]/g, '').slice(0, 4); });
+      const typed = () => { const n = parseInt(vb.value, 10); if (Number.isFinite(n)) setVal(n, true); else vb.value = String(val); };
+      vb.addEventListener('change', typed);
+      vb.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); typed(); vb.blur(); } });
+      const step = d => { const nv = Math.max(lo, Math.min(hi, val + d)); if (nv === val) return; val = nv; vb.value = String(val); paintQ(); clearTimeout(tm); tm = setTimeout(() => send({ k: 'set', key: f.key, v: val }), 400); buzz('tap'); };
       // (hold to keep going, faster and faster)
       for (const [b, d] of [[minus, -1], [plus, 1]]) {
         let rt = 0, n = 0;
@@ -1290,6 +1315,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     const q = G.q;
     if (!q) return showWait();
     if (G.bingo) return showBingo();
+    if (isImpGame()) { if (q.kind !== 'wait' && Array.isArray(q.who) && q.who.includes(G.id)) G.impQ = q; return impDraw(); }
     const ex = q.extra || {};
     const inIt = q.who.includes(G.id);
     const imp = G.secret && (G.lobby || {}).game === 'imposter';
@@ -1754,6 +1780,570 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
     box.addEventListener('blur', hidden);
   }
 
+  // ---------- Who's the Imposter?: its screens, as the game's design has them (../play/imp-ph.js) ----------
+  // The TV says which part of the game it is ({k:'imp', t: 'peek' | 'clue' | 'talk' | 'reveal' | 'unmask' | 'guessing' |
+  // 'res' | 'final' | 'rules'}) and which of the designs to use, the same one on every phone. A question for this phone
+  // (the vote, a typed clue, the last-chance guess) shows until the TV moves on to the next part.
+  const IMPG = { p: null };
+  const isImpGame = () => (G.lobby || {}).game === 'imposter';
+  function impLoad() {
+    if (window.BVIMPP) { impCss(); return Promise.resolve(true); }
+    if (!IMPG.p) IMPG.p = GO.script('../play/imp-ph.js?v=' + GO.VERSION).then(() => { impCss(); return !!window.BVIMPP; }, () => { IMPG.p = null; return false; });
+    return IMPG.p;
+  }
+  function impCss() {
+    if (!window.BVIMPP || document.getElementById('imp-css')) return;
+    const st = el('style', '', document.head); st.id = 'imp-css'; st.textContent = BVIMPP.css;
+  }
+  const iesc = x => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', '\'': '&#39;' }[c]));
+  const iup = x => { try { return String(x).toLocaleUpperCase(G.lang); } catch (e) { return String(x).toUpperCase(); } };
+  // (a right-to-left language: the design mirrored, so it reads from the right like the lobby does. Left and right swap
+  // in every style, rows and columns run the other way; pieces centered with "left: 50%" stay where they are.)
+  const SWAP_LR = { left: 'right', right: 'left' };
+  function mirrorStyle(st) {
+    const centered = /(^|;)\s*(left|right)\s*:\s*50%/.test(st);
+    return st.split(';').map(d => {
+      const i = d.indexOf(':');
+      if (i < 0) return d;
+      const p = d.slice(0, i).trim().toLowerCase(), v = d.slice(i + 1).trim();
+      if (centered && /^(left|right|margin-left|margin-right)$/.test(p)) return d;
+      let np = p, nv = v;
+      if (p === 'left' || p === 'right') np = SWAP_LR[p];
+      else if (/^(margin|padding|border)-(left|right)(-[a-z]+)?$/.test(p)) np = p.replace(/-(left|right)/, (m, s) => '-' + SWAP_LR[s]);
+      else if (/^border-(top|bottom)-(left|right)-radius$/.test(p)) np = p.replace(/-(left|right)-radius$/, (m, s) => '-' + SWAP_LR[s] + '-radius');
+      else if (p === 'text-align' || p === 'float') nv = v.replace(/\b(left|right)\b/, s => SWAP_LR[s]);
+      else if (/^(margin|padding|inset|border-width|border-style|border-color)$/.test(p)) { const t = v.split(/\s+/); if (t.length === 4) nv = [t[0], t[3], t[2], t[1]].join(' '); }
+      else if (p === 'border-radius' && !v.includes('/')) { const t = v.split(/\s+/); nv = t.length === 2 ? [t[1], t[0]].join(' ') : t.length === 3 ? [t[1], t[0], t[1], t[2]].join(' ') : t.length === 4 ? [t[1], t[0], t[3], t[2]].join(' ') : v; }
+      return np === p && nv === v ? d : np + ':' + nv;
+    }).join(';');
+  }
+  const mirrorHtml = h => String(h).replace(/style="([^"]*)"/g, (m, st) => 'style="' + mirrorStyle(st) + '"');
+  const ihtml = h => (document.documentElement.dir === 'rtl' ? mirrorHtml(h) : h);
+  const iq = (root, k) => [...root.querySelectorAll('[data-k="' + k + '"]')];
+  const iset = (root, k, t) => { for (const e of iq(root, k)) e.textContent = t; };
+  const iifs = (root, vals) => { for (const e of root.querySelectorAll('bv-if')) if (e.dataset.if in vals) e.hidden = !vals[e.dataset.if]; };
+  // a line with parts in the design's colors (the quotes around a word and a name's "!" go with them)
+  function irich(elx, text, parts, styles) {
+    if (!elx) return;
+    const st = styles || [...elx.querySelectorAll('span,b')].map(x => x.getAttribute('style') || '');
+    const segs = []; const re = /\{(\w+)\}/g; let m, last = 0;
+    while ((m = re.exec(text))) { segs.push([text.slice(last, m.index), m[1]]); last = m.index + m[0].length; }
+    segs.push([text.slice(last), null]);
+    let html = '', n = 0;
+    const QL = '"“„«「『', QR = '"”»」』', AFTER = '!！:：';
+    for (let i = 0; i < segs.length; i++) {
+      let [before, key] = segs[i];
+      if (!key) { html += iesc(before); break; }
+      let open = '', close = '', tail = '';
+      if (before && QL.includes(before.slice(-1))) { open = before.slice(-1); before = before.slice(0, -1); }
+      let next = segs[i + 1] ? segs[i + 1][0] : '';
+      if (open && next && QR.includes(next[0])) { close = next[0]; next = next.slice(1); }
+      if (next && AFTER.includes(next[0])) { tail = next[0]; next = next.slice(1); }
+      if (segs[i + 1]) segs[i + 1][0] = next;
+      html += iesc(before) + '<span style="' + iesc(st[Math.min(n, st.length - 1)] || '') + '">' + iesc(open + (parts[key] == null ? '' : parts[key]) + close + tail) + '</span>';
+      n++;
+    }
+    elx.innerHTML = html;
+  }
+  // a player's picture where the design has a ghost (their Boo; only the TV has the photos)
+  function iface(svg, av, photo) {
+    if (!svg) return;
+    const w = +svg.getAttribute('width') || 40, h = +svg.getAttribute('height') || 52;
+    const im = document.createElement('img'); im.alt = '';
+    im.src = photo || booUri(AVATARS.includes(av) ? av : 'boo:hi');
+    im.className = 'imp-face' + (photo ? ' ph' : '');
+    const sz = photo ? Math.min(w, h) : Math.round(Math.max(w, h) * 1.15);
+    im.style.width = sz + 'px'; im.style.height = sz + 'px';
+    svg.replaceWith(im);
+  }
+  function irows(root, name, items, fn) {
+    for (const t of [...root.querySelectorAll('[data-row="' + name + '"]')]) {
+      items.forEach((x, i) => { const c = t.cloneNode(true); c.removeAttribute('data-row'); t.parentNode.insertBefore(c, t); fn(c, x, i); });
+      t.remove();
+    }
+  }
+  // a screen of the game: the app's top (restyled), then the design's parts
+  function impView(sec) {
+    stopQ();
+    const v = gameView();
+    if (sec > 0) timerBar(v.body, sec);
+    const w = el('div', 'imp-ph', v.body);
+    v.body.style.display = 'flex'; v.body.style.flexDirection = 'column'; v.body.style.flex = '1';
+    return { v, w };
+  }
+  const ihead = (w, title, sub) => { const h = el('div', 'imp-h', w); h.textContent = title; if (sub) el('div', 'imp-s', w, sub); return h; };
+  const iclues = w => { const c = Array.isArray(G.impClues) ? G.impClues : []; if (!c.length) return; const b = el('div', 'imp-clues', w); for (const [n, x] of c.slice(-12)) { const s2 = el('span', '', b); el('b', '', s2, L.clean(n, 16) + ': '); s2.append(L.clean(x, 24)); } };
+
+  // the secret, in the design of the game (the same one on every phone): hold the box down to see it
+  function impPeek(parent, d, mode, titleFn) {
+    const s = G.secret;
+    const tmp = el('div'); tmp.innerHTML = ihtml(BVIMPP.peek[(+d || 0) % BVIMPP.peek.length]);
+    const title = iq(tmp, 'title')[0];
+    if (titleFn) titleFn(title); else irich(title, T('Who is the {x}', { x: '{x}' }), { x: T('imposter?') });
+    iset(tmp, 'hp', T('Hold to peek'));
+    iset(tmp, 'ht', s ? S().holdTip : T('You join in at the next game.'));
+    iset(tmp, 'sr', iup(T('Secret role')));
+    iset(tmp, 'yi', S().imposter);
+    iset(tmp, 'ysw', iup(T('Your secret word')));
+    iset(tmp, 'fw', mode === 'undercover' ? T('Find who has a different word.') : mode === 'trust' ? T('Find the imposter, if there is one.') : T('Find who doesn\'t know it.'));
+    if (s) {
+      iset(tmp, 'w', L.clean(s.word, 40));
+      const wEl = iq(tmp, 'w')[0];
+      if (wEl && s.pic) { wEl.style.fontSize = '84px'; wEl.style.lineHeight = '1'; }
+      else if (wEl && [...String(s.word || '')].length > 12) wEl.style.fontSize = ([...String(s.word)].length > 18 ? 34 : 44) + 'px';
+      for (const c of iq(tmp, 'cat')) {
+        const bst = (c.querySelector('b') || {}).getAttribute ? c.querySelector('b').getAttribute('style') : 'color:#fff';
+        if (s.cat) { const t = T('Category: {x}', { x: '\u0000' }).split('\u0000'); c.innerHTML = iesc(t[0]) + '<b style="' + iesc(bst) + '">' + iesc(L.clean(s.cat, 40)) + '</b>' + iesc(t[1] || ''); }
+        else c.textContent = s.imp ? T('No category: listen closely!') : '';
+        if (!s.cat && !s.imp) c.hidden = true;
+      }
+      if (s.imp && Array.isArray(s.mates) && s.mates.length) {
+        const yi = iq(tmp, 'yi')[0];
+        if (yi) { const mt = el('div', 'imp-mates', null, '🤝 ' + T('Your partner: {x}', { x: s.mates.map(x => L.clean(x, 16)).join(' & ') })); yi.after(mt); }
+      }
+    }
+    iifs(tmp, { hidden: true, imp: false, word: false });
+    const box = iq(tmp, 'box')[0];
+    const parts = [...tmp.childNodes];
+    for (const x of parts) parent.appendChild(x);
+    if (!box || !s) return;
+    const show = on => { iifs(box, { hidden: !on, imp: on && !!s.imp, word: on && !s.imp }); };
+    // (a finger still down from the screen before, when the next turn redrew it, keeps the word showing until it lets go)
+    const up = () => { G.impHold = false; show(false); };
+    G.impRelease = up;
+    if (!G.impHoldW) {
+      G.impHoldW = true;
+      const rel = () => { if (G.impHold && G.impRelease) G.impRelease(); };
+      for (const ev of ['pointerup', 'pointercancel', 'blur']) addEventListener(ev, rel);
+      document.addEventListener('visibilitychange', () => { if (document.hidden) rel(); });
+    }
+    if (G.impHold) show(true);
+    const down = e => {
+      e.preventDefault();
+      try { box.setPointerCapture(e.pointerId); } catch (er) {}
+      G.impHold = true; show(true); buzz('tap');
+      if (G.impPeeked !== G.secret) { G.impPeeked = G.secret; send({ k: 'peeked' }); }
+    };
+    box.addEventListener('pointerdown', down);
+    for (const ev of ['pointerup', 'pointercancel']) box.addEventListener(ev, up);
+    box.addEventListener('lostpointercapture', () => { if (box.isConnected) up(); });
+    box.addEventListener('contextmenu', e => e.preventDefault());
+    box.tabIndex = 0;
+    box.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); show(true); if (G.impPeeked !== G.secret) { G.impPeeked = G.secret; send({ k: 'peeked' }); } } });
+    box.addEventListener('keyup', () => show(false));
+    box.addEventListener('blur', () => show(false));
+  }
+
+  function onImp(m) {
+    if (!m || typeof m.t !== 'string') return;
+    if (m.t === 'nobtn') { hideNext(); return; }
+    if (m.t === 'clues') { G.impClues = Array.isArray(m.list) ? m.list.slice(-24) : []; if (G.imp && ['clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; }
+    if (m.t === 'peek') { G.impD = +m.d || 0; G.impMode = (G.lobby && G.lobby.settings && G.lobby.settings.mode) || 'classic'; G.impClues = []; G.impRes = null; G.impFinal = null; }
+    if (m.t === 'talk' && Array.isArray(m.list)) G.impClues = m.list;
+    if (m.t === 'res') { G.impRes = m; const me = (m.list || []).find(x => x && x.id === G.id); if (me && typeof me.t === 'number') { G.score = me.t; updMe(); } }
+    if (m.t === 'final') G.impFinal = m;
+    G.imp = m; G.impQ = null;
+    if (G.phase !== 'end') G.phase = 'play';
+    impLoad().then(ok => { if (ok && G.imp === m) impDraw(); });
+  }
+  function impDraw() {
+    if (!window.BVIMPP) { impLoad().then(ok => { if (ok) impDraw(); }); return; }
+    const q = G.impQ;
+    if (q && Array.isArray(q.who) && q.who.includes(G.id)) {
+      const ex = (q.extra && q.extra.imp) || {};
+      if (q.kind === 'players') return impVote(q, ex);
+      if (q.kind === 'choice' && ex.guess) return impGuess(q, ex);
+      if (q.kind === 'text') return impTyped(q);
+    }
+    const m = G.imp || {};
+    switch (m.t) {
+      case 'rules': return impRules(m);
+      case 'peek': return impPeekScreen(m);
+      case 'clue': return impClue(m);
+      case 'talk': return impTalk(m);
+      case 'reveal': case 'unmask': return impReveal(m);
+      case 'guessing': return impGuessing(m);
+      case 'res': return impWin(G.impRes, false);
+      case 'final': return impWin(G.impFinal, true);
+      default: if (q && q.kind === 'wait' && q.prompt) return showWait(L.clean(q.prompt, 160)); return showWait(S().look);
+    }
+  }
+  function impRules(m) {
+    const { w } = impView(+m.sec || 0);
+    ihead(w, T('How to play'), '');
+    const ls = el('div', 'imp-rules', w);
+    for (const r of Array.isArray((G.lobby || {}).howto) ? G.lobby.howto : []) { const d = el('div', '', ls); el('i', '', d, L.clean(r[0], 8)); d.append(T(L.clean(r[1], 300))); }
+  }
+  function impPeekScreen(m) {
+    const { w } = impView(0);
+    impPeek(w, m.d, G.impMode);
+    el('div', 'imp-s', w, T('Game {n} / {total}', { n: numFmt(+m.g || 1), total: numFmt(+m.of || 1) }));
+  }
+  function impClue(m) {
+    const mine = m.id === G.id;
+    const { w } = impView(+m.sec || 0);
+    impPeek(w, G.impD, G.impMode, t => {
+      if (mine) { t.textContent = S().yourTurn; buzz('long'); }
+      else irich(t, T('{name}\'s turn', { name: '{name}' }), { name: L.clean(m.name, 20) });
+    });
+    el('div', 'imp-s', w, mine ? (m.typed ? T('Type one word about it.') : T('Say one word about it, out loud.')) : T('Listen closely, and look out for the imposter.'));
+    iclues(w);
+    if (mine && !m.typed) { const b = el('button', 'imp-btn gold', w, '✓ ' + T('Done')); b.type = 'button'; b.onclick = () => { send({ k: 'done' }); b.disabled = true; buzz('ok'); }; }
+    else if (G.host && !m.typed) { const b = el('button', 'imp-btn ghost', w, '⏭️ ' + T('Next player')); b.type = 'button'; b.style.marginTop = 'auto'; b.onclick = () => { send({ k: 'done' }); b.disabled = true; buzz('tap'); }; }
+  }
+  function impTyped(q) {
+    const { v, w } = impView(+q.sec || 0);
+    impPeek(w, G.impD, G.impMode, t => { t.textContent = S().yourTurn; });
+    el('div', 'imp-s', w, T('Type one word about it.'));
+    G.ui.body = v.body;
+    const b2 = el('div', '', w);
+    textQ(b2, q);
+  }
+  function impTalk(m) {
+    const { w } = impView(+m.sec || 0);
+    impPeek(w, G.impD, G.impMode, t => { t.textContent = T('Talk it over!'); });
+    el('div', 'imp-s', w, T('Who doesn\'t know the word? The vote comes next.'));
+    iclues(w);
+  }
+  function impReveal(m) {
+    const { w } = impView(0);
+    const h = ihead(w, T('Look at the TV!'), '');
+    void h;
+    el('div', 'imp-tv', w, '📺');
+    const line = el('div', 'imp-big', w);
+    if (m.t === 'unmask') {
+      if (m.none) irich(line, T('There was no imposter! The word was "{word}".', { word: '{word}' }), { word: L.clean(m.word, 40) }, ['color:#ffc93c']);
+      else irich(line, T((m.names || []).length > 1 ? 'The imposters were {name}! The word was "{word}".' : 'The imposter was {name}! The word was "{word}".', { name: '{name}', word: '{word}' }), { name: (m.names || []).map(x => L.clean(x, 16)).join(' & '), word: L.clean(m.word, 40) }, ['color:#ff4d6a', 'color:#ffc93c']);
+      buzz('long');
+    } else line.textContent = T('The imposter is about to be unmasked...');
+  }
+  function impGuessing(m) {
+    const { w } = impView(0);
+    const h = el('div', 'imp-h', w);
+    irich(h, T('{name} is guessing the word...', { name: '{name}' }), { name: (m.names || []).map(x => L.clean(x, 16)).join(' & ') }, ['color:#ff4d6a']);
+    el('div', 'imp-s', w, T('If they get it right, they steal the win!'));
+    el('div', 'imp-tv', w, '🎯');
+  }
+
+  // the vote, in one of the game's three designs (big cards, a list, big circles): pick, then lock it in
+  function impVote(q, ex) {
+    const { v, w } = impView(+q.sec || 0);
+    G.ui.body = v.body;
+    const tmp = el('div'); tmp.innerHTML = ihtml(BVIMPP.vote[(+ex.d || 0) % BVIMPP.vote.length]);
+    const pick = Math.max(1, Math.min(5, +ex.pick || 1));
+    const title = iq(tmp, 'title')[0];
+    if (pick > 1) { const st = [...title.querySelectorAll('span')].map(x => x.getAttribute('style') || ''); irich(title, T('Pick {n} {x}', { n: numFmt(pick), x: '{x}' }), { x: T('imposters') }, st); }
+    else irich(title, T('Who is the {x}', { x: '{x}' }), { x: T('imposter?') });
+    iset(tmp, 'sub', pick > 1 ? T('Tap the {n} players you think it is.', { n: numFmt(pick) }) : T('Tap who you think it is.'));
+    const opts = (Array.isArray(q.opts) ? q.opts : []).filter(p => p && L.okId(p.id)).slice(0, 40).map(p => ({ id: p.id, name: p.id === G.id ? S().you : L.clean(p.name, 16), av: p.av }));
+    if (ex.none) opts.push({ id: 'none', name: T('No imposter'), av: 'boo:love' });
+    const picked = [];
+    let locked = false;
+    const btnEl = iq(tmp, 'btn')[0];
+    const ON = { bg: 'rgba(255,77,106,.16)', bd: '#ff4d6a', sh: '0 0 22px rgba(255,77,106,.5)', dot: '#ff4d6a', sc: '1.12' };
+    const OFF = { bg: 'rgba(255,255,255,.05)', bd: 'rgba(255,255,255,.14)', sh: 'none', dot: 'transparent', sc: '1' };
+    const rowsEl = [];
+    const paint = () => {
+      for (const [r, o] of rowsEl) { const on = picked.includes(o.id); for (const [k2, val] of Object.entries(on ? ON : OFF)) r.style.setProperty('--' + k2, val); iifs(r, { sel: on }); r.setAttribute('aria-pressed', String(on)); }
+      const has = picked.length === pick || picked[0] === 'none';
+      btnEl.style.setProperty('--btnBg', locked ? '#34d399' : '#ff4d6a');
+      btnEl.style.setProperty('--btnFg', locked ? '#06281b' : '#fff');
+      btnEl.style.setProperty('--btnOp', has || locked ? '1' : '.4');
+      btnEl.style.setProperty('--btnSh', has ? (locked ? '0 0 24px rgba(52,211,153,.5)' : '0 0 24px rgba(255,77,106,.5)') : 'none');
+      btnEl.textContent = locked ? '✓ ' + T('Vote locked') : T('Lock in vote');
+    };
+    irows(tmp, 'opt', opts, (r, o) => {
+      iset(r, 'n', o.name);
+      for (const a of iq(r, 'av')) iface(a, o.av, '');
+      r.setAttribute('role', 'button'); r.tabIndex = 0;
+      if (o.id === G.id) { r.classList.add('opt-off'); r.setAttribute('aria-disabled', 'true'); }
+      const tap = () => {
+        if (locked || G.locked || o.id === G.id) return;
+        const i = picked.indexOf(o.id);
+        if (i >= 0) picked.splice(i, 1);
+        else if (o.id === 'none') { picked.length = 0; picked.push('none'); }
+        else { if (picked[0] === 'none') picked.length = 0; if (picked.length >= pick) picked.shift(); picked.push(o.id); }
+        buzz('tap'); paint();
+      };
+      r.onclick = tap;
+      r.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
+      rowsEl.push([r, o]);
+    });
+    btnEl.setAttribute('role', 'button'); btnEl.tabIndex = 0;
+    btnEl.onclick = () => {
+      if (locked || G.locked) return;
+      if (!(picked.length === pick || picked[0] === 'none')) { buzz('bad'); return; }
+      const val = picked[0] === 'none' ? 'none' : pick === 1 ? picked[0] : picked.slice();
+      const names = picked.map(id => (opts.find(o => o.id === id) || {}).name).join(', ');
+      if (answer(val, names)) { locked = true; paint(); buzz('ok'); }
+    };
+    paint();
+    for (const x of [...tmp.childNodes]) w.appendChild(x);
+    if (G.answered) { locked = true; paint(); }
+  }
+
+  // the last chance: the caught imposter picks the secret word from six
+  function impGuess(q, ex) {
+    const { v, w } = impView(+q.sec || 0);
+    G.ui.body = v.body;
+    const tmp = el('div'); tmp.innerHTML = ihtml(BVIMPP.guess[0]);
+    for (const a of iq(tmp, 'av')) iface(a, G.av, G.photo);
+    irich(iq(tmp, 'title')[0], T('Guess the {x}', { x: '{x}' }), { x: T('secret word!') });
+    const cat = (ex.catTr && ex.catTr[G.lang]) || ex.cat || '';
+    const ce = iq(tmp, 'cat')[0];
+    if (ce) { const bst = ce.querySelector('b') ? ce.querySelector('b').getAttribute('style') : 'color:#fff'; const t = T('Category: {x}', { x: '\u0000' }).split('\u0000'); ce.innerHTML = cat ? iesc(t[0]) + '<b style="' + iesc(bst) + '">' + iesc(L.clean(cat, 40)) + '</b>' + iesc(t[1] || '') : ''; if (!cat) ce.hidden = true; }
+    const mine = trOf(q);
+    const src = mine && Array.isArray(mine.o) && Array.isArray(q.opts) && mine.o.length === q.opts.length ? mine.o : q.opts;
+    const words = (Array.isArray(src) ? src : []).slice(0, 6).map(x => L.clean(x, 40));
+    const SEL = ['linear-gradient(160deg,#ff5a6e,#c8213f)', 'linear-gradient(160deg,#4c8dff,#2253c9)', 'linear-gradient(160deg,#ffc93c,#c98a12)', 'linear-gradient(160deg,#34d399,#17a673)', 'linear-gradient(160deg,#a77bff,#7a4fe0)', 'linear-gradient(160deg,#ff7ac6,#d84a9c)'];
+    const tiles = [...tmp.querySelectorAll('[data-row="o"]')];
+    let pickI = -1, locked = false;
+    const btnEl = iq(tmp, 'btn')[0];
+    const paint = () => {
+      tiles.forEach((t, i) => {
+        const on = pickI === i;
+        t.style.setProperty('--bg', on ? SEL[i] : 'linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02))');
+        t.style.setProperty('--sh', on ? '0 0 0 3px #fff,0 0 30px rgba(255,255,255,.35)' : 'none');
+        t.style.setProperty('--op', pickI >= 0 && !on ? '.45' : '1');
+        t.style.setProperty('--sc', on ? '1.03' : '1');
+        iifs(t, { sel: on });
+      });
+      const has = pickI >= 0;
+      btnEl.style.setProperty('--btnBg', locked ? '#34d399' : '#ffc93c');
+      btnEl.style.setProperty('--btnFg', '#1a1033');
+      btnEl.style.setProperty('--btnOp', has || locked ? '1' : '.4');
+      btnEl.style.setProperty('--btnSh', has ? (locked ? '0 0 24px rgba(52,211,153,.5)' : '0 0 24px rgba(255,201,60,.5)') : 'none');
+      btnEl.textContent = locked ? '✓ ' + T('Answer locked') : T('Lock in answer');
+    };
+    tiles.forEach((t, i) => {
+      t.removeAttribute('data-row');
+      if (i >= words.length) { t.hidden = true; return; }
+      iset(t, 'w', words[i]);
+      t.setAttribute('role', 'button'); t.tabIndex = 0;
+      const tap = () => { if (locked || G.locked) return; pickI = pickI === i ? -1 : i; buzz('tap'); paint(); };
+      t.onclick = tap;
+      t.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tap(); } });
+    });
+    btnEl.setAttribute('role', 'button'); btnEl.tabIndex = 0;
+    btnEl.onclick = () => { if (locked || G.locked || pickI < 0) { if (pickI < 0) buzz('bad'); return; } if (answer(pickI, words[pickI])) { locked = true; paint(); } };
+    paint();
+    for (const x of [...tmp.childNodes]) w.appendChild(x);
+  }
+
+  // the winners, in one of the game's four designs (and, after the last game, the whole night), with sharing
+  function impWin(r, final, endCtl) {
+    if (!r) return showWait(S().look);
+    const { v, w } = impView(0);
+    const box = el('div', 'imp-win', w);
+    box.innerHTML = ihtml(BVIMPP.win[(+r.d || 0) % BVIMPP.win.length]);
+    const list = (Array.isArray(r.list) ? r.list : []).filter(x => x && L.okId(x.id));
+    const winners = list.filter(x => x.w);
+    const caught = !final && (r.none || r.caught);
+    box.style.setProperty('--banBg', caught || final ? 'rgba(255,77,106,.14)' : 'rgba(255,201,60,.12)');
+    box.style.setProperty('--banBd', caught || final ? '#ff4d6a' : '#ffc93c');
+    iset(box, 'tw', iup(T('The winners')));
+    const ban = iq(box, 'ban')[0];
+    if (ban) {
+      const st = [...ban.querySelectorAll('span')].map(x => x.getAttribute('style') || '');
+      if (final) ban.textContent = winners.length ? winners.map(x => L.clean(x.n, 16)).join(' · ') + ' · ' + T('After {n} games', { n: numFmt(+r.of || 1) }) : T('After {n} games', { n: numFmt(+r.of || 1) });
+      else if (r.none) ban.textContent = T('No imposter this time!');
+      else irich(ban, T(caught ? 'Imposter caught! {name} was the imposter' : 'Imposter escaped! {name} was the imposter', { name: '{name}' }), { name: (r.imps || []).map(x => L.clean(x, 16)).join(' & ') }, st);
+    }
+    irows(box, 'wav', winners, (row, x) => { iset(row, 'n', x.id === G.id ? S().you : L.clean(x.n, 14)); for (const a of iq(row, 'av')) iface(a, x.av, ''); });
+    iset(box, 'sbt', T('Scoreboard')); iset(box, 'sbs', iup(final ? T('Points') : T('Who voted right')));
+    const pt = n => numFmt(n);
+    const ptsT = n => (n === 1 ? T('{n} pt', { n: numFmt(n) }) : T('{n} pts', { n: numFmt(n) }));
+    // (which row each player gets: winners, the others, the imposters)
+    // (a design that shows the winners as crowned faces doesn't list them again; Winners vs Fooled keeps the imposter in
+    // the middle, and its first list is everyone who voted right)
+    const groups = { rw: [], rf: [], ri: [] };
+    const has = { rw: !!box.querySelector('[data-row="rw"]'), ri: !!box.querySelector('[data-row="ri"]'), wav: !!box.querySelector('[data-k="wavs"]'), mid: !!iq(box, 'imp')[0] };
+    const kindOf = x => {
+      if (final) return x.w ? (has.rw ? 'rw' : has.wav ? '' : 'rf') : 'rf';
+      if (x.i) return has.ri ? 'ri' : has.mid ? '' : 'rf';
+      if (has.mid) return x.r > 0 ? 'rw' : 'rf';
+      if (x.w) return has.rw ? 'rw' : has.wav ? '' : 'rf';
+      return 'rf';
+    };
+    for (const x of list) { const kd = kindOf(x); if (kd && groups[kd]) groups[kd].push(x); }
+    let place = 0;
+    const proto = k => { const e2 = box.querySelector('[data-row="' + k + '"] [data-k="b"]'); return e2 ? e2.cloneNode(true) : null; };
+    const bRight = proto('rw'), bFooled = proto('rf');
+    for (const kd of ['rw', 'rf', 'ri']) {
+      irows(box, kd, groups[kd], (row, x) => {
+        place++;
+        iset(row, 'pl', x.w ? '♛' : pt(place));
+        const nEl = iq(row, 'n')[0];
+        if (nEl) { nEl.textContent = L.clean(x.n, 16); if (x.id === G.id) { const y = el('span', '', nEl, ' (' + S().you + ')'); y.style.cssText = 'font-size:11px;color:#c8bde6'; } }
+        for (const a of iq(row, 'av')) iface(a, x.av, '');
+        const pEl = iq(row, 'p')[0];
+        if (pEl) pEl.textContent = /pt/.test(pEl.textContent) ? ptsT(final ? +x.p || 0 : +x.p || 0) : pt(+x.p || 0);
+        const b = iq(row, 'b')[0];
+        if (final) { if (b) { if (+x.g > 0) b.textContent = '🏆 ' + numFmt(+x.g); else b.style.visibility = 'hidden'; } }
+        else if (x.i) {
+          const lab = x.s === 'stole' ? T('Stole it') : x.s === 'escaped' ? T('Escaped') : T('Caught');
+          row.style.setProperty('--impBg', x.s === 'caught' || x.s === 'left' ? '#ff4d6a' : '#ffc93c');
+          row.style.setProperty('--impFg', x.s === 'caught' || x.s === 'left' ? '#fff' : '#1a1033');
+          if (b) { const svg = b.querySelector('svg'); b.textContent = iup(lab); if (svg) b.prepend(svg); }
+          if (x.w) iset(row, 'pl', '♛');
+        } else if (b) {
+          const want = x.r > 0 ? bRight : bFooled;
+          if (want && want !== b) { const c = want.cloneNode(true); b.replaceWith(c); c.textContent = x.r > 0 ? '✓ ' + iup(T('Right')) : '✗ ' + iup(T('Fooled')); }
+          else b.textContent = x.r > 0 ? '✓ ' + iup(T('Right')) : '✗ ' + iup(T('Fooled'));
+        }
+        if (x.id === G.id) row.style.boxShadow = '0 0 0 2px #fff inset';
+      });
+    }
+    const wh = iq(box, 'wh')[0]; if (wh) wh.textContent = '♛ ' + (final ? T('Winners') : (r.none || caught || !winners.some(x => x.i)) ? T('Winners · voted right') : T('Voted right'));
+    const fh = iq(box, 'fh')[0]; if (fh) fh.textContent = '✗ ' + T('Fooled');
+    const impBox = iq(box, 'imp')[0];
+    if (impBox) {
+      const ip = list.find(x => x.i);
+      if (!ip || final) impBox.style.display = 'none';
+      else { iset(impBox, 'n', list.filter(x => x.i).map(x => L.clean(x.n, 16)).join(' & ')); for (const a of iq(impBox, 'av')) iface(a, ip.av, ''); iset(impBox, 'b', iup(ip.s === 'stole' ? T('Stole it') : ip.s === 'escaped' ? T('Escaped') : T('Caught'))); }
+    }
+    const each = iq(box, 'each')[0];
+    if (each) { const pv = winners.length ? +winners[0].p || 0 : 0; each.textContent = '♛ ' + iup(winners.length > 1 && winners.every(x => +x.p === pv) ? (pv === 1 ? T('1 point each') : T('{n} points each', { n: numFmt(pv) })) : pv === 1 ? T('1 point') : T('{n} points', { n: numFmt(pv) })) + ' ♛'; }
+    iset(box, 'kw', '♛ ' + T('Winner')); iset(box, 'ki', '■ ' + T('Imposter'));
+    // (the stage's cards: four in a row, as many rows as it takes)
+    const cg = iq(box, 'grid')[0];
+    if (cg && /repeat\(4,1fr\)/.test(cg.getAttribute('style') || '')) cg.style.gridTemplateColumns = 'repeat(4,minmax(0,1fr))';
+    // (the two-column list: one full-width column for up to five players, and as many rows as it takes for more than ten)
+    if (cg && /grid-auto-flow:\s*column/.test(cg.getAttribute('style') || '')) {
+      const n = cg.children.length;
+      if (n <= 5) { cg.style.gridTemplateColumns = 'minmax(0,1fr)'; cg.style.gridAutoFlow = 'row'; cg.style.gridTemplateRows = 'none'; }
+      else { cg.style.gridTemplateColumns = 'repeat(2,minmax(0,1fr))'; cg.style.gridTemplateRows = 'repeat(' + Math.ceil(n / 2) + ',auto)'; }
+    }
+    for (const f of iq(box, 'foot')) f.textContent = final || r.end ? (G.host ? '' : S().hostAgain) : T('The next game starts soon.');
+    // share this screen: a picture of it, for Instagram, TikTok, Facebook, WhatsApp, Messages or anywhere
+    const sh = el('div', 'imp-share', w);
+    const sb = el('button', 'imp-btn gold', sh, '📤 ' + T('Share the winners')); sb.type = 'button';
+    el('div', 'imp-s', sh, T('Instagram, TikTok, Facebook, WhatsApp and more'));
+    const chips = el('div', 'imp-chips', sh);
+    const save = el('button', '', chips, '💾 ' + T('Save the picture')); save.type = 'button';
+    const copy = el('button', '', chips, '📋 ' + T('Copy the text')); copy.type = 'button';
+    sb.onclick = () => impShare(r, final, 'share', sb);
+    save.onclick = () => impShare(r, final, 'save', save);
+    copy.onclick = () => impShare(r, final, 'copy', copy);
+    if (endCtl) endCtl(v.body);
+    if (!G.impFx || G.impFx !== r) { G.impFx = r; const me = list.find(x => x.id === G.id); if (me && me.w) { confetti(); buzz('long'); } else buzz('ok'); }
+  }
+  function impEnd() {
+    impWin(G.impFinal || G.impRes, !!G.impFinal, body => {
+      if (G.host) {
+        const again = btn(S().again, { kind: 'go', huge: true, full: true, icon: 'refresh' }, body, () => { send({ k: 'again' }); buzz('ok'); });
+        again.style.marginTop = '16px';
+        pair(body, [[S().otherGame, () => pickGameSheet((G.lobby || {}).games || [])], [S().changeName, () => joinScreen(true)]]);
+      } else pair(body, [[S().changeName, () => joinScreen(true)]]);
+    });
+  }
+  // the picture to share: the night's winners in the game's look, as a tall story picture (1080 x 1920)
+  async function impCard(r, final) {
+    const W2 = 1080, H2 = 1920;
+    const cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+    const g = cv.getContext('2d');
+    const rtl = document.documentElement.dir === 'rtl';
+    try { g.direction = rtl ? 'rtl' : 'ltr'; } catch (e) {}
+    try { await Promise.all(['700 80px "IMP Fredoka"', '800 40px "IMP Nunito"'].map(f => document.fonts.load(f))); } catch (e) {}
+    const F = (w2, px) => w2 + ' ' + px + 'px "IMP Fredoka", "IMP Nunito", sans-serif';
+    const N = (w2, px) => w2 + ' ' + px + 'px "IMP Nunito", sans-serif';
+    const bg = g.createLinearGradient(0, 0, 0, H2); bg.addColorStop(0, '#1b1033'); bg.addColorStop(1, '#0e0920');
+    g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
+    const glow = (x, y, rr, c) => { const rg = g.createRadialGradient(x, y, 0, x, y, rr); rg.addColorStop(0, c); rg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = rg; g.fillRect(0, 0, W2, H2); };
+    glow(540, 0, 900, 'rgba(124,92,255,.35)'); glow(540, 1500, 700, 'rgba(255,77,106,.18)'); glow(150, 120, 500, 'rgba(58,31,92,.8)');
+    // (the light rays turning behind the winners, frozen)
+    g.save(); g.translate(540, 760); for (let i = 0; i < 24; i++) { g.rotate(Math.PI / 12); g.fillStyle = i % 2 ? 'rgba(255,201,60,.05)' : 'rgba(255,77,106,.04)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(-90, -1400); g.lineTo(90, -1400); g.closePath(); g.fill(); } g.restore();
+    g.fillStyle = 'rgba(255,255,255,.025)'; for (let y = 0; y < H2; y += 6) g.fillRect(0, y, W2, 2);
+    const img = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+    const icon = await img('../play/icons/imposter.webp');
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    if (icon) { g.save(); g.shadowColor = 'rgba(255,77,106,.5)'; g.shadowBlur = 30; g.drawImage(icon, 540 - 80, 90, 160, 160); g.restore(); }
+    const title = T('Who\'s the Imposter?');
+    g.font = F(700, 78); g.fillStyle = '#ffe3e8'; g.save(); g.shadowColor = '#ff4d6a'; g.shadowBlur = 34; g.fillText(title, 540, 345, 980); g.restore(); g.fillText(title, 540, 345, 980);
+    g.font = N(800, 30); g.fillStyle = '#ff4d6a';
+    const sp = s2 => /[\u0590-\u08ff\u0900-\u0dff\u0e00-\u0fff\u1000-\u109f]/.test(s2) ? s2 : [...s2].join(String.fromCharCode(8202));
+    g.fillText(sp(iup(T('The winners'))), 540, 440);
+    const list = (Array.isArray(r.list) ? r.list : []).filter(x => x && L.okId(x.id));
+    const winners = list.filter(x => x.w);
+    // the winners' names, as big as fits
+    const names = winners.length ? winners.map(x => L.clean(x.n, 16)).join(' · ') : T('Nobody this time');
+    const lines = []; { g.font = F(700, 70); let cur = ''; for (const wd of names.split(' · ')) { const t2 = cur ? cur + ' · ' + wd : wd; if (g.measureText(t2).width > 960 && cur) { lines.push(cur); cur = wd; } else cur = t2; } if (cur) lines.push(cur); }
+    g.fillStyle = '#fff3d6'; g.save(); g.shadowColor = 'rgba(255,201,60,.55)'; g.shadowBlur = 26;
+    lines.slice(0, 3).forEach((l2, i) => g.fillText(l2, 540, 530 + i * 82, 1000)); g.restore();
+    let y = 530 + Math.min(3, lines.length) * 82 + 10;
+    // the line: caught, or got away
+    const caught = !final && (r.none || r.caught);
+    const pill = final ? T('After {n} games', { n: numFmt(+r.of || 1) }) : r.none ? T('No imposter this time!') : T(caught ? 'Imposter caught! {name} was the imposter' : 'Imposter escaped! {name} was the imposter', { name: (r.imps || []).join(' & ') });
+    g.font = N(800, 34); const pw = Math.min(1000, g.measureText(pill).width + 80);
+    g.fillStyle = caught || final ? 'rgba(255,77,106,.16)' : 'rgba(255,201,60,.14)'; g.strokeStyle = caught || final ? '#ff4d6a' : '#ffc93c'; g.lineWidth = 3;
+    const rr2 = (x, y2, w2, h2, rad) => { g.beginPath(); g.moveTo(x + rad, y2); g.arcTo(x + w2, y2, x + w2, y2 + h2, rad); g.arcTo(x + w2, y2 + h2, x, y2 + h2, rad); g.arcTo(x, y2 + h2, x, y2, rad); g.arcTo(x, y2, x + w2, y2, rad); g.closePath(); };
+    rr2(540 - pw / 2, y, pw, 70, 35); g.fill(); g.stroke();
+    g.fillStyle = '#fff'; g.fillText(pill, 540, y + 47, 960);
+    y += 120;
+    // the winners' faces, with their crowns
+    const faces = winners.slice(0, 6);
+    const fw = faces.length > 5 ? 128 : 150, gap = faces.length > 5 ? 20 : 26, tw = faces.length * fw + (faces.length - 1) * gap;
+    for (let i = 0; i < faces.length; i++) {
+      const x = 540 - tw / 2 + i * (fw + gap) + fw / 2;
+      const rad = fw / 2 - 4;
+      g.save(); g.beginPath(); g.arc(x, y + 100, rad, 0, Math.PI * 2); g.fillStyle = '#1d1238'; g.fill(); g.lineWidth = 7; g.strokeStyle = '#ffc93c'; g.stroke(); g.restore();
+      const im2 = await img(booUri(AVATARS.includes(faces[i].av) ? faces[i].av : 'boo:hi'));
+      if (im2) g.drawImage(im2, x - rad * 0.86, y + 100 - rad * 0.86, rad * 1.72, rad * 1.72);
+      g.font = '54px sans-serif'; g.fillText('👑', x, y + 30);
+      g.font = F(700, 30); g.fillStyle = '#fff'; g.fillText(L.clean(faces[i].n, 12), x, y + 222, fw + 20);
+    }
+    if (faces.length) y += 270;
+    // what happened to me
+    const me = list.find(x => x.id === G.id);
+    if (me) {
+      const said = final ? T('I scored {n} points!', { n: numFmt(+me.p || 0) }) : me.i ? (me.s === 'escaped' ? T('I was the imposter, and I got away!') : me.s === 'stole' ? T('I was the imposter, and I stole the win!') : T('I was the imposter, and they caught me!')) : me.r > 0 ? T('I found the imposter!') : T('The imposter fooled me!');
+      g.font = F(700, 52); g.fillStyle = '#ffc93c'; g.fillText(said, 540, y + 30, 1000);
+      y += 90;
+    }
+    // the scoreboard: as many rows as fit above the bottom lines (this phone's own row always among them)
+    const fit = Math.max(3, Math.floor((H2 - 250 - y) / 92));
+    let top = list.slice(0, fit);
+    const meRow = list.find(x => x.id === G.id);
+    if (meRow && !top.includes(meRow)) top = top.slice(0, fit - 1).concat(meRow);
+    for (let i = 0; i < top.length; i++) {
+      const x = top[i], yy = y + i * 92;
+      g.fillStyle = x.w ? 'rgba(255,201,60,.12)' : x.i ? 'rgba(255,77,106,.14)' : 'rgba(255,255,255,.05)';
+      g.strokeStyle = x.w ? 'rgba(255,201,60,.55)' : x.i ? 'rgba(255,77,106,.6)' : 'rgba(255,255,255,.12)'; g.lineWidth = 3;
+      rr2(90, yy, 900, 76, 22); g.fill(); g.stroke();
+      if (x.id === G.id) { g.strokeStyle = '#fff'; g.lineWidth = 4; rr2(90, yy, 900, 76, 22); g.stroke(); }
+      const X = v2 => rtl ? W2 - v2 : v2, A = a2 => rtl ? (a2 === 'left' ? 'right' : 'left') : a2;
+      g.textAlign = A('left'); g.font = F(700, 34); g.fillStyle = x.w ? '#ffc93c' : '#8a7fb0'; g.fillText(x.w ? '♛' : numFmt(list.indexOf(x) + 1), X(120), yy + 50);
+      g.fillStyle = '#fff'; g.fillText(L.clean(x.n, 16), X(190), yy + 50, final ? 600 : 470);
+      g.textAlign = A('right'); g.font = F(700, 34); g.fillStyle = x.w ? '#ffc93c' : '#c8bde6'; g.fillText(numFmt(+x.p || 0), X(960), yy + 50);
+      if (!final) { g.font = N(900, 22); g.fillStyle = x.i ? '#ff8aa0' : x.r > 0 ? '#34d399' : '#a99bd0'; g.fillText(iup(x.i ? T('Imposter') : x.r > 0 ? T('Right') : T('Fooled')), X(880), yy + 47, 200); }
+      g.textAlign = 'center';
+    }
+    y += top.length * 92 + 30;
+    if (r.word && !final) { g.font = N(800, 34); g.fillStyle = '#c8bde6'; g.fillText(T('The word was "{word}".', { word: L.clean(r.word, 40) }), 540, Math.max(y + 30, H2 - 150), 1000); }
+    g.font = F(700, 34); g.fillStyle = '#ffe3e8'; g.fillText(T('Play it free at blokvane.com'), 540, H2 - 70, 1000);
+    return new Promise(res => cv.toBlob(b => res(b), 'image/png'));
+  }
+  async function impShare(r, final, how, b) {
+    const list = (Array.isArray(r.list) ? r.list : []);
+    const winners = list.filter(x => x.w).map(x => L.clean(x.n, 16));
+    const text = T('We played Who\'s the Imposter? The winners: {names}. Play it free at blokvane.com', { names: winners.join(', ') || T('Nobody this time') });
+    if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
+    b.disabled = true;
+    try {
+      const blob = await impCard(r, final);
+      if (!blob) throw new Error('no picture');
+      const file = new File([blob], 'whos-the-imposter.png', { type: 'image/png' });
+      if (how === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text, title: T('Who\'s the Imposter?') }); } catch (e) { if (e && e.name !== 'AbortError') toast(T('Sharing didn\'t work here. The picture was saved instead.'), ''); else return; }
+        return;
+      }
+      if (how === 'share' && navigator.share) { try { await navigator.share({ text, title: T('Who\'s the Imposter?') }); } catch (e) {} }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'whos-the-imposter.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      toast(T('The picture is saved.'), 'ok');
+    } catch (e) { toast(T('That didn\'t work. Try again.'), 'bad'); }
+    finally { b.disabled = false; }
+  }
+
   // a result
   function showRes(m) {
     stopQ();
@@ -1774,6 +2364,7 @@ html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
   // the end: your place, the top of the table, and what's next
   function showEnd() {
     stopQ();
+    if (isImpGame() && (G.impFinal || G.impRes)) return impEnd();
     const v = gameView();
     const r = G.endRes;
     const box = el('div', 'pt-res ' + (r && r.place === 1 ? 'ok' : ''), v.body);
