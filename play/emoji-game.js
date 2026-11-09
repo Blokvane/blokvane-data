@@ -511,16 +511,22 @@
     if (c) { c.style.transition = 'none'; c.style.strokeDashoffset = '0'; void c.getBoundingClientRect(); c.style.transition = 'stroke-dashoffset ' + secs + 's linear'; c.style.strokeDashoffset = '339'; }
     let left = secs, stopped = false;
     if (rn) rn.textContent = K.num(left);
-    const t0 = Date.now();
+    const now = K.now || Date.now, t0 = now();
+    // (paused: the ring stops where it is, and empties over the time that's left once the game goes on)
+    const offP = K.onPause ? K.onPause(p => {
+      if (!c || stopped) return;
+      if (p) { const cs = getComputedStyle(c).strokeDashoffset; c.style.transition = 'none'; c.style.strokeDashoffset = cs; }
+      else { const rest = Math.max(0, secs - (now() - t0) / 1000); void c.getBoundingClientRect(); c.style.transition = 'stroke-dashoffset ' + rest + 's linear'; c.style.strokeDashoffset = '339'; }
+    }) : () => {};
     const iv = setInterval(() => {
       if (stopped) return;
-      const l = Math.max(0, Math.ceil(secs - (Date.now() - t0) / 1000));
+      const l = Math.max(0, Math.ceil(secs - (now() - t0) / 1000));
       if (l !== left) { left = l; if (rn) rn.textContent = K.num(l); if (l > 0 && l <= 3) K.snd.fx('tick', { vol: 0.6 }); if (box) box.classList.toggle('emo-low', l <= 5); }
       if (l <= 0 || K.over()) clearInterval(iv);
     }, 200);
     return {
-      stop() { stopped = true; clearInterval(iv); if (c) { const cs = getComputedStyle(c).strokeDashoffset; c.style.transition = 'none'; c.style.strokeDashoffset = cs; } if (box) box.classList.remove('emo-low'); },
-      left: () => left, done: () => Date.now() - t0 >= secs * 1000
+      stop() { stopped = true; clearInterval(iv); offP(); if (c) { const cs = getComputedStyle(c).strokeDashoffset; c.style.transition = 'none'; c.style.strokeDashoffset = cs; } if (box) box.classList.remove('emo-low'); },
+      left: () => left, done: () => now() - t0 >= secs * 1000
     };
   }
 
@@ -649,9 +655,9 @@
         }
       })();
     }
-    const tuT = secs ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; K.snd.sting('eTimesup', { duck: 0.65 }); K.el('div', 'emo-pill bad emo-pop', line, '⏰ ' + tx('timesUp')); }, secs * 1000) : 0;
+    const tuT = secs ? K.after(secs * 1000, () => { if (closed || K.over() || answered.size >= live.length) return; K.snd.sting('eTimesup', { duck: 0.65 }); K.el('div', 'emo-pill bad emo-pop', line, '⏰ ' + tx('timesUp')); }) : 0;
     let got = await asking;
-    closed = true; clearTimeout(tuT);
+    closed = true; if (tuT) tuT();
     if (stopReveal) stopReveal();
     ck.stop();
     if (K.over()) { offPlayers(); return null; }

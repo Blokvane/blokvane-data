@@ -15,10 +15,25 @@ var BVPLAY = (() => {
   const handlers = new Map();     // message kind -> fn(m, player) (a game listens while it runs)
   const pending = new Map();      // round -> { who: Set, all: Set, got: Map, done, onAns, sec, at }
   const kicked = new Set();       // phones the host took out of this game (they can ask to join again)
+  const waitNext = new Map();     // phones that came in during a game the host keeps closed: they join when it's over
   const playerSubs = new Set();   // a running game hears when someone leaves, comes back or joins
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // ---------- pause: the host stops the game for a moment, and it goes on from the very same second ----------
+  // The game's own clock stands still while it's paused, and everything that waits on it (a game's pauses, a question's
+  // time) waits with it. pafter(fn, ms) runs fn after ms of the game's time, and gives back a function that cancels it.
+  let paused = false, pausedAt = 0, pausedAll = 0, pauseEl = null;
+  const gnow = () => Date.now() - pausedAll - (paused ? Date.now() - pausedAt : 0);
+  const ptimers = new Set(), pauseSubs = new Set();
+  function pafter(fn, ms) {
+    const x = { due: gnow() + Math.max(0, +ms || 0), t: 0, fn };
+    x.arm = () => { clearTimeout(x.t); x.t = setTimeout(() => { ptimers.delete(x); fn(); }, Math.max(0, x.due - gnow())); };
+    ptimers.add(x);
+    if (!paused) x.arm();
+    return () => { clearTimeout(x.t); ptimers.delete(x); };
+  }
+  const psleep = ms => new Promise(r => pafter(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
   const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'emoji', 'higher', 'bingo', 'imposter', 'gir']);
   const iconOf = id => 'icons/' + id + '.webp';
@@ -38,6 +53,23 @@ var BVPLAY = (() => {
     code = given || L.shortCode(6);
     CR = await L.room({ secret: await L.codeSecret(code, 'play'), label: 'bvplaycode', me, name: 'TV', role: 'tv', open: true, onMsg: m => { if (m.k === 'link?') CR.send({ k: 'link', s, tv: R.id, lang }, m.f).catch(() => {}); } });
     setInterval(() => { if (phase !== 'end') sayLobby(); }, 12000);
+    nearOn();
+  }
+  // Phones on the same Wi-Fi find this TV in their list, with its game and its code (BVLIVE.nearby), and join with one
+  // tap. The host can turn it off (Screen and players).
+  let near = null, nearBusy = false, nearSig = '';
+  const nearInfo = () => ({ c: code, g: game ? game.id : '', p: list().length, ph: phase === 'lobby' ? 0 : 1 });
+  async function nearOn() {
+    const want = settings.k_near !== false && phase !== 'closed' && !!code && !!L.nearby;
+    if (!want) { if (near) { near.close(); near = null; nearSig = ''; } return; }
+    if (near) { const i = nearInfo(), sg = JSON.stringify(i); if (sg !== nearSig) { nearSig = sg; near.setInfo(i); } return; }
+    if (nearBusy) return;
+    nearBusy = true;
+    try { const i = nearInfo(); near = await L.nearby({ role: 'tv', name: 'TV', info: i }); nearSig = JSON.stringify(i); } catch (e) { near = null; }
+    nearBusy = false;
+    if (near && (settings.k_near === false || phase === 'closed')) { near.close(); near = null; }
+    // (the game was picked meanwhile, say: the phones hear the news at once)
+    else if (near) { const i2 = nearInfo(), sg2 = JSON.stringify(i2); if (sg2 !== nearSig) { nearSig = sg2; near.setInfo(i2); } }
   }
   // what the phones scan: the game's room, and the language the game is in (so a phone shows it from the first screen)
   const linkNow = () => GO + '#game.' + secret + '.' + R.id + (lang !== 'en' ? '.' + lang : '');
@@ -61,7 +93,7 @@ var BVPLAY = (() => {
   // it's heard again, and can still answer the question that's on if that one is still open.
   function sweep() {
     let changed = false;
-    for (const p of players.values()) { const away = !!p.gone || !R.here(p.id); if (!!p.away !== away) { p.away = away; changed = true; } }
+    for (const p of players.values()) { const away = !!p.gone || !R.here(p.id); if (!!p.away !== away) { p.away = away; if (away) p.awayAt = Date.now(); changed = true; } }
     if (changed) peopleChanged();
   }
   function peopleChanged() {
@@ -83,7 +115,27 @@ var BVPLAY = (() => {
     }
     if (w.got.size >= w.who.size) w.finish();
   }
-  function pickHost() { if (!players.has(host) || players.get(host).away) { const next = list()[0]; host = next ? next.id : ''; } }
+  // The host keeps the game while their phone is away for a short while (another app, the screen locked, a page that
+  // closed): only after a minute and a half (15 seconds when the game waits for their Next) does the next player take
+  // over, and the host gets it back as soon as their phone is here again. Leaving the game, or handing it over from
+  // the host's phone, passes it at once.
+  let trueHost = '', hostT = 0;
+  function pickHost() {
+    const was = host;
+    const th = players.get(trueHost);
+    if (th && !th.away && host !== trueHost) host = trueHost;
+    const h = players.get(host);
+    const grace = waitHost ? 15000 : 90000;
+    clearTimeout(hostT);
+    if (!h || (h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace)))) {
+      const next = list()[0];
+      host = next ? next.id : '';
+      if (!th || th.left) trueHost = host;
+    } else if (h.away) hostT = setTimeout(() => { pickHost(); if (phase === 'lobby') lobby(); sayLobby(); }, grace + 500 - (Date.now() - (h.awayAt || 0)));
+    if (!trueHost || !players.has(trueHost)) trueHost = host;
+    // (both phones hear it straight away: the one that has the host's tools now, and the one that just lost them)
+    if (was !== host) for (const id of [was, host]) { const x = players.get(id); if (x && !x.away) sayTo(id, { k: 'you', id, host: host === id, color: x.color }); }
+  }
   // the host takes someone out of the game: their phone hears it, and they can ask to join again
   function removePlayer(id) {
     if (!players.has(id)) return;
@@ -96,7 +148,7 @@ var BVPLAY = (() => {
   // "still there?" to the phones a question with no clock (or the next question) is waiting for; one that doesn't answer
   // in 7 seconds has left
   setInterval(() => {
-    if (phase !== 'play' || !R) return;
+    if (phase !== 'play' || !R || paused) return;
     const t = Date.now(), want = new Set();
     for (const w of pending.values()) if (!w.done && !w.sec && t - w.at > 8000) for (const id of w.who) if (!w.got.has(id)) want.add(id);
     if (waitHost && host) want.add(host);
@@ -109,9 +161,23 @@ var BVPLAY = (() => {
     }
     if (gone) sweep();
   }, 2000);
+  // An open question goes out again every 3 seconds while some phones haven't answered it: a relay can drop a message
+  // now and then, and that phone would stay on "Look at the TV" while everyone else answers. A phone that already shows
+  // it just keeps it (it goes by the question's number).
+  setInterval(() => {
+    if (phase !== 'play' || !R || paused) return;
+    const t = Date.now();
+    for (const w of pending.values()) {
+      if (w.done || !w.q || t - (w.sent || w.at) < 3000) continue;
+      const left = [...w.all].filter(id => !w.got.has(id) && players.has(id) && !players.get(id).away);
+      if (!left.length) continue;
+      w.sent = t;
+      if (w.q.extra && w.q.extra.helpOnly || left.length <= 2) { for (const id of left) sayTo(id, w.q); } else if (cur.q === w.q) say(w.q);
+    }
+  }, 1000);
   // the join code again, on top of the game, for people who come later (the host shows and hides it from their phone)
   let joinEl = null, joinT = 0;
-  async function showJoin(on) {
+  async function showJoin(on, keep) {
     clearTimeout(joinT);
     if (!on) { if (joinEl) { joinEl.remove(); joinEl = null; } sayLobby(); return; }
     if (!joinEl) {
@@ -127,8 +193,8 @@ var BVPLAY = (() => {
       joinEl = box;
       document.body.appendChild(box);
     }
-    // (it hides by itself after two minutes)
-    joinT = setTimeout(() => showJoin(false), 120000);
+    // (it hides by itself after two minutes, unless the host keeps it on for the whole game)
+    if (keep || settings.k_code) joinEl.dataset.keep = '1'; else { delete joinEl.dataset.keep; joinT = setTimeout(() => showJoin(false), 120000); }
     sayLobby();
   }
   // a player's own language (their phone shows the questions in it): only one of the seven full languages, and only
@@ -152,8 +218,10 @@ var BVPLAY = (() => {
       case 'join': {
         if (kicked.has(m.f)) { if (!m.again) { sayTo(m.f, { k: 'kicked' }); return; } kicked.delete(m.f); }
         if (!p && players.size >= 40) { R.send({ k: 'full' }, m.f).catch(() => {}); return; }
+        // (someone new in the middle of a game the host keeps closed: they're in from the next game, and their phone says so)
+        if (!p && phase === 'play' && settings.k_late === false) { if (waitNext.size < 40) waitNext.set(m.f, m); sayTo(m.f, { k: 'waitnext' }); return; }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: '' };
-        pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.at = Date.now(); pl.heard = Date.now();
+        pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.left = false; pl.at = Date.now(); pl.heard = Date.now();
         // (a new Boo picked in the middle of a game, instead of a selfie: the selfie goes)
         if (m.nophoto) pl.photo = '';
         if (!p) pl.away = false;
@@ -179,17 +247,22 @@ var BVPLAY = (() => {
       case 'ready': if (p) { p.ready = !!m.on; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'team': if (p && P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).some(t => t[0] === m.team)) { p.team = m.team; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'plang': if (p && setPlayerLang(p, m.v)) { if (phase === 'lobby') lobby(); sayLobby(); } return;
-      case 'set': if (p && m.f === host && phase === 'lobby') setOne(m.key, m.v); return;
-      case 'game': if (p && m.f === host && (phase === 'lobby' || phase === 'end') && games.has(m.id)) { choose(m.id); } return;
+      case 'set': if (p && m.f === host && (phase === 'lobby' || /^(snd_[a-z0-9]+|vol_(music|fx)|k_(code|calm|late))$/.test(String(m.key)))) setOne(m.key, m.v); return;
+      case 'game': if (p && m.f === host && (phase === 'lobby' || phase === 'end' || phase === 'play') && games.has(m.id)) { abortGame(); choose(m.id); } return;
       case 'start': if (p && m.f === host && phase === 'lobby' && game) start(); return;
       case 'stop': if (p && m.f === host && phase === 'play') stopGame(); return;
-      case 'again': if (p && m.f === host && phase === 'end') { phase = 'lobby'; for (const x of players.values()) { x.ready = true; } lobby(); sayLobby(); } return;
+      // the host, from any screen of a game: pause it and go on, start the same game over, go back to its setup (another
+      // mode, other settings), or pick another game (above: 'game'). Everyone stays in, with nothing to do.
+      case 'pause': if (p && m.f === host && phase === 'play') setPause(!!m.on); return;
+      case 'restart': if (p && m.f === host && game && (phase === 'play' || phase === 'end')) { abortGame(); for (const x of players.values()) x.ready = true; phase = 'lobby'; start(); } return;
+      case 'tolobby': if (p && m.f === host && game && (phase === 'play' || phase === 'end')) { abortGame(); phase = 'lobby'; for (const x of players.values()) x.ready = true; letWaitersIn(); lobby(); sayLobby(); } return;
+      case 'again': if (p && m.f === host && phase === 'end') { phase = 'lobby'; for (const x of players.values()) { x.ready = true; } if (joinEl) showJoin(false); lobby(); sayLobby(); } return;
       // the host's phone: take someone out, hand the host to someone else, show the join code on the TV again
       case 'kick': if (p && m.f === host && typeof m.id === 'string' && m.id !== host) removePlayer(m.id); return;
       case 'makehost': {
         const to = players.get(m.id);
         if (!p || m.f !== host || !to || to.away || to.id === host) return;
-        host = to.id;
+        host = to.id; trueHost = to.id;
         for (const x of [p, to]) sayTo(x.id, { k: 'you', id: x.id, host: host === x.id, color: x.color });
         if (phase === 'lobby') lobby();
         sayLobby();
@@ -200,7 +273,7 @@ var BVPLAY = (() => {
       case 'zoom': if (p && m.f === host) { const d = +m.d; zoomBy(d > 0 ? 1 : d < 0 ? -1 : 0); sayLobby(); } return;
       case 'ping': return;
       case 'pong': return;
-      case 'bye': if (p) { p.gone = true; sweep(); } return;
+      case 'bye': if (p) { p.gone = true; if (m.left) p.left = true; sweep(); } return;
       case 'sync': if (p) { R.send({ k: 'you', id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {}); sayLobby(m.f); if (phase === 'play' && cur.q) R.send(cur.q, m.f).catch(() => {}); }
         else if (kicked.has(m.f)) sayTo(m.f, { k: 'kicked' });
         return;
@@ -243,17 +316,83 @@ var BVPLAY = (() => {
   const gameList = () => [...games.values()].map((g, i) => [g, ORDER.includes(g.id) ? ORDER.indexOf(g.id) - 99 : i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
   // what the phones show in the lobby (the game, its settings, the players, the host)
   function sayLobby(to) {
-    if (phase === 'closed') return;
+    if (phase === 'closed') { nearOn(); return; }
+    if (!to) nearOn();
     const tt =tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
     const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', gen: game ? game.name : '', games: (tx.lang === lang && tx.games && tx.games.length && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
-      players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : game.settings) : [], lang, rtl: P.RTL.has(lang), strings,
+      players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : fieldsOf(game)) : [], lang, rtl: P.RTL.has(lang), strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
-      steps: game && game.steps ? (tt && tt.steps) || game.steps : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
+      steps: game ? (tt && tt.steps) || stepsOf(game) : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
       // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
       langs: game && game.langs ? game.langs : null,
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null };
+      howto: game && game.howto ? game.howto(settings) : null,
+      // (the question that's on: a phone that doesn't have it asks for it again)
+      qn: phase === 'play' && cur.q ? cur.q.n : 0, paused: phase === 'play' && paused, gr: run };
     if (to) sayTo(to, m); else say(m);
+  }
+  // ---------- the sounds, in every game: the host can turn the music or any one kind of moment off (like "next
+  // question"), on the last step of the setup or from the ⋯ in the middle of a game. This screen keeps them for the
+  // next game. ----------
+  const SND_KINDS = [['music', 'Music', 'The tunes in the lobby and during the game.'], ['next', 'Next question sound'], ['every5', 'Every 5 questions sound'],
+    ['correct', 'Right answer sound'], ['wrong', 'Wrong answer sound'], ['timesup', 'Time\'s up sound'], ['tick', 'Clock ticks'], ['win', 'Winner sound'], ['fx', 'Other sounds']];
+  function sndFields(g) {
+    if (!g || !SND.kindOf) return [];
+    const have = new Set(['tick', 'win', 'fx']);
+    if (g.sounds) { have.add('music'); for (const n of g.sounds) have.add(SND.kindOf(n)); }
+    if (g.music) for (const v of Object.values(g.music)) if (typeof v === 'string') have.add(SND.kindOf(v));
+    // (how loud the music is, and the other sounds, each on its own)
+    const VOL = [[1, 'Loud'], [0.6, 'Medium'], [0.3, 'Soft']];
+    const vols = (have.has('music') ? [{ key: 'vol_music', label: 'Music volume', type: 'seg', options: VOL, default: 1, vol: 'music' }] : []).concat([{ key: 'vol_fx', label: 'Sounds volume', type: 'seg', options: VOL, default: 1, vol: 'fx', desc: 'Everything that isn\'t music: right, wrong, the clock and the rest.' }]);
+    return vols.concat(SND_KINDS.filter(k => have.has(k[0])).map(([k, label, desc]) => ({ key: 'snd_' + k, label, type: 'toggle', default: true, desc, snd: k })));
+  }
+  // ---------- settings every game has: how to play first (for a game that has no rules screen of its own), people who
+  // come in late, the join code on the TV during the game, and a calm screen. This screen keeps them for next time. ----------
+  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: false };
+  const kitSaved = () => { try { const v = JSON.parse(localStorage.getItem('bvplay:kit') || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
+  function kitFields(g) {
+    if (!g) return [];
+    const rl0 = typeof g.rules === 'function' ? g.rules(settings || {}) : g.rules;
+    const own = (g.settings || []).some(f => f.key === 'rules') || !Array.isArray(rl0) || !rl0.length;
+    const out = own ? [] : [{ key: 'k_rules', label: 'How to play, first', type: 'toggle', default: true, kit: 1, desc: 'Before the first question the TV shows how to play, and so does every phone.' },
+      { key: 'k_rulesSec', label: 'How long it shows', type: 'number', min: 5, max: 120, quick: [8, 12, 20, 30], unit: 'seconds', default: 12, kit: 1, when: ['k_rules', true] }];
+    return out.concat([
+      { key: 'k_late', label: 'Late players can join', type: 'toggle', default: true, kit: 1, desc: 'Someone who comes in after the start plays from the next question. Off: they play the next game.' },
+      { key: 'k_code', label: 'Show the join code during the game', type: 'toggle', default: false, kit: 1, desc: 'The QR code and the code stay in a corner of the TV the whole game.' },
+      { key: 'k_near', label: 'Phones nearby can find this TV', type: 'toggle', default: true, kit: 1, desc: 'Phones on the same Wi-Fi see this TV in their list and join with one tap, without typing the code.' },
+      { key: 'k_calm', label: 'Calm screen', type: 'toggle', default: false, kit: 1, desc: 'Fewer flashing and moving lights on the TV. Easier on the eyes.' }]);
+  }
+  function applyKit() {
+    document.body.classList.toggle('calm', !!settings.k_calm);
+    nearOn();
+    try { const o = {}; for (const k of Object.keys(KIT0)) if (k in settings) o[k] = settings[k]; localStorage.setItem('bvplay:kit', JSON.stringify(Object.assign(kitSaved(), o))); } catch (e) {}
+    if (phase === 'play') { if (settings.k_code) showJoin(true, true); else if (joinEl && joinEl.dataset.keep) showJoin(false); }
+  }
+  const fieldsOf = g => (g ? g.settings.concat(kitFields(g), sndFields(g)) : []);
+  // (the steps the host's phone goes through, with the sounds as the last one; a game without steps of its own gets its
+  // settings about three to a page, the way the phone would make them)
+  function stepsOf(g) {
+    if (!g) return null;
+    let st = g.steps;
+    if (!st) {
+      const pages = [];
+      let cur = ['lang'], w = 1;
+      for (const f of g.settings) {
+        const cost = f.type === 'toggle' ? 0.5 : f.type === 'text' ? 1.5 : Array.isArray(f.options) && f.options.length > 6 ? 2 : 1;
+        if (w + cost > 3.01 && cur.length) { pages.push(cur); cur = []; w = 0; }
+        cur.push(f.key); w += cost;
+      }
+      if (cur.length) pages.push(cur);
+      st = pages.map(ks => { const f = g.settings.find(x => x.key === ks.find(k => k !== 'lang')); return { t: 'Settings', s: f ? f.label : 'Language', keys: ks }; });
+    }
+    const kit = kitFields(g).map(f => f.key), snd = sndFields(g).map(f => f.key);
+    return st.concat(kit.length ? [{ t: 'Screen and players', s: 'More', keys: kit }] : [], snd.length ? [{ t: 'Sounds', keys: snd }] : []);
+  }
+  function applySounds() {
+    if (!game || !SND.setOff) return;
+    const off = new Set(SND.offKinds());
+    for (const f of sndFields(game)) { if (settings[f.key] === false) off.add(f.snd); else off.delete(f.snd); }
+    SND.setOff([...off]);
   }
   // the game list and the settings in the game's language (the host's phone shows them)
   const tx = { key: '', lang: '', games: null, name: '', schema: null, steps: null };
@@ -262,18 +401,23 @@ var BVPLAY = (() => {
     const gl = await Promise.all(gameList().map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
     const optsOf = f => (game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options);
     // (each choice keeps its short explanation, and a setting its own, in the game's language)
-    const schema = game ? await Promise.all(game.settings.map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined,
+    const schema = game ? await Promise.all(fieldsOf(game).map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined,
       options: f.options ? await Promise.all(optsOf(f).map(async o => (o[2] ? [o[0], await optLabel(o[1]), await P.tr(o[2])] : [o[0], await optLabel(o[1])]))) : undefined }))) : null;
     const name = game ? await P.tr(game.name) : '';
-    const steps = game && game.steps ? await Promise.all(game.steps.map(async s => ({ t: await P.tr(s.t), s: await P.tr(s.s || s.t), keys: s.keys }))) : null;
+    const steps = game ? await Promise.all(stepsOf(game).map(async s => ({ t: await P.tr(s.t), s: await P.tr(s.s || s.t), keys: s.keys }))) : null;
     if (want !== (game ? game.id : '') + '|' + lang) return;
     Object.assign(tx, { key: want, lang, games: gl, name, schema, steps });
     sayLobby();
   }
   async function setOne(key, v) {
     if (key === 'lang') { if (I18N.ok(v) && (!game || !game.langs || game.langs.includes(v))) await setLang(v); lobby(); sayLobby(); retranslate(); return; }
-    const f = game && game.settings.find(x => x.key === key);
+    const f = game && fieldsOf(game).find(x => x.key === key);
     if (!f) return;
+    // (a sound: on or off right away, in the lobby or in the middle of the game)
+    if (f.snd) { settings[key] = !!v; applySounds(); sayLobby(); return; }
+    // (how loud: right away too; and the settings every game has, kept on this screen)
+    if (f.vol) { const o = f.options.find(x => String(x[0]) === String(v)); if (!o) return; settings[key] = o[0]; if (SND.setVol) SND.setVol(f.vol, o[0]); sayLobby(); return; }
+    if (f.kit) { settings[key] = f.type === 'toggle' ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default)); applyKit(); if (phase === 'lobby') lobby(); sayLobby(); return; }
     if (f.type === 'toggle') settings[key] = !!v;
     else if (f.options && f.options.some(o => String(o[0]) === String(v))) settings[key] = f.options.find(o => String(o[0]) === String(v))[0];
     else if (f.type === 'text') settings[key] = String(v == null ? '' : v).split(/\n/).map(x => P.safe(x, 90)).filter(Boolean).join('\n').slice(0, 1500);
@@ -286,6 +430,12 @@ var BVPLAY = (() => {
     game = games.get(id);
     settings = {};
     for (const f of game.settings) settings[f.key] = f.default;
+    // (the sounds as this screen had them last time)
+    for (const f of sndFields(game)) settings[f.key] = f.vol ? (SND.vol ? SND.vol(f.vol) : 1) : !SND.kindOff(f.snd);
+    // (and the settings every game has, as they were last time)
+    const ks = kitSaved();
+    for (const f of kitFields(game)) settings[f.key] = f.key in ks ? ks[f.key] : f.default;
+    applyKit();
     phase = 'lobby';
     // (a game written in only some languages, like Guess It Right! in English and Arabic: the screen switches to one of
     // them, English unless the screen was in another of the game's own; a player's own language has to be one too)
@@ -437,8 +587,10 @@ var BVPLAY = (() => {
   // the game is closed: it stops, the phones were told, and a new game can start from here
   async function closedScreen() {
     run++; lobbyRun++;
+    unpause(); abandonTimers();
     phase = 'closed';
-    handlers.clear(); playerSubs.clear();
+    nearOn();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     cur.q = null; waitHost = false;
     if (joinEl) { joinEl.remove(); joinEl = null; }
@@ -446,6 +598,7 @@ var BVPLAY = (() => {
     if (booEl) booEl.hidden = true;
     SND.music(null, { fadeOut: 1 }); P.mute(true);
     document.body.dataset.game = '';
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
     const t = await Promise.all(['The game is closed', 'Thanks for playing!', 'Start a new game'].map(x => P.tr(x)));
     stage.textContent = '';
     const cv = el('div', 'cover closed', stage);
@@ -596,7 +749,10 @@ var BVPLAY = (() => {
     if (my !== lobbyRun || phase === 'play') return;
     stage.textContent = '';
     document.body.dataset.game = g ? g.id : '';
+    // (a game's own look for its lobby, like Trivia's four designs, and its winners' dressing, are gone until it puts them back)
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
     stage.append(...page.childNodes);
+    if (g && g.lobbyDone) { try { g.lobbyDone(stage, el, settings); } catch (e) { console.warn('Blokvane play', e); } }
     if (sndOff) sndOff();
     sndOff = SND.onChange(paint);
     soundHint();
@@ -626,7 +782,7 @@ var BVPLAY = (() => {
     // (one free seat while there's room; at first a full row, or two rows when there's no card under them)
     const want = Math.max(n < 40 ? n + 1 : n, card ? 4 : 8);
     // (a game can ask for taller seats and more room between them: Guess It Right!'s arches)
-    const u = stage.clientHeight / 100 * zoom, gap = ((game && game.seatGap) || 1.6) * u, ratio = card ? 0.92 : (game && game.seatRatio) || 1.05;
+    const u = stage.clientHeight / 100 * zoom, gap = ((game && game.seatGap) || 1.6) * u, ratio = card ? (game && game.seatRatioCard) || 0.92 : (game && game.seatRatio) || 1.05;
     const LV = ['s1', 's2', 's3', 's4'];
     if (card) card.classList.remove(...LV);
     // (everything that isn't a seat takes the room it needs first; the seats share what's left)
@@ -645,10 +801,11 @@ var BVPLAY = (() => {
       if (!card || best.s >= 8 * u || lv >= LV.length) break;
       card.classList.add(LV[lv]);
     }
-    const s = Math.max(3.5 * u, Math.floor(best.s));
+    // (a hair over, so a size that comes out a whisker under a whole pixel isn't a pixel smaller)
+    const s = Math.max(3.5 * u, Math.floor(best.s + 0.01));
     grid.style.setProperty('--ss', s + 'px');
     grid.style.gridTemplateColumns = 'repeat(' + best.c + ', ' + s + 'px)';
-    grid.style.gridAutoRows = Math.max(3.5 * u, Math.floor(Math.min(best.ch, s * ratio))) + 'px';
+    grid.style.gridAutoRows = Math.max(3.5 * u, Math.floor(Math.min(best.ch, s * ratio) + 0.01)) + 'px';
     grid.style.gap = gap + 'px';
     // (the empty seats finish the last row)
     const free = Math.max(0, best.c * Math.ceil(want / best.c) - n);
@@ -770,7 +927,7 @@ var BVPLAY = (() => {
     r.innerHTML = '<svg viewBox="0 0 100 100"><circle class="bg" cx="50" cy="50" r="44"/><circle class="fg" cx="50" cy="50" r="44" stroke-dasharray="276.5" stroke-dashoffset="0"/></svg><span></span>';
     const fg = r.querySelector('.fg'), n = r.querySelector('span');
     let left = sec, t = 0, stopped = false;
-    const tick = () => { if (left < sec && !r.isConnected) { clearInterval(t); return; } n.textContent = String(Math.max(0, left)); fg.style.strokeDashoffset = String(276.5 * (1 - Math.max(0, left) / sec)); if (left <= 3 && left > 0) P.sfx('tick'); left--; if (left < -1) clearInterval(t); };
+    const tick = () => { if (left < sec && !r.isConnected) { clearInterval(t); return; } if (paused) return; n.textContent = String(Math.max(0, left)); fg.style.strokeDashoffset = String(276.5 * (1 - Math.max(0, left) / sec)); if (left <= 3 && left > 0) P.sfx('tick'); left--; if (left < -1) clearInterval(t); };
     const go = () => { if (t || stopped || !(sec > 0)) return; tick(); t = setInterval(tick, 1000); };
     if (!(sec > 0)) r.hidden = true;
     else if (idle) n.textContent = String(sec);
@@ -779,6 +936,8 @@ var BVPLAY = (() => {
   }
   let booEl = null;
   function boo(mood) {
+    // (false: Boo leaves the corner, for a screen with its own Boo, like a game's own winners)
+    if (mood === false) { if (booEl) booEl.hidden = true; return; }
     if (!booEl || !booEl.isConnected) { booEl = el('div', 'boo', document.body); el('img', '', booEl).alt = ''; }
     // (a screen can keep a spot for Boo, like the clock on a Trivia question; otherwise the corner)
     const slot = stage.querySelector('.boo-slot');
@@ -799,19 +958,22 @@ var BVPLAY = (() => {
   const cur = { q: null };
   function ask(o) {
     const n = ++round;
-    const who = new Set((o.who || alive().map(p => p.id)).filter(id => players.has(id)));
-    const q = { k: 'q', n, kind: o.kind || 'choice', prompt: o.prompt || '', opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...who] };
+    // (everyone still in the game, also a phone the relays haven't heard for a moment: it can answer as soon as it's
+    // back. Only the phones that are here hold the question up.)
+    const all = new Set((o.who || [...players.values()].filter(p => !p.out).map(p => p.id)).filter(id => players.has(id)));
+    const who = new Set([...all].filter(id => !players.get(id).away));
+    const q = { k: 'q', n, kind: o.kind || 'choice', prompt: o.prompt || '', opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
     if (o.extra && o.extra.helpOnly) { for (const id of who) sayTo(id, q); }
     else { cur.q = q; say(q); }
     return new Promise(res => {
       // (all: everyone the question is for, even if they leave and come back; sec: its clock, 0 for none)
-      const w = { who, all: new Set(who), got: new Map(), done: false, onAns: o.onAns, sec: o.sec || 0, at: Date.now() };
-      let t = 0;
-      w.finish = () => { if (w.done) return; w.done = true; clearTimeout(t); pending.delete(n); res(w.got); };
+      const w = { who, all, got: new Map(), done: false, onAns: o.onAns, sec: o.sec || 0, at: Date.now(), q };
+      let cancel = () => {};
+      w.finish = () => { if (w.done) return; w.done = true; cancel(); pending.delete(n); res(w.got); };
       pending.set(n, w);
       // (a little more time than the phones show: the last tap is still on its way; no clock at all still ends in 2 minutes,
-      // unless the question is open: then it waits for everyone, or for the host to show the answer)
-      t = o.sec ? setTimeout(w.finish, o.sec * 1000 + 1500) : o.open ? 0 : setTimeout(w.finish, 120000);
+      // unless the question is open: then it waits for everyone, or for the host to show the answer. Paused, it waits.)
+      cancel = o.sec ? pafter(w.finish, o.sec * 1000 + 1500) : o.open ? () => {} : pafter(w.finish, 120000);
       if (!who.size) w.finish();
     });
   }
@@ -827,6 +989,7 @@ var BVPLAY = (() => {
     phase = 'play';
     played = true;
     document.body.dataset.game = game.id;
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();
@@ -839,23 +1002,100 @@ var BVPLAY = (() => {
     if (ICONS.has(game.id)) { const gi = el('img', 'cd-gi', cd); gi.src = iconOf(game.id); gi.alt = ''; }
     const n = el('div', 'big', cd, '3');
     for (const x of ['3', '2', '1']) { n.textContent = x; P.sfx('tick'); await sleep(800); if (my !== run) return; }
-    handlers.clear(); playerSubs.clear();
+    if (settings.k_code) showJoin(true, true);
+    // (how to play, first: a game with no rules screen of its own gets the kit's, on the TV and on every phone)
+    if (settings.k_rules && kitFields(game).some(f => f.key === 'k_rules')) { await kitRules(my); if (my !== run) return; }
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
     let ranking = null;
     try { ranking = await game.tv(kit(my)); }
     catch (e) { console.warn('Blokvane play', e); }
     // (the host ended this game early: the end screen is already up)
     if (my !== run) return;
-    handlers.clear(); playerSubs.clear();
+    unpause();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
     finish(ranking);
   }
   // the host ends the game early: the scores so far win, and the rest of that game just stops
   function stopGame() {
     if (phase !== 'play') return;
     run++;
-    handlers.clear(); playerSubs.clear();
+    unpause();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     finish(null);
     P.mute(true);
+  }
+  // How to play, before the first question, for a game that has no rules screen of its own: its icon and name, the rules
+  // for the settings picked (the game's own lines, and the mode the host picked), and a bar that empties over the time
+  // the host set. Every phone shows the same lines in its own language.
+  async function kitRules(my) {
+    const secs = Math.max(5, Math.min(120, Math.round(+settings.k_rulesSec) || 12));
+    const sp = game.spot ? game.spot(settings) : null;
+    const lines = [];
+    // (the mode's own lines know the settings picked, like no helpers: with them, only the game's first two lines)
+    const all = (typeof game.rules === 'function' ? game.rules(settings) : game.rules) || [];
+    const rl = sp && Array.isArray(sp.bullets) && sp.bullets.length ? all.slice(0, 2) : all.slice(0, 6);
+    if (sp && sp.name) lines.push(['🎮', P.f(sp.name) + (sp.desc ? ': ' + P.f(sp.desc) : '')]);
+    for (const t of rl) lines.push(['•', P.f(t)]);
+    if (sp && Array.isArray(sp.bullets)) for (const [ic, t] of sp.bullets.slice(0, 3)) lines.push([ic, P.f(t, sp.vars)]);
+    stage.textContent = '';
+    const cv = el('div', 'cover howto', stage);
+    const box = el('div', 'howto-box', cv);
+    const hd = el('div', 'howto-hd', box);
+    if (ICONS.has(game.id)) { const gi = el('img', 'howto-gi', hd); gi.src = iconOf(game.id); gi.alt = ''; }
+    const t = el('div', '', hd); el('small', '', t, P.f('How to play')); el('h1', '', t, P.f(game.name));
+    const ol = el('ul', 'howto-list', box);
+    for (const [ic, tx2] of lines) { const li = el('li', '', ol); el('i', '', li, ic); el('span', '', li, tx2); }
+    const bar = el('div', 'howto-bar', box); const fill = el('i', '', bar); fill.style.animationDuration = secs + 's';
+    boo('mind');
+    // (the phones: the same, as the English lines; each phone shows them in its own language)
+    const m = { k: 'q', n: ++round, kind: 'wait', prompt: P.f('How to play'), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map(b => b[0] + ' ' + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
+    cur.q = m; say(m);
+    await psleep(secs * 1000);
+  }
+  // the host's Pause: the TV stops where it is (the clocks, the moving parts, the sounds) under a big "Paused", and every
+  // phone shows it too; Resume goes on from the same second
+  function setPause(on) {
+    on = !!on;
+    if (on === paused || (on && phase !== 'play')) return;
+    if (on) {
+      paused = true; pausedAt = Date.now();
+      for (const x of ptimers) clearTimeout(x.t);
+      document.body.classList.add('paused');
+      if (SND.pause) SND.pause();
+      if (pauseEl) pauseEl.remove();
+      pauseEl = el('div', 'pause-ov', document.body);
+      const b = el('div', 'pause-box', pauseEl);
+      const im = el('img', 'pause-boo', b); im.src = P.booUri('boo:peek'); im.alt = '';
+      el('h1', '', b, P.f('Paused'));
+      el('p', '', b, P.f('The host paused the game. It goes on from right here when they tap Resume.'));
+    } else unpause();
+    for (const f of pauseSubs) { try { f(paused); } catch (e) {} }
+    say({ k: 'pause', on: paused });
+    sayLobby();
+  }
+  function unpause() {
+    if (!paused) return;
+    pausedAll += Date.now() - pausedAt; paused = false;
+    document.body.classList.remove('paused');
+    if (pauseEl) { pauseEl.remove(); pauseEl = null; }
+    for (const x of [...ptimers]) x.arm();
+    if (SND.resume) SND.resume();
+    for (const f of pauseSubs) { try { f(false); } catch (e) {} }
+  }
+  // (a game that's left behind: everything it was waiting for goes now, so it simply runs out, saying nothing)
+  function abandonTimers() { for (const x of [...ptimers]) { clearTimeout(x.t); ptimers.delete(x); try { x.fn(); } catch (e) {} } }
+  // the host leaves the game that's on for another start (start over, the setup again, another game): it stops right
+  // here, with no winner, and the phones go where the TV goes
+  function abortGame() {
+    if (phase !== 'play' && phase !== 'end') return;
+    run++;
+    unpause();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    for (const w of [...pending.values()]) w.finish();
+    abandonTimers();
+    cur.q = null; waitHost = false;
+    if (joinEl) showJoin(false);
   }
   async function finish(ranking) {
     phase = 'end';
@@ -875,11 +1115,16 @@ var BVPLAY = (() => {
     // (a game with its own last screen keeps it, and its own music: Who's the Imposter?'s winners)
     const own = !!(ranking && ranking.own && game.ownEnd);
     if (!own) await podium(ps, teamMode);
-    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
+    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1, av: typeof p.av === 'string' && p.av.length < 40 ? p.av : undefined }));
     for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
-    say({ k: 'end', ranking: rk.slice(0, 10) });
+    let look = '';
+    try { look = game.endLook ? String(game.endLook() || '').slice(0, 20) : ''; } catch (e) {}
+    say({ k: 'end', ranking: rk.slice(0, 10), look, team: teamMode ? 1 : 0 });
     sayLobby();
+    letWaitersIn();
   }
+  // (the people who came in during the game: in now, for the next one)
+  function letWaitersIn() { const w = [...waitNext.values()]; waitNext.clear(); for (const m of w) take(m); }
   // the winner, like a game show's finale: spotlights, light rays turning behind the podium, confetti falling the
   // whole time, and the podium rising (third, second, then first, with a crown)
   async function podium(ps, teamMode) {
@@ -919,7 +1164,7 @@ var BVPLAY = (() => {
   }
   // confetti falling gently over the winner's stage for as long as it shows: a big first wave, then a lighter rain
   function confettiRain(parent) {
-    try { if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; } catch (e) {}
+    try { if (matchMedia('(prefers-reduced-motion: reduce)').matches || settings.k_calm) return; } catch (e) {}
     const cv = el('canvas', 'rain', parent);
     const g = cv.getContext && cv.getContext('2d');
     if (!g) return;
@@ -957,7 +1202,11 @@ var BVPLAY = (() => {
       players: list, alive, get settings() { return settings; }, lang, tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
       // the game's own questions, words and places, written for its language (null: English, the packs in packs.js)
       packs: lang === 'en' ? null : I18N.packs(lang),
-      sleep: ms => (live() ? sleep(ms) : Promise.resolve()),
+      sleep: ms => (live() ? psleep(ms) : Promise.resolve()),
+      // the game's own clock (it stands still while the host has the game paused), whether it's paused now, fn(paused)
+      // when that changes (gives back its off function), and fn after ms of the game's time (gives back a cancel)
+      now: gnow, paused: () => paused, onPause(fn) { if (!live()) return nop; pauseSubs.add(fn); return () => pauseSubs.delete(fn); },
+      after: (ms, fn) => (live() ? pafter(() => { if (live()) fn(); }, ms) : nop),
       say: m => (live() ? say(m) : nop()), sayTo: (id, m) => (live() ? sayTo(id, m) : nop()), box: (id, m) => (live() ? box(id, m) : Promise.resolve(false)),
       ask: o => (live() ? ask(o) : Promise.resolve(new Map())), wait: (t, x) => (live() ? wait(t, x) : nop()), result: (id, r) => (live() ? result(id, r) : nop()),
       on: (k, fn) => (live() ? on(k, fn) : nop), boo: mood => (live() ? boo(mood) : nop()),
@@ -1013,6 +1262,16 @@ var BVPLAY = (() => {
   // (a TV keeps its screen on while a game is open)
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); document.addEventListener('visibilitychange', () => { if (!document.hidden && navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }); } catch (e) {}
   // (for testing only: with ?debug in the address, the console can see who's in and what's waiting)
-  if (/[?&]debug\b/.test(location.search)) window.__bvplay = { players, pending, get host() { return host; }, get phase() { return phase; } };
+  if (/[?&]debug\b/.test(location.search)) window.__bvplay = { players, pending, get host() { return host; }, get phase() { return phase; },
+    // (for checking the screens on this computer: made-up players join and get ready, and the winners show straight away)
+    fake(names) { names.forEach((nm, i) => { const f = ('aaaaaaaaaaaaaaaa' + (i + 1).toString(16)).slice(-16); take({ k: 'join', f, name: nm, av: P.AVATARS[i % P.AVATARS.length] }); take({ k: 'ready', f, on: true }); }); },
+    testWin(scores) { let i = 0; for (const p of players.values()) p.score = scores[i++] || 0; finish(null); },
+    // (and the game starts with whoever is in, as if the host had tapped Start)
+    go() { if (phase !== 'play') start(); },
+    // (a made-up player answers the question that's on: fake player i, 1 to 16)
+    answer(i, v, ms) { const f = ('aaaaaaaaaaaaaaaa' + i.toString(16)).slice(-16); if (cur.q) take({ k: 'ans', f, n: cur.q.n, v, ms: ms || 1500 }); },
+    get q() { return cur.q; },
+    // (the host's settings, set from here)
+    set(o) { Object.assign(settings, o); } };
   return { game: game0, get games() { return games; } };
 })();

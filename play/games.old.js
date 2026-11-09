@@ -25,7 +25,7 @@ var __async = (__this, __arguments, generator) => {
   const P = BVPLAYC, PK = BVPACKS;
   const G = (def) => BVPLAY.game(def);
   const KIDS = (desc) => ({ key: "kids", label: "Kids mode", type: "toggle", default: false, desc });
-  const rounds = (d, list) => ({ key: "rounds", label: "Rounds", type: "seg", options: list.map((n) => [n, String(n)]), default: d });
+  const rounds = (d, list) => ({ key: "rounds", label: "Rounds", type: "number", min: 1, max: 60, quick: list, default: d });
   const LET = P.LETTERS;
   function qView(K, o) {
     return __async(this, null, function* () {
@@ -74,16 +74,6 @@ var __async = (__this, __arguments, generator) => {
       return f;
     });
   }
-  function firstLetter(text) {
-    const t = String(text || "").trim();
-    try {
-      if (window.Intl && Intl.Segmenter) {
-        for (const g of new Intl.Segmenter(void 0, { granularity: "grapheme" }).segment(t)) return g.segment;
-      }
-    } catch (e) {
-    }
-    return [...t][0] || "";
-  }
   const decode = (s) => {
     try {
       return decodeURIComponent(s);
@@ -123,7 +113,7 @@ var __async = (__this, __arguments, generator) => {
   function qFile(lang, cat) {
     const k = lang + "|" + cat;
     if (!qFiles.has(k)) {
-      qFiles.set(k, fetch(QBASE + lang + "/" + cat + ".json?v=" + (QI ? QI.v : 1), { credentials: "omit" }).then((r) => r.ok ? r.json() : null).then((j) => j && Array.isArray(j.q) ? j.q.map((x) => ({ id: cat + "." + x[0], cat, c: catName(cat), d: LV[x[1]] || "easy", q: x[2], a: x[3], w: x.slice(4, 7) })) : null).catch(() => null).then((l) => {
+      qFiles.set(k, fetch(QBASE + lang + "/" + cat + ".json?v=" + (QI ? QI.v : 1), { credentials: "omit" }).then((r) => r.ok ? r.json() : null).then((j) => j && Array.isArray(j.q) ? j.q.map((x) => ({ id: cat + "." + x[0], cat, c: catName(cat), d: LV[x[1]] || "easy", q: x[2], a: x[3], w: x.slice(4, 7), why: typeof x[7] === "string" ? x[7] : "" })) : null).catch(() => null).then((l) => {
         if (!l) qFiles.delete(k);
         return l;
       }));
@@ -152,6 +142,7 @@ var __async = (__this, __arguments, generator) => {
         if (x && x.w && x.w.length >= 3) {
           const src = [x.a, ...x.w];
           out[lg] = { q: x.q, o: perm.map((j) => src[j]) };
+          if (x.why) out[lg].y = x.why;
         }
       })));
       return Object.keys(out).length ? out : null;
@@ -412,7 +403,7 @@ var __async = (__this, __arguments, generator) => {
   function tqLadder(K, parent, o) {
     return __async(this, null, function* () {
       const lad = K.el("div", "tq-lad", parent);
-      if (!o.family) {
+      if (!o.family && !o.nohelp) {
         const life = K.el("div", "tq-life", lad);
         const someoneOut = K.players().some((p) => p.out);
         for (const [t, off] of [["50:50", false], ["Hint", false], ["For me", false], ["Ask all", !someoneOut]]) K.el("span", off ? "off" : "", life, yield K.tr(t));
@@ -433,6 +424,169 @@ var __async = (__this, __arguments, generator) => {
       }
     });
   }
+  const T_LOOKS = ["show", "chalk", "seat", "paper"], T_WINS = ["cosmic", "disco", "fireworks"];
+  const lsGet = (k, d) => {
+    try {
+      const v = localStorage.getItem(k);
+      return v == null ? d : v;
+    } catch (e) {
+      return d;
+    }
+  };
+  const lsSet = (k, v) => {
+    try {
+      localStorage.setItem(k, v);
+    } catch (e) {
+    }
+  };
+  const urlPick = (k, list) => {
+    const m = new RegExp("[?&]" + k + "=([a-z]+)").exec(location.search);
+    return m && list.includes(m[1]) ? m[1] : "";
+  };
+  let tLook = "", tSet = null;
+  function lookNow(s) {
+    const forced = urlPick("tlook", T_LOOKS);
+    if (forced) return forced;
+    if (s && T_LOOKS.includes(s.look)) return s.look;
+    if (!tLook) {
+      const i = ((+lsGet("bvplay:tlook", "-1") || 0) + 1 + T_LOOKS.length) % T_LOOKS.length;
+      lsSet("bvplay:tlook", String(i));
+      tLook = T_LOOKS[i];
+    }
+    return tLook;
+  }
+  function winNow(s) {
+    const forced = urlPick("twin", T_WINS);
+    if (forced) return forced;
+    if (s && T_WINS.includes(s.win)) return s.win;
+    const i = ((+lsGet("bvplay:twin", "-1") || 0) + 1 + T_WINS.length) % T_WINS.length;
+    lsSet("bvplay:twin", String(i));
+    return T_WINS[i];
+  }
+  const SVG_CHALK = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" fill="none" stroke="#f4f1e6" stroke-width="3" stroke-linecap="round"><path d="M1040 120q30-40 60 0t60 0"/><circle cx="1240" cy="140" r="26"/><path d="M1226 128l28 24M1254 128l-28 24"/><path d="M1700 980l40-60 40 60z"/><path d="M60 960h120M120 900v120"/><text x="1320" y="1000" font-size="60" fill="#f4f1e6" stroke="none">E = mc²</text><text x="1020" y="200" font-size="50" fill="#f4f1e6" stroke="none">2 + 2 = ?</text><path d="M1600 120c40-20 80 20 40 50s-60-40-20-50"/></svg>';
+  const SVG_CHALK_RTL = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" fill="none" stroke="#f4f1e6" stroke-width="3" stroke-linecap="round" style="direction:ltr"><path d="M880 120q-30-40-60 0t-60 0"/><circle cx="680" cy="140" r="26"/><path d="M694 128l-28 24M666 128l28 24"/><path d="M220 980l-40-60-40 60z"/><path d="M1860 960h-120M1800 900v120"/><text x="600" y="1000" font-size="60" fill="#f4f1e6" stroke="none" text-anchor="end">E = mc²</text><text x="900" y="200" font-size="50" fill="#f4f1e6" stroke="none" text-anchor="end">2 + 2 = ?</text><path d="M320 120c-40-20-80 20-40 50s60-40 20-50"/></svg>';
+  const SVG_HILLS = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none"><path d="M0 760C300 700 500 820 800 770S1400 660 1920 740V1080H0Z" fill="#ffb27a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.18))"/><path d="M0 860C380 800 640 920 1000 870S1600 800 1920 860V1080H0Z" fill="#ff8a5a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.2))"/><path d="M0 960C420 920 760 1010 1100 970S1700 920 1920 960V1080H0Z" fill="#e8603a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.22))"/></svg>';
+  const SVG_PBOO = '<svg class="tl-boo" viewBox="10 0 40 52" aria-hidden="true"><path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff" stroke="#ffcf9e" stroke-width="1.5"/><circle cx="24" cy="24" r="2.6" fill="#3a1e10"/><circle cx="36" cy="24" r="2.6" fill="#3a1e10"/><path d="M27 30q3 2.4 6 0" stroke="#3a1e10" stroke-width="1.4" fill="none" stroke-linecap="round"/><ellipse cx="19.5" cy="29" rx="2.4" ry="1.4" fill="#ff8a9e"/><ellipse cx="40.5" cy="29" rx="2.4" ry="1.4" fill="#ff8a9e"/></svg>';
+  const mk = (tag, cls, parent, text) => {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    if (parent) parent.appendChild(e);
+    return e;
+  };
+  function lobbyDress(stage, s) {
+    const lk = lookNow(s);
+    tSet = s;
+    document.body.dataset.tlook = lk;
+    const d = mk("div", "tl-deco");
+    d.setAttribute("aria-hidden", "true");
+    d.innerHTML = lk === "show" ? '<i class="bm l"></i><i class="bm r"></i><i class="fl"></i>' : lk === "chalk" ? '<i class="dots"></i><i class="smudge"></i>' + (document.documentElement.dir === "rtl" ? SVG_CHALK_RTL : SVG_CHALK) : lk === "seat" ? '<i class="sw"></i><i class="sw"></i><i class="sw"></i><i class="sw"></i><i class="rg r1"></i><i class="rg r2"></i><i class="rg r3"></i><i class="rg r4"></i><i class="vg"></i>' : '<i class="dots"></i>' + SVG_HILLS + '<i class="sun"></i><i class="cl c1"></i><i class="cl c2"></i>';
+    stage.insertBefore(d, stage.firstChild);
+    if (lk === "chalk") {
+      mk("div", "tl-frame", stage).setAttribute("aria-hidden", "true");
+      const t = mk("div", "tl-tray", stage);
+      t.setAttribute("aria-hidden", "true");
+      for (let i = 0; i < 3; i++) mk("i", "", t);
+    }
+    const jc = stage.querySelector(".lob .join"), sp = stage.querySelector(".spot");
+    if (jc && lk === "show") for (const w of ["t", "b"]) {
+      const r = mk("div", "tl-bulbs " + w, jc);
+      for (let i = 0; i < 30; i++) mk("i", "", r);
+    }
+    if (jc && lk === "chalk") mk("div", "tl-tape", jc);
+    if (sp && lk === "chalk") mk("div", "tl-tape", sp);
+    if (jc && lk === "paper") mk("span", "tl-clip", jc, "📎").setAttribute("aria-hidden", "true");
+    if (lk === "seat") for (const t of stage.querySelectorAll(".lob-top .tile-l")) {
+      const L = t.textContent;
+      t.textContent = "";
+      mk("b", "", t, "◆ " + L + ":");
+      mk("i", "", t);
+    }
+  }
+  function seatDress(grid) {
+    const lk = document.body.dataset.tlook;
+    for (const seat of grid.querySelectorAll(".seat")) {
+      const open = seat.classList.contains("empty") && !!seat.querySelector("span");
+      seat.classList.toggle("open", open);
+      if (lk === "show" && !seat.querySelector(".tl-stand")) {
+        const st = mk("div", "tl-stand", seat);
+        for (let i = 0; i < 5; i++) mk("i", "", st);
+      }
+      if (lk === "paper" && open && !seat.querySelector(".tl-boo")) seat.querySelector("span").insertAdjacentHTML("afterbegin", SVG_PBOO);
+    }
+  }
+  const CONF = { cosmic: ["#ffc93c", "#c77dff", "#5ad1ff", "#fff"], disco: ["#ff5a8a", "#5ad1ff", "#ffc93c", "#34d399", "#c77dff", "#fff"], fireworks: ["#ffc93c", "#ff5a8a", "#5ad1ff", "#34d399", "#fff", "#c77dff"] };
+  const SPARK = [[1660, 300], [1338.2, 557.8], [668.7, 233.6], [267, 59.3], [502.4, 428.5], [1158.6, 507.6], [1632.1, 118], [1487.7, 139.3], [858.1, 523.4], [322.2, 403.2], [372.6, 50], [963.1, 261.3]];
+  const BURSTS = [[300, 240, 0, "#ff5a8a"], [1620, 200, 1.1, "#5ad1ff"], [520, 520, 2.2, "#ffc93c"], [1420, 500, 0.6, "#34d399"], [960, 330, 1.7, "#c77dff"]];
+  const X = (v) => (v / 19.2).toFixed(2) + "%", Y = (v) => (v / 10.8).toFixed(2) + "%";
+  let tWinLast = "";
+  function winDress(cv) {
+    const w = winNow(tSet);
+    tWinLast = w;
+    cv.classList.add("tw", "tw-" + w);
+    document.body.classList.add("tw-on");
+    const d = mk("div", "tw-d");
+    d.setAttribute("aria-hidden", "true");
+    cv.insertBefore(d, cv.firstChild);
+    for (let i = 1; i <= (w === "disco" ? 4 : 2); i++) mk("i", "sw s" + i, d);
+    const wh = mk("div", "wheel", d);
+    for (let i = 0; i < 36; i++) mk("i", "", wh).style.transform = "rotate(" + i * 10 + "deg)";
+    if (w === "cosmic") {
+      for (let i = 0; i < 90; i++) {
+        const st = mk("i", "st", d);
+        st.style.left = X(i * 137 % 1920);
+        st.style.top = Y(i * 263 % 1080);
+        st.style.animationDuration = 2 + i % 4 + "s";
+        st.style.animationDelay = (-(i % 7) * 0.4).toFixed(1) + "s";
+      }
+      mk("i", "pl1", d);
+      mk("i", "rng", d);
+      mk("i", "pl2", d);
+      mk("i", "rk", d, "🚀");
+    } else if (w === "disco") {
+      SPARK.forEach(([x, y], i) => {
+        const sp = mk("i", "sp", d);
+        sp.style.left = X(x);
+        sp.style.top = Y(y);
+        sp.style.animationDuration = [1.4, 1.8, 2.2][i % 3] + "s";
+        sp.style.animationDelay = (i * 0.2).toFixed(1) + "s";
+      });
+      const fl = mk("div", "floor", d), C = ["#ff5a8a", "#5ad1ff", "#ffc93c", "#34d399", "#c77dff"];
+      for (let i = 0; i < 64; i++) {
+        const c = i % 16, r = Math.floor(i / 16), t = mk("i", "", fl);
+        t.style.background = C[(c + 3 * r) % 5];
+        t.style.animationDuration = (1 + (c + r) % 4 * 0.35).toFixed(2) + "s";
+        t.style.animationDelay = ((c + 2 * r) % 5 * 0.2).toFixed(1) + "s";
+      }
+    } else {
+      for (const [x, y, dl, c] of BURSTS) {
+        const b = mk("div", "bu", d);
+        b.style.left = X(x);
+        b.style.top = Y(y);
+        b.style.animationDelay = dl + "s";
+        b.style.filter = "drop-shadow(0 0 8px " + c + ")";
+        for (let k = 0; k < 16; k++) {
+          const r = mk("i", "", b);
+          r.style.background = "linear-gradient(" + c + ", transparent)";
+          r.style.transform = "rotate(" + k * 22.5 + "deg) translateY(calc(-100 / 10.8 * var(--u)))";
+        }
+        mk("b", "", b).style.boxShadow = "0 0 20px " + c;
+      }
+    }
+    const cols = CONF[w];
+    for (let i = 0; i < 50; i++) {
+      const cf = mk("i", "cf", d);
+      cf.style.left = X(i * 97 % 1900);
+      cf.style.background = cols[i % cols.length];
+      cf.style.width = "calc(" + [8, 12, 16][i % 3] + " / 10.8 * var(--u))";
+      cf.style.height = "calc(" + [14, 20][i % 2] + " / 10.8 * var(--u))";
+      cf.style.animationDuration = 6 + i % 5 + "s";
+      cf.style.animationDelay = (-(i * 0.53 % 8)).toFixed(2) + "s";
+    }
+    const boo = mk("img", "tw-boo", cv);
+    boo.src = "icons/emoji-boo.png";
+    boo.alt = "";
+  }
   const TRIVIA_MODES = [
     ["most", "Most correct", "Nobody goes out. The most right answers wins."],
     ["knockout", "Knockout", "One wrong answer and you are out. The last one standing wins."],
@@ -448,6 +602,8 @@ var __async = (__this, __arguments, generator) => {
     sub: "Questions on the TV, answers on your phone.",
     teams: true,
     teamsWin: true,
+    // (the winner design the TV showed: the phones' share picture comes in the same look)
+    endLook: () => tWinLast,
     step: ["Tap {letters}", "Answer on your phone before time runs out."],
     deco: "letters",
     helpers: ["Remove two", "Hint", "Answer it for me", "Ask everyone"],
@@ -465,26 +621,39 @@ var __async = (__this, __arguments, generator) => {
     },
     // (a race is everyone for themselves)
     teamsOn: (s) => s.mode !== "race",
+    // its looks: the lobby in one of four designs, the winners in one of three (trivia.css)
+    lobbyDone: (stage, el, s) => lobbyDress(stage, s),
+    seated: (grid) => seatDress(grid),
+    winDeco: (cv) => winDress(cv),
+    // (each design's seats: their height for their width, and the room between them)
+    get seatGap() {
+      return document.body.dataset.tlook === "show" ? 26 / 10.8 : 22 / 10.8;
+    },
+    get seatRatioCard() {
+      return { show: 0.8515, chalk: 0.8634, seat: 0.8307, paper: 0.8197 }[document.body.dataset.tlook] || 0.8;
+    },
     // the host's phone sets the game up in these steps, then a last one to check it all and start
     steps: [
       { t: "Game mode", s: "Mode", keys: ["lang", "mode"] },
-      { t: "Questions", keys: ["count", "raceTo", "level"] },
+      { t: "Questions", keys: ["count", "raceTo", "lives", "level"] },
       { t: "Category", keys: ["cat", "wheel"] },
       { t: "Timing", s: "Time", keys: ["sec", "next", "wait"] },
-      { t: "Extras", keys: ["speed", "teams", "teamN"] }
+      { t: "Extras", keys: ["speed", "helpers", "teams", "teamN"] },
+      { t: "Looks", keys: ["look", "win"] }
     ],
     rules: ["A question shows on the TV with four answers.", "Tap your answer on your phone before time runs out.", "Each helper works once: remove two, a hint, answer it for me, ask everyone."],
     // the TV's lobby explains the mode the host picked, and changes as soon as they pick another
     spot: (s) => {
       const m = TRIVIA_MODES.find((x) => x[0] === s.mode) || TRIVIA_MODES[0];
       const race = m[0] === "race";
-      const help = ["💡", "4 helpers on your phone, each works once"], allPlay = ["🙌", "Nobody goes out: everyone plays to the end"];
+      const allPlay = ["🙌", "Nobody goes out: everyone plays to the end"];
+      const help = s.helpers === false ? ["🧠", "No helpers: just you and the question"] : ["💡", "4 helpers on your phone, each works once"];
       const teams = !!s.teams && !race;
       const tie = teams ? allPlay : ["🤝", "A tie for first? A number question decides"];
       const bullets = {
         most: [s.speed ? ["⚡", "Faster right answers score more"] : ["✅", "Every right answer scores a point"], help, tie],
         knockout: [help, ["🤝", "If everyone misses, nobody goes out"], ["🗳️", "Players who are out help with Ask everyone"]],
-        lives: [["❤️", "Everyone starts with 3 hearts"], ["💔", "Each wrong answer costs a heart"], ["🏆", "The last one with a heart left wins"]],
+        lives: [["❤️", "Everyone starts with {n} hearts"], ["💔", "Each wrong answer costs a heart"], ["🏆", "The last one with a heart left wins"]],
         race: [["🎯", "First to {n} right answers wins"], ["⚡", "Two get there at once? The faster answer wins"], help],
         first: [allPlay, ["🎯", "A wrong answer costs nothing"], help],
         family: [["🔊", "The TV reads each question out loud"], ["🧸", "Easy questions, great with kids"], allPlay]
@@ -494,7 +663,7 @@ var __async = (__this, __arguments, generator) => {
       const facts = [race ? ["🎯", "Race to {n}", { n: +s.raceTo }] : ["❓", "{n} questions", { n: family ? 10 : +s.count }], family || !+s.sec ? ["⏳", "No timer"] : ["⏱️", "{n} s", { n: +s.sec }], ["🗂️", cat]];
       if (!family && ["easy", "medium", "hard"].includes(s.level)) facts.splice(1, 0, ["🎯", DIFF[s.level]]);
       if (teams) facts.push(["👥", "Teams"]);
-      return { key: m[0], icon: { most: "🏆", knockout: "⚔️", lives: "❤️", race: "🏁", first: "⚡", family: "🏡" }[m[0]], label: "Game mode", name: m[1], desc: m[2], bullets, vars: { n: +s.raceTo }, facts };
+      return { key: m[0], icon: { most: "🏆", knockout: "⚔️", lives: "❤️", race: "🏁", first: "⚡", family: "🏡" }[m[0]], label: "Game mode", name: m[1], desc: m[2], bullets, vars: { n: m[0] === "lives" ? +s.lives || 3 : +s.raceTo }, facts };
     },
     // (the categories this language has questions for: all of them)
     langOptions: { cat: (lang, opts) => {
@@ -504,8 +673,9 @@ var __async = (__this, __arguments, generator) => {
     settings: [
       { key: "mode", label: "Game mode", type: "seg", look: "list", options: TRIVIA_MODES, default: "most" },
       // (a race has no number of questions: it goes on until someone gets there; Family mode always has 10)
-      { key: "count", label: "How many questions", type: "seg", options: [[10, "10"], [15, "15"], [20, "20"], [30, "30"]], default: 15, when: ["mode", ["most", "knockout", "lives", "first"]] },
-      { key: "raceTo", label: "Race to", type: "seg", options: [[5, "5"], [10, "10"], [15, "15"], [20, "20"]], default: 10, when: ["mode", "race"], desc: "The first player to get this many right answers wins. The questions keep coming until someone does." },
+      { key: "count", label: "How many questions", type: "number", min: 1, max: 100, quick: [10, 15, 20, 30], default: 15, when: ["mode", ["most", "knockout", "lives", "first"]] },
+      { key: "raceTo", label: "Race to", type: "number", min: 1, max: 50, quick: [5, 10, 15, 20], default: 10, when: ["mode", "race"], desc: "The first player to get this many right answers wins. The questions keep coming until someone does." },
+      { key: "lives", label: "Hearts each", type: "number", min: 1, max: 10, quick: [1, 2, 3, 5], default: 3, when: ["mode", "lives"], desc: "Each wrong answer costs a heart. Out of hearts, out of the game." },
       { key: "level", label: "Difficulty", type: "seg", options: [
         ["mix", "Easy to hard", "Starts easy and gets harder as you go."],
         ["easy", "Easy", "Only easy questions. Great with kids."],
@@ -514,17 +684,23 @@ var __async = (__this, __arguments, generator) => {
       ], default: "mix", when: ["mode", "!family"] },
       { key: "cat", label: "Pick a category", type: "seg", options: PK.cats.map((c) => [c[0], c[1]]), default: 0 },
       { key: "wheel", label: "Category wheel", type: "toggle", default: false, desc: "A new category every 5 questions." },
-      { key: "sec", label: "Time to answer", type: "seg", options: [[15, "15 s"], [20, "20 s"], [30, "30 s"], [0, "No limit", "No clock: each question waits until everyone answers. The host can show the answer any time."]], default: 20, when: ["mode", "!family"] },
+      { key: "sec", label: "Time to answer", type: "number", min: 0, max: 300, quick: [10, 15, 20, 30], unit: "seconds", default: 20, when: ["mode", "!family"], desc: "0: no clock. Each question waits until everyone answers, and the host can show the answer any time." },
       // (after each answer: the next question comes by itself after a wait the host picks, or when the host taps for it)
       { key: "next", label: "Next question", type: "seg", options: [["auto", "Automatic", "The next question starts by itself after a short wait."], ["host", "The host starts it", "The host taps Next question on their phone when everyone is ready."]], default: "auto" },
       { key: "wait", label: "Wait before the next question", type: "number", min: 1, max: 120, quick: [3, 5, 10, 15], unit: "seconds", default: 5, when: ["next", "auto"] },
       { key: "speed", label: "Speed points", type: "toggle", default: false, desc: "Faster right answers score more" },
+      { key: "helpers", label: "Helpers", type: "toggle", default: true, desc: "Remove two, a hint, answer it for me, ask everyone: each works once.", when: ["mode", "!family"] },
       { key: "teams", label: "Teams", type: "toggle", default: false, desc: "Phones join a color team, and each team's points are added up.", when: ["mode", "!race"] },
-      { key: "teamN", label: "How many teams", type: "seg", options: [[2, "2"], [3, "3"], [4, "4"]], default: 2, when: [["teams", true], ["mode", "!race"]] }
+      { key: "teamN", label: "How many teams", type: "seg", options: [[2, "2"], [3, "3"], [4, "4"]], default: 2, when: [["teams", true], ["mode", "!race"]] },
+      // (the lobby and the winners: a different design each game, or always the same one)
+      { key: "look", label: "Lobby look", type: "seg", options: [["mix", "A new one each game", "The lobby changes its look from one game to the next."], ["show", "Game Show"], ["chalk", "Chalkboard"], ["seat", "Hot Seat"], ["paper", "Paper Craft"]], default: "mix" },
+      { key: "win", label: "Winner screen", type: "seg", options: [["mix", "A new one each game", "The winners show in a different design each game."], ["cosmic", "Cosmic"], ["disco", "Disco"], ["fireworks", "Fireworks"]], default: "mix" }
     ],
     tv(K) {
       return __async(this, null, function* () {
         const s = K.settings, family = s.mode === "family", race = s.mode === "race";
+        tLook = "";
+        tSet = s;
         const target = Math.max(1, +s.raceTo || 10);
         const n = family ? 10 : race ? target * 6 : +s.count;
         const LP = K.packs;
@@ -571,6 +747,10 @@ var __async = (__this, __arguments, generator) => {
             const t = trs && trs[K.langOf(id)];
             return t ? t.o[ok] : tOpts[ok];
           };
+          const whyIn = (id) => {
+            const t = trs && trs[K.langOf(id)];
+            return t && t.y || q.why || "";
+          };
           const num = i + 1, big = num === 1 || num % 5 === 0, loud = K.snd.on();
           const lastN = race ? lead() >= target - 1 ? 1 : 0 : qs.length - i <= 2 ? qs.length - i : 0;
           K.wait();
@@ -579,7 +759,7 @@ var __async = (__this, __arguments, generator) => {
           yield tqIntro(K, { num, total, q, big, last: lastN, race });
           yield K.sleep(loud ? big ? 5e3 : 4700 : 1800);
           if (K.over()) break;
-          const v = yield tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, live, goal: race ? target : qs.length, race: race ? target : 0 });
+          const v = yield tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, nohelp: s.helpers === false, live, goal: race ? target : qs.length, race: race ? target : 0 });
           const qt = v.q, cells = v.cells;
           K.snd.music(lastN ? "last2" : race ? raceStage() : stageOf(i, qs.length), { fadeIn: 1.2, vol: family ? 0.4 : 1 });
           if (family) K.speak(qt.textContent);
@@ -602,7 +782,7 @@ var __async = (__this, __arguments, generator) => {
             if (m.h === "fifty") {
               const wrong = P.shuffle([0, 1, 2, 3].filter((x) => x !== ok && x < opts.length)).slice(0, 2);
               K.sayTo(p.id, { k: "helped", n: qn, h: "fifty", hide: wrong });
-            } else if (m.h === "hint") K.sayTo(p.id, { k: "helped", n: qn, h: "hint", text: yield hint(K, q, opts[ok], mine ? mine.o[ok] : tOpts[ok], mine ? lg : "") });
+            } else if (m.h === "hint") K.sayTo(p.id, Object.assign({ k: "helped", n: qn, h: "hint" }, yield hint(K, q, opts[ok], mine ? mine.o[ok] : tOpts[ok], mine ? lg : "")));
             else if (m.h === "auto") K.sayTo(p.id, { k: "helped", n: qn, h: "auto", pick: ok });
             else if (m.h === "ask") {
               let vtr = null;
@@ -621,7 +801,7 @@ var __async = (__this, __arguments, generator) => {
             }
           }));
           const open = !family && !sec;
-          const extra = { letters: true, helpers: !family, tv: 1 };
+          const extra = { letters: true, helpers: !family && s.helpers !== false, tv: 1 };
           if (trs) extra.tr = trs;
           const asking = K.ask({ kind: "choice", prompt: "", opts: tOpts, sec, open, extra, onAns: (id) => {
             answered.add(id);
@@ -630,25 +810,30 @@ var __async = (__this, __arguments, generator) => {
           qn = K.qn();
           const stopReveal = open ? hostReveal(K, qn) : null;
           let closed = false;
-          const tuT = sec ? setTimeout(() => {
+          const tuT = sec ? K.after(sec * 1e3, () => {
             if (closed || K.over() || answered.size >= live.length) return;
             K.snd.music(null, { fadeOut: 0.25 });
             K.snd.sting("timesup");
-          }, sec * 1e3) : 0;
+          }) : 0;
           const answers = yield asking;
           closed = true;
-          clearTimeout(tuT);
+          if (tuT) tuT();
           if (stopReveal) stopReveal();
           offHelp();
           if (v.ring) v.ring.stop();
           if (v.inf) v.inf.classList.add("done");
           const inPlay = live.filter((p) => answers.has(p.id) || !p.away);
+          for (const id of answers.keys()) {
+            const p = K.player(id);
+            if (p && !p.out && !inPlay.includes(p)) inPlay.push(p);
+          }
           const rightN = [...answers.values()].filter((a) => +a.v === ok).length;
           K.snd.music(null, { fadeOut: 0.3 });
           K.snd.sting(rightN ? "correct" : "wrong");
           yield K.sleep(K.snd.on() ? rightN ? 1e3 : 700 : 250);
           cells.forEach((c, j) => c.node.classList.add(j === ok ? "right" : "dim"));
           for (let j = 0; j < opts.length; j++) showWho(K, cells[j], [...answers].filter(([, a]) => +a.v === j).map(([id]) => id));
+          if (q.why) K.el("div", "pill why", v.fx, "🤯 " + q.why);
           let first = null;
           const spare = (s.mode === "knockout" || s.mode === "lives") && inPlay.length > 1 && !inPlay.some((p) => answers.has(p.id) && +answers.get(p.id).v === ok);
           if (spare) K.el("div", "pill", v.fx, yield K.tr("Everyone missed that one, so nobody goes out."));
@@ -670,7 +855,7 @@ var __async = (__this, __arguments, generator) => {
                 if (p.lives <= 0) p.out = true;
               }
             }
-            K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: rightIn(p.id) });
+            K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: rightIn(p.id), note: whyIn(p.id) });
             res.set(p.id, good ? "right" : p.out ? "out" : "miss");
           }
           if (first) {
@@ -784,6 +969,51 @@ var __async = (__this, __arguments, generator) => {
       off();
     });
   }
+  const SMALL = { en: ["the", "a", "an", "of"], fr: ["le", "la", "les", "un", "une", "des", "du", "de", "et"], es: ["el", "la", "los", "las", "un", "una", "unos", "unas", "del", "de", "y"] };
+  function cellsOf(w) {
+    try {
+      if (window.Intl && Intl.Segmenter) return Array.from(new Intl.Segmenter(void 0, { granularity: "grapheme" }).segment(w), (x) => x.segment);
+    } catch (e) {
+    }
+    const out = [];
+    for (const ch of w) {
+      const c = ch.codePointAt(0);
+      const mark = c >= 768 && c <= 879 || c >= 1611 && c <= 1631 || c === 1648 || c >= 2304 && c <= 2307 || c >= 2362 && c <= 2383 || c >= 2385 && c <= 2391 || c >= 2402 && c <= 2403 || c >= 2433 && c <= 2435 || c === 2492 || c >= 2494 && c <= 2509 || c === 2519 || c >= 2530 && c <= 2531 || c === 8204 || c === 8205 || c >= 65024 && c <= 65039;
+      if (out.length && (mark || /[्্]$/.test(out[out.length - 1]))) out[out.length - 1] += ch;
+      else out.push(ch);
+    }
+    return out;
+  }
+  function shapeOf(text, lg) {
+    const a = String(text || "").trim();
+    if (!a) return [];
+    if (lg === "zh" || /^[぀-ヿ㐀-鿿豈-﫿]/.test(a)) {
+      const cs = cellsOf(a.replace(/\s+/g, ""));
+      return [cs.map((c, i) => i === 0 ? c : 0)];
+    }
+    const words = a.split(/\s+/).filter(Boolean).slice(0, 8);
+    const small = SMALL[lg] || [];
+    return words.map((w, wi) => {
+      const cs = cellsOf(w);
+      if (words.length > 1 && wi < words.length - 1 && small.includes(w.toLowerCase())) return cs;
+      let lead = 0;
+      if (lg === "ar" && cs.length > 3 && cs[0] === "ا" && cs[1] === "ل") lead = 2;
+      else if ((lg === "fr" || lg === "en" || lg === "es") && cs.length > 2 && /^[ldLD]$/.test(cs[0]) && /^['’]$/.test(cs[1])) lead = 2;
+      let shown = false;
+      return cs.map((c, i) => {
+        if (i < lead) return c;
+        if (/^[-'’".,:;!?()[\]/&+*#%«»¿¡،؟。，、·]$/.test(c)) {
+          if (c === "-") shown = false;
+          return c;
+        }
+        if (!shown) {
+          shown = true;
+          return c;
+        }
+        return 0;
+      });
+    });
+  }
   function hint(K, q, answer, shown, lg) {
     return __async(this, null, function* () {
       if (K.lang === "en" && !lg) {
@@ -794,15 +1024,16 @@ var __async = (__this, __arguments, generator) => {
             const t2 = yield sess.prompt(`Give a short, kind hint (under 15 words) for this quiz question. Never say the answer or any word of it.
 Question: ${q.q}
 Answer: ${answer}`);
-            if (t2 && !P.norm(t2).includes(P.norm(answer))) return String(t2).slice(0, 140);
+            if (t2 && !P.norm(t2).includes(P.norm(answer))) return { text: String(t2).slice(0, 140) };
           }
         } catch (e) {
         }
       }
-      const a = String(shown || answer).trim();
-      const words = (lg || K.lang) === "zh" ? 1 : a.split(/\s+/).length;
-      const t = words > 1 ? 'It starts with "{c}" and has {n} words.' : 'It starts with "{c}".';
-      return lg ? K.trFor(lg, t, { c: firstLetter(a), n: words }) : K.tr(t, { c: firstLetter(a), n: words });
+      const code = lg || K.lang;
+      const pat = shapeOf(String(shown || answer), code);
+      const shape = pat.map((w) => w.map((c) => c === 0 ? "_" : c).join(" ")).join("  /  ");
+      const t = "The answer looks like this: {x}";
+      return { pat, text: yield lg ? K.trFor(lg, t, { x: shape }) : K.tr(t, { x: shape }) };
     });
   }
   function wheel(K, cats) {
@@ -1219,7 +1450,7 @@ Answer: ${answer}`);
     rules: ["Each phone gets its own bingo card.", "Mark the numbers the TV calls (or let the phone do it).", "Your card matches the pattern? Tap BINGO! The TV checks it."],
     settings: [
       { key: "pattern", label: "Pattern", type: "seg", options: [["line", "A line", "A full line of numbers."], ["corners", "Four corners", "Mark the four corners of the card."], ["x", "An X", "Both diagonals, corner to corner."], ["full", "Full card", "Every number on the card."]], default: "line" },
-      { key: "speed", label: "Calling speed", type: "seg", options: [[9, "Slow"], [6, "Normal"], [4, "Fast"]], default: 6 },
+      { key: "speed", label: "Seconds between numbers", type: "number", min: 2, max: 60, quick: [4, 6, 9, 15], unit: "seconds", default: 6 },
       { key: "style", label: "Style", type: "seg", options: [["75", "75 balls", "American bingo: a 5 by 5 card under B I N G O."], ["90", "90 balls", "British bingo: 3 rows of 9 squares."]], default: "75" },
       { key: "cards", label: "Cards each", type: "seg", options: [[1, "1"], [2, "2"], [3, "3"]], default: 1 },
       { key: "auto", label: "Mark the numbers for me (easy mode)", type: "toggle", default: false },

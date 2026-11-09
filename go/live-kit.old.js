@@ -111,6 +111,34 @@ var BVLIVE = (() => {
     return shared;
   }
   const watchers = /* @__PURE__ */ new Set();
+  const openRooms = /* @__PURE__ */ new Set();
+  if (typeof window !== "undefined" && typeof document !== "undefined" && window.addEventListener) {
+    let hidAt = 0;
+    const wake = () => {
+      if (shared && shared.wake) {
+        try {
+          shared.wake();
+        } catch (e) {
+        }
+      }
+      for (const R of openRooms) {
+        setTimeout(() => {
+          if (!R.closed()) R.hello(true);
+        }, 1200);
+        setTimeout(() => {
+          if (!R.closed()) R.hello(true);
+        }, 3500);
+      }
+    };
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) hidAt = Date.now();
+      else if (hidAt && Date.now() - hidAt > 2500) wake();
+    });
+    window.addEventListener("online", wake);
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) wake();
+    });
+  }
   const ECDH = { name: "ECDH", namedCurve: "P-256" };
   function boxKeys() {
     return __async(this, null, function* () {
@@ -765,6 +793,7 @@ var BVLIVE = (() => {
         return L;
       }
       net.join(topic);
+      openRooms.add(R);
       setTimeout(() => hello(true), 1e3);
       setTimeout(() => hello(true), 4e3);
       helloT = setInterval(() => hello(false), HELLO_EVERY);
@@ -801,6 +830,7 @@ var BVLIVE = (() => {
           publish({ k: "~bye" }).catch(() => {
           });
           closed = true;
+          openRooms.delete(R);
           clearInterval(helloT);
           clearInterval(sweepT);
           for (const p of [...pipes.values()]) p.close();
@@ -812,6 +842,45 @@ var BVLIVE = (() => {
           }, 400);
         }
       });
+    });
+  }
+  function publicIp(ms) {
+    return new Promise((res) => {
+      let pc = null, done = false;
+      const fin = (v) => {
+        if (done) return;
+        done = true;
+        try {
+          if (pc) pc.close();
+        } catch (e) {
+        }
+        res(v || "");
+      };
+      try {
+        pc = new RTCPeerConnection({ iceServers: ICE });
+        pc.createDataChannel("ip");
+        pc.onicecandidate = (e) => {
+          if (!e.candidate) {
+            fin("");
+            return;
+          }
+          const c = String(e.candidate.candidate || "");
+          const m = / typ srflx/.test(c) && c.match(/ ((?:\d{1,3}\.){3}\d{1,3}) \d+ typ srflx/);
+          if (m && !/^(10|127|169\.254|192\.168)\./.test(m[1])) fin(m[1]);
+        };
+        pc.createOffer().then((o) => pc.setLocalDescription(o)).catch(() => fin(""));
+        setTimeout(() => fin(""), ms || 5e3);
+      } catch (e) {
+        fin("");
+      }
+    });
+  }
+  function nearby() {
+    return __async(this, arguments, function* (o = {}) {
+      const ip = yield publicIp(o.wait || 4500);
+      if (!ip) return null;
+      const secret = new Uint8Array(yield subtle.digest("SHA-256", te.encode("blokvane-nearby-v1|" + ip))).slice(0, 16);
+      return room({ secret, label: "bvnear", name: o.name || "", role: o.role || "phone", info: o.info || null, open: true, memory: o.memory, onPeers: o.onPeers || null });
     });
   }
   function shrink(file, max = 512, quality = 0.82) {
@@ -863,6 +932,8 @@ var BVLIVE = (() => {
     parse,
     relays,
     room,
+    nearby,
+    publicIp,
     shrink,
     fit,
     okPicture,

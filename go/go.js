@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '16';
+  const VERSION = '17';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -584,6 +584,16 @@
     wb: 'board', game: 'party' };
   // no link: the computers this phone knows, or how to start
   async function home() {
+    // (Blokvane as an app, opened again soon after it was in a party game it didn't leave: straight back into that game,
+    // like any app; once per opening, and not for a game that was left on purpose or couldn't be found)
+    const bk = store.get('party:back', null);
+    let once = false;
+    try { once = !!sessionStorage.getItem('bvgo:autoBack'); } catch (e) {}
+    if (!once && standalone() && bk && !bk.left && !bk.noAuto && typeof bk.s === 'string' && /^[A-Za-z0-9_-]{16,64}$/.test(bk.s) && L.okId(bk.tv) && Date.now() - (+bk.at || 0) < 20 * 60000) {
+      try { sessionStorage.setItem('bvgo:autoBack', '1'); } catch (e) {}
+      location.hash = '#game.' + bk.s + '.' + bk.tv + (typeof bk.lg === 'string' && /^[a-z]{2}$/.test(bk.lg) ? '.' + bk.lg : '');
+      return;
+    }
     const list = pairs();
     // ("Other computers" on a computer's page comes here once, to pick)
     const picking = store.get('pick', 0);
@@ -593,8 +603,8 @@
     const gameCard = () => {
       const c = el('div', 'card', v.body);
       el('h2', '', c, 'Joining a game or a poll?');
-      el('p', '', c, 'Scan the QR code on the TV with your phone\'s camera. No app needed. Or type the code under it:');
-      btn('Type a game code', { kind: 'tint', full: true, icon: 'game' }, c, async () => (await need('party'))('code', []));
+      el('p', '', c, 'Scan the QR code on the TV with your phone\'s camera. No app needed. Or find the TV on this Wi-Fi, or type the code under it:');
+      btn('Join a game', { kind: 'tint', full: true, icon: 'game' }, c, async () => (await need('party'))('code', []));
     };
     if (!list.length) {
       backCard(v.body);
@@ -626,9 +636,13 @@
     if (!b || typeof b.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(b.s) || !L.okId(b.tv) || !(Date.now() - (+b.at || 0) < 3 * 3600e3)) return null;
     const c = el('div', 'card', parent);
     c.style.borderColor = 'color-mix(in srgb, var(--pink) 45%, var(--line))';
-    el('h2', '', c, '🎉 ' + (typeof b.name === 'string' && b.name ? L.clean(b.name, 40) : 'Party game'));
-    el('p', 'muted', c, 'You were in this game a little while ago. Go back in as yourself, with your score.');
-    btn('Back to the game', { kind: 'go', full: true, icon: 'play' }, c, () => { location.hash = '#game.' + b.s + '.' + b.tv + (typeof b.lg === 'string' && /^[a-z]{2}$/.test(b.lg) ? '.' + b.lg : ''); });
+    const sy = t => (window.GO && GO.say ? GO.say(t) : t);
+    el('h2', '', c, '🎉 ' + (typeof b.name === 'string' && b.name ? L.clean(b.name, 40) : sy('Party game')));
+    el('p', 'muted', c, sy('You were in this game a little while ago. Go back in as yourself, with your score.'));
+    btn(sy('Back to the game'), { kind: 'go', full: true, huge: true, icon: 'play' }, c, () => { location.hash = '#game.' + b.s + '.' + b.tv + (typeof b.lg === 'string' && /^[a-z]{2}$/.test(b.lg) ? '.' + b.lg : ''); });
+    // (a game that's over for this phone: gone from here in one tap)
+    const no = btn(sy('Not now'), { kind: 'ghost', full: true }, c, () => { store.del('party:back'); c.remove(); });
+    no.style.marginTop = '8px';
     return c;
   }
 

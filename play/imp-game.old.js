@@ -257,9 +257,9 @@ var __async = (__this, __arguments, generator) => {
     }
     let left = sec;
     for (const n of ns) n.textContent = K.num(left);
-    const t0 = Date.now();
+    const now = K.now || Date.now, t0 = now();
     const iv = setInterval(() => {
-      const l = Math.max(0, Math.ceil(sec - (Date.now() - t0) / 1e3));
+      const l = Math.max(0, Math.ceil(sec - (now() - t0) / 1e3));
       if (l !== left) {
         left = l;
         for (const n of ns) n.textContent = K.num(l);
@@ -927,6 +927,7 @@ var __async = (__this, __arguments, generator) => {
       const gk = who.length > 1 ? "guessingP" : "guessing";
       if (noteEl) noteEl.textContent = tx(gk, { name: names, n: K.num(left) });
       const iv = setInterval(() => {
+        if (K.paused && K.paused()) return;
         left = Math.max(0, left - 1);
         if (noteEl) noteEl.textContent = tx(gk, { name: names, n: K.num(left) });
         if (left > 0 && left <= 3) K.snd.fx("tick", { vol: 0.5 });

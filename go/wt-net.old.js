@@ -120,6 +120,7 @@ var BVWT_NET = (() => {
       const h = health.get(url);
       return !!(h && h.badUntil > now());
     };
+    const away = () => typeof navigator !== "undefined" && navigator.onLine === false || typeof document !== "undefined" && document.hidden === true;
     let saveT = 0;
     function remember() {
       if (!o.memory || saveT) return;
@@ -136,6 +137,7 @@ var BVWT_NET = (() => {
     function strike(url, why) {
       const h = health.get(url) || { badUntil: 0, strikes: 0, ok: false };
       h.strikes++;
+      h.at = now();
       if (h.strikes >= 5) h.ok = false;
       h.badUntil = now() + (h.ok ? Math.min(30 * 6e4, 12e4 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 6e5 * 3 ** Math.min(h.strikes - 1, 4)));
       h.why = why;
@@ -214,6 +216,11 @@ var BVWT_NET = (() => {
           const was = this.state;
           this.close();
           this.state = "retry";
+          if (away()) {
+            this.retryAt = now() + 3e3;
+            if (was === "open") changed();
+            return;
+          }
           if (!this.opened || now() - this.opened < 3e4) this.tries++;
           this.opened = 0;
           if (this.tries >= 3) {
@@ -466,6 +473,7 @@ var BVWT_NET = (() => {
       for (const [id, p] of pending) {
         if (t - p.at < echoWait) continue;
         pending.delete(id);
+        if (away()) continue;
         for (const url of p.urls) {
           const c = conns.get(url);
           if (c && c.state === "open" && ++c.misses >= MISSES_BAD) strike(url, "messages not coming back");
@@ -535,7 +543,23 @@ var BVWT_NET = (() => {
       if (timer) clearInterval(timer);
       timer = 0;
     }
-    return { join, leave, publish, stats, close, _conns: conns, _health: health };
+    function wake() {
+      const t = now();
+      for (const h of health.values()) if (h.badUntil > t && h.at && t - h.at < 15 * 6e4 && /^(cannot connect|messages not coming back)$/.test(h.why || "")) h.badUntil = 0;
+      for (const c of conns.values()) {
+        if (c.state === "retry") c.retryAt = 0;
+        else if (c.state === "open" && t - Math.max(c.lastIn || 0, c.lastEcho || 0, c.opened || 0) > 25e3) {
+          c.close();
+          c.state = "retry";
+          c.retryAt = 0;
+          c.tries = 0;
+        }
+      }
+      for (const p of pending.values()) p.at = t;
+      rebalance();
+      maintain();
+    }
+    return { join, leave, publish, stats, close, wake, _conns: conns, _health: health };
   }
   function bucket(rate, burst, now) {
     let n = burst, at = now();

@@ -472,3 +472,55 @@ html.no-flexgap[dir="rtl"] .wq-legend span > * + * { margin-left: 0; margin-righ
   .wq *, .wq-plane, .wq-trail { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition: none !important; }
   .wq-plane, .wq-trail { display: none; }
 }
+
+/* ---------- right and wrong, clearly: ✓ and ✗ on the pins, their name tags and the scoreboard ---------- */
+.wq-pin .wq-mk { position: absolute; right: -14%; top: -10%; width: 44%; height: 33%; border-radius: 50%; display: grid; align-items: center; justify-items: center; place-items: center; font: 700 calc(1.7 * var(--u))/1 var(--fun);
+  color: #fff; box-shadow: 0 0 0 calc(.25 * var(--u)) #fff, 0 calc(.3 * var(--u)) calc(.8 * var(--u)) rgba(0, 0, 0, .45); animation: wMk .45s cubic-bezier(.2, 1.6, .4, 1) both; }
+.wq-pin.ok .wq-mk { background: #22c483; }
+.wq-pin.no .wq-mk { background: #ff4d6a; }
+@keyframes wMk { from { transform: scale(0); } }
+.wq-dist.ok b { border-color: #2fd59a; background: rgba(8, 60, 40, .9); }
+.wq-dist.no b { border-color: #ff5a6e; background: rgba(70, 12, 26, .9); }
+.wq-dot { position: absolute; left: 0; top: 0; width: calc(1.3 * var(--u)); height: calc(1.3 * var(--u)); margin: calc(-.65 * var(--u)) 0 0 calc(-.65 * var(--u)); border-radius: 50%; background: var(--pc, #fff);
+  box-shadow: 0 0 0 calc(.25 * var(--u)) #fff, 0 0 calc(.8 * var(--u)) rgba(0, 0, 0, .6); transition: opacity .3s; }
+.wq-map .bvm-svg line { transition: opacity .3s; }
+.wq-sum { position: absolute; left: calc(2 * var(--u)); top: calc(2 * var(--u)); z-index: 6; display: flex; align-items: center; grid-gap: calc(1.2 * var(--u)); gap: calc(1.2 * var(--u)); padding: calc(.9 * var(--u)) calc(1.8 * var(--u));
+  border-radius: 999px; background: rgba(12, 8, 32, .86); border: calc(.15 * var(--u)) solid rgba(255, 255, 255, .16); font: 700 calc(2 * var(--u))/1 var(--fun); color: #5fe8b4; animation: wRise .5s ease both; }
+html.no-flexgap .wq-sum > * + * { margin-left: calc(1.2 * var(--u)); }
+html.no-flexgap[dir="rtl"] .wq-sum > * + * { margin-left: 0; margin-right: calc(1.2 * var(--u)); }
+.wq-sum::before { content: '✓'; color: #2fd59a; }
+.wq-sum b { font-weight: 700; color: #ff8a9c; }
+.wq-sum b::before { content: '✗ '; color: #ff5a6e; }
+.wq-sum i { font-style: normal; padding: calc(.3 * var(--u)) calc(.9 * var(--u)); border-radius: 999px; background: #ffc83d; color: #2a1a00; }
+.wq-p.ok { border-color: rgba(47, 213, 154, .6); background: rgba(47, 213, 154, .1); }
+.wq-p.ok small { color: #5fe8b4; }
+.wq-p.no { border-color: rgba(255, 90, 110, .5); background: rgba(255, 90, 110, .08); }
+.wq-p.no small { color: #ff8a9c; }
+.wq-p.out { opacity: .5; filter: grayscale(.8); }
+.wq-p.out small { color: #ff8a9c; }
+.wq-rows.many .wq-p.ok small, .wq-rows.many .wq-p.no small { display: block; }
+/* (Knockout: the pin that's out, and who it was) */
+.wq-pin.ko { filter: grayscale(1) drop-shadow(0 6px 8px rgba(0, 0, 0, .45)); opacity: .8; }
+.wq-pin .wq-ko { position: absolute; left: 50%; top: -30%; transform: translateX(-50%); font-size: calc(3.2 * var(--u)); font-style: normal; animation: wMk .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.wq-out { position: absolute; left: 50%; top: calc(2 * var(--u)); transform: translateX(-50%); z-index: 7; padding: calc(1.2 * var(--u)) calc(2.6 * var(--u)); border-radius: 999px; background: linear-gradient(135deg, #ff5a6e, #c22a40);
+  color: #fff; font: 700 calc(2.6 * var(--u))/1.1 var(--fun); box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .5); white-space: nowrap; animation: wSay .6s cubic-bezier(.2, 1.5, .4, 1) both; }
+/* (the last round, worth twice the points) */
+.wq-x2 { flex: none; padding: calc(.8 * var(--u)) calc(1.8 * var(--u)); border-radius: 999px; background: linear-gradient(135deg, #ffe17a, #ffb547); color: #2a1a00; font: 700 calc(2.2 * var(--u))/1 var(--fun); white-space: nowrap;
+  box-shadow: 0 0 calc(2.4 * var(--u)) rgba(255, 200, 61, .55); animation: wX2 1.4s ease-in-out infinite; }
+@keyframes wX2 { 50% { transform: scale(1.06); box-shadow: 0 0 calc(4 * var(--u)) rgba(255, 200, 61, .85); } }
+/* (Zoom out: the picture starts close up, and shows more as the clock runs down) */
+.sc.zoomq { transform-origin: var(--zx, 50%) 50%; transform: scale(3.4); filter: blur(calc(.25 * var(--u))); }
+.sc.zoomq.zooming { animation: wZoomOut var(--zt, 30s) cubic-bezier(.35, 0, .25, 1) forwards; }
+@keyframes wZoomOut { 0% { transform: scale(3.4); filter: blur(calc(.25 * var(--u))); } 15% { filter: none; } 100% { transform: scale(1); filter: none; } }
+/* (Kids: four big continents, each with its animal and its color) */
+.answers.wq-kids { position: absolute; left: calc(2.4 * var(--u)); right: calc(2.4 * var(--u)); bottom: calc(2.4 * var(--u)); z-index: 5; grid-template-columns: repeat(4, 1fr); }
+.answers.wq-kids .ans.kc { flex-direction: column; justify-content: center; grid-gap: calc(.6 * var(--u)); gap: calc(.6 * var(--u)); min-height: calc(15 * var(--u)); padding: calc(1.4 * var(--u)); border-radius: calc(2.6 * var(--u));
+  background: var(--kc); color: #fff; font: 700 calc(2.8 * var(--u))/1.1 var(--fun); text-align: center; box-shadow: 0 calc(.9 * var(--u)) 0 rgba(0, 0, 0, .25), inset 0 calc(.4 * var(--u)) 0 rgba(255, 255, 255, .3); text-shadow: 0 2px 0 rgba(0, 0, 0, .2); }
+.answers.wq-kids .ans.kc .em { font-size: calc(6.4 * var(--u)); line-height: 1; text-shadow: none; animation: wKid 1.8s ease-in-out infinite; }
+.answers.wq-kids .ans.kc:nth-child(2) .em { animation-delay: .3s; } .answers.wq-kids .ans.kc:nth-child(3) .em { animation-delay: .6s; } .answers.wq-kids .ans.kc:nth-child(4) .em { animation-delay: .9s; }
+.answers.wq-kids .ans.kc.right { transform: scale(1.06); box-shadow: 0 0 0 calc(.8 * var(--u)) #fff, 0 0 calc(5 * var(--u)) var(--kc); }
+.answers.wq-kids .ans.kc.right .em { animation: wKidWin .6s ease-in-out infinite; }
+@keyframes wKid { 50% { transform: translateY(calc(-.8 * var(--u))) rotate(-6deg); } }
+@keyframes wKidWin { 50% { transform: scale(1.2) rotate(8deg); } }
+@media (prefers-reduced-motion: reduce) { .sc.zoomq, .sc.zoomq.zooming { animation: none; transform: none; filter: none; } }
+.wq-say.cr { transform: translate(calc(-50% + var(--dx, 0px)), calc(-19.4 * var(--u))); }

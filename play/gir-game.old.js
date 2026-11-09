@@ -550,6 +550,7 @@ var __async = (__this, __arguments, generator) => {
     sub: "Guess on your phone, see who got it right on the TV.",
     teams: true,
     teamsWin: true,
+    endLook: () => "gir",
     // (the lobby as in the game's design: the QR code and the steps on one side, the players' arches on the other, no card)
     lobbyCard: false,
     seatRatio: 1.34,
@@ -624,7 +625,7 @@ var __async = (__this, __arguments, generator) => {
       { key: "level", label: "Difficulty", type: "seg", options: [["mix", "Easy to hard", "Starts easy and gets harder as you go."], ["easy", "Easy", "The stories everyone knows."], ["medium", "Medium", "For people who know the stories."], ["hard", "Hard", "For real experts of the stories."]], default: "mix" },
       { key: "cat", label: "Category", type: "seg", options: [["mix", "All four (mixed)", "Questions from all four categories."], ...CATS.map((c) => [c.id, c.short, c.name])], default: "mix", when: ["mode", "!spin"] },
       { key: "wheel", label: "Spin the wheel", type: "seg", options: [["5", "Every 5 questions", "The wheel picks the category for the next 5 questions."], ["1", "Every question", "The wheel picks the category of every question."], ["off", "Off", "No wheel: the questions come from all four categories."]], default: "5", when: [["cat", "mix"], ["mode", "!spin"]] },
-      { key: "sec", label: "Time to answer", type: "seg", options: [[15, "15 s"], [20, "20 s"], [30, "30 s"], [45, "45 s"], [0, "No limit", "No clock: each question waits until everyone answers. The host can show the answer any time."]], default: 20 },
+      { key: "sec", label: "Time to answer", type: "number", min: 0, max: 300, quick: [15, 20, 30, 45], unit: "seconds", default: 20, desc: "0: no clock. Each question waits until everyone answers, and the host can show the answer any time." },
       { key: "next", label: "Next question", type: "seg", options: [["auto", "Automatic", "The next question starts by itself after a short wait."], ["host", "The host starts it", "The host taps Next question on their phone when everyone is ready."]], default: "auto" },
       { key: "wait", label: "Wait before the next question", type: "number", min: 1, max: 120, unit: "seconds", default: 6, when: ["next", "auto"] },
       { key: "helpers", label: "Helpers", type: "toggle", default: true, desc: "Each player can use each helper once: remove two wrong answers, a hint, answer it for me, double points." },
@@ -794,13 +795,13 @@ var __async = (__this, __arguments, generator) => {
               K.say({ k: "gclue", n: qn, c: shown, w: worth[c] });
             }
           }))() : null;
-          const tuT = qsec ? setTimeout(() => {
+          const tuT = qsec ? K.after(qsec * 1e3, () => {
             if (closed || K.over() || answered.size >= live.length) return;
             K.snd.sting("gTimesup", { duck: 0.65 });
-          }, qsec * 1e3) : 0;
+          }) : 0;
           const answers = yield asking;
           closed = true;
-          clearTimeout(tuT);
+          if (tuT) tuT();
           if (stopReveal) stopReveal();
           offHelp();
           if (v.ring) v.ring.stop();

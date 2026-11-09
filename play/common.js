@@ -145,6 +145,12 @@ var BVPLAYC = (() => {
   const mute = on => { muted = !!on; };
   function sfx(kind) {
     if (muted || (window.BVSOUND && !BVSOUND.enabled())) return;
+    // (a kind of sound the host turned off: right and wrong answers, the clock's ticks, the winner, or the others)
+    if (window.BVSOUND && BVSOUND.kindOff && BVSOUND.kindOff({ right: 'correct', wrong: 'wrong', tick: 'tick', win: 'win' }[kind] || 'fx')) return;
+    // (nothing while the host has the game paused; and as loud as the host set the sounds that aren't music)
+    if (window.BVSOUND && BVSOUND.isPaused && BVSOUND.isPaused()) return;
+    const vol = window.BVSOUND && BVSOUND.vol ? BVSOUND.vol('fx') : 1;
+    if (!(vol > 0)) return;
     try {
       ac = ac || new (window.AudioContext || window.webkitAudioContext)();
       if (ac.state === 'suspended') ac.resume();
@@ -154,7 +160,7 @@ var BVPLAYC = (() => {
         o.type = kind === 'wrong' ? 'sawtooth' : kind === 'drum' ? 'square' : 'triangle';
         o.frequency.value = f; o.connect(g); g.connect(ac.destination);
         const t = ac.currentTime + at, len = kind === 'tick' ? 0.08 : 0.3;
-        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(kind === 'tick' ? 0.08 : 0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+        g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(Math.max(0.0002, (kind === 'tick' ? 0.08 : 0.18) * vol), t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
         o.start(t); o.stop(t + len + 0.05);
       }
     } catch (e) {}

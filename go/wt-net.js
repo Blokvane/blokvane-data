@@ -76,6 +76,8 @@ var BVWT_NET = (() => {
     const echoWait = o.echoWait || ECHO_WAIT, perRoom = o.perRoom || NOSTR_PER_ROOM;
     const changed = () => { try { o.onChange && o.onChange(); } catch (e) {} };
     const isBad = url => { const h = health.get(url); return !!(h && h.badUntil > now()); };
+    // (no network, or a page the phone put in the background: a relay that can't be reached then isn't to blame)
+    const away = () => (typeof navigator !== 'undefined' && navigator.onLine === false) || (typeof document !== 'undefined' && document.hidden === true);
     // Every try at a relay that is down shows up as an error in the browser, so a relay that keeps failing is left
     // alone for longer and longer: one that has worked here before for 2 minutes, then up to 30; one that never has
     // for 10 minutes, then up to 6 hours. With o.memory that is kept between restarts too.
@@ -92,6 +94,7 @@ var BVWT_NET = (() => {
     function strike(url, why) {
       const h = health.get(url) || { badUntil: 0, strikes: 0, ok: false };
       h.strikes++;
+      h.at = now();
       if (h.strikes >= 5) h.ok = false;
       h.badUntil = now() + (h.ok ? Math.min(30 * 60000, 120000 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 600000 * 3 ** Math.min(h.strikes - 1, 4)));
       h.why = why;
@@ -136,6 +139,7 @@ var BVWT_NET = (() => {
           const was = this.state;
           this.close();
           this.state = 'retry';
+          if (away()) { this.retryAt = now() + 3000; if (was === 'open') changed(); return; }
           if (!this.opened || now() - this.opened < 30000) this.tries++;
           this.opened = 0;
           if (this.tries >= 3) { this.tries = 0; strike(this.url, 'cannot connect'); return; }
@@ -271,6 +275,7 @@ var BVWT_NET = (() => {
       for (const [id, p] of pending) {
         if (t - p.at < echoWait) continue;
         pending.delete(id);
+        if (away()) continue;
         for (const url of p.urls) { const c = conns.get(url); if (c && c.state === 'open' && ++c.misses >= MISSES_BAD) strike(url, 'messages not coming back'); }
       }
       for (const [k, at] of seen) { if (t - at > 120000) seen.delete(k); else break; }
@@ -308,7 +313,21 @@ var BVWT_NET = (() => {
         relays: list.map(c => ({ host: (() => { try { return new URL(c.url).host; } catch (e) { return c.url; } })(), type: c.type, state: c.state, ok: good.includes(c) })) };
     }
     function close() { for (const c of conns.values()) c.close(); conns.clear(); rooms.clear(); if (timer) clearInterval(timer); timer = 0; }
-    return { join, leave, publish, stats, close, _conns: conns, _health: health };
+    // Back from the background, or back online: every relay that couldn't be reached a little while ago gets another go
+    // right away, the ones waiting to try again try now, and one that has been quiet all that time is opened again (its
+    // connection can be gone without a word, like after the phone moved from Wi-Fi to mobile data).
+    function wake() {
+      const t = now();
+      for (const h of health.values()) if (h.badUntil > t && h.at && t - h.at < 15 * 60000 && /^(cannot connect|messages not coming back)$/.test(h.why || '')) h.badUntil = 0;
+      for (const c of conns.values()) {
+        if (c.state === 'retry') c.retryAt = 0;
+        else if (c.state === 'open' && t - Math.max(c.lastIn || 0, c.lastEcho || 0, c.opened || 0) > 25000) { c.close(); c.state = 'retry'; c.retryAt = 0; c.tries = 0; }
+      }
+      for (const p of pending.values()) p.at = t;
+      rebalance();
+      maintain();
+    }
+    return { join, leave, publish, stats, close, wake, _conns: conns, _health: health };
   }
   // an allowance: up to `burst` at once, then `rate` more each second
   function bucket(rate, burst, now) {

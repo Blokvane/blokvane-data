@@ -8,7 +8,7 @@
   const G = def => BVPLAY.game(def);
   // (a setting's "desc", and an option's third part, is the short line the host's phone shows under it)
   const KIDS = desc => ({ key: 'kids', label: 'Kids mode', type: 'toggle', default: false, desc });
-  const rounds = (d, list) => ({ key: 'rounds', label: 'Rounds', type: 'seg', options: list.map(n => [n, String(n)]), default: d });
+  const rounds = (d, list) => ({ key: 'rounds', label: 'Rounds', type: 'number', min: 1, max: 60, quick: list, default: d });
   const LET = P.LETTERS;
   // ---------- small helpers every game uses ----------
   async function qView(K, o) {
@@ -39,12 +39,6 @@
     if (ps.length > 7) K.el('span', 'more', cell.who, '+' + K.num(ps.length - 6));
   }
   async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; f.append('⚡ ' + await K.tr('First: {name} ({s} s)', { name: '\u2068' + p.name + '\u2069', s: K.num(Math.round(ms / 100) / 10) })); return f; }
-  // the first letter of an answer as a reader sees it (one whole letter in Hindi or Bengali, with its vowel sign)
-  function firstLetter(text) {
-    const t = String(text || '').trim();
-    try { if (window.Intl && Intl.Segmenter) { for (const g of new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(t)) return g.segment; } } catch (e) {}
-    return [...t][0] || '';
-  }
   const decode = s => { try { return decodeURIComponent(s); } catch (e) { return s; } };
   // the Open Trivia Database (opentdb.com): one ask every 5 seconds at most, so the questions load while players join
   let lastAsk = 0;
@@ -80,7 +74,7 @@
     if (!qFiles.has(k)) {
       qFiles.set(k, fetch(QBASE + lang + '/' + cat + '.json?v=' + (QI ? QI.v : 1), { credentials: 'omit' })
         .then(r => (r.ok ? r.json() : null))
-        .then(j => (j && Array.isArray(j.q) ? j.q.map(x => ({ id: cat + '.' + x[0], cat, c: catName(cat), d: LV[x[1]] || 'easy', q: x[2], a: x[3], w: x.slice(4, 7) })) : null))
+        .then(j => (j && Array.isArray(j.q) ? j.q.map(x => ({ id: cat + '.' + x[0], cat, c: catName(cat), d: LV[x[1]] || 'easy', q: x[2], a: x[3], w: x.slice(4, 7), why: typeof x[7] === 'string' ? x[7] : '' })) : null))
         .catch(() => null)
         .then(l => { if (!l) qFiles.delete(k); return l; }));
     }
@@ -105,7 +99,7 @@
     const out = {};
     await Promise.all(langs.map(async lg => {
       const x = await Promise.race([qOne(lg, q.id), new Promise(r => setTimeout(() => r(null), 2000))]);
-      if (x && x.w && x.w.length >= 3) { const src = [x.a, ...x.w]; out[lg] = { q: x.q, o: perm.map(j => src[j]) }; }
+      if (x && x.w && x.w.length >= 3) { const src = [x.a, ...x.w]; out[lg] = { q: x.q, o: perm.map(j => src[j]) }; if (x.why) out[lg].y = x.why; }
     }));
     return Object.keys(out).length ? out : null;
   }
@@ -333,7 +327,7 @@
   async function tqLadder(K, parent, o) {
     const lad = K.el('div', 'tq-lad', parent);
     // the helpers (each player has each one once, on their phone): asking everyone waits until someone is out
-    if (!o.family) {
+    if (!o.family && !o.nohelp) {
       const life = K.el('div', 'tq-life', lad);
       const someoneOut = K.players().some(p => p.out);
       for (const [t, off] of [['50:50', false], ['Hint', false], ['For me', false], ['Ask all', !someoneOut]]) K.el('span', off ? 'off' : '', life, await K.tr(t));
@@ -355,6 +349,124 @@
     }
   }
 
+
+  // ---------- Trivia's looks, drawn exactly as their designs (trivia.css): four lobbies (Game Show, Chalkboard, Hot Seat,
+  // Paper Craft) and three winner screens (Cosmic, Disco, Fireworks). They take turns from one game to the next (this
+  // screen remembers which came last), or the host picks one in the settings. ----------
+  const T_LOOKS = ['show', 'chalk', 'seat', 'paper'], T_WINS = ['cosmic', 'disco', 'fireworks'];
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, v); } catch (e) {} };
+  // (for checking the screens: ?tlook=chalk or ?twin=disco in the address)
+  const urlPick = (k, list) => { const m = new RegExp('[?&]' + k + '=([a-z]+)').exec(location.search); return m && list.includes(m[1]) ? m[1] : ''; };
+  let tLook = '', tSet = null;
+  function lookNow(s) {
+    const forced = urlPick('tlook', T_LOOKS);
+    if (forced) return forced;
+    if (s && T_LOOKS.includes(s.look)) return s.look;
+    // (the next one in turn, kept until the game starts)
+    if (!tLook) { const i = ((+lsGet('bvplay:tlook', '-1') || 0) + 1 + T_LOOKS.length) % T_LOOKS.length; lsSet('bvplay:tlook', String(i)); tLook = T_LOOKS[i]; }
+    return tLook;
+  }
+  function winNow(s) {
+    const forced = urlPick('twin', T_WINS);
+    if (forced) return forced;
+    if (s && T_WINS.includes(s.win)) return s.win;
+    const i = ((+lsGet('bvplay:twin', '-1') || 0) + 1 + T_WINS.length) % T_WINS.length;
+    lsSet('bvplay:twin', String(i));
+    return T_WINS[i];
+  }
+  // the designs' drawings: the chalk doodles, the paper hills, the paper Boo on an empty seat
+  const SVG_CHALK = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" fill="none" stroke="#f4f1e6" stroke-width="3" stroke-linecap="round"><path d="M1040 120q30-40 60 0t60 0"/><circle cx="1240" cy="140" r="26"/>' +
+    '<path d="M1226 128l28 24M1254 128l-28 24"/><path d="M1700 980l40-60 40 60z"/><path d="M60 960h120M120 900v120"/><text x="1320" y="1000" font-size="60" fill="#f4f1e6" stroke="none">E = mc²</text>' +
+    '<text x="1020" y="200" font-size="50" fill="#f4f1e6" stroke="none">2 + 2 = ?</text><path d="M1600 120c40-20 80 20 40 50s-60-40-20-50"/></svg>';
+  // (the same doodles the other way round, for a screen that reads right to left: they keep to the empty space between the
+  // title and the A B C D signs, which swap sides)
+  const SVG_CHALK_RTL = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none" fill="none" stroke="#f4f1e6" stroke-width="3" stroke-linecap="round" style="direction:ltr"><path d="M880 120q-30-40-60 0t-60 0"/><circle cx="680" cy="140" r="26"/>' +
+    '<path d="M694 128l-28 24M666 128l28 24"/><path d="M220 980l-40-60-40 60z"/><path d="M1860 960h-120M1800 900v120"/><text x="600" y="1000" font-size="60" fill="#f4f1e6" stroke="none" text-anchor="end">E = mc²</text>' +
+    '<text x="900" y="200" font-size="50" fill="#f4f1e6" stroke="none" text-anchor="end">2 + 2 = ?</text><path d="M320 120c-40-20-80 20-40 50s60-40 20-50"/></svg>';
+  const SVG_HILLS = '<svg viewBox="0 0 1920 1080" preserveAspectRatio="none"><path d="M0 760C300 700 500 820 800 770S1400 660 1920 740V1080H0Z" fill="#ffb27a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.18))"/>' +
+    '<path d="M0 860C380 800 640 920 1000 870S1600 800 1920 860V1080H0Z" fill="#ff8a5a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.2))"/>' +
+    '<path d="M0 960C420 920 760 1010 1100 970S1700 920 1920 960V1080H0Z" fill="#e8603a" style="filter:drop-shadow(0 -10px 14px rgba(90,40,10,.22))"/></svg>';
+  const SVG_PBOO = '<svg class="tl-boo" viewBox="10 0 40 52" aria-hidden="true"><path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff" stroke="#ffcf9e" stroke-width="1.5"/>' +
+    '<circle cx="24" cy="24" r="2.6" fill="#3a1e10"/><circle cx="36" cy="24" r="2.6" fill="#3a1e10"/><path d="M27 30q3 2.4 6 0" stroke="#3a1e10" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+    '<ellipse cx="19.5" cy="29" rx="2.4" ry="1.4" fill="#ff8a9e"/><ellipse cx="40.5" cy="29" rx="2.4" ry="1.4" fill="#ff8a9e"/></svg>';
+  const mk = (tag, cls, parent, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; };
+  // the lobby, once it's on the screen: its look's background, and the little things the design adds to the kit's parts
+  function lobbyDress(stage, s) {
+    const lk = lookNow(s);
+    tSet = s;
+    document.body.dataset.tlook = lk;
+    const d = mk('div', 'tl-deco');
+    d.setAttribute('aria-hidden', 'true');
+    d.innerHTML = lk === 'show' ? '<i class="bm l"></i><i class="bm r"></i><i class="fl"></i>'
+      : lk === 'chalk' ? '<i class="dots"></i><i class="smudge"></i>' + (document.documentElement.dir === 'rtl' ? SVG_CHALK_RTL : SVG_CHALK)
+        : lk === 'seat' ? '<i class="sw"></i><i class="sw"></i><i class="sw"></i><i class="sw"></i><i class="rg r1"></i><i class="rg r2"></i><i class="rg r3"></i><i class="rg r4"></i><i class="vg"></i>'
+          : '<i class="dots"></i>' + SVG_HILLS + '<i class="sun"></i><i class="cl c1"></i><i class="cl c2"></i>';
+    stage.insertBefore(d, stage.firstChild);
+    // (the chalkboard's wooden frame and its chalk tray sit over the edges)
+    if (lk === 'chalk') { mk('div', 'tl-frame', stage).setAttribute('aria-hidden', 'true'); const t = mk('div', 'tl-tray', stage); t.setAttribute('aria-hidden', 'true'); for (let i = 0; i < 3; i++) mk('i', '', t); }
+    const jc = stage.querySelector('.lob .join'), sp = stage.querySelector('.spot');
+    if (jc && lk === 'show') for (const w of ['t', 'b']) { const r = mk('div', 'tl-bulbs ' + w, jc); for (let i = 0; i < 30; i++) mk('i', '', r); }
+    if (jc && lk === 'chalk') mk('div', 'tl-tape', jc);
+    if (sp && lk === 'chalk') mk('div', 'tl-tape', sp);
+    if (jc && lk === 'paper') mk('span', 'tl-clip', jc, '📎').setAttribute('aria-hidden', 'true');
+    // (the Hot Seat's signs: "◆ A:" and a line, like answer plates waiting for their answers)
+    if (lk === 'seat') for (const t of stage.querySelectorAll('.lob-top .tile-l')) { const L = t.textContent; t.textContent = ''; mk('b', '', t, '◆ ' + L + ':'); mk('i', '', t); }
+  }
+  // the seats, once they have their places: the stand with its lights (Game Show), the paper Boo (Paper Craft)
+  function seatDress(grid) {
+    const lk = document.body.dataset.tlook;
+    for (const seat of grid.querySelectorAll('.seat')) {
+      const open = seat.classList.contains('empty') && !!seat.querySelector('span');
+      seat.classList.toggle('open', open);
+      if (lk === 'show' && !seat.querySelector('.tl-stand')) { const st = mk('div', 'tl-stand', seat); for (let i = 0; i < 5; i++) mk('i', '', st); }
+      if (lk === 'paper' && open && !seat.querySelector('.tl-boo')) seat.querySelector('span').insertAdjacentHTML('afterbegin', SVG_PBOO);
+    }
+  }
+  // the winners in one of the three designs: their lights, stars, planets, dance floor or fireworks, the confetti
+  // falling the whole time, and Boo dancing in the corner
+  const CONF = { cosmic: ['#ffc93c', '#c77dff', '#5ad1ff', '#fff'], disco: ['#ff5a8a', '#5ad1ff', '#ffc93c', '#34d399', '#c77dff', '#fff'], fireworks: ['#ffc93c', '#ff5a8a', '#5ad1ff', '#34d399', '#fff', '#c77dff'] };
+  const SPARK = [[1660, 300], [1338.2, 557.8], [668.7, 233.6], [267, 59.3], [502.4, 428.5], [1158.6, 507.6], [1632.1, 118], [1487.7, 139.3], [858.1, 523.4], [322.2, 403.2], [372.6, 50], [963.1, 261.3]];
+  const BURSTS = [[300, 240, 0, '#ff5a8a'], [1620, 200, 1.1, '#5ad1ff'], [520, 520, 2.2, '#ffc93c'], [1420, 500, .6, '#34d399'], [960, 330, 1.7, '#c77dff']];
+  const X = v => (v / 19.2).toFixed(2) + '%', Y = v => (v / 10.8).toFixed(2) + '%';
+  let tWinLast = '';
+  function winDress(cv) {
+    const w = winNow(tSet);
+    tWinLast = w;
+    cv.classList.add('tw', 'tw-' + w);
+    document.body.classList.add('tw-on');
+    const d = mk('div', 'tw-d');
+    d.setAttribute('aria-hidden', 'true');
+    cv.insertBefore(d, cv.firstChild);
+    for (let i = 1; i <= (w === 'disco' ? 4 : 2); i++) mk('i', 'sw s' + i, d);
+    const wh = mk('div', 'wheel', d);
+    for (let i = 0; i < 36; i++) mk('i', '', wh).style.transform = 'rotate(' + i * 10 + 'deg)';
+    if (w === 'cosmic') {
+      for (let i = 0; i < 90; i++) { const st = mk('i', 'st', d); st.style.left = X((i * 137) % 1920); st.style.top = Y((i * 263) % 1080); st.style.animationDuration = (2 + i % 4) + 's'; st.style.animationDelay = (-(i % 7) * 0.4).toFixed(1) + 's'; }
+      mk('i', 'pl1', d); mk('i', 'rng', d); mk('i', 'pl2', d); mk('i', 'rk', d, '🚀');
+    } else if (w === 'disco') {
+      SPARK.forEach(([x, y], i) => { const sp = mk('i', 'sp', d); sp.style.left = X(x); sp.style.top = Y(y); sp.style.animationDuration = [1.4, 1.8, 2.2][i % 3] + 's'; sp.style.animationDelay = (i * 0.2).toFixed(1) + 's'; });
+      const fl = mk('div', 'floor', d), C = ['#ff5a8a', '#5ad1ff', '#ffc93c', '#34d399', '#c77dff'];
+      for (let i = 0; i < 64; i++) { const c = i % 16, r = Math.floor(i / 16), t = mk('i', '', fl); t.style.background = C[(c + 3 * r) % 5]; t.style.animationDuration = (1 + ((c + r) % 4) * 0.35).toFixed(2) + 's'; t.style.animationDelay = (((c + 2 * r) % 5) * 0.2).toFixed(1) + 's'; }
+    } else {
+      for (const [x, y, dl, c] of BURSTS) {
+        const b = mk('div', 'bu', d);
+        b.style.left = X(x); b.style.top = Y(y); b.style.animationDelay = dl + 's'; b.style.filter = 'drop-shadow(0 0 8px ' + c + ')';
+        for (let k = 0; k < 16; k++) { const r = mk('i', '', b); r.style.background = 'linear-gradient(' + c + ', transparent)'; r.style.transform = 'rotate(' + k * 22.5 + 'deg) translateY(calc(-100 / 10.8 * var(--u)))'; }
+        mk('b', '', b).style.boxShadow = '0 0 20px ' + c;
+      }
+    }
+    const cols = CONF[w];
+    for (let i = 0; i < 50; i++) {
+      const cf = mk('i', 'cf', d);
+      cf.style.left = X((i * 97) % 1900); cf.style.background = cols[i % cols.length];
+      cf.style.width = 'calc(' + [8, 12, 16][i % 3] + ' / 10.8 * var(--u))'; cf.style.height = 'calc(' + [14, 20][i % 2] + ' / 10.8 * var(--u))';
+      cf.style.animationDuration = (6 + i % 5) + 's'; cf.style.animationDelay = (-((i * 0.53) % 8)).toFixed(2) + 's';
+    }
+    const boo = mk('img', 'tw-boo', cv);
+    boo.src = 'icons/emoji-boo.png'; boo.alt = '';
+  }
+
   // =====================================================================
   // Trivia
   // =====================================================================
@@ -363,6 +475,8 @@
     ['first', 'First right takes the point', 'Only the fastest right answer scores.'], ['family', 'Family mode', 'Easy questions, no timer, nobody goes out. The TV reads each question out loud.']];
   G({
     id: 'trivia', name: 'Trivia', emoji: '🧠', sub: 'Questions on the TV, answers on your phone.', teams: true, teamsWin: true,
+    // (the winner design the TV showed: the phones' share picture comes in the same look)
+    endLook: () => tWinLast,
     step: ['Tap {letters}', 'Answer on your phone before time runs out.'], deco: 'letters', helpers: ['Remove two', 'Hint', 'Answer it for me', 'Ask everyone'],
     // its own sounds on the TV (sound.js): the lobby tune, "every 5 questions" and "next question", a tune for each
     // third of the game and one for the last two questions, "correct" and "wrong", time's up, between questions, the winner
@@ -374,22 +488,30 @@
     langPrep: lang => { for (const c of qCats(lang)) qFile(lang, c); },
     // (a race is everyone for themselves)
     teamsOn: s => s.mode !== 'race',
+    // its looks: the lobby in one of four designs, the winners in one of three (trivia.css)
+    lobbyDone: (stage, el, s) => lobbyDress(stage, s),
+    seated: grid => seatDress(grid),
+    winDeco: cv => winDress(cv),
+    // (each design's seats: their height for their width, and the room between them)
+    get seatGap() { return document.body.dataset.tlook === 'show' ? 26 / 10.8 : 22 / 10.8; },
+    get seatRatioCard() { return { show: 0.8515, chalk: 0.8634, seat: 0.8307, paper: 0.8197 }[document.body.dataset.tlook] || 0.8; },
     // the host's phone sets the game up in these steps, then a last one to check it all and start
-    steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'Questions', keys: ['count', 'raceTo', 'level'] }, { t: 'Category', keys: ['cat', 'wheel'] },
-      { t: 'Timing', s: 'Time', keys: ['sec', 'next', 'wait'] }, { t: 'Extras', keys: ['speed', 'teams', 'teamN'] }],
+    steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'Questions', keys: ['count', 'raceTo', 'lives', 'level'] }, { t: 'Category', keys: ['cat', 'wheel'] },
+      { t: 'Timing', s: 'Time', keys: ['sec', 'next', 'wait'] }, { t: 'Extras', keys: ['speed', 'helpers', 'teams', 'teamN'] }, { t: 'Looks', keys: ['look', 'win'] }],
     rules: ['A question shows on the TV with four answers.', 'Tap your answer on your phone before time runs out.', 'Each helper works once: remove two, a hint, answer it for me, ask everyone.'],
     // the TV's lobby explains the mode the host picked, and changes as soon as they pick another
     spot: s => {
       const m = TRIVIA_MODES.find(x => x[0] === s.mode) || TRIVIA_MODES[0];
       const race = m[0] === 'race';
-      const help = ['💡', '4 helpers on your phone, each works once'], allPlay = ['🙌', 'Nobody goes out: everyone plays to the end'];
+      const allPlay = ['🙌', 'Nobody goes out: everyone plays to the end'];
+      const help = s.helpers === false ? ['🧠', 'No helpers: just you and the question'] : ['💡', '4 helpers on your phone, each works once'];
       const teams = !!s.teams && !race;
       // (three short rules that add to the mode's own line; a tie for first ends with one number question, without teams)
       const tie = teams ? allPlay : ['🤝', 'A tie for first? A number question decides'];
       const bullets = {
         most: [s.speed ? ['⚡', 'Faster right answers score more'] : ['✅', 'Every right answer scores a point'], help, tie],
         knockout: [help, ['🤝', 'If everyone misses, nobody goes out'], ['🗳️', 'Players who are out help with Ask everyone']],
-        lives: [['❤️', 'Everyone starts with 3 hearts'], ['💔', 'Each wrong answer costs a heart'], ['🏆', 'The last one with a heart left wins']],
+        lives: [['❤️', 'Everyone starts with {n} hearts'], ['💔', 'Each wrong answer costs a heart'], ['🏆', 'The last one with a heart left wins']],
         race: [['🎯', 'First to {n} right answers wins'], ['⚡', 'Two get there at once? The faster answer wins'], help],
         first: [allPlay, ['🎯', 'A wrong answer costs nothing'], help],
         family: [['🔊', 'The TV reads each question out loud'], ['🧸', 'Easy questions, great with kids'], allPlay]
@@ -399,29 +521,36 @@
       const facts = [race ? ['🎯', 'Race to {n}', { n: +s.raceTo }] : ['❓', '{n} questions', { n: family ? 10 : +s.count }], family || !+s.sec ? ['⏳', 'No timer'] : ['⏱️', '{n} s', { n: +s.sec }], ['🗂️', cat]];
       if (!family && ['easy', 'medium', 'hard'].includes(s.level)) facts.splice(1, 0, ['🎯', DIFF[s.level]]);
       if (teams) facts.push(['👥', 'Teams']);
-      return { key: m[0], icon: { most: '🏆', knockout: '⚔️', lives: '❤️', race: '🏁', first: '⚡', family: '🏡' }[m[0]], label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: +s.raceTo }, facts };
+      return { key: m[0], icon: { most: '🏆', knockout: '⚔️', lives: '❤️', race: '🏁', first: '⚡', family: '🏡' }[m[0]], label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: m[0] === 'lives' ? +s.lives || 3 : +s.raceTo }, facts };
     },
     // (the categories this language has questions for: all of them)
     langOptions: { cat: (lang, opts) => { const have = qCats(lang); return opts.filter(o => o[0] === 0 || (have.length ? have.includes(o[0]) : BANK_CATS.has(o[0]))); } },
     settings: [
       { key: 'mode', label: 'Game mode', type: 'seg', look: 'list', options: TRIVIA_MODES, default: 'most' },
       // (a race has no number of questions: it goes on until someone gets there; Family mode always has 10)
-      { key: 'count', label: 'How many questions', type: 'seg', options: [[10, '10'], [15, '15'], [20, '20'], [30, '30']], default: 15, when: ['mode', ['most', 'knockout', 'lives', 'first']] },
-      { key: 'raceTo', label: 'Race to', type: 'seg', options: [[5, '5'], [10, '10'], [15, '15'], [20, '20']], default: 10, when: ['mode', 'race'], desc: 'The first player to get this many right answers wins. The questions keep coming until someone does.' },
+      { key: 'count', label: 'How many questions', type: 'number', min: 1, max: 100, quick: [10, 15, 20, 30], default: 15, when: ['mode', ['most', 'knockout', 'lives', 'first']] },
+      { key: 'raceTo', label: 'Race to', type: 'number', min: 1, max: 50, quick: [5, 10, 15, 20], default: 10, when: ['mode', 'race'], desc: 'The first player to get this many right answers wins. The questions keep coming until someone does.' },
+      { key: 'lives', label: 'Hearts each', type: 'number', min: 1, max: 10, quick: [1, 2, 3, 5], default: 3, when: ['mode', 'lives'], desc: 'Each wrong answer costs a heart. Out of hearts, out of the game.' },
       { key: 'level', label: 'Difficulty', type: 'seg', options: [['mix', 'Easy to hard', 'Starts easy and gets harder as you go.'], ['easy', 'Easy', 'Only easy questions. Great with kids.'],
         ['medium', 'Medium', 'Only medium questions.'], ['hard', 'Hard', 'Only hard questions, for quiz fans.']], default: 'mix', when: ['mode', '!family'] },
       { key: 'cat', label: 'Pick a category', type: 'seg', options: PK.cats.map(c => [c[0], c[1]]), default: 0 },
       { key: 'wheel', label: 'Category wheel', type: 'toggle', default: false, desc: 'A new category every 5 questions.' },
-      { key: 'sec', label: 'Time to answer', type: 'seg', options: [[15, '15 s'], [20, '20 s'], [30, '30 s'], [0, 'No limit', 'No clock: each question waits until everyone answers. The host can show the answer any time.']], default: 20, when: ['mode', '!family'] },
+      { key: 'sec', label: 'Time to answer', type: 'number', min: 0, max: 300, quick: [10, 15, 20, 30], unit: 'seconds', default: 20, when: ['mode', '!family'], desc: '0: no clock. Each question waits until everyone answers, and the host can show the answer any time.' },
       // (after each answer: the next question comes by itself after a wait the host picks, or when the host taps for it)
       { key: 'next', label: 'Next question', type: 'seg', options: [['auto', 'Automatic', 'The next question starts by itself after a short wait.'], ['host', 'The host starts it', 'The host taps Next question on their phone when everyone is ready.']], default: 'auto' },
       { key: 'wait', label: 'Wait before the next question', type: 'number', min: 1, max: 120, quick: [3, 5, 10, 15], unit: 'seconds', default: 5, when: ['next', 'auto'] },
       { key: 'speed', label: 'Speed points', type: 'toggle', default: false, desc: 'Faster right answers score more' },
+      { key: 'helpers', label: 'Helpers', type: 'toggle', default: true, desc: 'Remove two, a hint, answer it for me, ask everyone: each works once.', when: ['mode', '!family'] },
       { key: 'teams', label: 'Teams', type: 'toggle', default: false, desc: 'Phones join a color team, and each team\'s points are added up.', when: ['mode', '!race'] },
-      { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: [['teams', true], ['mode', '!race']] }
+      { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: [['teams', true], ['mode', '!race']] },
+      // (the lobby and the winners: a different design each game, or always the same one)
+      { key: 'look', label: 'Lobby look', type: 'seg', options: [['mix', 'A new one each game', 'The lobby changes its look from one game to the next.'], ['show', 'Game Show'], ['chalk', 'Chalkboard'], ['seat', 'Hot Seat'], ['paper', 'Paper Craft']], default: 'mix' },
+      { key: 'win', label: 'Winner screen', type: 'seg', options: [['mix', 'A new one each game', 'The winners show in a different design each game.'], ['cosmic', 'Cosmic'], ['disco', 'Disco'], ['fireworks', 'Fireworks']], default: 'mix' }
     ],
     async tv(K) {
       const s = K.settings, family = s.mode === 'family', race = s.mode === 'race';
+      // (the lobby after this game takes the next look in turn; the winners come in the look picked)
+      tLook = ''; tSet = s;
       // (a race goes on until someone gets there: this many questions only stops a race nobody can finish)
       const target = Math.max(1, +s.raceTo || 10);
       const n = family ? 10 : race ? target * 6 : +s.count;
@@ -467,6 +596,8 @@
         const tq = await K.tr(q.q), tOpts = await Promise.all(opts.map(o => K.tr(o)));
         const trs = await qTrans(K, q, perm, live);
         const rightIn = id => { const t = trs && trs[K.langOf(id)]; return t ? t.o[ok] : tOpts[ok]; };
+        // (a Trick question: the line that explains the trick, on the TV and on every phone, in each one's language)
+        const whyIn = id => { const t = trs && trs[K.langOf(id)]; return (t && t.y) || q.why || ''; };
         // 1. its sound first ("every 5 questions" on the 1st, 5th, 10th..., "next question" on the others), while the
         // TV shows which question it is and the phones say "look at the TV"
         const num = i + 1, big = num === 1 || num % 5 === 0, loud = K.snd.on();
@@ -481,7 +612,7 @@
         // 2. the question, then its four answers one by one. Its tune: easy, medium or hard for the first, middle and
         // last third of the game (a race: of the way to the finish), the "last two questions" tune at the end (softer in
         // Family mode, under the voice that reads the question)
-        const v = await tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, live, goal: race ? target : qs.length, race: race ? target : 0 });
+        const v = await tqView(K, { qs, i, q, text: tq, opts: tOpts, sec, mode: s.mode, family, nohelp: s.helpers === false, live, goal: race ? target : qs.length, race: race ? target : 0 });
         const qt = v.q, cells = v.cells;
         K.snd.music(lastN ? 'last2' : race ? raceStage() : stageOf(i, qs.length), { fadeIn: 1.2, vol: family ? 0.4 : 1 });
         if (family) K.speak(qt.textContent);
@@ -502,7 +633,7 @@
           if (m.h === 'ask' && !outs().length) { K.sayTo(p.id, { k: 'helped', n: qn, h: 'ask', no: true, note: await K.trFor(lg, 'Ask everyone works once someone is out.') }); return; }
           p.helpers[m.h] = true;
           if (m.h === 'fifty') { const wrong = P.shuffle([0, 1, 2, 3].filter(x => x !== ok && x < opts.length)).slice(0, 2); K.sayTo(p.id, { k: 'helped', n: qn, h: 'fifty', hide: wrong }); }
-          else if (m.h === 'hint') K.sayTo(p.id, { k: 'helped', n: qn, h: 'hint', text: await hint(K, q, opts[ok], mine ? mine.o[ok] : tOpts[ok], mine ? lg : '') });
+          else if (m.h === 'hint') K.sayTo(p.id, Object.assign({ k: 'helped', n: qn, h: 'hint' }, await hint(K, q, opts[ok], mine ? mine.o[ok] : tOpts[ok], mine ? lg : '')));
           else if (m.h === 'auto') K.sayTo(p.id, { k: 'helped', n: qn, h: 'auto', pick: ok });
           else if (m.h === 'ask') {
             // (the players who vote see it in their own language too)
@@ -522,22 +653,24 @@
         // A phone that leaves meanwhile doesn't hold it up. The phones get the four answers, not the question: that one
         // is on the TV, unless a player picked another language.)
         const open = !family && !sec;
-        const extra = { letters: true, helpers: !family, tv: 1 };
+        const extra = { letters: true, helpers: !family && s.helpers !== false, tv: 1 };
         if (trs) extra.tr = trs;
         const asking = K.ask({ kind: 'choice', prompt: '', opts: tOpts, sec, open, extra, onAns: id => { answered.add(id); v.board.draw(answered); } });
         qn = K.qn();
         const stopReveal = open ? hostReveal(K, qn) : null;
         // (the clock hits zero with answers missing: the tune stops and "time's up" plays)
         let closed = false;
-        const tuT = sec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; K.snd.music(null, { fadeOut: 0.25 }); K.snd.sting('timesup'); }, sec * 1000) : 0;
+        const tuT = sec ? K.after(sec * 1000, () => { if (closed || K.over() || answered.size >= live.length) return; K.snd.music(null, { fadeOut: 0.25 }); K.snd.sting('timesup'); }) : 0;
         const answers = await asking;
-        closed = true; clearTimeout(tuT);
+        closed = true; if (tuT) tuT();
         if (stopReveal) stopReveal();
         offHelp();
         if (v.ring) v.ring.stop();
         if (v.inf) v.inf.classList.add('done');
-        // (a player who left during the question isn't counted: no point, and nothing lost)
+        // (a player who left during the question isn't counted: no point, and nothing lost; one whose phone came back in
+        // the middle of it and answered counts like everyone else)
         const inPlay = live.filter(p => answers.has(p.id) || !p.away);
+        for (const id of answers.keys()) { const p = K.player(id); if (p && !p.out && !inPlay.includes(p)) inPlay.push(p); }
         // 4. the sound first, then the right answer: "correct" when anyone got it, "wrong" when everyone playing missed
         const rightN = [...answers.values()].filter(a => +a.v === ok).length;
         K.snd.music(null, { fadeOut: 0.3 });
@@ -545,6 +678,7 @@
         await K.sleep(K.snd.on() ? (rightN ? 1000 : 700) : 250);
         cells.forEach((c, j) => c.node.classList.add(j === ok ? 'right' : 'dim'));
         for (let j = 0; j < opts.length; j++) showWho(K, cells[j], [...answers].filter(([, a]) => +a.v === j).map(([id]) => id));
+        if (q.why) K.el('div', 'pill why', v.fx, '🤯 ' + q.why);
         let first = null;
         // (everyone still in got it wrong at once: nobody goes out or loses a life this time)
         const spare = (s.mode === 'knockout' || s.mode === 'lives') && inPlay.length > 1 && !inPlay.some(p => answers.has(p.id) && +answers.get(p.id).v === ok);
@@ -563,7 +697,7 @@
             if (s.mode === 'knockout' && !spare) p.out = true;
             if (s.mode === 'lives' && !spare) { p.lives--; if (p.lives <= 0) p.out = true; }
           }
-          K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: rightIn(p.id) });
+          K.result(p.id, { ok: good, pts, score: p.score, out: p.out, lives: p.lives, right: rightIn(p.id), note: whyIn(p.id) });
           res.set(p.id, good ? 'right' : p.out ? 'out' : 'miss');
         }
         if (first) { if (s.mode === 'first') { first.p.score += 1; K.result(first.p.id, { ok: true, pts: 1, score: first.p.score, first: true, right: rightIn(first.p.id) }); } await firstBadge(K, v.fx, first.p, first.ms); }
@@ -657,8 +791,49 @@
     K.hostWait(false);
     off();
   }
-  // a hint: Chrome's built-in AI on computers that have it (English games), or simply the first letter (and how many
-  // words, where words have spaces between them)
+  // a hint: Chrome's built-in AI on computers that have it (English games); otherwise the answer's shape, the first
+  // letter of each word showing and a box for every other letter ("P _ _ _ _ _ _   O _ _ _ _"). The first letter that
+  // shows is always one that helps: little words like "the", "a", "le", "la" or "el" show whole, and so does Arabic's
+  // "ال" at the start of a word (the letter after it shows too). Before, the hint was only the first letter, and that
+  // was "ا" for nearly every Arabic answer, "L" for French ones and often "A" or "T" in English. The phone draws the
+  // shape as letter boxes; { text } is the same shape in words, for a phone that still has the old page.
+  const SMALL = { en: ['the', 'a', 'an', 'of'], fr: ['le', 'la', 'les', 'un', 'une', 'des', 'du', 'de', 'et'], es: ['el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'del', 'de', 'y'] };
+  function cellsOf(w) {
+    try { if (window.Intl && Intl.Segmenter) return Array.from(new Intl.Segmenter(undefined, { granularity: 'grapheme' }).segment(w), x => x.segment); } catch (e) {}
+    // (older TVs: a letter keeps its vowel signs and marks, and a Hindi or Bengali letter joined to the next one)
+    const out = [];
+    for (const ch of w) {
+      const c = ch.codePointAt(0);
+      const mark = (c >= 0x300 && c <= 0x36f) || (c >= 0x64b && c <= 0x65f) || c === 0x670 || (c >= 0x900 && c <= 0x903) || (c >= 0x93a && c <= 0x94f) || (c >= 0x951 && c <= 0x957) ||
+        (c >= 0x962 && c <= 0x963) || (c >= 0x981 && c <= 0x983) || c === 0x9bc || (c >= 0x9be && c <= 0x9cd) || c === 0x9d7 || (c >= 0x9e2 && c <= 0x9e3) || c === 0x200c || c === 0x200d || (c >= 0xfe00 && c <= 0xfe0f);
+      if (out.length && (mark || /[्্]$/.test(out[out.length - 1]))) out[out.length - 1] += ch; else out.push(ch);
+    }
+    return out;
+  }
+  // the answer's shape: [["T","h","e"], ["P",0,0,0,0,0,0]] (a letter that shows, or 0 for a box)
+  function shapeOf(text, lg) {
+    const a = String(text || '').trim();
+    if (!a) return [];
+    // (Chinese and Japanese: no spaces, a box for each character)
+    if (lg === 'zh' || /^[぀-ヿ㐀-鿿豈-﫿]/.test(a)) { const cs = cellsOf(a.replace(/\s+/g, '')); return [cs.map((c, i) => (i === 0 ? c : 0))]; }
+    const words = a.split(/\s+/).filter(Boolean).slice(0, 8);
+    const small = SMALL[lg] || [];
+    return words.map((w, wi) => {
+      const cs = cellsOf(w);
+      // (a little word that isn't the whole answer shows whole; so do marks like - ' . and the numbers' commas)
+      if (words.length > 1 && wi < words.length - 1 && small.includes(w.toLowerCase())) return cs;
+      let lead = 0;
+      if (lg === 'ar' && cs.length > 3 && cs[0] === 'ا' && cs[1] === 'ل') lead = 2;
+      else if ((lg === 'fr' || lg === 'en' || lg === 'es') && cs.length > 2 && /^[ldLD]$/.test(cs[0]) && /^['’]$/.test(cs[1])) lead = 2;
+      let shown = false;
+      return cs.map((c, i) => {
+        if (i < lead) return c;
+        if (/^[-'’".,:;!?()[\]/&+*#%«»¿¡،؟。，、·]$/.test(c)) { if (c === '-') shown = false; return c; }
+        if (!shown) { shown = true; return c; }
+        return 0;
+      });
+    });
+  }
   async function hint(K, q, answer, shown, lg) {
     if (K.lang === 'en' && !lg) {
       try {
@@ -666,15 +841,16 @@
         if (LM && (!LM.availability || (await LM.availability()) === 'available')) {
           const sess = await (LM.create ? LM.create() : LM.createTextSession());
           const t = await sess.prompt(`Give a short, kind hint (under 15 words) for this quiz question. Never say the answer or any word of it.\nQuestion: ${q.q}\nAnswer: ${answer}`);
-          if (t && !P.norm(t).includes(P.norm(answer))) return String(t).slice(0, 140);
+          if (t && !P.norm(t).includes(P.norm(answer))) return { text: String(t).slice(0, 140) };
         }
       } catch (e) {}
     }
     // (for a player who reads another language: in theirs, from the answer in theirs)
-    const a = String(shown || answer).trim();
-    const words = (lg || K.lang) === 'zh' ? 1 : a.split(/\s+/).length;
-    const t = words > 1 ? 'It starts with "{c}" and has {n} words.' : 'It starts with "{c}".';
-    return lg ? K.trFor(lg, t, { c: firstLetter(a), n: words }) : K.tr(t, { c: firstLetter(a), n: words });
+    const code = lg || K.lang;
+    const pat = shapeOf(String(shown || answer), code);
+    const shape = pat.map(w => w.map(c => (c === 0 ? '_' : c)).join(' ')).join('  /  ');
+    const t = 'The answer looks like this: {x}';
+    return { pat, text: await (lg ? K.trFor(lg, t, { x: shape }) : K.tr(t, { x: shape })) };
   }
   // the category wheel, every 5 questions: drawn exactly as its design (wheel.js; every phone shows the same wheel,
   // turning with it), with the categories of its eight colors beside it. Where it lands is the next round's category.
@@ -986,7 +1162,7 @@
     step: ['Mark your card', 'Tap the numbers the TV calls, then tap BINGO.'], deco: 'bingo',
     rules: ['Each phone gets its own bingo card.', 'Mark the numbers the TV calls (or let the phone do it).', 'Your card matches the pattern? Tap BINGO! The TV checks it.'],
     settings: [{ key: 'pattern', label: 'Pattern', type: 'seg', options: [['line', 'A line', 'A full line of numbers.'], ['corners', 'Four corners', 'Mark the four corners of the card.'], ['x', 'An X', 'Both diagonals, corner to corner.'], ['full', 'Full card', 'Every number on the card.']], default: 'line' },
-      { key: 'speed', label: 'Calling speed', type: 'seg', options: [[9, 'Slow'], [6, 'Normal'], [4, 'Fast']], default: 6 },
+      { key: 'speed', label: 'Seconds between numbers', type: 'number', min: 2, max: 60, quick: [4, 6, 9, 15], unit: 'seconds', default: 6 },
       { key: 'style', label: 'Style', type: 'seg', options: [['75', '75 balls', 'American bingo: a 5 by 5 card under B I N G O.'], ['90', '90 balls', 'British bingo: 3 rows of 9 squares.']], default: '75' },
       { key: 'cards', label: 'Cards each', type: 'seg', options: [[1, '1'], [2, '2'], [3, '3']], default: 1 }, { key: 'auto', label: 'Mark the numbers for me (easy mode)', type: 'toggle', default: false },
       { key: 'big', label: 'Big text (for older eyes)', type: 'toggle', default: false }, { key: 'prize', label: 'Prize (shown on the TV)', type: 'text', default: '' }, { key: 'paper', label: 'Paper cards to print', type: 'seg', options: [[0, 'None'], [4, '4'], [8, '8'], [16, '16']], default: 0 }],

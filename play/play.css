@@ -405,6 +405,11 @@ html.no-flexgap[dir="rtl"] .tq-fx > * + * { margin-left: 0; margin-right: calc(1
 html[dir="rtl"] .tq-fx .first { padding: calc(.9 * var(--u)) calc(1 * var(--u)) calc(.9 * var(--u)) calc(2.4 * var(--u)); }
 .tq-fx .first img { width: calc(4 * var(--u)); height: calc(4 * var(--u)); }
 .tq-fx .pill { max-width: 100%; padding: calc(1.1 * var(--u)) calc(2.6 * var(--u)); border-radius: 99px; background: #2d2268; border: calc(.2 * var(--u)) solid rgba(255, 255, 255, .22); font-size: calc(2.4 * var(--u)); font-weight: 800; text-align: center; }
+/* a Trick question: the line that explains the trick, once the answer shows */
+.tq-fx { flex-wrap: wrap; }
+.tq-fx .pill.why { max-width: calc(120 * var(--u)); white-space: normal; border-radius: calc(2.4 * var(--u)); line-height: 1.3; font-weight: 700; background: linear-gradient(180deg, rgba(255, 201, 60, .22), rgba(255, 201, 60, .1)); border-color: rgba(255, 201, 60, .6); color: #fff7dc; animation: tq-why .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes tq-why { from { opacity: 0; transform: translateY(calc(1.5 * var(--u))) scale(.96); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .tq-fx .pill.why { animation: none; } }
 .body.tq.crowd .tq-fx { min-height: calc(4.6 * var(--u)); }
 .body.tq.crowd .tq-fx .first, .body.tq.crowd .tq-fx .pill { font-size: calc(2.1 * var(--u)); padding-top: calc(.6 * var(--u)); padding-bottom: calc(.6 * var(--u)); padding-block: calc(.6 * var(--u)); }
 .body.tq.crowd .tq-fx .first img { width: calc(3.2 * var(--u)); height: calc(3.2 * var(--u)); }
@@ -774,3 +779,36 @@ html.no-flexgap[dir="rtl"] .tws-c > * + * { margin-left: 0; margin-right: calc(1
 .tws-res { font: 700 calc(4.4 * var(--u))/1.15 var(--fun); color: var(--cc); text-shadow: 0 0 calc(3 * var(--u)) rgba(0, 0, 0, .5); animation: twPop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
 @keyframes twPop { from { opacity: 0; transform: scale(.6); } }
 @media (prefers-reduced-motion: reduce) { .tws-res { animation: none; } }
+/* the host paused the game: everything on the screen stands still under a big "Paused" (the clocks too), until Resume */
+body.paused .stage *, body.paused .stage *::before, body.paused .stage *::after, body.paused .boo, body.paused .boo * { animation-play-state: paused !important; }
+.pause-ov { position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 90; display: grid; align-items: center; justify-items: center; place-items: center;
+  background: rgba(8, 5, 28, .74); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: fade .3s ease both; }
+.pause-box { box-sizing: border-box; max-width: 70vw; padding: calc(4 * var(--u)) calc(7 * var(--u)); border-radius: calc(4 * var(--u)); text-align: center;
+  background: linear-gradient(180deg, #2c1d6c, #150e38); border: calc(.3 * var(--u)) solid rgba(255, 255, 255, .14); box-shadow: 0 calc(3 * var(--u)) calc(8 * var(--u)) rgba(0, 0, 0, .55); }
+.pause-boo { display: block; width: calc(15 * var(--u)); height: auto; margin: 0 auto; animation: bob 2.4s ease-in-out infinite; }
+.pause-box h1 { margin: calc(1.2 * var(--u)) 0 calc(.8 * var(--u)); font: 700 calc(9 * var(--u))/1.05 var(--fun); color: #fff; }
+.pause-box p { margin: 0; font: 700 calc(2.6 * var(--u))/1.4 var(--round); color: var(--lav); }
+/* how to play, first (for a game with no rules screen of its own): its icon and name, the rules, and the time left */
+.cover.howto { display: grid; align-items: center; justify-items: center; place-items: center; }
+.howto-box { box-sizing: border-box; width: calc(150 * var(--u)); max-width: 88vw; }
+.howto-hd { display: flex; align-items: center; grid-gap: calc(2.6 * var(--u)); gap: calc(2.6 * var(--u)); margin-bottom: calc(3 * var(--u)); }
+html.no-flexgap .howto-hd > * + * { margin-left: calc(2.6 * var(--u)); }
+html.no-flexgap[dir="rtl"] .howto-hd > * + * { margin-left: 0; margin-right: calc(2.6 * var(--u)); }
+.howto-gi { flex: none; width: calc(13 * var(--u)); height: calc(13 * var(--u)); border-radius: calc(3 * var(--u)); box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .4); }
+.howto-hd small { display: block; font: 900 calc(2.2 * var(--u))/1 var(--round); text-transform: uppercase; color: var(--gold); }
+html:not(:lang(zh)):not(:lang(hi)):not(:lang(bn)):not([dir="rtl"]) .howto-hd small { letter-spacing: .25em; }
+.howto-hd h1 { margin: calc(.9 * var(--u)) 0 0; font: 700 calc(8 * var(--u))/1.05 var(--fun); color: #fff; }
+.howto-list { list-style: none; margin: 0; padding: 0; display: grid; grid-gap: calc(1.4 * var(--u)); gap: calc(1.4 * var(--u)); }
+.howto-list li { display: flex; align-items: center; grid-gap: calc(2 * var(--u)); gap: calc(2 * var(--u)); padding: calc(1.6 * var(--u)) calc(2.6 * var(--u)); border-radius: calc(2.2 * var(--u));
+  background: rgba(255, 255, 255, .06); border: calc(.15 * var(--u)) solid rgba(255, 255, 255, .1); font: 700 calc(3.1 * var(--u))/1.3 var(--fun); color: #f3eeff; animation: popIn .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+.howto-list li:first-child { border-color: rgba(255, 201, 60, .5); background: rgba(255, 201, 60, .08); }
+.howto-list li:nth-child(2) { animation-delay: .1s; } .howto-list li:nth-child(3) { animation-delay: .2s; } .howto-list li:nth-child(4) { animation-delay: .3s; } .howto-list li:nth-child(n+5) { animation-delay: .4s; }
+html.no-flexgap .howto-list li > * + * { margin-left: calc(2 * var(--u)); }
+html.no-flexgap[dir="rtl"] .howto-list li > * + * { margin-left: 0; margin-right: calc(2 * var(--u)); }
+.howto-list li i { flex: none; width: calc(4.4 * var(--u)); text-align: center; font-style: normal; font-size: calc(3.4 * var(--u)); }
+.howto-bar { margin-top: calc(3 * var(--u)); height: calc(1.2 * var(--u)); border-radius: calc(1 * var(--u)); background: rgba(255, 255, 255, .1); overflow: hidden; }
+.howto-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffc93c, #ff5a8a); transform-origin: 0 50%; animation: howtoBar linear forwards; }
+html[dir="rtl"] .howto-bar i { transform-origin: 100% 50%; }
+@keyframes howtoBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* a calm screen (the host's setting): the lights and moving parts go round once, then stand still; nothing keeps flashing */
+body.calm *, body.calm *::before, body.calm *::after { animation-iteration-count: 1 !important; }

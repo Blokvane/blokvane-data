@@ -66,10 +66,33 @@ var BVSOUND = (() => {
     ePlayB: ['', 1, { list: ['eP2', 'eP3', 'eP1'], xf: 5 }],
     ePlayC: ['', 1, { list: ['eP3', 'eP1', 'eP2'], xf: 5 }],
     eWin: ['e-win.mp3', 0.389, { stream: true, once: true, then: 'eLobby', tail: 0.8 }],
-    eNext: ['e-next.mp3', 0.422], eEvery5: ['e-every5.mp3', 0.372], eCorrect: ['e-correct.mp3', 0.394], eWrong: ['e-wrong.mp3', 0.389], eTimesup: ['e-timesup.mp3', 0.582]
+    eNext: ['e-next.mp3', 0.422], eEvery5: ['e-every5.mp3', 0.372], eCorrect: ['e-correct.mp3', 0.394], eWrong: ['e-wrong.mp3', 0.389], eTimesup: ['e-timesup.mp3', 0.582],
+    // Where in the World?'s own: the lobby tune, three tunes for the rounds (a different order each game), the winner's,
+    // and its next round, time's up and a pin that's far away (each as loud as the others, measured)
+    wvLobby: ['wv-lobby.mp3', 0.313, { stream: true, tail: 0.8, xf: 3 }],
+    wvP1: ['wv-play1.mp3', 0.292, { stream: true, tail: 0.8, xf: 4 }],
+    wvP2: ['wv-play2.mp3', 0.299, { stream: true, tail: 0.8, xf: 4 }],
+    wvP3: ['wv-play3.mp3', 0.272, { stream: true, tail: 0.8, xf: 4 }],
+    wvPlayA: ['', 1, { list: ['wvP1', 'wvP2', 'wvP3'], xf: 5 }],
+    wvPlayB: ['', 1, { list: ['wvP2', 'wvP3', 'wvP1'], xf: 5 }],
+    wvPlayC: ['', 1, { list: ['wvP3', 'wvP1', 'wvP2'], xf: 5 }],
+    wvWin: ['wv-win.mp3', 0.389, { stream: true, once: true, then: 'wvLobby', tail: 0.8 }],
+    wvNext: ['wv-next.mp3', 0.343], wvTimesup: ['wv-timesup.mp3', 0.596], wvWrong: ['wv-wrong.mp3', 0.442]
   };
   const isStream = f => !!(f && f[2] && typeof f[2] === 'object' && (f[2].stream || f[2].list));
+  // ---------- the host can turn single kinds of sound off, in every game (kept on this screen for next time): the
+  // music, or one kind of moment, like "next question". Each sound is one kind: a tune is music, the rest by name. ----------
+  const KIND = { next: 'next', eNext: 'next', gNext: 'next', iNext: 'next', every5: 'every5', eEvery5: 'every5', gEvery5: 'every5', correct: 'correct', eCorrect: 'correct', gCorrect: 'correct',
+    wrong: 'wrong', eWrong: 'wrong', gWrong: 'wrong', timesup: 'timesup', eTimesup: 'timesup', gTimesup: 'timesup', tick: 'tick', gTick: 'tick', win: 'win', eWin: 'win', gWin: 'win',
+    wvNext: 'next', wvTimesup: 'timesup', wvWrong: 'wrong', wvWin: 'win' };
+  const kindOf = name => KIND[name] || (FILES[name] && FILES[name][2] ? 'music' : 'fx');
+  let offKinds = new Set(), wantReal = null;
+  try { const v = JSON.parse(localStorage.getItem('bvplay:soundoff') || '[]'); if (Array.isArray(v)) offKinds = new Set(v.filter(x => typeof x === 'string')); } catch (e) {}
+  const isOff = name => offKinds.has(kindOf(name));
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};
+  // (how loud the music and the other sounds are, each on its own: the host picks it, this screen keeps it; and paused)
+  let musicBus = null, fxBus = null, vols = { music: 1, fx: 1 }, pausedNow = false, held = [];
+  try { const v = JSON.parse(localStorage.getItem('bvplay:vol') || 'null'); if (v) for (const k of ['music', 'fx']) if (+v[k] >= 0 && +v[k] <= 1) vols[k] = +v[k]; } catch (e) {}
   const bufs = new Map(), loading = new Map(), stings = new Set(), subs = new Set();
   try { on = localStorage.getItem('bvplay:sound') !== 'off'; } catch (e) {}
   const changed = () => { for (const f of subs) { try { f(); } catch (e) {} } };
@@ -82,11 +105,13 @@ var BVSOUND = (() => {
       master = ac.createGain();
       master.gain.value = on ? 1 : 0;
       master.connect(ac.destination);
+      musicBus = ac.createGain(); musicBus.gain.value = vols.music; musicBus.connect(master);
+      fxBus = ac.createGain(); fxBus.gain.value = vols.fx; fxBus.connect(master);
       ac.onstatechange = () => { changed(); if (ac.state === 'running' && want && !bed) startBed(); };
     } catch (e) { ac = null; }
     return ac;
   }
-  const ready = () => !!(ac && ac.state === 'running');
+  const ready = () => !!(ac && ac.state === 'running' && !pausedNow);
   function load(name) {
     if (bufs.has(name)) return Promise.resolve(bufs.get(name));
     if (loading.has(name)) return loading.get(name);
@@ -103,7 +128,7 @@ var BVSOUND = (() => {
   function preload(names) { for (const n of [].concat(names || [])) if (FILES[n]) load(n); }
   // (the first click or key press on this page lets it play sound; a TV remote's OK button counts too. The sound
   // button itself is left to do its own job, so that first click doesn't turn the sound off again.)
-  function unlock() { const c = ctx(); if (c && c.state !== 'running') c.resume().then(changed, () => {}); prime(); }
+  function unlock() { if (pausedNow) return; const c = ctx(); if (c && c.state !== 'running') c.resume().then(changed, () => {}); prime(); }
   const onGesture = e => { const t = e && e.target; if (t && t.closest && t.closest('[data-snd]')) return; unlock(); };
   for (const e of ['pointerdown', 'keydown', 'touchstart']) addEventListener(e, onGesture, { passive: true, capture: true });
   // (where sound is allowed right away, like the game opened from Blokvane on a computer, it simply starts)
@@ -154,7 +179,7 @@ var BVSOUND = (() => {
   function startStream(name, o) {
     const L = FILES[name][2], order = L.list || [name];
     const g = ac.createGain();
-    g.connect(master);
+    g.connect(musicBus || master);
     const vol = o.vol != null ? o.vol : 1;
     const now = ac.currentTime, t0 = now + (o.delay || 0) + 0.03, fin = o.fadeIn != null ? o.fadeIn : 0.8;
     g.gain.setValueAtTime(0, now);
@@ -242,7 +267,12 @@ var BVSOUND = (() => {
   // a tune that keeps playing until another one starts, or music(null) fades it out.
   // o: { delay (s), fadeIn (s), fadeOut (s, for the one it replaces), vol (0..1) }
   function music(name, o = {}) {
-    want = FILES[name] ? name : null;
+    // (the tune the game asks for; a tune that's turned off doesn't play, and a winner's fanfare that's off goes straight
+    // on to the tune after it)
+    wantReal = FILES[name] ? name : null;
+    let n = wantReal;
+    if (n && isOff(n)) { const f = FILES[n][2]; n = f && f.then && !isOff(f.then) ? f.then : null; }
+    want = n;
     wantOpts = o;
     if (bed && bed.name === want) return;
     if (bed) { fadeStop(bed, o.fadeOut != null ? o.fadeOut : 0.8); bed = null; }
@@ -256,7 +286,7 @@ var BVSOUND = (() => {
     if (!b || want !== name || (bed && bed.name === name) || !ready()) return;
     const f = FILES[name];
     const g = ac.createGain();
-    g.connect(master);
+    g.connect(musicBus || master);
     const now = ac.currentTime, t0 = now + (o.delay || 0) + 0.03, fin = o.fadeIn != null ? o.fadeIn : 0.8;
     g.gain.setValueAtTime(0, now);
     g.gain.setValueAtTime(0, t0);
@@ -295,7 +325,7 @@ var BVSOUND = (() => {
   // hasn't loaded yet is skipped rather than played late. o: { delay (s), vol (0..1), duck (0..1: the tune keeps
   // playing under it, this much softer, and comes back up after) }
   function sting(name, o = {}) {
-    if (!FILES[name] || !ready()) return;
+    if (!FILES[name] || !ready() || isOff(name)) return;
     const b = bufs.get(name);
     if (!b) { load(name); return; }
     for (const x of stings) fadeStop(x, 0.3);
@@ -303,7 +333,7 @@ var BVSOUND = (() => {
     if (o.duck && bed) duck(bed, o.duck, b.duration + (o.delay || 0));
     const g = ac.createGain();
     g.gain.value = FILES[name][1] * (o.vol != null ? o.vol : 1);
-    g.connect(master);
+    g.connect(fxBus || master);
     const s = ac.createBufferSource();
     s.buffer = b; s.connect(g);
     const node = { name, g, srcs: new Set([s]), timer: 0, dead: false };
@@ -315,14 +345,14 @@ var BVSOUND = (() => {
   // o: { delay (s), vol (0..1), rate (speed: 1.2 is higher) }. One that hasn't loaded yet is skipped.
   const fxs = new Set();
   function fx(name, o = {}) {
-    if (!FILES[name] || !ready()) return;
+    if (!FILES[name] || !ready() || isOff(name)) return;
     const b = bufs.get(name);
     if (!b) { load(name); return; }
     if (fxs.size > 10) return;
     if (o.duck && bed) duck(bed, o.duck, b.duration + (o.delay || 0));
     const g = ac.createGain();
     g.gain.value = FILES[name][1] * (o.vol != null ? o.vol : 1);
-    g.connect(master);
+    g.connect(fxBus || master);
     const s = ac.createBufferSource();
     s.buffer = b; s.connect(g);
     if (o.rate) s.playbackRate.value = Math.max(0.5, Math.min(2, +o.rate || 1));
@@ -338,7 +368,38 @@ var BVSOUND = (() => {
     if (on && want && !bed) startBed();
     changed();
   }
+  // the kinds of sound that are off ('music', 'next', 'every5', 'correct', 'wrong', 'timesup', 'tick', 'win', 'fx'):
+  // a tune that's playing stops right away when the music goes off, and comes back when it's on again
+  function setOff(list) {
+    offKinds = new Set([].concat(list || []).filter(x => typeof x === 'string'));
+    try { localStorage.setItem('bvplay:soundoff', JSON.stringify([...offKinds])); } catch (e) {}
+    if (wantReal) { const w = wantReal, o = wantOpts; if (bed && isOff(bed.name)) { fadeStop(bed, 0.6); bed = null; } want = null; music(w, Object.assign({}, o, { delay: 0, fadeIn: 1 })); }
+  }
+  // how loud the music or the other sounds are (kind: 'music' or 'fx'; v from 0 to 1), kept for next time
+  function setVol(kind, v) {
+    if (!(kind in vols)) return;
+    vols[kind] = Math.max(0, Math.min(1, +v || 0));
+    try { localStorage.setItem('bvplay:vol', JSON.stringify(vols)); } catch (e) {}
+    const bus = kind === 'music' ? musicBus : fxBus;
+    if (bus && ac) { const now = ac.currentTime; bus.gain.cancelScheduledValues(now); bus.gain.setValueAtTime(bus.gain.value, now); bus.gain.linearRampToValueAtTime(vols[kind], now + 0.25); }
+  }
+  // the host paused the game: every sound stops where it is (the tune too, at its very second), and goes on from there
+  function pause() {
+    if (pausedNow) return;
+    pausedNow = true;
+    held = pool.filter(e => e.busy && !e.a.paused);
+    for (const e of held) { try { e.a.pause(); } catch (er) {} }
+    try { if (ac && ac.state === 'running') ac.suspend().catch(() => {}); } catch (e) {}
+  }
+  function resume() {
+    if (!pausedNow) return;
+    pausedNow = false;
+    try { if (ac && ac.state !== 'running') ac.resume().then(changed, () => {}); } catch (e) {}
+    for (const e of held) { if (!e.busy) continue; try { const p = e.a.play(); if (p && p.catch) p.catch(() => {}); } catch (er) {} }
+    held = [];
+  }
   // 'on', 'off', 'locked' (waiting for a first click or key press) or 'none' (this browser can't play it)
-  const state = () => (!ctx() ? 'none' : !on ? 'off' : ready() ? 'on' : 'locked');
-  return { preload, music, sting, fx, at, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); } };
+  const state = () => (!ctx() ? 'none' : !on ? 'off' : (ready() || pausedNow) ? 'on' : 'locked');
+  return { preload, music, sting, fx, at, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); },
+    setOff, offKinds: () => [...offKinds], kindOf, kindOff: k => offKinds.has(k), setVol, vol: k => (k in vols ? vols[k] : 1), pause, resume, isPaused: () => pausedNow };
 })();

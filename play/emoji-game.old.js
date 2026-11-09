@@ -718,10 +718,24 @@ var __async = (__this, __arguments, generator) => {
     }
     let left = secs, stopped = false;
     if (rn) rn.textContent = K.num(left);
-    const t0 = Date.now();
+    const now = K.now || Date.now, t0 = now();
+    const offP = K.onPause ? K.onPause((p) => {
+      if (!c || stopped) return;
+      if (p) {
+        const cs = getComputedStyle(c).strokeDashoffset;
+        c.style.transition = "none";
+        c.style.strokeDashoffset = cs;
+      } else {
+        const rest = Math.max(0, secs - (now() - t0) / 1e3);
+        void c.getBoundingClientRect();
+        c.style.transition = "stroke-dashoffset " + rest + "s linear";
+        c.style.strokeDashoffset = "339";
+      }
+    }) : () => {
+    };
     const iv = setInterval(() => {
       if (stopped) return;
-      const l = Math.max(0, Math.ceil(secs - (Date.now() - t0) / 1e3));
+      const l = Math.max(0, Math.ceil(secs - (now() - t0) / 1e3));
       if (l !== left) {
         left = l;
         if (rn) rn.textContent = K.num(l);
@@ -734,6 +748,7 @@ var __async = (__this, __arguments, generator) => {
       stop() {
         stopped = true;
         clearInterval(iv);
+        offP();
         if (c) {
           const cs = getComputedStyle(c).strokeDashoffset;
           c.style.transition = "none";
@@ -742,7 +757,7 @@ var __async = (__this, __arguments, generator) => {
         if (box) box.classList.remove("emo-low");
       },
       left: () => left,
-      done: () => Date.now() - t0 >= secs * 1e3
+      done: () => now() - t0 >= secs * 1e3
     };
   }
   const LOOKS = { cinema: 0, neon: 1, retro: 2 };
@@ -933,14 +948,14 @@ var __async = (__this, __arguments, generator) => {
           }
         }))();
       }
-      const tuT = secs ? setTimeout(() => {
+      const tuT = secs ? K.after(secs * 1e3, () => {
         if (closed || K.over() || answered.size >= live.length) return;
         K.snd.sting("eTimesup", { duck: 0.65 });
         K.el("div", "emo-pill bad emo-pop", line2, "⏰ " + tx("timesUp"));
-      }, secs * 1e3) : 0;
+      }) : 0;
       let got = yield asking;
       closed = true;
-      clearTimeout(tuT);
+      if (tuT) tuT();
       if (stopReveal) stopReveal();
       ck.stop();
       if (K.over()) {

@@ -32,6 +32,7 @@ var BVPLAY = (() => {
   const handlers = /* @__PURE__ */ new Map();
   const pending = /* @__PURE__ */ new Map();
   const kicked = /* @__PURE__ */ new Set();
+  const waitNext = /* @__PURE__ */ new Map();
   const playerSubs = /* @__PURE__ */ new Set();
   let waitHost = false;
   function el(tag, cls, parent2, text) {
@@ -42,6 +43,26 @@ var BVPLAY = (() => {
     return e;
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let paused = false, pausedAt = 0, pausedAll = 0, pauseEl = null;
+  const gnow = () => Date.now() - pausedAll - (paused ? Date.now() - pausedAt : 0);
+  const ptimers = /* @__PURE__ */ new Set(), pauseSubs = /* @__PURE__ */ new Set();
+  function pafter(fn, ms) {
+    const x = { due: gnow() + Math.max(0, +ms || 0), t: 0, fn };
+    x.arm = () => {
+      clearTimeout(x.t);
+      x.t = setTimeout(() => {
+        ptimers.delete(x);
+        fn();
+      }, Math.max(0, x.due - gnow()));
+    };
+    ptimers.add(x);
+    if (!paused) x.arm();
+    return () => {
+      clearTimeout(x.t);
+      ptimers.delete(x);
+    };
+  }
+  const psleep = (ms) => new Promise((r) => pafter(r, ms));
   const ICONS = /* @__PURE__ */ new Set(["trivia", "boowho", "world", "fakeout", "emoji", "higher", "bingo", "imposter", "gir"]);
   const iconOf = (id) => "icons/" + id + ".webp";
   const list = () => [...players.values()].filter((p) => !p.away);
@@ -61,6 +82,50 @@ var BVPLAY = (() => {
       setInterval(() => {
         if (phase !== "end") sayLobby();
       }, 12e3);
+      nearOn();
+    });
+  }
+  let near = null, nearBusy = false, nearSig = "";
+  const nearInfo = () => ({ c: code, g: game ? game.id : "", p: list().length, ph: phase === "lobby" ? 0 : 1 });
+  function nearOn() {
+    return __async(this, null, function* () {
+      const want = settings.k_near !== false && phase !== "closed" && !!code && !!L.nearby;
+      if (!want) {
+        if (near) {
+          near.close();
+          near = null;
+          nearSig = "";
+        }
+        return;
+      }
+      if (near) {
+        const i = nearInfo(), sg = JSON.stringify(i);
+        if (sg !== nearSig) {
+          nearSig = sg;
+          near.setInfo(i);
+        }
+        return;
+      }
+      if (nearBusy) return;
+      nearBusy = true;
+      try {
+        const i = nearInfo();
+        near = yield L.nearby({ role: "tv", name: "TV", info: i });
+        nearSig = JSON.stringify(i);
+      } catch (e) {
+        near = null;
+      }
+      nearBusy = false;
+      if (near && (settings.k_near === false || phase === "closed")) {
+        near.close();
+        near = null;
+      } else if (near) {
+        const i2 = nearInfo(), sg2 = JSON.stringify(i2);
+        if (sg2 !== nearSig) {
+          nearSig = sg2;
+          near.setInfo(i2);
+        }
+      }
     });
   }
   const linkNow = () => GO + "#game." + secret + "." + R.id + (lang !== "en" ? "." + lang : "");
@@ -86,6 +151,7 @@ var BVPLAY = (() => {
       const away = !!p.gone || !R.here(p.id);
       if (!!p.away !== away) {
         p.away = away;
+        if (away) p.awayAt = Date.now();
         changed = true;
       }
     }
@@ -113,10 +179,27 @@ var BVPLAY = (() => {
     }
     if (w.got.size >= w.who.size) w.finish();
   }
+  let trueHost = "", hostT = 0;
   function pickHost() {
-    if (!players.has(host) || players.get(host).away) {
+    const was = host;
+    const th = players.get(trueHost);
+    if (th && !th.away && host !== trueHost) host = trueHost;
+    const h = players.get(host);
+    const grace = waitHost ? 15e3 : 9e4;
+    clearTimeout(hostT);
+    if (!h || h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace))) {
       const next = list()[0];
       host = next ? next.id : "";
+      if (!th || th.left) trueHost = host;
+    } else if (h.away) hostT = setTimeout(() => {
+      pickHost();
+      if (phase === "lobby") lobby();
+      sayLobby();
+    }, grace + 500 - (Date.now() - (h.awayAt || 0)));
+    if (!trueHost || !players.has(trueHost)) trueHost = host;
+    if (was !== host) for (const id of [was, host]) {
+      const x = players.get(id);
+      if (x && !x.away) sayTo(id, { k: "you", id, host: host === id, color: x.color });
     }
   }
   function removePlayer(id) {
@@ -133,7 +216,7 @@ var BVPLAY = (() => {
     peopleChanged();
   }
   setInterval(() => {
-    if (phase !== "play" || !R) return;
+    if (phase !== "play" || !R || paused) return;
     const t = Date.now(), want = /* @__PURE__ */ new Set();
     for (const w of pending.values()) if (!w.done && !w.sec && t - w.at > 8e3) {
       for (const id of w.who) if (!w.got.has(id)) want.add(id);
@@ -156,8 +239,21 @@ var BVPLAY = (() => {
     }
     if (gone) sweep();
   }, 2e3);
+  setInterval(() => {
+    if (phase !== "play" || !R || paused) return;
+    const t = Date.now();
+    for (const w of pending.values()) {
+      if (w.done || !w.q || t - (w.sent || w.at) < 3e3) continue;
+      const left = [...w.all].filter((id) => !w.got.has(id) && players.has(id) && !players.get(id).away);
+      if (!left.length) continue;
+      w.sent = t;
+      if (w.q.extra && w.q.extra.helpOnly || left.length <= 2) {
+        for (const id of left) sayTo(id, w.q);
+      } else if (cur.q === w.q) say(w.q);
+    }
+  }, 1e3);
   let joinEl = null, joinT = 0;
-  function showJoin(on2) {
+  function showJoin(on2, keep) {
     return __async(this, null, function* () {
       clearTimeout(joinT);
       if (!on2) {
@@ -184,7 +280,11 @@ var BVPLAY = (() => {
         joinEl = box2;
         document.body.appendChild(box2);
       }
-      joinT = setTimeout(() => showJoin(false), 12e4);
+      if (keep || settings.k_code) joinEl.dataset.keep = "1";
+      else {
+        delete joinEl.dataset.keep;
+        joinT = setTimeout(() => showJoin(false), 12e4);
+      }
       sayLobby();
     });
   }
@@ -232,10 +332,16 @@ var BVPLAY = (() => {
           });
           return;
         }
+        if (!p && phase === "play" && settings.k_late === false) {
+          if (waitNext.size < 40) waitNext.set(m.f, m);
+          sayTo(m.f, { k: "waitnext" });
+          return;
+        }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: "" };
         pl.name = P.name(m.name);
         pl.av = P.AVATARS.includes(m.av) ? m.av : "boo:hi";
         pl.gone = false;
+        pl.left = false;
         pl.at = Date.now();
         pl.heard = Date.now();
         if (m.nophoto) pl.photo = "";
@@ -291,10 +397,11 @@ var BVPLAY = (() => {
         }
         return;
       case "set":
-        if (p && m.f === host && phase === "lobby") setOne(m.key, m.v);
+        if (p && m.f === host && (phase === "lobby" || /^(snd_[a-z0-9]+|vol_(music|fx)|k_(code|calm|late))$/.test(String(m.key)))) setOne(m.key, m.v);
         return;
       case "game":
-        if (p && m.f === host && (phase === "lobby" || phase === "end") && games.has(m.id)) {
+        if (p && m.f === host && (phase === "lobby" || phase === "end" || phase === "play") && games.has(m.id)) {
+          abortGame();
           choose(m.id);
         }
         return;
@@ -304,12 +411,36 @@ var BVPLAY = (() => {
       case "stop":
         if (p && m.f === host && phase === "play") stopGame();
         return;
+      // the host, from any screen of a game: pause it and go on, start the same game over, go back to its setup (another
+      // mode, other settings), or pick another game (above: 'game'). Everyone stays in, with nothing to do.
+      case "pause":
+        if (p && m.f === host && phase === "play") setPause(!!m.on);
+        return;
+      case "restart":
+        if (p && m.f === host && game && (phase === "play" || phase === "end")) {
+          abortGame();
+          for (const x of players.values()) x.ready = true;
+          phase = "lobby";
+          start();
+        }
+        return;
+      case "tolobby":
+        if (p && m.f === host && game && (phase === "play" || phase === "end")) {
+          abortGame();
+          phase = "lobby";
+          for (const x of players.values()) x.ready = true;
+          letWaitersIn();
+          lobby();
+          sayLobby();
+        }
+        return;
       case "again":
         if (p && m.f === host && phase === "end") {
           phase = "lobby";
           for (const x of players.values()) {
             x.ready = true;
           }
+          if (joinEl) showJoin(false);
           lobby();
           sayLobby();
         }
@@ -322,6 +453,7 @@ var BVPLAY = (() => {
         const to = players.get(m.id);
         if (!p || m.f !== host || !to || to.away || to.id === host) return;
         host = to.id;
+        trueHost = to.id;
         for (const x of [p, to]) sayTo(x.id, { k: "you", id: x.id, host: host === x.id, color: x.color });
         if (phase === "lobby") lobby();
         sayLobby();
@@ -345,6 +477,7 @@ var BVPLAY = (() => {
       case "bye":
         if (p) {
           p.gone = true;
+          if (m.left) p.left = true;
           sweep();
         }
         return;
@@ -421,7 +554,11 @@ var BVPLAY = (() => {
   const ORDER = ["trivia", "gir"];
   const gameList = () => [...games.values()].map((g, i) => [g, ORDER.includes(g.id) ? ORDER.indexOf(g.id) - 99 : i]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
   function sayLobby(to) {
-    if (phase === "closed") return;
+    if (phase === "closed") {
+      nearOn();
+      return;
+    }
+    if (!to) nearOn();
     const tt = tx.key === (game ? game.id : "") + "|" + lang ? tx : null;
     const m = {
       k: "lobby",
@@ -433,12 +570,12 @@ var BVPLAY = (() => {
       players: list().map(pub),
       host,
       settings,
-      schema: game ? tt ? tt.schema : game.settings : [],
+      schema: game ? tt ? tt.schema : fieldsOf(game) : [],
       lang,
       rtl: P.RTL.has(lang),
       strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
-      steps: game && game.steps ? tt && tt.steps || game.steps : null,
+      steps: game ? tt && tt.steps || stepsOf(game) : null,
       mlang: !!(game && game.mlang),
       joinOn: !!joinEl,
       zoom: Math.round(zoom * 100),
@@ -446,10 +583,112 @@ var BVPLAY = (() => {
       // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
       langs: game && game.langs ? game.langs : null,
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null
+      howto: game && game.howto ? game.howto(settings) : null,
+      // (the question that's on: a phone that doesn't have it asks for it again)
+      qn: phase === "play" && cur.q ? cur.q.n : 0,
+      paused: phase === "play" && paused,
+      gr: run
     };
     if (to) sayTo(to, m);
     else say(m);
+  }
+  const SND_KINDS = [
+    ["music", "Music", "The tunes in the lobby and during the game."],
+    ["next", "Next question sound"],
+    ["every5", "Every 5 questions sound"],
+    ["correct", "Right answer sound"],
+    ["wrong", "Wrong answer sound"],
+    ["timesup", "Time's up sound"],
+    ["tick", "Clock ticks"],
+    ["win", "Winner sound"],
+    ["fx", "Other sounds"]
+  ];
+  function sndFields(g) {
+    if (!g || !SND.kindOf) return [];
+    const have = /* @__PURE__ */ new Set(["tick", "win", "fx"]);
+    if (g.sounds) {
+      have.add("music");
+      for (const n of g.sounds) have.add(SND.kindOf(n));
+    }
+    if (g.music) {
+      for (const v of Object.values(g.music)) if (typeof v === "string") have.add(SND.kindOf(v));
+    }
+    const VOL = [[1, "Loud"], [0.6, "Medium"], [0.3, "Soft"]];
+    const vols = (have.has("music") ? [{ key: "vol_music", label: "Music volume", type: "seg", options: VOL, default: 1, vol: "music" }] : []).concat([{ key: "vol_fx", label: "Sounds volume", type: "seg", options: VOL, default: 1, vol: "fx", desc: "Everything that isn't music: right, wrong, the clock and the rest." }]);
+    return vols.concat(SND_KINDS.filter((k) => have.has(k[0])).map(([k, label, desc]) => ({ key: "snd_" + k, label, type: "toggle", default: true, desc, snd: k })));
+  }
+  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: false };
+  const kitSaved = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem("bvplay:kit") || "null");
+      return v && typeof v === "object" ? v : {};
+    } catch (e) {
+      return {};
+    }
+  };
+  function kitFields(g) {
+    if (!g) return [];
+    const rl0 = typeof g.rules === "function" ? g.rules(settings || {}) : g.rules;
+    const own = (g.settings || []).some((f) => f.key === "rules") || !Array.isArray(rl0) || !rl0.length;
+    const out = own ? [] : [
+      { key: "k_rules", label: "How to play, first", type: "toggle", default: true, kit: 1, desc: "Before the first question the TV shows how to play, and so does every phone." },
+      { key: "k_rulesSec", label: "How long it shows", type: "number", min: 5, max: 120, quick: [8, 12, 20, 30], unit: "seconds", default: 12, kit: 1, when: ["k_rules", true] }
+    ];
+    return out.concat([
+      { key: "k_late", label: "Late players can join", type: "toggle", default: true, kit: 1, desc: "Someone who comes in after the start plays from the next question. Off: they play the next game." },
+      { key: "k_code", label: "Show the join code during the game", type: "toggle", default: false, kit: 1, desc: "The QR code and the code stay in a corner of the TV the whole game." },
+      { key: "k_near", label: "Phones nearby can find this TV", type: "toggle", default: true, kit: 1, desc: "Phones on the same Wi-Fi see this TV in their list and join with one tap, without typing the code." },
+      { key: "k_calm", label: "Calm screen", type: "toggle", default: false, kit: 1, desc: "Fewer flashing and moving lights on the TV. Easier on the eyes." }
+    ]);
+  }
+  function applyKit() {
+    document.body.classList.toggle("calm", !!settings.k_calm);
+    nearOn();
+    try {
+      const o = {};
+      for (const k of Object.keys(KIT0)) if (k in settings) o[k] = settings[k];
+      localStorage.setItem("bvplay:kit", JSON.stringify(Object.assign(kitSaved(), o)));
+    } catch (e) {
+    }
+    if (phase === "play") {
+      if (settings.k_code) showJoin(true, true);
+      else if (joinEl && joinEl.dataset.keep) showJoin(false);
+    }
+  }
+  const fieldsOf = (g) => g ? g.settings.concat(kitFields(g), sndFields(g)) : [];
+  function stepsOf(g) {
+    if (!g) return null;
+    let st = g.steps;
+    if (!st) {
+      const pages = [];
+      let cur2 = ["lang"], w = 1;
+      for (const f of g.settings) {
+        const cost = f.type === "toggle" ? 0.5 : f.type === "text" ? 1.5 : Array.isArray(f.options) && f.options.length > 6 ? 2 : 1;
+        if (w + cost > 3.01 && cur2.length) {
+          pages.push(cur2);
+          cur2 = [];
+          w = 0;
+        }
+        cur2.push(f.key);
+        w += cost;
+      }
+      if (cur2.length) pages.push(cur2);
+      st = pages.map((ks) => {
+        const f = g.settings.find((x) => x.key === ks.find((k) => k !== "lang"));
+        return { t: "Settings", s: f ? f.label : "Language", keys: ks };
+      });
+    }
+    const kit2 = kitFields(g).map((f) => f.key), snd = sndFields(g).map((f) => f.key);
+    return st.concat(kit2.length ? [{ t: "Screen and players", s: "More", keys: kit2 }] : [], snd.length ? [{ t: "Sounds", keys: snd }] : []);
+  }
+  function applySounds() {
+    if (!game || !SND.setOff) return;
+    const off = new Set(SND.offKinds());
+    for (const f of sndFields(game)) {
+      if (settings[f.key] === false) off.add(f.snd);
+      else off.delete(f.snd);
+    }
+    SND.setOff([...off]);
   }
   const tx = { key: "", lang: "", games: null, name: "", schema: null, steps: null };
   function retranslate() {
@@ -459,7 +698,7 @@ var BVPLAY = (() => {
         return { id: g.id, name: yield P.tr(g.name), e: g.emoji, sub: yield P.tr(g.sub) };
       })));
       const optsOf = (f) => game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options;
-      const schema = game ? yield Promise.all(game.settings.map((f) => __async(this, null, function* () {
+      const schema = game ? yield Promise.all(fieldsOf(game).map((f) => __async(this, null, function* () {
         return Object.assign({}, f, {
           label: yield P.tr(f.label),
           desc: f.desc ? yield P.tr(f.desc) : void 0,
@@ -470,7 +709,7 @@ var BVPLAY = (() => {
         });
       }))) : null;
       const name = game ? yield P.tr(game.name) : "";
-      const steps = game && game.steps ? yield Promise.all(game.steps.map((s) => __async(this, null, function* () {
+      const steps = game ? yield Promise.all(stepsOf(game).map((s) => __async(this, null, function* () {
         return { t: yield P.tr(s.t), s: yield P.tr(s.s || s.t), keys: s.keys };
       }))) : null;
       if (want !== (game ? game.id : "") + "|" + lang) return;
@@ -487,8 +726,29 @@ var BVPLAY = (() => {
         retranslate();
         return;
       }
-      const f = game && game.settings.find((x) => x.key === key);
+      const f = game && fieldsOf(game).find((x) => x.key === key);
       if (!f) return;
+      if (f.snd) {
+        settings[key] = !!v;
+        applySounds();
+        sayLobby();
+        return;
+      }
+      if (f.vol) {
+        const o = f.options.find((x) => String(x[0]) === String(v));
+        if (!o) return;
+        settings[key] = o[0];
+        if (SND.setVol) SND.setVol(f.vol, o[0]);
+        sayLobby();
+        return;
+      }
+      if (f.kit) {
+        settings[key] = f.type === "toggle" ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default));
+        applyKit();
+        if (phase === "lobby") lobby();
+        sayLobby();
+        return;
+      }
       if (f.type === "toggle") settings[key] = !!v;
       else if (f.options && f.options.some((o) => String(o[0]) === String(v))) settings[key] = f.options.find((o) => String(o[0]) === String(v))[0];
       else if (f.type === "text") settings[key] = String(v == null ? "" : v).split(/\n/).map((x) => P.safe(x, 90)).filter(Boolean).join("\n").slice(0, 1500);
@@ -506,6 +766,10 @@ var BVPLAY = (() => {
     game = games.get(id);
     settings = {};
     for (const f of game.settings) settings[f.key] = f.default;
+    for (const f of sndFields(game)) settings[f.key] = f.vol ? SND.vol ? SND.vol(f.vol) : 1 : !SND.kindOff(f.snd);
+    const ks = kitSaved();
+    for (const f of kitFields(game)) settings[f.key] = f.key in ks ? ks[f.key] : f.default;
+    applyKit();
     phase = "lobby";
     if (game.langs && !game.langs.includes(lang)) {
       const to = game.langs.includes("en") ? "en" : game.langs[0];
@@ -768,9 +1032,13 @@ var BVPLAY = (() => {
     return __async(this, null, function* () {
       run++;
       lobbyRun++;
+      unpause();
+      abandonTimers();
       phase = "closed";
+      nearOn();
       handlers.clear();
       playerSubs.clear();
+      pauseSubs.clear();
       for (const w of [...pending.values()]) w.finish();
       cur.q = null;
       waitHost = false;
@@ -783,6 +1051,9 @@ var BVPLAY = (() => {
       SND.music(null, { fadeOut: 1 });
       P.mute(true);
       document.body.dataset.game = "";
+      delete document.body.dataset.tlook;
+      delete document.body.dataset.wlook;
+      document.body.classList.remove("tw-on");
       const t = yield Promise.all(["The game is closed", "Thanks for playing!", "Start a new game"].map((x) => P.tr(x)));
       stage.textContent = "";
       const cv = el("div", "cover closed", stage);
@@ -1010,7 +1281,17 @@ var BVPLAY = (() => {
       if (my !== lobbyRun || phase === "play") return;
       stage.textContent = "";
       document.body.dataset.game = g ? g.id : "";
+      delete document.body.dataset.tlook;
+      delete document.body.dataset.wlook;
+      document.body.classList.remove("tw-on");
       stage.append(...page.childNodes);
+      if (g && g.lobbyDone) {
+        try {
+          g.lobbyDone(stage, el, settings);
+        } catch (e) {
+          console.warn("Blokvane play", e);
+        }
+      }
       if (sndOff) sndOff();
       sndOff = SND.onChange(paint);
       soundHint();
@@ -1042,7 +1323,7 @@ var BVPLAY = (() => {
     const seats = [...grid.children], n = seats.filter((s2) => !s2.classList.contains("empty")).length;
     const empties = seats.filter((s2) => s2.classList.contains("empty"));
     const want = Math.max(n < 40 ? n + 1 : n, card ? 4 : 8);
-    const u = stage.clientHeight / 100 * zoom, gap = (game && game.seatGap || 1.6) * u, ratio = card ? 0.92 : game && game.seatRatio || 1.05;
+    const u = stage.clientHeight / 100 * zoom, gap = (game && game.seatGap || 1.6) * u, ratio = card ? game && game.seatRatioCard || 0.92 : game && game.seatRatio || 1.05;
     const LV = ["s1", "s2", "s3", "s4"];
     if (card) card.classList.remove(...LV);
     grid.style.cssText = "";
@@ -1060,10 +1341,10 @@ var BVPLAY = (() => {
       if (!card || best.s >= 8 * u || lv >= LV.length) break;
       card.classList.add(LV[lv]);
     }
-    const s = Math.max(3.5 * u, Math.floor(best.s));
+    const s = Math.max(3.5 * u, Math.floor(best.s + 0.01));
     grid.style.setProperty("--ss", s + "px");
     grid.style.gridTemplateColumns = "repeat(" + best.c + ", " + s + "px)";
-    grid.style.gridAutoRows = Math.max(3.5 * u, Math.floor(Math.min(best.ch, s * ratio))) + "px";
+    grid.style.gridAutoRows = Math.max(3.5 * u, Math.floor(Math.min(best.ch, s * ratio) + 0.01)) + "px";
     grid.style.gap = gap + "px";
     const free = Math.max(0, best.c * Math.ceil(want / best.c) - n);
     empties.forEach((e, i) => {
@@ -1225,6 +1506,7 @@ var BVPLAY = (() => {
         clearInterval(t);
         return;
       }
+      if (paused) return;
       n.textContent = String(Math.max(0, left));
       fg.style.strokeDashoffset = String(276.5 * (1 - Math.max(0, left) / sec));
       if (left <= 3 && left > 0) P.sfx("tick");
@@ -1247,6 +1529,10 @@ var BVPLAY = (() => {
   }
   let booEl = null;
   function boo(mood) {
+    if (mood === false) {
+      if (booEl) booEl.hidden = true;
+      return;
+    }
     if (!booEl || !booEl.isConnected) {
       booEl = el("div", "boo", document.body);
       el("img", "", booEl).alt = "";
@@ -1268,8 +1554,9 @@ var BVPLAY = (() => {
   const cur = { q: null };
   function ask(o) {
     const n = ++round;
-    const who = new Set((o.who || alive().map((p) => p.id)).filter((id) => players.has(id)));
-    const q = { k: "q", n, kind: o.kind || "choice", prompt: o.prompt || "", opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...who] };
+    const all = new Set((o.who || [...players.values()].filter((p) => !p.out).map((p) => p.id)).filter((id) => players.has(id)));
+    const who = new Set([...all].filter((id) => !players.get(id).away));
+    const q = { k: "q", n, kind: o.kind || "choice", prompt: o.prompt || "", opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
     if (o.extra && o.extra.helpOnly) {
       for (const id of who) sayTo(id, q);
     } else {
@@ -1277,17 +1564,19 @@ var BVPLAY = (() => {
       say(q);
     }
     return new Promise((res) => {
-      const w = { who, all: new Set(who), got: /* @__PURE__ */ new Map(), done: false, onAns: o.onAns, sec: o.sec || 0, at: Date.now() };
-      let t = 0;
+      const w = { who, all, got: /* @__PURE__ */ new Map(), done: false, onAns: o.onAns, sec: o.sec || 0, at: Date.now(), q };
+      let cancel = () => {
+      };
       w.finish = () => {
         if (w.done) return;
         w.done = true;
-        clearTimeout(t);
+        cancel();
         pending.delete(n);
         res(w.got);
       };
       pending.set(n, w);
-      t = o.sec ? setTimeout(w.finish, o.sec * 1e3 + 1500) : o.open ? 0 : setTimeout(w.finish, 12e4);
+      cancel = o.sec ? pafter(w.finish, o.sec * 1e3 + 1500) : o.open ? () => {
+      } : pafter(w.finish, 12e4);
       if (!who.size) w.finish();
     });
   }
@@ -1311,6 +1600,9 @@ var BVPLAY = (() => {
       phase = "play";
       played = true;
       document.body.dataset.game = game.id;
+      delete document.body.dataset.tlook;
+      delete document.body.dataset.wlook;
+      document.body.classList.remove("tw-on");
       for (const p of players.values()) {
         p.score = 0;
         p.right = 0;
@@ -1337,8 +1629,14 @@ var BVPLAY = (() => {
         yield sleep(800);
         if (my !== run) return;
       }
+      if (settings.k_code) showJoin(true, true);
+      if (settings.k_rules && kitFields(game).some((f) => f.key === "k_rules")) {
+        yield kitRules(my);
+        if (my !== run) return;
+      }
       handlers.clear();
       playerSubs.clear();
+      pauseSubs.clear();
       let ranking = null;
       try {
         ranking = yield game.tv(kit(my));
@@ -1346,19 +1644,129 @@ var BVPLAY = (() => {
         console.warn("Blokvane play", e);
       }
       if (my !== run) return;
+      unpause();
       handlers.clear();
       playerSubs.clear();
+      pauseSubs.clear();
       finish(ranking);
     });
   }
   function stopGame() {
     if (phase !== "play") return;
     run++;
+    unpause();
     handlers.clear();
     playerSubs.clear();
+    pauseSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     finish(null);
     P.mute(true);
+  }
+  function kitRules(my) {
+    return __async(this, null, function* () {
+      const secs = Math.max(5, Math.min(120, Math.round(+settings.k_rulesSec) || 12));
+      const sp = game.spot ? game.spot(settings) : null;
+      const lines = [];
+      const all = (typeof game.rules === "function" ? game.rules(settings) : game.rules) || [];
+      const rl = sp && Array.isArray(sp.bullets) && sp.bullets.length ? all.slice(0, 2) : all.slice(0, 6);
+      if (sp && sp.name) lines.push(["🎮", P.f(sp.name) + (sp.desc ? ": " + P.f(sp.desc) : "")]);
+      for (const t2 of rl) lines.push(["•", P.f(t2)]);
+      if (sp && Array.isArray(sp.bullets)) for (const [ic, t2] of sp.bullets.slice(0, 3)) lines.push([ic, P.f(t2, sp.vars)]);
+      stage.textContent = "";
+      const cv = el("div", "cover howto", stage);
+      const box2 = el("div", "howto-box", cv);
+      const hd = el("div", "howto-hd", box2);
+      if (ICONS.has(game.id)) {
+        const gi = el("img", "howto-gi", hd);
+        gi.src = iconOf(game.id);
+        gi.alt = "";
+      }
+      const t = el("div", "", hd);
+      el("small", "", t, P.f("How to play"));
+      el("h1", "", t, P.f(game.name));
+      const ol = el("ul", "howto-list", box2);
+      for (const [ic, tx2] of lines) {
+        const li = el("li", "", ol);
+        el("i", "", li, ic);
+        el("span", "", li, tx2);
+      }
+      const bar = el("div", "howto-bar", box2);
+      const fill = el("i", "", bar);
+      fill.style.animationDuration = secs + "s";
+      boo("mind");
+      const m = { k: "q", n: ++round, kind: "wait", prompt: P.f("How to play"), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map((b) => b[0] + " " + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
+      cur.q = m;
+      say(m);
+      yield psleep(secs * 1e3);
+    });
+  }
+  function setPause(on2) {
+    on2 = !!on2;
+    if (on2 === paused || on2 && phase !== "play") return;
+    if (on2) {
+      paused = true;
+      pausedAt = Date.now();
+      for (const x of ptimers) clearTimeout(x.t);
+      document.body.classList.add("paused");
+      if (SND.pause) SND.pause();
+      if (pauseEl) pauseEl.remove();
+      pauseEl = el("div", "pause-ov", document.body);
+      const b = el("div", "pause-box", pauseEl);
+      const im = el("img", "pause-boo", b);
+      im.src = P.booUri("boo:peek");
+      im.alt = "";
+      el("h1", "", b, P.f("Paused"));
+      el("p", "", b, P.f("The host paused the game. It goes on from right here when they tap Resume."));
+    } else unpause();
+    for (const f of pauseSubs) {
+      try {
+        f(paused);
+      } catch (e) {
+      }
+    }
+    say({ k: "pause", on: paused });
+    sayLobby();
+  }
+  function unpause() {
+    if (!paused) return;
+    pausedAll += Date.now() - pausedAt;
+    paused = false;
+    document.body.classList.remove("paused");
+    if (pauseEl) {
+      pauseEl.remove();
+      pauseEl = null;
+    }
+    for (const x of [...ptimers]) x.arm();
+    if (SND.resume) SND.resume();
+    for (const f of pauseSubs) {
+      try {
+        f(false);
+      } catch (e) {
+      }
+    }
+  }
+  function abandonTimers() {
+    for (const x of [...ptimers]) {
+      clearTimeout(x.t);
+      ptimers.delete(x);
+      try {
+        x.fn();
+      } catch (e) {
+      }
+    }
+  }
+  function abortGame() {
+    if (phase !== "play" && phase !== "end") return;
+    run++;
+    unpause();
+    handlers.clear();
+    playerSubs.clear();
+    pauseSubs.clear();
+    for (const w of [...pending.values()]) w.finish();
+    abandonTimers();
+    cur.q = null;
+    waitHost = false;
+    if (joinEl) showJoin(false);
   }
   function finish(ranking) {
     return __async(this, null, function* () {
@@ -1376,11 +1784,22 @@ var BVPLAY = (() => {
       }
       const own = !!(ranking && ranking.own && game.ownEnd);
       if (!own) yield podium(ps, teamMode);
-      const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1 }));
+      const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1, av: typeof p.av === "string" && p.av.length < 40 ? p.av : void 0 }));
       for (const p of list()) result(p.id, { end: true, place: teamMode ? teamPlace.get(p.team) || 0 : rk.findIndex((x) => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : void 0 });
-      say({ k: "end", ranking: rk.slice(0, 10) });
+      let look = "";
+      try {
+        look = game.endLook ? String(game.endLook() || "").slice(0, 20) : "";
+      } catch (e) {
+      }
+      say({ k: "end", ranking: rk.slice(0, 10), look, team: teamMode ? 1 : 0 });
       sayLobby();
+      letWaitersIn();
     });
+  }
+  function letWaitersIn() {
+    const w = [...waitNext.values()];
+    waitNext.clear();
+    for (const m of w) take(m);
   }
   function podium(ps, teamMode) {
     return __async(this, null, function* () {
@@ -1439,7 +1858,7 @@ var BVPLAY = (() => {
   }
   function confettiRain(parent2) {
     try {
-      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches || settings.k_calm) return;
     } catch (e) {
     }
     const cv = el("canvas", "rain", parent2);
@@ -1525,7 +1944,19 @@ var BVPLAY = (() => {
       avatarUrl,
       // the game's own questions, words and places, written for its language (null: English, the packs in packs.js)
       packs: lang === "en" ? null : I18N.packs(lang),
-      sleep: (ms) => live() ? sleep(ms) : Promise.resolve(),
+      sleep: (ms) => live() ? psleep(ms) : Promise.resolve(),
+      // the game's own clock (it stands still while the host has the game paused), whether it's paused now, fn(paused)
+      // when that changes (gives back its off function), and fn after ms of the game's time (gives back a cancel)
+      now: gnow,
+      paused: () => paused,
+      onPause(fn) {
+        if (!live()) return nop;
+        pauseSubs.add(fn);
+        return () => pauseSubs.delete(fn);
+      },
+      after: (ms, fn) => live() ? pafter(() => {
+        if (live()) fn();
+      }, ms) : nop,
       say: (m) => live() ? say(m) : nop(),
       sayTo: (id, m) => live() ? sayTo(id, m) : nop(),
       box: (id, m) => live() ? box(id, m) : Promise.resolve(false),
@@ -1634,11 +2065,45 @@ var BVPLAY = (() => {
     });
   } catch (e) {
   }
-  if (/[?&]debug\b/.test(location.search)) window.__bvplay = { players, pending, get host() {
-    return host;
-  }, get phase() {
-    return phase;
-  } };
+  if (/[?&]debug\b/.test(location.search)) window.__bvplay = {
+    players,
+    pending,
+    get host() {
+      return host;
+    },
+    get phase() {
+      return phase;
+    },
+    // (for checking the screens on this computer: made-up players join and get ready, and the winners show straight away)
+    fake(names) {
+      names.forEach((nm, i) => {
+        const f = ("aaaaaaaaaaaaaaaa" + (i + 1).toString(16)).slice(-16);
+        take({ k: "join", f, name: nm, av: P.AVATARS[i % P.AVATARS.length] });
+        take({ k: "ready", f, on: true });
+      });
+    },
+    testWin(scores) {
+      let i = 0;
+      for (const p of players.values()) p.score = scores[i++] || 0;
+      finish(null);
+    },
+    // (and the game starts with whoever is in, as if the host had tapped Start)
+    go() {
+      if (phase !== "play") start();
+    },
+    // (a made-up player answers the question that's on: fake player i, 1 to 16)
+    answer(i, v, ms) {
+      const f = ("aaaaaaaaaaaaaaaa" + i.toString(16)).slice(-16);
+      if (cur.q) take({ k: "ans", f, n: cur.q.n, v, ms: ms || 1500 });
+    },
+    get q() {
+      return cur.q;
+    },
+    // (the host's settings, set from here)
+    set(o) {
+      Object.assign(settings, o);
+    }
+  };
   return { game: game0, get games() {
     return games;
   } };

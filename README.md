@@ -166,17 +166,35 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   async functions. `play/index.html` loads them only there. Make them again after changing one of
   those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
   (`node tools/old-js.js --check` says if one is out of date).
-- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/emoji.css go/go.css`
+- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/wlook.css play/trivia.css play/emoji.css go/go.css`
   adds the older way of writing newer CSS just before it, after a stylesheet changes. The phone
   page's own styles (in `go/m/party.js`) get the same. For the designed screens of Who's the
-  Imposter? and Emoji Riddles, after they are made again:
-  `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js play/emoji-tpl.js`.
+  Imposter?, Emoji Riddles and Where in the World?, after they are made again:
+  `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js play/emoji-tpl.js play/world-tpl.js`.
 - Emoji Riddles is its own game: `play/emoji-game.js` (the TV), `play/emoji-tpl.js` (its designed
   screens: three question looks and three winner screens, made from the designs in
   `Games/Emoji Riddles`), `play/emoji.css` (its fonts, the lobby's Cinema Marquee, the green and
   red answers), `play/emoji-data.js` (its riddles, with their answers in all seven languages, loaded
   once the game is picked) and `play/sounds/e-*.mp3` (its music). The phones' screens for it are in
   `go/m/party.js`, with the winners' picture to share.
+- Where in the World? is `play/world-game.js` (the TV: six modes, Classic, Bullseye, Lightning,
+  Close-up, Knockout and Kids), `play/world.css`, `play/wlook.css` (its four lobby looks, Map Room,
+  Orbit, Passport and Vintage Atlas, made from the designs in `Games/Where in the World`),
+  `play/world-tpl.js` (its four winner screens), `play/icons/wmap.svg` (the designs' world map) and
+  `play/sounds/wv-*.mp3` (its music). The phones' pin screen fits one screen on any phone, and only
+  the map zooms (`go/m/party.js`).
+- Trivia's questions (`play/q/`) are made by the question bank's `build_q.js`. The Trick questions
+  (category 33) have an eighth part: the line that explains the trick, shown on the TV and on every
+  phone once the answer is out.
+- The last screen of Where in the World?, Trivia and Guess It Right! has a picture of the winners
+  to share (a tall story picture, drawn on the phone in the game's own look).
+- TVs near you: a phone on the same Wi-Fi as a TV finds it in a list and joins with one tap
+  (`BVLIVE.nearby` in `go/live-kit.js`). Both ask the free STUN servers for the network's public
+  address and meet in a room made from a hash of it; the address itself never leaves the device. The
+  host can turn it off (Phones nearby can find this TV).
+- `tools/short-address/index.html` is the page for a short TV address: copied to a repository named
+  `blokvane.github.io` (the Blokvane account's own Pages site), `blokvane.github.io` opens the party
+  games on a TV and Blokvane on a phone.
 - `play/wheel.js` is Trivia's category wheel, made from its design by
   `python3 tools/make-wheel.py "<the design's export>/source/Spin Wheel.dc.html" > play/wheel.js`.
   The TV and the phones both draw it from there.

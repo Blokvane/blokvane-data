@@ -21,7 +21,7 @@ var BVPACKS = {
     ['Which animal is known as the king of the jungle?', 'The lion', ['The tiger', 'The bear', 'The monkey'], 'Animals'], ['What do plants need from the sun to grow?', 'Light', ['Sound', 'Wind', 'Snow'], 'Science']
   ],
   // the Open Trivia Database's categories (id, name)
-  cats: [[0, 'Everything (mixed)'], [9, 'General knowledge'], [22, 'Geography'], [23, 'History'], [17, 'Science and nature'], [21, 'Sports'], [11, 'Movies'], [12, 'Music'], [14, 'TV'], [15, 'Video games'], [27, 'Animals'], [18, 'Computers'], [10, 'Books'], [20, 'Mythology'], [25, 'Art'], [26, 'Famous people'], [28, 'Vehicles'], [19, 'Math']],
+  cats: [[0, 'Everything (mixed)'], [33, 'Trick questions'], [9, 'General knowledge'], [22, 'Geography'], [23, 'History'], [17, 'Science and nature'], [21, 'Sports'], [11, 'Movies'], [12, 'Music'], [14, 'TV'], [15, 'Video games'], [27, 'Animals'], [18, 'Computers'], [10, 'Books'], [20, 'Mythology'], [25, 'Art'], [26, 'Famous people'], [28, 'Vehicles'], [19, 'Math']],
   // a tie-breaker: a number answer, the closest guess wins
   numbers: [['How tall is the Eiffel Tower, in meters?', 330], ['In what year did people first walk on the Moon?', 1969], ['How many bones are in an adult human body?', 206], ['How many countries are in the world (United Nations members)?', 193],
     ['How many keys are on a standard piano?', 88], ['How long is a marathon, in kilometers (rounded)?', 42], ['How many minutes are in one day?', 1440], ['How tall is Mount Everest, in meters (rounded to hundreds)?', 8800], ['In what year did the Titanic sink?', 1912], ['How many teeth does an adult usually have?', 32]],

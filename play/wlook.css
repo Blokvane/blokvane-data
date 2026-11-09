@@ -1,0 +1,338 @@
+/* Blokvane party games: Where in the World?'s own looks, drawn exactly as its designs: four lobbies (Map Room, Orbit,
+   Passport, Vintage Atlas) that dress the kit's own lobby (play.css), and the four winner screens (Arrivals board,
+   Balloon race, Map room, Treasure map: world-tpl.js) with their moves. The lobby takes turns from one game to the next,
+   or the host picks one: body[data-wlook] is the one on now. Made from wlook.src.css by a tool (design pixels become
+   screen units). */
+
+/* the designs' fonts, each in the weights the designs have: Fredoka for titles (500 to 700), Nunito for the rest (500 to
+   800), JetBrains Mono for the departure boards, and Cairo for Arabic (the winner designs are written with it). Every
+   face of a family has the same weights: a face that covered other weights would be picked first for them, and its
+   letters alone would count (Latin would fall back to another font). */
+@font-face { font-family: 'WV Fredoka'; src: url(fonts/imp-fredoka-latin.woff2) format('woff2'); font-weight: 500 700; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'WV Fredoka'; src: url(fonts/imp-fredoka-latin-ext.woff2) format('woff2'); font-weight: 500 700; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'WV Fredoka'; src: url(fonts/cairo-arabic.woff2) format('woff2'); font-weight: 500 700; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'WV Nunito'; src: url(fonts/imp-nunito-latin.woff2) format('woff2'); font-weight: 500 800; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'WV Nunito'; src: url(fonts/imp-nunito-latin-ext.woff2) format('woff2'); font-weight: 500 800; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'WV Nunito'; src: url(fonts/cairo-arabic.woff2) format('woff2'); font-weight: 500 800; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'WV Mono'; src: url(fonts/imp-mono-latin.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
+@font-face { font-family: 'WV Cairo'; src: url(fonts/cairo-arabic.woff2) format('woff2'); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'WV Cairo'; src: url(fonts/cairo-latin.woff2) format('woff2'); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* ==================== the four lobbies: what they share (the designs' own layout) ==================== */
+body[data-game="world"][data-wlook] .stage { padding: calc(4.8149 * var(--u)) calc(7.4075 * var(--u)) calc(3.5186 * var(--u)); grid-gap: calc(2.7778 * var(--u)); gap: calc(2.7778 * var(--u)); overflow: hidden; font-family: var(--wn); line-height: var(--lh);
+  --wf: 'WV Fredoka', 'BV Fun', 'BV Script', sans-serif; --wn: 'WV Nunito', 'BV Script', sans-serif; --wm: 'WV Mono', ui-monospace, monospace; --lh: normal; }
+html[dir="rtl"] body[data-game="world"][data-wlook] .stage { --lh: 1.3; }
+html.no-flexgap body[data-game="world"][data-wlook] .stage > * + * { margin-top: calc(2.7778 * var(--u)); }
+body[data-game="world"][data-wlook] .stage > .lob-top, body[data-game="world"][data-wlook] .stage > .body.lob, body[data-game="world"][data-wlook] .stage > .lob-foot { position: relative; z-index: 2; }
+body[data-game="world"][data-wlook] .wl-deco { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+body[data-game="world"][data-wlook] .wl-deco > * { position: absolute; pointer-events: none; }
+body[data-game="world"][data-wlook] .wl-deco .wl-map { left: calc(-5.5556 * var(--u)); width: calc(188.8889 * var(--u)); max-width: none; height: auto; }
+body[data-game="world"][data-wlook] .wl-deco .full { top: 0; right: 0; bottom: 0; left: 0; }
+/* the top: the icon, the name and its line, the four round signs on the right */
+body[data-game="world"][data-wlook] .lob-top { min-height: 0; grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .lob-top > * + * { margin-left: calc(2.4075 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .lob-top > * + * { margin-left: 0; margin-right: calc(2.4075 * var(--u)); }
+body[data-game="world"][data-wlook] .lob-top .logo { flex: none; width: calc(9.6297 * var(--u)); height: calc(9.6297 * var(--u)); padding: 0; border-radius: calc(1.8519 * var(--u)); background: none; box-shadow: 0 calc(0.926 * var(--u)) calc(2.2223 * var(--u)) rgba(34, 83, 201, .4); }
+body[data-game="world"][data-wlook] .lob-top .logo img { width: 100%; height: 100%; border-radius: calc(1.8519 * var(--u)); }
+body[data-game="world"][data-wlook] .lob-top .grow { display: flex; flex-direction: column; grid-gap: calc(0.5556 * var(--u)); gap: calc(0.5556 * var(--u)); flex: 0 1 auto; min-width: 0; }
+html.no-flexgap body[data-game="world"][data-wlook] .lob-top .grow > * + * { margin-top: calc(0.5556 * var(--u)); }
+body[data-game="world"][data-wlook] .lob-top h1 { margin: 0; font: 700 calc(7.963 * var(--u))/1 var(--wf); letter-spacing: normal; white-space: nowrap; }
+body[data-game="world"][data-wlook] .lob-top .sub { margin: 0; font-size: calc(2.5926 * var(--u)); font-weight: 700; line-height: var(--lh); }
+html[dir="rtl"] body[data-game="world"][data-wlook] .lob-top h1 { line-height: 1.3; font-size: calc(7.0371 * var(--u)); }
+html[dir="rtl"] body[data-game="world"][data-wlook] .spot-t b { line-height: 1.3; }
+body[data-game="world"][data-wlook] .lob-top .deco { flex: none; margin-inline-start: auto; grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+@supports not (margin-inline-start: 0) {
+  body[data-game="world"][data-wlook] .lob-top .deco { margin-left: auto; }
+  html[dir="rtl"] body[data-game="world"][data-wlook] .lob-top .deco { margin-right: auto; }
+}
+html.no-flexgap body[data-game="world"][data-wlook] .lob-top .deco > * + * { margin-left: calc(1.6667 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .lob-top .deco > * + * { margin-left: 0; margin-right: calc(1.6667 * var(--u)); }
+body[data-game="world"][data-wlook] .tile-e { box-sizing: border-box; width: calc(7.5926 * var(--u)); height: calc(7.5926 * var(--u)); border-radius: 50%; font-size: calc(3.5186 * var(--u)); line-height: 1; box-shadow: none; animation: none; }
+/* the two columns */
+body[data-game="world"][data-wlook] .body.lob { display: grid; grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.5556 * var(--u)); gap: calc(5.5556 * var(--u)); flex: 1 1 0; min-height: 0; }
+body[data-game="world"][data-wlook] .lob-l { width: auto; grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="world"][data-wlook] .lob-l > * + * { margin-top: calc(2.2223 * var(--u)); }
+body[data-game="world"][data-wlook] .lob-r { grid-gap: calc(2.0371 * var(--u)); gap: calc(2.0371 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="world"][data-wlook] .lob-r > * + * { margin-top: calc(2.0371 * var(--u)); }
+body[data-game="world"][data-wlook] .lob .card { box-shadow: none; }
+/* how to join: the QR code, the steps and the code, as tiles */
+body[data-game="world"][data-wlook] .lob .join { position: relative; display: flex; align-items: center; grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="world"][data-wlook] .lob .qr { flex: none; box-sizing: border-box; width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); background: #fff; border-radius: calc(2.0371 * var(--u)); }
+body[data-game="world"][data-wlook] .lob .qr svg { display: block; width: 100%; height: 100%; }
+body[data-game="world"][data-wlook] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .jt > * + * { margin-top: calc(1.2963 * var(--u)); }
+body[data-game="world"][data-wlook] .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .stp > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .stp > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="world"][data-wlook] .stp .n { width: calc(5 * var(--u)); height: calc(5 * var(--u)); font: 700 calc(2.5926 * var(--u))/1 var(--wf); color: #fff; }
+body[data-game="world"][data-wlook] .jt .stp b { font: 700 calc(3.3334 * var(--u))/var(--lh) var(--wf); white-space: nowrap; }
+body[data-game="world"][data-wlook] .jt .or { margin: 0; font-size: calc(2.2223 * var(--u)); line-height: var(--lh); }
+body[data-game="world"][data-wlook] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); flex-wrap: nowrap; }
+html.no-flexgap body[data-game="world"][data-wlook] .codetiles > * { margin: 0 calc(0.926 * var(--u)) 0 0; }
+body[data-game="world"][data-wlook] .codetiles span { position: relative; flex: none; box-sizing: border-box; width: calc(6.4815 * var(--u)); height: calc(8.3334 * var(--u)); padding: 0; border: 0; border-radius: calc(0.926 * var(--u)); font: 700 calc(5 * var(--u))/1 var(--wf); }
+body[data-game="world"][data-wlook] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="world"][data-wlook] .stp-c { display: flex; flex-direction: column; grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); padding: calc(2.4075 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .stp-c > * + * { margin-top: calc(1.2963 * var(--u)); }
+body[data-game="world"][data-wlook] .stp-c .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="world"][data-wlook] .stp-c .stp b { font: 700 calc(2.963 * var(--u))/var(--lh) var(--wf); }
+body[data-game="world"][data-wlook] .stp-c p { margin: 0; font-size: calc(2.1297 * var(--u)); line-height: 1.45; }
+/* who's in */
+body[data-game="world"][data-wlook] .ph { min-height: 0; }
+body[data-game="world"][data-wlook] .ph h2 { font: 700 calc(4.0741 * var(--u))/var(--lh) var(--wf); }
+body[data-game="world"][data-wlook] .ph .pill { font: 700 calc(2.0371 * var(--u))/1 var(--wf); padding: calc(0.926 * var(--u)) calc(1.8519 * var(--u)); }
+body[data-game="world"][data-wlook] .lob .slots.fit { overflow: visible; }
+body[data-game="world"][data-wlook] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; box-shadow: none; animation: none; border-width: calc(0.2778 * var(--u)); border-style: dashed; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); }
+body[data-game="world"][data-wlook] .lob .slots.fit .seat.empty { padding: 0; }
+body[data-game="world"][data-wlook] .lob .slots.fit .seat:not(.empty) { border-style: solid; }
+body[data-game="world"][data-wlook] .lob .slots.fit .seat.empty span { display: flex; flex-direction: column; align-items: center; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); font: 700 calc(2.5926 * var(--u))/var(--lh) var(--wn); }
+html.no-flexgap body[data-game="world"][data-wlook] .lob .slots.fit .seat.empty span > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="world"][data-wlook] .seat b { font-family: var(--wf); }
+/* the game mode: a card in a frame of color */
+body[data-game="world"][data-wlook] .spot { margin-top: auto; grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(2.4075 * var(--u)) calc(2.5926 * var(--u)); border: calc(0.2778 * var(--u)) solid transparent; border-radius: calc(2.7778 * var(--u)); box-shadow: none; }
+html.no-flexgap body[data-game="world"][data-wlook] .spot > * + * { margin-top: calc(1.4815 * var(--u)); }
+body[data-game="world"][data-wlook] .spot > * { position: relative; }
+body[data-game="world"][data-wlook] .spot .wl-stamp { position: absolute; border-radius: 50%; display: grid; align-items: center; justify-items: center; place-items: center; font: 700 calc(2.0371 * var(--u))/1 var(--wf); pointer-events: none; }
+body[data-game="world"][data-wlook] .spot-top { grid-gap: calc(2.0371 * var(--u)); gap: calc(2.0371 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .spot-top > * + * { margin-left: calc(2.0371 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .spot-top > * + * { margin-left: 0; margin-right: calc(2.0371 * var(--u)); }
+body[data-game="world"][data-wlook] .spot-ic { position: relative; box-sizing: border-box; width: calc(10.926 * var(--u)); height: calc(10.926 * var(--u)); font-size: calc(6.1112 * var(--u)); line-height: 1; animation: none; box-shadow: none; background: none; }
+body[data-game="world"][data-wlook] .spot-t { display: flex; flex-direction: column; grid-gap: calc(0.3704 * var(--u)); gap: calc(0.3704 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .spot-t > * + * { margin-top: calc(0.3704 * var(--u)); }
+body[data-game="world"][data-wlook] .spot-t .caps { font-size: calc(1.6667 * var(--u)); font-weight: 900; line-height: var(--lh); text-transform: uppercase; }
+html:not(:lang(zh)):not(:lang(hi)):not(:lang(bn)):not([dir="rtl"]) body[data-game="world"][data-wlook] .spot-t .caps { letter-spacing: .2em; }
+body[data-game="world"][data-wlook] .spot-t b { margin: 0; font: 700 calc(4.8149 * var(--u))/1 var(--wf); }
+body[data-game="world"][data-wlook] .spot-t p { margin: 0; font-size: calc(2.0371 * var(--u)); line-height: var(--lh); }
+body[data-game="world"][data-wlook] .spot-f { grid-gap: calc(1.1112 * var(--u)); gap: calc(1.1112 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .spot-f > * { margin: 0 calc(1.1112 * var(--u)) calc(1.1112 * var(--u)) 0; }
+body[data-game="world"][data-wlook] .spot-f span { padding: calc(0.7408 * var(--u)) calc(1.4815 * var(--u)); border-radius: 999px; border-width: calc(0.1389 * var(--u)); border-style: solid; font-size: calc(1.8519 * var(--u)); font-weight: 800; line-height: var(--lh); }
+body[data-game="world"][data-wlook] .spot-b { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+html.no-flexgap body[data-game="world"][data-wlook] .spot-b > * + * { margin-top: calc(1.4815 * var(--u)); }
+body[data-game="world"][data-wlook] .spot-b div { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(1.2963 * var(--u)) calc(2.0371 * var(--u)); border-radius: calc(1.4815 * var(--u)); border-width: calc(0.0926 * var(--u)); border-style: solid; font: 600 calc(2.1297 * var(--u))/var(--lh) var(--wf); }
+html.no-flexgap body[data-game="world"][data-wlook] .spot-b div > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="world"][data-wlook] .spot-b div > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="world"][data-wlook] .spot-b i { width: auto; font-size: calc(2.1297 * var(--u)); line-height: var(--lh); }
+/* the bottom line */
+body[data-game="world"][data-wlook] .lob-foot { align-items: center; }
+body[data-game="world"][data-wlook] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); flex-wrap: nowrap; }
+html.no-flexgap body[data-game="world"][data-wlook] .lob-foot .lf > * { margin: 0 calc(1.4815 * var(--u)) 0 0; }
+body[data-game="world"][data-wlook] .lob-foot b { font: 700 calc(2.4075 * var(--u))/var(--lh) var(--wf); }
+body[data-game="world"][data-wlook] .lob-foot .snd, body[data-game="world"][data-wlook] .lob-foot .fs, body[data-game="world"][data-wlook] .lob-foot .zm {
+  padding: calc(0.926 * var(--u)) calc(2.0371 * var(--u)); border-radius: 999px; border-width: calc(0.1389 * var(--u)); border-style: solid; font: 600 calc(2.0371 * var(--u))/var(--lh) var(--wf); white-space: nowrap; opacity: 1; }
+body[data-game="world"][data-wlook] .lob-foot .zm { padding: calc(0.6482 * var(--u)) calc(1.1112 * var(--u)); grid-gap: 0; gap: 0; }
+body[data-game="world"][data-wlook] .lob-foot .zm button { padding: calc(0.2778 * var(--u)) calc(0.926 * var(--u)); font: 600 calc(2.0371 * var(--u))/var(--lh) var(--wf); color: inherit; }
+body[data-game="world"][data-wlook] .lob-foot .zm .zv { min-width: 0; padding: 0 calc(0.3704 * var(--u)); font: 600 calc(2.0371 * var(--u))/var(--lh) var(--wf); }
+body[data-game="world"][data-wlook] .lob-foot small { font-size: calc(1.4815 * var(--u)); max-width: none; }
+
+/* ==================== Map Room: a night-blue map table, a plane flying its route between three glowing spots ==================== */
+body[data-game="world"][data-wlook="maproom"] { background: #050a18; }
+body[data-game="world"][data-wlook="maproom"] .stage { color: #eef4ff;
+  background: radial-gradient(60% 50% at 30% 20%, rgba(76, 141, 255, .28), transparent 70%), radial-gradient(50% 50% at 85% 80%, rgba(90, 209, 255, .16), transparent 70%), linear-gradient(180deg, #0c1834, #050a18); }
+body[data-game="world"][data-wlook="maproom"] .wl-deco .wl-map { top: calc(10.1852 * var(--u)); opacity: .13; filter: hue-rotate(120deg) saturate(.6); }
+body[data-game="world"][data-wlook="maproom"] .wl-deco .grid { background-image: linear-gradient(rgba(90, 209, 255, .05) calc(0.0926 * var(--u)), transparent calc(0.0926 * var(--u))), linear-gradient(90deg, rgba(90, 209, 255, .05) calc(0.0926 * var(--u)), transparent calc(0.0926 * var(--u))); background-size: calc(7.4075 * var(--u)) calc(7.4075 * var(--u)); }
+body[data-game="world"][data-wlook="maproom"] .wl-deco svg.route { top: 0; left: 0; width: 100%; height: 100%; overflow: visible; }
+body[data-game="world"][data-wlook="maproom"] .wl-deco svg.route .dash { animation: w-dash 1.6s linear infinite; }
+body[data-game="world"][data-wlook="maproom"] .wl-deco svg.route .plane { filter: drop-shadow(0 calc(0.5556 * var(--u)) calc(0.926 * var(--u)) rgba(0, 0, 0, .5)); }
+body[data-game="world"][data-wlook="maproom"] .wl-deco .vig { background: radial-gradient(80% 80% at 50% 50%, transparent 50%, rgba(3, 8, 24, .8)); }
+body[data-game="world"][data-wlook="maproom"] .lob-top h1 { color: #fff; text-shadow: 0 0 calc(0.5556 * var(--u)) #fff, 0 0 calc(2.2223 * var(--u)) #5ad1ff, 0 0 calc(4.6297 * var(--u)) #4c8dff; }
+body[data-game="world"][data-wlook="maproom"] .lob-top .sub { color: #bcd6ff; }
+body[data-game="world"][data-wlook="maproom"] .tile-e { background: rgba(10, 18, 40, .7); border: calc(0.2778 * var(--u)) dashed var(--c); box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(10, 18, 40, .7), 0 0 0 calc(0.6482 * var(--u)) var(--c2); }
+body[data-game="world"][data-wlook="maproom"] .tile-e:nth-child(1) { --c: #5ad1ff; --c2: rgba(90, 209, 255, .333); transform: rotate(-6deg); }
+body[data-game="world"][data-wlook="maproom"] .tile-e:nth-child(2) { --c: #ff5a8a; --c2: rgba(255, 90, 138, .333); transform: rotate(5deg); }
+body[data-game="world"][data-wlook="maproom"] .tile-e:nth-child(3) { --c: #ffc93c; --c2: rgba(255, 201, 60, .333); transform: rotate(-4deg); }
+body[data-game="world"][data-wlook="maproom"] .tile-e:nth-child(4) { --c: #34d399; --c2: rgba(52, 211, 153, .333); transform: rotate(7deg); }
+body[data-game="world"][data-wlook="maproom"] .lob .join, body[data-game="world"][data-wlook="maproom"] .stp-c { background: linear-gradient(180deg, rgba(18, 30, 60, .82), rgba(10, 16, 36, .82)); border: calc(0.1389 * var(--u)) solid rgba(90, 209, 255, .22);
+  box-shadow: 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)) rgba(0, 0, 0, .4); -webkit-backdrop-filter: blur(calc(0.5556 * var(--u))); backdrop-filter: blur(calc(0.5556 * var(--u))); }
+body[data-game="world"][data-wlook="maproom"] .lob .join { border-radius: calc(2.7778 * var(--u)); }
+body[data-game="world"][data-wlook="maproom"] .stp-c { border-radius: calc(2.4075 * var(--u)); }
+body[data-game="world"][data-wlook="maproom"] .lob .qr { box-shadow: 0 0 0 calc(0.5556 * var(--u)) rgba(90, 209, 255, .25), 0 0 calc(3.7038 * var(--u)) rgba(90, 209, 255, .3); }
+body[data-game="world"][data-wlook="maproom"] .stp .n { background: #4c8dff; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(76, 141, 255, .2); }
+body[data-game="world"][data-wlook="maproom"] .stp-c:first-child .stp .n { background: #ff5a8a; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(255, 90, 138, .2); }
+body[data-game="world"][data-wlook="maproom"] .stp-c:last-child .stp .n { background: #34d399; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(52, 211, 153, .2); }
+body[data-game="world"][data-wlook="maproom"] .jt .or { color: #bcd6ff; }
+/* (the code on a departure board: two halves, a line between them, the letters in gold, flapping now and then) */
+body[data-game="world"][data-wlook="maproom"] .codetiles span { background: linear-gradient(180deg, #1c2740 0, #1c2740 49%, #0b1226 51%, #0b1226 100%); box-shadow: 0 calc(0.5556 * var(--u)) 0 #050a18, inset 0 0 0 calc(0.1852 * var(--u)) rgba(255, 255, 255, .06);
+  font: 700 calc(5 * var(--u))/1 var(--wm); color: #ffc93c; text-shadow: 0 0 calc(0.926 * var(--u)) rgba(255, 201, 60, .55); animation: w-flap 4s ease-in-out infinite; }
+body[data-game="world"][data-wlook="maproom"] .codetiles span::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; height: calc(0.1852 * var(--u)); background: #050a18; }
+body[data-game="world"][data-wlook="maproom"] .stp-c p { color: #d6e4ff; }
+body[data-game="world"][data-wlook="maproom"] .lob .slots.fit .seat { border-radius: calc(2.0371 * var(--u)); border-color: rgba(90, 209, 255, .2); background: rgba(10, 18, 40, .5); }
+body[data-game="world"][data-wlook="maproom"] .lob .slots.fit .seat.open { border-color: rgba(90, 209, 255, .4); }
+body[data-game="world"][data-wlook="maproom"] .lob .slots.fit .seat:not(.empty) { border-color: rgba(90, 209, 255, .7); background: linear-gradient(180deg, rgba(28, 48, 96, .8), rgba(10, 18, 40, .8)); }
+body[data-game="world"][data-wlook="maproom"] .seat .wl-tag { position: absolute; top: calc(-1.2963 * var(--u)); left: 50%; width: calc(3.1482 * var(--u)); height: calc(1.8519 * var(--u)); margin-left: calc(-1.5741 * var(--u)); box-sizing: border-box; border-radius: calc(0.926 * var(--u)) calc(0.926 * var(--u)) 0 0;
+  border: calc(0.2778 * var(--u)) solid rgba(90, 209, 255, .3); border-bottom: 0; }
+body[data-game="world"][data-wlook="maproom"] .lob .slots.fit .seat.empty span { color: #9fb8e8; }
+body[data-game="world"][data-wlook="maproom"] .lob .slots.fit .seat.empty span::before { content: '📍'; box-sizing: border-box; width: calc(5.926 * var(--u)); height: calc(5.926 * var(--u)); border-radius: 50%; border: calc(0.2778 * var(--u)) dashed rgba(90, 209, 255, .45);
+  display: grid; align-items: center; justify-items: center; place-items: center; font-size: calc(2.5926 * var(--u)); line-height: 1; opacity: .7; }
+body[data-game="world"][data-wlook="maproom"] .seat .av { box-shadow: 0 0 0 calc(0.3704 * var(--u)) #5ad1ff; }
+body[data-game="world"][data-wlook="maproom"] .seat b { color: #fff; }
+body[data-game="world"][data-wlook="maproom"] .spot { background: linear-gradient(180deg, #14234a, #0b1430) padding-box, linear-gradient(120deg, #ff5a8a, #ffc93c, #5ad1ff, #34d399) border-box; }
+body[data-game="world"][data-wlook="maproom"] .spot .wl-stamp { right: calc(-3.426 * var(--u)); top: calc(-3.426 * var(--u)); width: calc(20.3704 * var(--u)); height: calc(20.3704 * var(--u)); box-sizing: border-box; border: calc(0.3704 * var(--u)) dashed rgba(255, 201, 60, .22); transform: rotate(-14deg); }
+body[data-game="world"][data-wlook="maproom"] .spot-ic { background: radial-gradient(circle, #1d3570, #0b1430); border: calc(0.3704 * var(--u)) solid #ffc93c; box-shadow: 0 0 calc(2.7778 * var(--u)) rgba(255, 201, 60, .35); }
+body[data-game="world"][data-wlook="maproom"] .spot-ic span { display: block; animation: w-spin 30s linear infinite; }
+body[data-game="world"][data-wlook="maproom"] .spot-t .caps { color: #ffc93c; } body[data-game="world"][data-wlook="maproom"] .spot-t b { color: #fff; } body[data-game="world"][data-wlook="maproom"] .spot-t p { color: #bcd6ff; }
+body[data-game="world"][data-wlook="maproom"] .spot-f span { background: rgba(90, 209, 255, .1); border-color: rgba(90, 209, 255, .3); color: #eef4ff; }
+body[data-game="world"][data-wlook="maproom"] .spot-b div { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .08); color: #eef4ff; }
+body[data-game="world"][data-wlook="maproom"] .lob-foot b { color: #eef4ff; }
+body[data-game="world"][data-wlook="maproom"] .lob-foot .snd, body[data-game="world"][data-wlook="maproom"] .lob-foot .fs, body[data-game="world"][data-wlook="maproom"] .lob-foot .zm { background: rgba(10, 18, 40, .75); border-color: rgba(90, 209, 255, .25); color: #eef4ff; }
+body[data-game="world"][data-wlook="maproom"] .lob-foot .zm .zv { color: #9fb8e8; }
+body[data-game="world"][data-wlook="maproom"] .lob-foot small { color: #7f97c4; }
+
+/* ==================== Orbit: deep space, twinkling stars, the Earth rising in the corner, a satellite going round ==================== */
+body[data-game="world"][data-wlook="orbit"] { background: #02030a; }
+body[data-game="world"][data-wlook="orbit"] .stage { color: #eef4ff; background: radial-gradient(50% 50% at 85% 75%, rgba(90, 209, 255, .25), transparent 70%), linear-gradient(180deg, #05061a, #02030a); }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .st { width: calc(0.1852 * var(--u)); height: calc(0.1852 * var(--u)); border-radius: 50%; background: #fff; animation: w-twk 2s ease infinite; }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .st.b { width: calc(0.2778 * var(--u)); height: calc(0.2778 * var(--u)); }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .earth { right: calc(-24.0741 * var(--u)); bottom: calc(-29.6297 * var(--u)); width: calc(83.3334 * var(--u)); height: calc(83.3334 * var(--u)); border-radius: 50%; overflow: hidden; opacity: .55;
+  background: radial-gradient(circle at 35% 30%, #4aa8ff, #1450b8 45%, #061a4a 75%); box-shadow: 0 0 calc(11.1112 * var(--u)) rgba(90, 209, 255, .45), inset calc(-5.5556 * var(--u)) calc(-5.5556 * var(--u)) calc(11.1112 * var(--u)) rgba(0, 0, 0, .55); }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .earth img { position: absolute; left: calc(-18.5186 * var(--u)); top: calc(18.5186 * var(--u)); width: calc(148.1482 * var(--u)); max-width: none; height: auto; opacity: .6; filter: hue-rotate(80deg) saturate(1.6); }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .ring { right: calc(-18.5186 * var(--u)); bottom: calc(-24.0741 * var(--u)); width: calc(101.8519 * var(--u)); height: calc(101.8519 * var(--u)); box-sizing: border-box; border-radius: 50%; border: calc(0.1852 * var(--u)) dashed rgba(90, 209, 255, .25); animation: w-spin 60s linear infinite; }
+body[data-game="world"][data-wlook="orbit"] .wl-deco .ring span { position: absolute; left: 50%; top: calc(-2.0371 * var(--u)); font-size: calc(3.7038 * var(--u)); line-height: normal; }
+body[data-game="world"][data-wlook="orbit"] .lob-top h1 { color: #fff; text-shadow: 0 0 calc(0.5556 * var(--u)) #fff, 0 0 calc(2.4075 * var(--u)) #5ad1ff, 0 0 calc(5.5556 * var(--u)) #7c5cff; }
+body[data-game="world"][data-wlook="orbit"] .lob-top .sub { color: #a9c8ff; }
+body[data-game="world"][data-wlook="orbit"] .tile-e { width: calc(7.2223 * var(--u)); height: calc(7.2223 * var(--u)); border-radius: calc(2.0371 * var(--u)); font-size: calc(3.3334 * var(--u)); background: rgba(20, 30, 70, .7); border: calc(0.1389 * var(--u)) solid rgba(90, 209, 255, .4); box-shadow: 0 0 calc(1.8519 * var(--u)) rgba(90, 209, 255, .25); }
+body[data-game="world"][data-wlook="orbit"] .lob .join, body[data-game="world"][data-wlook="orbit"] .stp-c { border-radius: calc(2.5926 * var(--u)); background: rgba(14, 20, 50, .72); border: calc(0.1389 * var(--u)) solid rgba(124, 92, 255, .35);
+  box-shadow: 0 0 calc(3.7038 * var(--u)) rgba(124, 92, 255, .15); -webkit-backdrop-filter: blur(calc(0.7408 * var(--u))); backdrop-filter: blur(calc(0.7408 * var(--u))); }
+body[data-game="world"][data-wlook="orbit"] .lob .qr { box-shadow: 0 0 0 calc(0.5556 * var(--u)) rgba(124, 92, 255, .35), 0 0 calc(4.6297 * var(--u)) rgba(124, 92, 255, .4); }
+body[data-game="world"][data-wlook="orbit"] .stp .n { background: #7c5cff; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(124, 92, 255, .2); }
+body[data-game="world"][data-wlook="orbit"] .stp-c:first-child .stp .n { background: #5ad1ff; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(90, 209, 255, .2); }
+body[data-game="world"][data-wlook="orbit"] .stp-c:last-child .stp .n { background: #34d399; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(52, 211, 153, .2); }
+body[data-game="world"][data-wlook="orbit"] .jt .or { color: #a9c8ff; }
+body[data-game="world"][data-wlook="orbit"] .codetiles span { width: calc(6.8519 * var(--u)); height: calc(8.7038 * var(--u)); border-radius: calc(1.2963 * var(--u)); background: rgba(10, 14, 40, .9); border: calc(0.1852 * var(--u)) solid #7c5cff; box-shadow: 0 0 calc(1.2963 * var(--u)) rgba(124, 92, 255, .5), inset 0 0 calc(1.1112 * var(--u)) rgba(124, 92, 255, .3);
+  font: 700 calc(4.8149 * var(--u))/1 var(--wf); color: #fff; text-shadow: 0 0 calc(0.926 * var(--u)) #5ad1ff; }
+body[data-game="world"][data-wlook="orbit"] .stp-c p { color: #d6e4ff; }
+body[data-game="world"][data-wlook="orbit"] .lob .slots.fit .seat { border-radius: calc(8.7963 * var(--u)); border-color: rgba(124, 92, 255, .4); background: rgba(14, 20, 50, .5); }
+body[data-game="world"][data-wlook="orbit"] .lob .slots.fit .seat:not(.empty) { border-color: rgba(124, 92, 255, .85); background: radial-gradient(circle at 50% 35%, rgba(60, 50, 150, .7), rgba(14, 20, 50, .7)); box-shadow: 0 0 calc(2.4075 * var(--u)) rgba(124, 92, 255, .35); }
+body[data-game="world"][data-wlook="orbit"] .lob .slots.fit .seat.empty span { color: #7f97c4; }
+body[data-game="world"][data-wlook="orbit"] .lob .slots.fit .seat.empty span::before { content: '🪐'; font-size: calc(3.3334 * var(--u)); line-height: normal; opacity: .8; }
+body[data-game="world"][data-wlook="orbit"] .seat .av { box-shadow: 0 0 0 calc(0.3704 * var(--u)) #7c5cff, 0 0 calc(1.6667 * var(--u)) rgba(90, 209, 255, .45); }
+body[data-game="world"][data-wlook="orbit"] .seat b { color: #fff; }
+body[data-game="world"][data-wlook="orbit"] .spot { background: linear-gradient(180deg, #121a44, #0a0f2a) padding-box, linear-gradient(120deg, #7c5cff, #5ad1ff, #34d399) border-box; }
+body[data-game="world"][data-wlook="orbit"] .spot-ic { width: calc(10.1852 * var(--u)); height: calc(10.1852 * var(--u)); font-size: calc(7.7778 * var(--u)); }
+body[data-game="world"][data-wlook="orbit"] .spot-ic .wl-orb { position: absolute; top: calc(-0.926 * var(--u)); right: calc(-0.926 * var(--u)); bottom: calc(-0.926 * var(--u)); left: calc(-0.926 * var(--u)); box-sizing: border-box; border-radius: 50%; border: calc(0.1852 * var(--u)) dashed rgba(90, 209, 255, .5); animation: w-spin 8s linear infinite; }
+body[data-game="world"][data-wlook="orbit"] .spot-ic .wl-orb::before { content: ''; position: absolute; left: 50%; top: calc(-0.7408 * var(--u)); width: calc(1.1112 * var(--u)); height: calc(1.1112 * var(--u)); margin-left: calc(-0.5556 * var(--u)); border-radius: 50%; background: #5ad1ff; box-shadow: 0 0 calc(0.926 * var(--u)) #5ad1ff; }
+body[data-game="world"][data-wlook="orbit"] .spot-t .caps { color: #5ad1ff; } body[data-game="world"][data-wlook="orbit"] .spot-t b { color: #fff; } body[data-game="world"][data-wlook="orbit"] .spot-t p { color: #a9c8ff; }
+body[data-game="world"][data-wlook="orbit"] .spot-f span { background: rgba(124, 92, 255, .14); border-color: rgba(124, 92, 255, .4); color: #eef4ff; }
+body[data-game="world"][data-wlook="orbit"] .spot-b div { background: rgba(255, 255, 255, .04); border-color: rgba(255, 255, 255, .08); color: #eef4ff; }
+body[data-game="world"][data-wlook="orbit"] .lob-foot b { color: #eef4ff; }
+body[data-game="world"][data-wlook="orbit"] .lob-foot .snd, body[data-game="world"][data-wlook="orbit"] .lob-foot .fs, body[data-game="world"][data-wlook="orbit"] .lob-foot .zm { background: rgba(14, 20, 50, .8); border-color: rgba(124, 92, 255, .4); color: #eef4ff; }
+body[data-game="world"][data-wlook="orbit"] .lob-foot .zm .zv { color: #9fb8e8; }
+body[data-game="world"][data-wlook="orbit"] .lob-foot small { color: #7f97c4; }
+
+/* ==================== Passport: a navy passport cover with gold, travel stamps, cream pages ==================== */
+body[data-game="world"][data-wlook="passport"] { background: #070d20; }
+body[data-game="world"][data-wlook="passport"] .stage { color: #f5efe0; background: radial-gradient(60% 60% at 50% 40%, #1c3266, transparent 75%), linear-gradient(180deg, #0f1c3d, #070d20); }
+body[data-game="world"][data-wlook="passport"] .wl-deco .guil { background-image: repeating-linear-gradient(45deg, rgba(232, 195, 106, .035) 0 calc(0.1852 * var(--u)), transparent calc(0.1852 * var(--u)) calc(1.2963 * var(--u))), repeating-linear-gradient(-45deg, rgba(232, 195, 106, .035) 0 calc(0.1852 * var(--u)), transparent calc(0.1852 * var(--u)) calc(1.2963 * var(--u))); }
+body[data-game="world"][data-wlook="passport"] .wl-deco .stamp { width: calc(15.7408 * var(--u)); height: calc(15.7408 * var(--u)); box-sizing: border-box; border-radius: 50%; border: calc(0.3704 * var(--u)) double var(--c); opacity: .22; display: grid; align-items: center; justify-items: center; place-items: center;
+  font: 700 calc(2.7778 * var(--u))/1 var(--wf); letter-spacing: .15em; color: var(--c); }
+body[data-game="world"][data-wlook="passport"] .wl-deco .frame { top: calc(2.0371 * var(--u)); right: calc(2.0371 * var(--u)); bottom: calc(2.0371 * var(--u)); left: calc(2.0371 * var(--u)); border: calc(0.1852 * var(--u)) solid rgba(232, 195, 106, .35); border-radius: calc(1.8519 * var(--u)); }
+body[data-game="world"][data-wlook="passport"] .lob-top h1 { color: #e8c36a; background: linear-gradient(180deg, #fff6d8, #e8c36a 55%, #a8803a); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 calc(0.3704 * var(--u)) 0 rgba(0, 0, 0, .4)); }
+body[data-game="world"][data-wlook="passport"] .lob-top .sub { color: #e8d9b0; }
+body[data-game="world"][data-wlook="passport"] .tile-e { width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); font-size: calc(3.3334 * var(--u)); background: #13224a; border: calc(0.2778 * var(--u)) solid #e8c36a; box-shadow: 0 0 0 calc(0.3704 * var(--u)) #13224a, 0 0 0 calc(0.5556 * var(--u)) rgba(232, 195, 106, .4); }
+body[data-game="world"][data-wlook="passport"] .lob .join, body[data-game="world"][data-wlook="passport"] .stp-c { border-radius: calc(1.8519 * var(--u)); background: linear-gradient(180deg, #f8f1de, #eadfc2); color: #2a2410; border: calc(0.1852 * var(--u)) solid #e8c36a; box-shadow: 0 calc(1.6667 * var(--u)) calc(3.7038 * var(--u)) rgba(0, 0, 0, .45); }
+body[data-game="world"][data-wlook="passport"] .lob .qr { box-shadow: 0 0 0 calc(0.2778 * var(--u)) #13224a; }
+body[data-game="world"][data-wlook="passport"] .stp .n { background: #13224a; color: #e8c36a; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(19, 34, 74, .2); }
+body[data-game="world"][data-wlook="passport"] .stp-c:first-child .stp .n { background: #b23a48; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(178, 58, 72, .2); }
+body[data-game="world"][data-wlook="passport"] .stp-c:last-child .stp .n { background: #2e6a5a; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(46, 106, 90, .2); }
+body[data-game="world"][data-wlook="passport"] .jt .or { color: #6a5a36; }
+body[data-game="world"][data-wlook="passport"] .codetiles span { width: calc(6.8519 * var(--u)); height: calc(8.7038 * var(--u)); border-radius: calc(0.7408 * var(--u)); background: #fffaf0; border: calc(0.1852 * var(--u)) solid #13224a; font: 700 calc(5.1852 * var(--u))/1 'Courier New', var(--wm); color: #13224a; }
+body[data-game="world"][data-wlook="passport"] .stp-c p { color: #4a3f26; }
+body[data-game="world"][data-wlook="passport"] .lob .slots.fit .seat { border-radius: calc(1.2963 * var(--u)); border-color: rgba(232, 195, 106, .45); background: rgba(19, 34, 74, .55); }
+body[data-game="world"][data-wlook="passport"] .lob .slots.fit .seat:not(.empty) { border-color: #e8c36a; background: linear-gradient(180deg, rgba(28, 50, 102, .85), rgba(19, 34, 74, .85)); }
+body[data-game="world"][data-wlook="passport"] .lob .slots.fit .seat.empty span { color: #a99a78; }
+body[data-game="world"][data-wlook="passport"] .lob .slots.fit .seat.empty span::before { content: '🪪'; box-sizing: border-box; width: calc(6.4815 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: calc(0.7408 * var(--u)); border: calc(0.1852 * var(--u)) dashed rgba(232, 195, 106, .5);
+  display: grid; align-items: center; justify-items: center; place-items: center; font-size: calc(2.7778 * var(--u)); line-height: 1; }
+body[data-game="world"][data-wlook="passport"] .seat .av { border-radius: calc(0.926 * var(--u)); box-shadow: 0 0 0 calc(0.3704 * var(--u)) #e8c36a; }
+body[data-game="world"][data-wlook="passport"] .seat .av img { border-radius: calc(0.7408 * var(--u)); }
+body[data-game="world"][data-wlook="passport"] .seat b { color: #f5efe0; }
+body[data-game="world"][data-wlook="passport"] .spot { background: linear-gradient(180deg, #13224a, #0b1530) padding-box, linear-gradient(120deg, #a8803a, #fff6d8, #e8c36a, #a8803a) border-box; }
+body[data-game="world"][data-wlook="passport"] .spot .wl-stamp { right: calc(1.8519 * var(--u)); top: calc(1.8519 * var(--u)); width: calc(13.8889 * var(--u)); height: calc(13.8889 * var(--u)); box-sizing: border-box; border: calc(0.463 * var(--u)) double #ff5a8a; opacity: .35; letter-spacing: .12em; color: #ff5a8a; transform: rotate(-14deg); }
+body[data-game="world"][data-wlook="passport"] .spot-ic { font-size: calc(5.7408 * var(--u)); background: #13224a; border: calc(0.3704 * var(--u)) solid #e8c36a; box-shadow: 0 0 calc(2.2223 * var(--u)) rgba(232, 195, 106, .35); }
+body[data-game="world"][data-wlook="passport"] .spot-t .caps { color: #e8c36a; } body[data-game="world"][data-wlook="passport"] .spot-t b { color: #f5efe0; } body[data-game="world"][data-wlook="passport"] .spot-t p { color: #e8d9b0; }
+body[data-game="world"][data-wlook="passport"] .spot-f span { background: rgba(232, 195, 106, .12); border-color: rgba(232, 195, 106, .4); color: #f5efe0; }
+body[data-game="world"][data-wlook="passport"] .spot-b div { background: rgba(255, 255, 255, .05); border-color: rgba(232, 195, 106, .2); color: #f5efe0; }
+body[data-game="world"][data-wlook="passport"] .lob-foot b { color: #f5efe0; }
+body[data-game="world"][data-wlook="passport"] .lob-foot .snd, body[data-game="world"][data-wlook="passport"] .lob-foot .fs, body[data-game="world"][data-wlook="passport"] .lob-foot .zm { background: rgba(19, 34, 74, .85); border-color: rgba(232, 195, 106, .4); color: #f5efe0; }
+body[data-game="world"][data-wlook="passport"] .lob-foot .zm .zv { color: #9fb8e8; }
+body[data-game="world"][data-wlook="passport"] .lob-foot small { color: #a99a78; }
+
+/* ==================== Vintage Atlas: an old paper map, a turning compass rose, an airmail frame ==================== */
+body[data-game="world"][data-wlook="atlas"] { background: #c9a46a; }
+body[data-game="world"][data-wlook="atlas"] .stage { color: #3a2410; background: radial-gradient(70% 70% at 50% 45%, #f6e7c4, #e2c996 70%, #c9a46a); }
+body[data-game="world"][data-wlook="atlas"] .wl-deco .wl-map { top: calc(11.1112 * var(--u)); opacity: .22; filter: sepia(1) saturate(1.6) hue-rotate(-15deg) brightness(.7); }
+body[data-game="world"][data-wlook="atlas"] .wl-deco .grid { background-image: linear-gradient(rgba(138, 90, 46, .12) calc(0.0926 * var(--u)), transparent calc(0.0926 * var(--u))), linear-gradient(90deg, rgba(138, 90, 46, .12) calc(0.0926 * var(--u)), transparent calc(0.0926 * var(--u))); background-size: calc(11.1112 * var(--u)) calc(11.1112 * var(--u)); }
+body[data-game="world"][data-wlook="atlas"] .wl-deco svg.rose { right: calc(-5.5556 * var(--u)); bottom: calc(-5.5556 * var(--u)); width: calc(31.4815 * var(--u)); height: calc(31.4815 * var(--u)); opacity: .35; animation: w-spin 120s linear infinite; }
+body[data-game="world"][data-wlook="atlas"] .wl-deco .frame { top: calc(1.4815 * var(--u)); right: calc(1.4815 * var(--u)); bottom: calc(1.4815 * var(--u)); left: calc(1.4815 * var(--u)); border: calc(0.2778 * var(--u)) double #8a5a2e; border-radius: calc(1.6667 * var(--u)); }
+body[data-game="world"][data-wlook="atlas"] .wl-deco .vig { background: radial-gradient(80% 80% at 50% 50%, transparent 55%, rgba(90, 50, 10, .35)); }
+body[data-game="world"][data-wlook="atlas"] .lob-top h1 { color: #3a2410; text-shadow: calc(0.2778 * var(--u)) calc(0.2778 * var(--u)) 0 #e8c98a, calc(0.5556 * var(--u)) calc(0.5556 * var(--u)) 0 rgba(90, 50, 10, .25); }
+body[data-game="world"][data-wlook="atlas"] .lob-top .sub { color: #6a4a26; }
+body[data-game="world"][data-wlook="atlas"] .tile-e { font-size: calc(3.3334 * var(--u)); background: #f3e2b8; border: calc(0.2778 * var(--u)) solid var(--c); box-shadow: 0 0 0 calc(0.3704 * var(--u)) #f3e2b8, 0 0 0 calc(0.5556 * var(--u)) var(--c2); }
+body[data-game="world"][data-wlook="atlas"] .tile-e:nth-child(1) { --c: #c0392b; --c2: rgba(192, 57, 43, .4); transform: rotate(-8deg); }
+body[data-game="world"][data-wlook="atlas"] .tile-e:nth-child(2) { --c: #8a5a2e; --c2: rgba(138, 90, 46, .4); transform: rotate(6deg); }
+body[data-game="world"][data-wlook="atlas"] .tile-e:nth-child(3) { --c: #2e6a5a; --c2: rgba(46, 106, 90, .4); transform: rotate(-5deg); }
+body[data-game="world"][data-wlook="atlas"] .tile-e:nth-child(4) { --c: #2a4a8a; --c2: rgba(42, 74, 138, .4); transform: rotate(9deg); }
+body[data-game="world"][data-wlook="atlas"] .lob .join, body[data-game="world"][data-wlook="atlas"] .stp-c { border-radius: calc(1.6667 * var(--u)); background: rgba(255, 248, 230, .78); color: #3a2410; border: calc(0.1852 * var(--u)) solid rgba(138, 90, 46, .45); box-shadow: 0 calc(1.2963 * var(--u)) calc(2.7778 * var(--u)) rgba(90, 50, 10, .25); }
+body[data-game="world"][data-wlook="atlas"] .lob .qr { box-shadow: 0 0 0 calc(0.3704 * var(--u)) #8a5a2e; }
+body[data-game="world"][data-wlook="atlas"] .stp .n { background: #c0392b; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(192, 57, 43, .2); }
+body[data-game="world"][data-wlook="atlas"] .stp-c:first-child .stp .n { background: #2a4a8a; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(42, 74, 138, .2); }
+body[data-game="world"][data-wlook="atlas"] .stp-c:last-child .stp .n { background: #2e6a5a; box-shadow: 0 0 0 calc(0.463 * var(--u)) rgba(46, 106, 90, .2); }
+body[data-game="world"][data-wlook="atlas"] .jt .or { color: #6a4a26; }
+body[data-game="world"][data-wlook="atlas"] .codetiles span { width: calc(6.8519 * var(--u)); height: calc(8.7038 * var(--u)); background: #fffaf0; border: calc(0.1852 * var(--u)) solid #8a5a2e; box-shadow: 0 calc(0.463 * var(--u)) 0 #8a5a2e; font: 700 calc(5 * var(--u))/1 Georgia, 'Times New Roman', serif; color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .stp-c p { color: #5a3a1a; }
+body[data-game="world"][data-wlook="atlas"] .lob .slots.fit .seat { border-radius: calc(2.0371 * var(--u)); border-color: rgba(138, 90, 46, .5); background: rgba(255, 248, 230, .45); }
+body[data-game="world"][data-wlook="atlas"] .lob .slots.fit .seat:not(.empty) { border-color: #8a5a2e; background: rgba(255, 248, 230, .82); box-shadow: 0 calc(0.926 * var(--u)) calc(2.0371 * var(--u)) rgba(90, 50, 10, .2); }
+body[data-game="world"][data-wlook="atlas"] .lob .slots.fit .seat.empty span { color: #8a6a40; }
+body[data-game="world"][data-wlook="atlas"] .lob .slots.fit .seat.empty span::before { content: '📌'; font-size: calc(3.7038 * var(--u)); line-height: normal; }
+body[data-game="world"][data-wlook="atlas"] .seat .av { box-shadow: 0 0 0 calc(0.3704 * var(--u)) #8a5a2e; background: #f3e2b8; }
+body[data-game="world"][data-wlook="atlas"] .seat b { color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .spot { background: linear-gradient(#fbf1d8, #fbf1d8) padding-box,
+  repeating-linear-gradient(45deg, #c0392b 0 calc(1.6667 * var(--u)), #fffaf0 calc(1.6667 * var(--u)) calc(2.7778 * var(--u)), #2a4a8a calc(2.7778 * var(--u)) calc(4.4445 * var(--u)), #fffaf0 calc(4.4445 * var(--u)) calc(5.5556 * var(--u))) border-box; }
+body[data-game="world"][data-wlook="atlas"] .spot-ic { font-size: calc(5.7408 * var(--u)); background: #f3e2b8; border: calc(0.3704 * var(--u)) solid #8a5a2e; }
+body[data-game="world"][data-wlook="atlas"] .spot-t .caps { color: #c0392b; } body[data-game="world"][data-wlook="atlas"] .spot-t b { color: #3a2410; } body[data-game="world"][data-wlook="atlas"] .spot-t p { color: #6a4a26; }
+body[data-game="world"][data-wlook="atlas"] .spot-f span { background: rgba(138, 90, 46, .12); border-color: rgba(138, 90, 46, .35); color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .spot-b div { background: rgba(255, 255, 255, .4); border-color: rgba(138, 90, 46, .25); color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .lob-foot b { color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .lob-foot .snd, body[data-game="world"][data-wlook="atlas"] .lob-foot .fs, body[data-game="world"][data-wlook="atlas"] .lob-foot .zm { background: rgba(255, 248, 230, .8); border-color: rgba(138, 90, 46, .35); color: #3a2410; }
+body[data-game="world"][data-wlook="atlas"] .lob-foot .zm .zv { color: #8a6a40; }
+body[data-game="world"][data-wlook="atlas"] .lob-foot small { color: #8a6a40; }
+
+/* (people who asked for less motion: the plane, the stars, the planet and the compass stand still) */
+@media (prefers-reduced-motion: reduce) { body[data-game="world"][data-wlook] .wl-deco *, body[data-game="world"][data-wlook] .codetiles span, body[data-game="world"][data-wlook] .spot-ic * { animation: none !important; } }
+
+/* the designs' own moves (named w-... so they never meet the kit's own) */
+@keyframes w-dash { to { stroke-dashoffset: -40; } }
+@keyframes w-flap { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.92); } }
+@keyframes w-spin { to { transform: rotate(360deg); } }
+@keyframes w-twk { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+
+/* ==================== the four winner screens (world-tpl.js): each 1920 x 1080 design, scaled to fit ==================== */
+.wv-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; overflow: hidden; z-index: 4; background: #050a18; }
+.wv-host.wv-arrivals { background: #070a13; } .wv-host.wv-balloons { background: #ffb88a; } .wv-host.wv-treasure { background: #c9a46a; }
+.wv-cv { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: 'WV Nunito', 'BV Script', sans-serif; line-height: normal; letter-spacing: normal; text-align: left; direction: ltr; }
+.wv-cv bv-if { display: contents; }
+.wv-cv bv-if[hidden], .wv-cv [hidden] { display: none !important; }
+.wv-cv img.wv-face { display: block; object-fit: contain; flex: none; }
+.wv-cv img.wv-face.ph { border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 4px #fff, 0 6px 16px rgba(0, 0, 0, .35); }
+@media (prefers-reduced-motion: reduce) { .wv-cv * { animation: none !important; } }
+
+/* the winner designs' own moves (made by gen/build.py from the designs) */
+@keyframes wv-bobW { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-10px); } }
+@keyframes wv-cloudX { 0% { transform: translateX(0px); } 100% { transform: translateX(-2200px); } }
+@keyframes wv-dash { 100% { stroke-dashoffset: -40; } }
+@keyframes wv-fallC { 0% { transform: translateY(-80px) rotate(0deg); } 100% { transform: translateY(1200px) rotate(540deg); } }
+@keyframes wv-flipF { 0%, 80%, 100% { transform: rotateX(0deg); } 88% { transform: rotateX(-90deg); } }
+@keyframes wv-flyP { 0% { offset-distance: 0%; } 100% { offset-distance: 100%; } }
+@keyframes wv-ping { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(2.4); opacity: 0; } }
+@keyframes wv-rise { 0%, 100% { transform: translateY(0px) rotate(-1.5deg); } 50% { transform: translateY(-22px) rotate(1.5deg); } }
+@keyframes wv-shineC { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+@keyframes wv-sparkle { 0%, 100% { transform: scale(0.4); opacity: 0; } 50% { transform: scale(1); opacity: 1; } }
+@keyframes wv-spinR { 100% { transform: rotate(360deg); } }

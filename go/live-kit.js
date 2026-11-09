@@ -77,6 +77,20 @@ var BVLIVE = (() => {
     return shared;
   }
   const watchers = new Set();
+  // (every room that's open here: a phone back from its pocket says hello again in each)
+  const openRooms = new Set();
+  // A phone back from the background (another app, the screen locked) or back online: the relays are tried again at
+  // once, and everyone in each room hears this device again, so it's back in the game within a second or two.
+  if (typeof window !== 'undefined' && typeof document !== 'undefined' && window.addEventListener) {
+    let hidAt = 0;
+    const wake = () => {
+      if (shared && shared.wake) { try { shared.wake(); } catch (e) {} }
+      for (const R of openRooms) { setTimeout(() => { if (!R.closed()) R.hello(true); }, 1200); setTimeout(() => { if (!R.closed()) R.hello(true); }, 3500); }
+    };
+    document.addEventListener('visibilitychange', () => { if (document.hidden) hidAt = Date.now(); else if (hidAt && Date.now() - hidAt > 2500) wake(); });
+    window.addEventListener('online', wake);
+    window.addEventListener('pageshow', e => { if (e.persisted) wake(); });
+  }
 
   // ---------- boxes: a message only one device can open (ECDH P-256 + AES-GCM) ----------
   const ECDH = { name: 'ECDH', namedCurve: 'P-256' };
@@ -494,6 +508,7 @@ var BVLIVE = (() => {
     }
 
     net.join(topic);
+    openRooms.add(R);
     // (the relays need a moment to connect: hello right after, then now and then)
     setTimeout(() => hello(true), 1000);
     setTimeout(() => hello(true), 4000);
@@ -513,12 +528,45 @@ var BVLIVE = (() => {
         if (closed) return;
         publish({ k: '~bye' }).catch(() => {});
         closed = true;
+        openRooms.delete(R);
         clearInterval(helloT); clearInterval(sweepT);
         for (const p of [...pipes.values()]) p.close();
         // (unless a new room took this topic meanwhile, like joining again right away to reconnect: then it stays)
         setTimeout(() => { if (handlers.get(topic) === onBytes) { handlers.delete(topic); net.leave(topic); } }, 400);
       }
     });
+  }
+
+  // ---------- TVs nearby: a phone on the same Wi-Fi as a TV finds it without typing a code ----------
+  // The devices on one home network go out to the internet with the same public address (IPv4). Each one asks the free
+  // STUN servers what it is (the same question WebRTC asks to connect two devices) and makes a room from it: the address
+  // itself never leaves the device, only a hash of it does (the room's sealed topic). A TV tells that room what it
+  // shows (the game and its code); a phone lists the TVs it hears. On another network (mobile data, say) a phone simply
+  // finds none, and types the code.
+  function publicIp(ms) {
+    return new Promise(res => {
+      let pc = null, done = false;
+      const fin = v => { if (done) return; done = true; try { if (pc) pc.close(); } catch (e) {} res(v || ''); };
+      try {
+        pc = new RTCPeerConnection({ iceServers: ICE });
+        pc.createDataChannel('ip');
+        pc.onicecandidate = e => {
+          if (!e.candidate) { fin(''); return; }
+          const c = String(e.candidate.candidate || '');
+          const m = / typ srflx/.test(c) && c.match(/ ((?:\d{1,3}\.){3}\d{1,3}) \d+ typ srflx/);
+          if (m && !/^(10|127|169\.254|192\.168)\./.test(m[1])) fin(m[1]);
+        };
+        pc.createOffer().then(o => pc.setLocalDescription(o)).catch(() => fin(''));
+        setTimeout(() => fin(''), ms || 5000);
+      } catch (e) { fin(''); }
+    });
+  }
+  // o: { role ('tv' or 'phone'), name, info, onPeers(peers) }: the room, or null when this network has no address to share
+  async function nearby(o = {}) {
+    const ip = await publicIp(o.wait || 4500);
+    if (!ip) return null;
+    const secret = new Uint8Array(await subtle.digest('SHA-256', te.encode('blokvane-nearby-v1|' + ip))).slice(0, 16);
+    return room({ secret, label: 'bvnear', name: o.name || '', role: o.role || 'phone', info: o.info || null, open: true, memory: o.memory, onPeers: o.onPeers || null });
   }
 
   // ---------- small things many features need ----------
@@ -548,7 +596,7 @@ var BVLIVE = (() => {
   const okPicture = s => typeof s === 'string' && s.length < 90000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
   const sizeText = n => n < 1024 ? n + ' bytes' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
 
-  return { ICE, GO, PLAY, TV, newSecret, shortCode, normShort, codeSecret, link, parse, relays, room, shrink, fit, okPicture, okId, clean, sizeText,
+  return { ICE, GO, PLAY, TV, newSecret, shortCode, normShort, codeSecret, link, parse, relays, room, nearby, publicIp, shrink, fit, okPicture, okId, clean, sizeText,
     onRelays: fn => { watchers.add(fn); return () => watchers.delete(fn); }, localMemory, MAX_LONG };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = BVLIVE;

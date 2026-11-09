@@ -5,7 +5,17 @@
 // Everything goes sealed and signed through the same free public relays as the rest of Blokvane; there is no server.
 (() => {
   'use strict';
-  const { el, view, btn, toast, buzz, hero, input, store, seg, toggle, sheet, confetti } = GO;
+  const { el, view: goView, btn, toast, buzz, hero, input, store, seg, toggle, sheet, confetti } = GO;
+  const view = (title, o) => { noZoom(false); return goView(title, o); };
+  // (the pin screen: the page itself doesn't scroll or zoom there, only the map does; every other screen as usual)
+  function noZoom(on) {
+    const r = document.documentElement;
+    if (r.classList.contains('pt-noz') === !!on) return;
+    r.classList.toggle('pt-noz', !!on);
+    const m = document.querySelector('meta[name="viewport"]');
+    if (m) { if (m.dataset.was == null) m.dataset.was = m.content; m.content = on ? m.dataset.was + ', maximum-scale=1, user-scalable=no' : m.dataset.was; }
+    if (on && !noZoom.ios) { noZoom.ios = true; document.addEventListener('gesturestart', e => { if (r.classList.contains('pt-noz')) e.preventDefault(); }); }
+  }
   const L = BVLIVE, C = BVWT_CORE;
   GO.def('party', async (kind, parts, o) => (kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : start(parts)));
 
@@ -162,6 +172,12 @@ html.no-flexgap[dir="rtl"] .pt-trow > * + * { margin-left: 0; margin-right: 10px
 .pt-flag{display:block;max-width:150px;max-height:84px;margin:0 auto 8px;border-radius:8px;box-shadow:0 8px 18px -8px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.15)}
 .pt-wq{font:700 18px/1.25 var(--fun,var(--round));text-align:center;color:var(--dim);margin:0 6px 4px;overflow-wrap:anywhere}
 .pt-drop{font:700 25px/1.15 var(--fun,var(--round));text-align:center;margin:2px 0 12px}
+.pt-thint{margin-top:14px;border-radius:16px;padding:12px 10px;background:rgba(255,201,60,.12);border:1px solid rgba(255,201,60,.42);text-align:center;animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.pt-thint p{margin:0 0 10px;font-weight:700;color:#ffeab0}
+.pt-shape{display:flex;flex-wrap:wrap;justify-content:center;align-items:center}
+.pt-shape .w{display:inline-flex;flex-wrap:wrap;justify-content:center;margin:0 8px 8px}
+.pt-shape i{display:inline-flex;align-items:center;justify-content:center;width:var(--tw,30px);height:calc(var(--tw,30px) * 1.28);margin:0 2px;border-radius:7px;background:rgba(255,255,255,.1);border-bottom:3px solid rgba(255,255,255,.32);font:800 calc(var(--tw,30px) * .7)/1 var(--round);font-style:normal;color:#fff}
+.pt-shape i.on{background:#ffc93c;border-bottom-color:#c98a00;color:#3a2600}
 .pt-hints{display:flex;flex-wrap:wrap;grid-gap: 6px;gap:6px;justify-content:center;margin:-4px 0 10px}
 html.no-flexgap .pt-hints > * { margin: 0 6px 6px 0; }
 .pt-hints:empty{display:none}
@@ -184,6 +200,63 @@ html.no-flexgap[dir="rtl"] .pt-hint > * + * { margin-left: 0; margin-right: 7px;
 html.no-flexgap .pt-map .zm > * + * { margin-top: 8px; }
 .pt-map .zm button{width:46px;height:46px;border-radius:14px;border:1px solid rgba(255,255,255,.14);background:rgba(18,12,44,.82);color:#fff;font:700 24px/1 var(--fun,var(--round));box-shadow:0 6px 14px -6px rgba(0,0,0,.6);backdrop-filter:blur(4px)}
 .pt-map .zm button:active{transform:scale(.94)}
+/* the pin screen: everything on one screen, on any phone (no scrolling), and only the map zooms */
+html.pt-noz,html.pt-noz body{overflow:hidden;overscroll-behavior:none;touch-action:none}
+html.pt-noz .app{height:100vh;height:100dvh;min-height:0;overflow:hidden;padding-bottom:calc(10px + var(--safe-b))}
+html.pt-noz .app>main{position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.pt-pinb .pt-me{margin-bottom:8px;padding:6px 12px;grid-gap:10px;gap:10px}
+.pt-pinb .pt-me img{width:34px;height:34px}
+.pt-pinb .pt-trow{margin:0 0 8px}
+.pt-qrow{display:flex;align-items:center;justify-content:center;grid-gap:10px;gap:10px;margin:0 4px 8px;min-height:0;flex:none}
+html.no-flexgap .pt-qrow > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .pt-qrow > * + * { margin-left: 0; margin-right: 10px; }
+.pt-qrow .pt-flag{margin:0;max-width:96px;max-height:56px;max-height:min(56px,8vh);flex:none}
+.pt-qrow .pt-wq{margin:0;font:700 20px/1.2 var(--fun,var(--round));color:var(--text);text-align:center}
+.pt-qrow .pt-x2{flex:none;padding:5px 10px;border-radius:999px;background:linear-gradient(135deg,#ffe17a,#ffb547);color:#2a1a00;font:800 13px/1 var(--round)}
+.pt-pinb .pt-map{flex:1 1 auto;min-height:140px;height:auto}
+.pt-pinb .pt-map .pt-hints{position:absolute;left:8px;right:64px;top:8px;z-index:3;justify-content:flex-start;margin:0;pointer-events:none}
+.pt-pinb .pt-map .pt-hint{background:rgba(30,22,6,.86);backdrop-filter:blur(4px)}
+.pt-mtip{position:absolute;left:10px;bottom:10px;right:66px;z-index:3;display:flex;pointer-events:none;transition:opacity .4s}
+.pt-mtip span{padding:7px 12px;border-radius:999px;background:rgba(18,12,44,.82);color:#e6ddff;font:600 13px/1.25 var(--round);backdrop-filter:blur(4px)}
+.pt-mtip.gone{opacity:0}
+html[dir="rtl"] .pt-pinb .pt-map .pt-hints,html[dir="rtl"] .pt-mtip,html[dir="rtl"] .pt-map>.pt-note{left:66px;right:10px}
+html[dir="rtl"] .pt-map>.pt-note.pt-tu{left:50%;right:auto}
+.pt-pinb>.btn.huge{flex:none;margin-top:10px}
+.pt-map>.pt-note{position:absolute;left:10px;right:66px;bottom:10px;z-index:4;margin:0;padding:9px 14px;border-radius:14px;background:rgba(18,12,44,.9);color:#fff;font:700 15px/1.25 var(--round);text-align:center}
+.pt-map>.pt-note.pt-tu{left:50%;right:auto;top:50%;bottom:auto;transform:translate(-50%,-50%);padding:12px 18px;border-radius:16px;font:700 18px/1.2 var(--fun,var(--round));white-space:nowrap}
+@media (max-height:640px){.pt-pinb .pt-me{display:none}.pt-qrow .pt-wq{font-size:17px}}
+@media (min-height:760px){.pt-qrow .pt-flag{max-width:132px;max-height:76px}.pt-qrow .pt-wq{font-size:22px}}
+/* TVs near you, on the Join a game screen */
+.pt-near h2{margin:0 0 4px}
+.pt-near .pt-games{margin-top:10px}
+.pt-near .pt-games:empty{display:none}
+.pt-near.none{padding-top:12px;padding-bottom:12px}
+.pt-near.none h2{font-size:16px}
+/* share the winners: the picture (tap it to share), then Share, Save and Copy */
+.pt-share{display:flex;flex-direction:column;align-items:center;grid-gap:10px;gap:10px;margin:16px 0 2px}
+html.no-flexgap .pt-share > * + * { margin-top: 10px; }
+.pt-share .pv{position:relative;width:52%;max-width:230px;border:0;padding:0;border-radius:16px;overflow:hidden;background:var(--panel);box-shadow:0 18px 40px -14px rgba(0,0,0,.75),0 0 0 1px rgba(255,255,255,.14);transform:rotate(-2deg);transition:transform .2s}
+.pt-share .pv:active{transform:rotate(-2deg) scale(.97)}
+.pt-share .pv::before{content:'';display:block;padding-top:177.78%}
+.pt-share .pv img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover}
+.pt-share .pv.wait img{visibility:hidden}
+.pt-share .pv.wait::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.13) 50%,transparent 70%);background-size:200% 100%;animation:pt-shim 1.2s linear infinite}
+@keyframes pt-shim{to{background-position:-200% 0}}
+.pt-share .go{width:100%;min-height:58px;border:0;border-radius:18px;background:linear-gradient(180deg,#fff2b0,#ffc93c 55%,#e0880b);color:#2a1700;font:700 19px/1.2 var(--fun,var(--round));box-shadow:0 8px 0 rgba(0,0,0,.3),0 0 26px rgba(255,201,60,.35)}
+.pt-share .go:active{transform:translateY(3px);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.pt-share small{text-align:center;color:var(--dim);font:700 13px/1.3 var(--round)}
+.pt-share .ch{display:grid;grid-template-columns:1fr 1fr;grid-gap:8px;gap:8px;width:100%}
+.pt-share .ch button{min-height:48px;border-radius:14px;border:1px solid var(--line);background:var(--raise);color:var(--text);font:700 15px/1.2 var(--round)}
+@media (prefers-reduced-motion:reduce){.pt-share .pv.wait::after{animation:none}}
+/* Kids: four big continents, each with its animal and its color */
+.pt-ans.kids{grid-template-columns:1fr 1fr}
+.pt-ans.kids .pt-a{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:14px;min-height:118px;background:var(--kc);color:#fff;font-size:18px;text-shadow:0 2px 0 rgba(0,0,0,.2)}
+.pt-ans.kids .pt-a .l{display:none}
+.pt-ans.kids .pt-a .kc{font-size:46px;line-height:1;margin-bottom:6px;text-shadow:none}
+/* a clear right or wrong on the result */
+.pt-vd{display:inline-block;margin:6px auto 0;padding:7px 16px;border-radius:999px;font:800 16px/1.2 var(--round)}
+.pt-vd.ok{background:rgba(47,213,154,.18);color:#5fe8b4;border:1px solid rgba(47,213,154,.5)}
+.pt-vd.no{background:rgba(255,90,110,.16);color:#ff8a9c;border:1px solid rgba(255,90,110,.45)}
 .pt-slider{width:100%;height:56px;accent-color:var(--tint);margin:6px 0}
 .pt-peek{min-height:190px;border-radius:26px;border:2px dashed var(--line);display:grid;align-items: center; justify-items: center;place-items:center;text-align:center;padding:20px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:none;margin-top:14px;background:var(--panel)}
 .pt-peek.on{border-style:solid;border-color:var(--tint);background: var(--panel);background:color-mix(in srgb,var(--tint) 14%,var(--panel))}
@@ -445,6 +518,9 @@ html.no-flexgap[dir="rtl"] .pt-gcard > * + * { margin-left: 0; margin-right: 14p
 .pt-gcard small{color:var(--dim);font-size:14px;line-height:1.35}
 .pt-lang{padding:14px}
 .pt-lang h2{font-size:17px;margin:0 0 10px}
+.pt-after{margin-top:16px}
+.pt-after h2{margin:0 0 10px}
+.pt-after .btn{margin-bottom:8px}
 .pt-adm{display:grid;grid-gap: 8px;gap:8px}
 .pt-adm .r{display:flex;align-items:center;grid-gap: 10px;gap:10px;padding:8px 10px;border-radius:14px;background:var(--panel);border:1px solid rgba(255,255,255,.07)}
 html.no-flexgap .pt-adm .r > * + * { margin-left: 10px; }
@@ -607,6 +683,34 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
 .emo-rxbar button{height:52px;border:0;border-radius:14px;background:rgba(255,255,255,.06);font-size:30px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
 .emo-rxbar button:active{background:rgba(255,201,60,.22)}
 @media (prefers-reduced-motion:reduce){.emo-mq::before,.emo-mq::after,.emo-poster::before,.emo-wait .e{animation:none}}
+.pt-howto{padding:6px 2px 0}
+.pt-howto small{display:block;font:900 12px/1 var(--round);letter-spacing:.2em;text-transform:uppercase;color:#ffc93c}
+.pt-howto h1{margin:6px 0 14px;font:700 30px/1.1 var(--fun);color:#fff}
+.pt-howto ul{list-style:none;margin:0;padding:0;display:grid;grid-gap:8px;gap:8px}
+.pt-howto li{display:flex;align-items:flex-start;grid-gap:10px;gap:10px;padding:11px 13px;border-radius:14px;background:var(--panel);border:1px solid rgba(255,255,255,.08);font:700 15px/1.35 var(--fun);color:#f3eeff}
+html.no-flexgap .pt-howto li > * + *{margin-left:10px}
+.pt-howto li.mode{border-color:rgba(255,201,60,.45)}
+.pt-howto li i{flex:none;width:22px;text-align:center;font-style:normal}
+.pt-howto .pt-timer{margin-top:16px}
+@media (max-height:720px){.pt-howb .pt-me{display:none}.pt-howto h1{font-size:25px;margin:4px 0 10px}.pt-howto ul{grid-gap:6px;gap:6px}.pt-howto li{padding:8px 11px;font-size:14px;line-height:1.3}.pt-howto .pt-timer{margin-top:10px}}
+html.pt-paused body *{animation-play-state:paused!important}
+html.pt-paused .pt-pause, html.pt-paused .pt-pause *{animation-play-state:running!important}
+.pt-pause{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;background:rgba(12,7,34,.94);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.pt-pause .boo{width:120px;height:120px;margin-bottom:8px}
+.pt-pause h1{margin:0 0 8px;font:700 44px/1.05 var(--fun);color:#fff}
+.pt-pause p{margin:0 0 22px;max-width:320px;color:var(--dim);font:700 16px/1.4 var(--round)}
+.pt-pause .btn{max-width:360px}
+.pt-rc{position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:70;display:flex;align-items:center;grid-gap:8px;gap:8px;padding:9px 16px;border-radius:999px;background:#2a1c5e;border:1px solid rgba(255,201,60,.4);box-shadow:0 8px 24px rgba(0,0,0,.4);color:#fff;font:800 14px/1.2 var(--round);white-space:nowrap}
+html.no-flexgap .pt-rc > * + *{margin-left:8px}
+.pt-rc .spin{width:16px;height:16px;border-width:2px;margin:0}
+.pt-gctl{display:grid;grid-gap:8px;gap:8px}
+.pt-gc{display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:12px;align-items:center;width:100%;min-height:58px;padding:9px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.09);background:var(--panel);color:#fff;text-align:start}
+.pt-gc i{grid-row:1/3;font-style:normal;font-size:24px;line-height:1}
+.pt-gc span{font:700 16px/1.2 var(--fun)}
+.pt-gc small{display:block;color:var(--dim);font:700 12.5px/1.3 var(--round)}
+.pt-gc:active{transform:scale(.98)}
+.pt-gc.bad span{color:#ff8f8a}
+.pt-fs{display:flex;align-items:center;justify-content:center;grid-gap:8px;gap:8px;width:100%;min-height:48px;margin-top:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font:700 15px/1.2 var(--fun)}
 `;
   }
 
@@ -651,8 +755,52 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
   // (a player who picked their own language sees the game's name in it too, not in the TV's)
   const gameName = () => { const l = G.lobby || {}; return (ownLang(l) && typeof l.gen === 'string' && l.gen ? T(L.clean(l.gen, 60)) : l.gname) || T('Party games'); };
-  const after = (ms, fn) => { const t = setTimeout(fn, ms); G.timers.push(t); return t; };
-  function stopQ() { for (const t of G.timers) clearTimeout(t); G.timers = []; for (const f of G.stops) { try { f(); } catch (e) {} } G.stops = []; }
+  // (the game's clock on this phone: it stands still while the host has the game paused, so a question's time left, its
+  // time's up and how fast an answer was all leave the pause out)
+  const P2 = { on: false, at: 0, all: 0, el: null, anims: [] };
+  const pnow = () => performance.now() - P2.all - (P2.on ? performance.now() - P2.at : 0);
+  const ptimers = new Set();
+  // after ms of the game's time, fn (stopQ() cancels it)
+  const after = (ms, fn) => {
+    const x = { due: pnow() + ms, t: 0 };
+    x.arm = () => { clearTimeout(x.t); x.t = setTimeout(() => { ptimers.delete(x); fn(); }, Math.max(0, x.due - pnow())); };
+    ptimers.add(x);
+    if (!P2.on) x.arm();
+    const cancel = () => { clearTimeout(x.t); ptimers.delete(x); };
+    G.timers.push(cancel);
+    return cancel;
+  };
+  function stopQ() { for (const t of G.timers) { if (typeof t === 'function') t(); else clearTimeout(t); } G.timers = []; for (const f of G.stops) { try { f(); } catch (e) {} } G.stops = []; }
+  // the host paused the game (or it goes on): this phone stands still under a big "Paused", the host's with Resume on it
+  function setPausedPhone(on) {
+    on = !!on;
+    if (on === P2.on) { if (on && P2.el) pauseCover(); return; }
+    if (on) {
+      P2.on = true; P2.at = performance.now();
+      for (const x of ptimers) clearTimeout(x.t);
+      try { P2.anims = document.getAnimations ? document.getAnimations().filter(a => a.playState === 'running') : []; for (const a of P2.anims) a.pause(); } catch (e) { P2.anims = []; }
+      document.documentElement.classList.add('pt-paused');
+      pauseCover();
+      buzz('tap');
+    } else {
+      P2.all += performance.now() - P2.at; P2.on = false;
+      for (const x of [...ptimers]) x.arm();
+      for (const a of P2.anims) { try { a.play(); } catch (e) {} }
+      P2.anims = [];
+      document.documentElement.classList.remove('pt-paused');
+      if (P2.el) { P2.el.remove(); P2.el = null; }
+    }
+  }
+  function pauseCover() {
+    if (P2.el) P2.el.remove();
+    const c = el('div', 'pt-pause', document.body);
+    c.setAttribute('role', 'dialog'); c.setAttribute('aria-live', 'polite');
+    c.appendChild(booPic('boo:peek', 'float'));
+    el('h1', '', c, T('Paused'));
+    el('p', '', c, G.host ? T('Everyone is waiting for you. Go on whenever you\'re ready.') : T('The host paused the game. It goes on from right here.'));
+    if (G.host) btn('▶️ ' + T('Resume the game'), { kind: 'go', huge: true, full: true }, c, () => { send({ k: 'pause', on: false }); buzz('ok'); });
+    P2.el = c;
+  }
 
   // who you are in this game: kept by this tab only (two tabs or two people on one computer are two players), and
   // still there after a reload, so you come back as yourself
@@ -664,6 +812,20 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   // (and on this phone too, for 4 hours: a page closed by mistake, opened again, is the same player with the same score.
   // A tab that's open says so every few seconds, so a second tab of the same game is a second player.)
   const LIVE = k => 'party:live:' + k;
+  // (and the tabs ask each other: "is anyone here playing as this player?" A tab that's in the game answers at once, so
+  // a page that closed without a word, or a dead tab, doesn't keep its player from coming back)
+  const TAB = Math.random().toString(36).slice(2);
+  const bc = (() => { try { return typeof BroadcastChannel === 'function' ? new BroadcastChannel('bvgo-party') : null; } catch (e) { return null; } })();
+  if (bc) bc.addEventListener('message', e => { const m = e.data || {}; if (m.k === 'who' && m.key && m.key === G.key && m.tab !== TAB && G.R && G.joined && !document.hidden) bc.postMessage({ k: 'me', key: m.key, tab: TAB }); });
+  function otherTabHas(key) {
+    if (!bc) return Promise.resolve(null);
+    return new Promise(res => {
+      const on = e => { const m = e.data || {}; if (m.k === 'me' && m.key === key && m.tab !== TAB) { clearTimeout(t); bc.removeEventListener('message', on); res(true); } };
+      const t = setTimeout(() => { bc.removeEventListener('message', on); res(false); }, 400);
+      bc.addEventListener('message', on);
+      try { bc.postMessage({ k: 'who', key, tab: TAB }); } catch (er) { clearTimeout(t); res(null); }
+    });
+  }
   const claimMe = () => { if (G.key) store.set(LIVE(G.key), Date.now()); };
   const releaseMe = () => { if (G.key) store.del(LIVE(G.key)); };
   setInterval(() => { if (G.key && G.R && G.joined && !document.hidden) claimMe(); }, 4000);
@@ -681,8 +843,12 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     let jwk = tabStore.get(key);
     if (!jwk) {
       const kept = store.get('party:me:' + key, null);
-      const busy = Date.now() - (+store.get(LIVE(key), 0) || 0) < 10000;
-      if (kept && kept.jwk && Date.now() - kept.at < 4 * 3600e3 && !busy) jwk = kept.jwk;
+      if (kept && kept.jwk && Date.now() - kept.at < 4 * 3600e3) {
+        // (another tab that's in this game as this player says so; with no way to ask, a claim from the last 10 seconds)
+        const other = await otherTabHas(key);
+        const busy = other === null ? Date.now() - (+store.get(LIVE(key), 0) || 0) < 10000 : other;
+        if (!busy) jwk = kept.jwk;
+      }
     }
     let me = null;
     try { me = await C.newMember(jwk || undefined); } catch (e) { me = null; }
@@ -763,6 +929,8 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       await connect();
     });
     go.style.marginTop = '6px';
+    // (the whole screen for the game, where the browser can)
+    if (!editing && (fsCan() || (GO.plat && GO.plat() === 'ios' && !(GO.standalone && GO.standalone())))) fsRow(v.body);
     ni.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     if (!G.name) setTimeout(() => ni.focus(), 300);
   }
@@ -792,8 +960,11 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (G.R) { try { G.R.close(); } catch (e) {} }
     G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, onMsg: m => { if (m.f === G.tv) take(m); } });
     G.phase = 'join'; G.joined = false; G.tries = 0;
+    G.waitNext = false;
     const hi = () => {
-      if (G.joined) return;
+      if (G.joined || !G.R) return;
+      // (waiting for the next game: still here, now and then, without ever giving up)
+      if (G.waitNext) { send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '' }); setTimeout(hi, 10000); return; }
       if (++G.tries > 30) { notFound(); return; }
       send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '', again: G.again || undefined });
       if (G.tries === 6) { const p = h.querySelector('p'); if (p) p.textContent = T('Still looking. Is the game open on the TV?'); }
@@ -806,7 +977,8 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   function backToNow() { if (G.phase === 'end') showEnd(); else if (G.phase === 'play' && G.q) showQ(); else if (G.phase === 'play') showWait(S().look); else showLobby(); }
   function notFound() {
     tabStore.del('party:in');
-    dropBack();
+    const nb = store.get('party:back', null);
+    if (nb && nb.s === G.s) { nb.noAuto = 1; store.set('party:back', nb); }
     const v = view(T('Party games'), { tint: 'sun', night: true });
     hero(v.body, T('Can\'t find the game'), T('Check that the game is open on the TV, and that this phone is online. Then try again.'), { sleepy: true });
     btn(T('Try again'), { kind: 'go', full: true, huge: true }, v.body, () => connect());
@@ -822,10 +994,53 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   function keepAwake() {
     try { if (navigator.wakeLock && !wl) navigator.wakeLock.request('screen').then(x => { wl = x; x.addEventListener('release', () => { wl = null; }); }).catch(() => {}); } catch (e) {}
   }
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && G.R && G.joined) { send({ k: 'sync' }); keepAwake(); claimMe(); } });
+  // ---------- back from the background: another app, the screen locked, a page restored, the network back ----------
+  // This phone finds the TV again by itself (the relays are tried again right away) and picks up wherever the game is
+  // now: the same player, with the same score. A small line at the top says so until the TV answers.
+  let hidAt = 0, backT = 0;
+  async function comeBack() {
+    if (!G.R || G.kicked || G.closed || !G.joined) return;
+    if (G.key && (await otherTabHas(G.key)) === true) { movedScreen(); return; }
+    keepAwake(); claimMe();
+    const t0 = Date.now();
+    clearTimeout(backT);
+    let i = 0;
+    const step = () => {
+      if (!G.R || G.kicked || G.closed) { rcPill(false); return; }
+      if (G.lastHeard > t0) { rcPill(false); if (i > 2) toast(T('Back in the game!'), 'ok'); return; }
+      if (i === 2) rcPill(true);
+      if (i >= 16) { rcPill(false); return; }
+      // ("what's on?" to the TV; a couple of times "it's me" too, in case it lost this phone)
+      if (i === 4 || i === 9) send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: ownLang(G.lobby) || G.plang || '' });
+      else send({ k: 'sync' });
+      i++;
+      backT = setTimeout(step, i < 5 ? 1200 : 2500);
+    };
+    step();
+  }
+  // (this player came back in another tab: this one steps aside, so the two never play at once)
+  function movedScreen() {
+    quitParty(true);
+    const v = view(gameName(), { tint: 'sun', night: true });
+    hero(v.body, T('This game is open in another tab'), T('You\'re playing there now. You can close this one.'), { node: booPic('boo:peek', 'float') });
+  }
+  function rcPill(on) {
+    let p = document.querySelector('.pt-rc');
+    if (!on) { if (p) p.remove(); return; }
+    if (p) return;
+    p = el('div', 'pt-rc', document.body);
+    el('i', 'spin', p);
+    el('span', '', p, T('Finding the TV again...'));
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { hidAt = Date.now(); return; }
+    if (!G.R || !G.joined) return;
+    if (Date.now() - hidAt > 2500) comeBack(); else { send({ k: 'sync' }); keepAwake(); claimMe(); }
+  });
+  addEventListener('online', () => { if (G.R && G.joined) comeBack(); });
   // (the page is closing: the TV takes this phone off a question that waits for it; if the page comes back, so does it)
   addEventListener('pagehide', () => { if (G.R && G.joined) { try { G.R.send({ k: 'bye' }).catch(() => {}); } catch (e) {} } releaseMe(); });
-  addEventListener('pageshow', e => { if (e.persisted && G.R && G.joined) { claimMe(); send({ k: 'sync' }); } });
+  addEventListener('pageshow', e => { if (e.persisted && G.R && G.joined) comeBack(); });
 
   // ---------- the phone's Back button (or a back swipe) during a game asks first ----------
   // Back would close this page and drop you out of the game, so while you're in one it asks "Leave the game?": Stay
@@ -871,7 +1086,9 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   // Leave: goodbye to the TV, then where Back was going (the Blokvane home when this game was the first page here)
   function leaveNow() {
     trap.going = true;
-    quitParty();
+    const b = store.get('party:back', null);
+    if (b && b.s === G.s) { b.left = 1; store.set('party:back', b); }
+    quitParty(false, true);
     const here = location.href;
     try { history.back(); } catch (e) {}
     setTimeout(() => {
@@ -880,10 +1097,11 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     }, 500);
   }
   // out of this game: the TV hears goodbye (unless it's the one that closed), and this phone stops listening
-  function quitParty(quiet) {
+  function quitParty(quiet, left) {
     const r = G.R;
     if (!r) return;
-    if (!quiet && G.joined) { try { r.send({ k: 'bye' }).catch(() => {}); } catch (e) {} }
+    if (!quiet && G.joined) { try { r.send(left ? { k: 'bye', left: 1 } : { k: 'bye' }).catch(() => {}); } catch (e) {} }
+    setPausedPhone(false); rcPill(false); clearTimeout(backT);
     G.R = null; G.joined = false; G.phase = 'join';
     stopQ(); hideNext();
     tabStore.del('party:in'); releaseMe();
@@ -929,8 +1147,10 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       }
       // ("still there?" from the TV, while a question with no clock waits for this phone)
       case 'ping': send({ k: 'pong' }); return;
+      case 'pause': if (G.phase === 'play') setPausedPhone(!!m.on); return;
       case 'kicked': return kickedScreen();
       case 'closed': return closedScreen();
+      case 'waitnext': G.waitNext = true; return waitNextScreen();
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
@@ -940,7 +1160,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       case 'res': return onRes(m);
       case 'imp': return isImpGame() ? onImp(m) : undefined;
       case 'emo': return isEmo() ? onEmo(m) : undefined;
-      case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
+      case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; G.endLook = typeof m.look === 'string' ? m.look.slice(0, 20) : ''; G.endTeam = !!m.team; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
       case 'gclue': return onClue(m);
       case 'secret': if (m.boxed) { G.secret = m; if (isImpGame()) { if (G.imp && ['peek', 'clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; } if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
@@ -986,15 +1206,24 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
     if (!G.joined) return;
+    // (the game paused, or going on: the same here, also on a phone that just came back)
+    if (!!(m.phase === 'play' && m.paused) !== P2.on) setPausedPhone(m.phase === 'play' && !!m.paused);
+    else if (P2.on && prev && prev.host !== m.host) pauseCover();
+    // (the host started the game over: everything this phone kept about the last one goes)
+    const fresh = m.phase === 'play' && G.phase === 'play' && m.gr != null && G.gr != null && m.gr !== G.gr;
+    G.gr = m.gr;
+    // (a question is on that this phone never got, like one a relay dropped: it asks the TV for it again)
+    if (m.phase === 'play' && Number.isInteger(m.qn) && m.qn > (G.q ? G.q.n : 0) && Date.now() - (G.qAsked || 0) > 2500) { G.qAsked = Date.now(); send({ k: 'sync' }); }
     // (this phone's own language, the way the TV should have it: said again whenever the TV has it wrong)
     if (mine) { const want = ownLang(m), tag = want + '|' + tvLangOf(m); if ((mine.lg || '') !== want && G.plangSent !== tag) { G.plangSent = tag; send({ k: 'plang', v: want }); } }
     if (prev && prev.host !== m.host && G.host) { toast(S().youHost, 'ok'); buzz('ok'); }
     // ("Back to the game" says which game)
     if (!prev || prev.gname !== m.gname) keepBack();
     // (after a game, "Play again": the host's phone opens on the last step, everything as it was, ready to start)
-    if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
+    if (G.host && m.phase === 'lobby' && G.wizTo != null) { G.wiz = G.wizTo; G.wizTo = null; }
+    else if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
+      if (was !== 'play' || fresh) { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1037,7 +1266,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (m.extra && m.extra.helpOnly && !inIt) return;
     if (G.bingo && m.kind === 'wait') return;
     G.phase = 'play';
-    G.q = m; G.qAt = performance.now(); G.answered = false; G.locked = false; G.res = null;
+    G.q = m; G.qAt = pnow(); G.answered = false; G.locked = false; G.res = null;
     showQ();
   }
   function onRes(m) {
@@ -1082,15 +1311,59 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   }
   function gameView() {
     const v = partyView(gameName(), { chip: false });
-    // (the ⋯ on every phone: your picture, your language, leaving; the host's tools too)
-    if (G.joined) {
-      const x = el('button', 'pt-more', v.top);
-      x.type = 'button'; x.title = S().menu; x.setAttribute('aria-label', S().menu);
-      x.appendChild(GO.icon('dots'));
-      x.onclick = () => { buzz('tap'); menuSheet(); };
-    }
+    moreBtn(v);
     meRow(v.body);
     return v;
+  }
+  // (the ⋯ on every phone, on every screen of a game: your picture, your language, full screen, leaving; the host's tools)
+  function moreBtn(v) {
+    if (!G.joined || v.top.querySelector('.pt-more')) return;
+    const x = el('button', 'pt-more', v.top);
+    x.type = 'button'; x.title = S().menu; x.setAttribute('aria-label', S().menu);
+    x.appendChild(GO.icon('dots'));
+    x.onclick = () => { buzz('tap'); menuSheet(); };
+  }
+  // ---------- full screen on the phone ----------
+  // The browser's own full screen where it has one (it needs a tap, so a page opened again goes back to it at the first
+  // tap). An iPhone doesn't give it to web pages: there it's Blokvane on the Home Screen, which opens full screen.
+  const fsNow = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const fsCan = () => { const d = document.documentElement; return !!(d.requestFullscreen || d.webkitRequestFullscreen) && !(GO.plat && GO.plat() === 'ios' && !/iPad/.test(navigator.userAgent) && !d.requestFullscreen); };
+  function fsGo(on) {
+    const d = document.documentElement;
+    try {
+      if (!on) { const x = document.exitFullscreen || document.webkitExitFullscreen; if (x && fsNow()) { const r = x.call(document); if (r && r.catch) r.catch(() => {}); } return true; }
+      const f = d.requestFullscreen || d.webkitRequestFullscreen;
+      if (!f) return false;
+      const r = f.call(d, { navigationUI: 'hide' });
+      if (r && r.catch) r.catch(() => {});
+      return true;
+    } catch (e) { return false; }
+  }
+  function fsToggle() {
+    if (fsNow()) { store.set('party:fs', 0); fsGo(false); return; }
+    if (GO.standalone && GO.standalone() && !fsCan()) { toast(T('This is already as big as it gets.'), 'ok'); return; }
+    if (fsCan() && fsGo(true)) { store.set('party:fs', 1); keepAwake(); return; }
+    if (GO.installSteps) GO.installSteps({ note: T('Then open the game from the Blokvane icon: it fills the whole screen.') });
+  }
+  // (full screen was on: back to it at the first tap after the page opened again)
+  addEventListener('pointerup', function again() { if (store.get('party:fs', 0) && !fsNow() && fsCan() && G.R) fsGo(true); }, true);
+  function fsRow(parent, close) {
+    const b = el('button', 'pt-fs', parent);
+    b.type = 'button';
+    el('span', '', b, fsNow() ? '⤡ ' + T('Leave full screen') : '⛶ ' + T('Full screen'));
+    b.onclick = () => { buzz('tap'); if (close) close(); fsToggle(); };
+    return b;
+  }
+  // the host's game controls, from any screen of a game: start the same game over, back to its setup (another mode,
+  // other settings), another game, or the end now with the winners. Two taps each, so nothing happens by mistake.
+  function gameCtl(sh, close) {
+    el('label', 'pt-lbl', sh, T('The game'));
+    const box = el('div', 'pt-gctl', sh);
+    const row = (ic, t, sub, cls) => { const b = el('button', 'pt-gc' + (cls ? ' ' + cls : ''), box); b.type = 'button'; el('i', '', b, ic); el('span', '', b, t); if (sub) el('small', '', b, sub); return b; };
+    twice(row('🔁', T('Start over'), T('The same game and settings, from the top.')), () => { send({ k: 'restart' }); close(); });
+    twice(row('⚙️', T('Change the mode or settings'), T('Back to the setup steps, then start again.')), () => { G.wizTo = 0; send({ k: 'tolobby' }); close(); });
+    row('🎮', S().otherGame, T('Everyone stays in the room.')).onclick = () => { close(); pickGameSheet((G.lobby || {}).games || []); };
+    if (G.phase === 'play') twice(row('🏁', S().endGame, T('The scores so far count, and the winners show.'), 'bad'), () => { send({ k: 'stop' }); close(); });
   }
   const myPic = () => G.photo || booUri(G.av) || booUri('boo:hi');
   // the ⋯ during a game, on every phone: you, with a new picture (a Boo or a selfie) and leaving the game, and your own
@@ -1106,32 +1379,51 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       const t = el('span', '', me);
       el('b', '', t, G.name);
       if (G.host) el('i', '', t, S().hostBadge);
+      // (the host, during a game: Pause first, big)
+      if (G.host && G.phase === 'play') {
+        const pz = !!l.paused;
+        btn(pz ? '▶️ ' + T('Resume the game') : '⏸️ ' + T('Pause the game'), { kind: pz ? 'go' : 'tint', huge: true, full: true }, sh, () => { send({ k: 'pause', on: !pz }); close(); buzz('tap'); }).style.margin = '2px 0 12px';
+      }
       pair(sh, [['🖼️ ' + S().changePic, () => { close(); picSheet(); }], ['🚪 ' + S().leaveGame, () => { close(); askLeave(); }, 'bad']]);
+      fsRow(sh, close);
       if (l.mlang && !G.host) langCard(sh, l, close);
       if (G.host) {
         el('label', 'pt-lbl', sh, S().players);
-        const adm = el('div', 'pt-adm', sh);
-        for (const p of Array.isArray(l.players) ? l.players : []) {
-          const r = el('div', 'r', adm);
-          const pi = el('img', '', r); pi.src = p.id === G.id ? myPic() : booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); pi.alt = '';
-          el('b', '', r, p.id === G.id ? S().you : L.clean(p.name, 16));
-          if (p.id === l.host) { el('i', '', r, S().hostBadge); continue; }
-          const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
-          twice(mk, () => { send({ k: 'makehost', id: p.id }); close(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
-          const rm = el('button', 'bad', r); rm.type = 'button'; el('span', '', rm, S().remove);
-          twice(rm, () => { send({ k: 'kick', id: p.id }); r.remove(); });
-        }
+        playersAdmin(sh, l, close);
         const on = !!l.joinOn;
         const jc = btn(on ? S().hideCode : S().showCode, { kind: on ? 'ghost' : 'tint', full: true, icon: 'phone' }, sh, () => { send({ k: 'showjoin', on: !on }); if (!on) toast(S().codeOn, 'ok'); close(); });
         jc.style.marginTop = '14px';
+        // (the sounds on the TV: the music, or any one kind of sound, off or on again right away)
+        const sf = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string' && /^snd_/.test(f.key));
+        if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
         tvSizeRow(sh, l);
-        if (G.phase === 'play') {
-          const eb = el('button', 'pt-dk bad', sh); eb.type = 'button'; el('span', '', eb, S().endGame);
-          eb.style.cssText = 'width:100%;margin-top:16px';
-          twice(eb, () => { send({ k: 'stop' }); close(); });
-        }
+        if (G.phase === 'play' || G.phase === 'end') gameCtl(sh, close);
+        else if (l.game) { const og = btn('🎮 ' + S().otherGame, { kind: 'ghost', full: true }, sh, () => { close(); pickGameSheet(Array.isArray(l.games) ? l.games : []); }); og.style.marginTop = '12px'; }
       }
     });
+  }
+  // the host turns sounds on the TV off or on (the same switches as on the last step of the setup)
+  function soundSheet() {
+    const l = G.lobby || {};
+    sheet(T('Sounds'), sh => {
+      el('p', 'muted small', sh, T('Turn off any sound you don\'t want. The TV remembers it for the next game.'));
+      for (const f of (Array.isArray(l.schema) ? l.schema : []).filter(x => x && typeof x.key === 'string' && /^snd_/.test(x.key))) setCtl(sh, f, l);
+    });
+  }
+  // the host's list of players: make one the host, or take one out (tap twice, so it can't happen by mistake)
+  function playersAdmin(parent, l, after) {
+    const adm = el('div', 'pt-adm', parent);
+    for (const p of Array.isArray(l.players) ? l.players : []) {
+      const r = el('div', 'r', adm);
+      const pi = el('img', '', r); pi.src = p.id === G.id ? myPic() : booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); pi.alt = '';
+      el('b', '', r, p.id === G.id ? S().you : L.clean(p.name, 16));
+      if (p.id === l.host) { el('i', '', r, S().hostBadge); continue; }
+      const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
+      twice(mk, () => { send({ k: 'makehost', id: p.id }); if (after) after(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
+      const rm = el('button', 'bad', r); rm.type = 'button'; el('span', '', rm, S().remove);
+      twice(rm, () => { send({ k: 'kick', id: p.id }); r.remove(); });
+    }
+    return adm;
   }
   // a new picture, in the middle of a game: one of the Boos, or a selfie (it only goes to the TV, and isn't kept)
   function picSheet() {
@@ -1192,6 +1484,31 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     u.sc.textContent = String(G.score || 0);
     u.hearts.textContent = usesLives() && G.lives != null ? '❤️'.repeat(Math.max(0, Math.min(5, G.lives))) || '💀' : '';
   }
+  // how to play, before the first question (the TV shows the same): the mode, the rules, and a bar for the time
+  function howtoScreen(ex) {
+    const v = gameView();
+    v.body.classList.add('pt-howb');
+    const box = el('div', 'pt-howto', v.body);
+    el('small', '', box, T('How to play'));
+    el('h1', '', box, gameName());
+    const ul = el('ul', '', box);
+    const sp = ex.sp && typeof ex.sp === 'object' ? ex.sp : null;
+    const vars = sp && sp.vars && typeof sp.vars === 'object' ? sp.vars : undefined;
+    if (sp && typeof sp.name === 'string') { const li = el('li', 'mode', ul); el('i', '', li, '🎮'); el('span', '', li, T(L.clean(sp.name, 60)) + (sp.desc ? ': ' + T(L.clean(sp.desc, 200)) : '')); }
+    for (const t of ex.rules.slice(0, 6)) if (typeof t === 'string') { const li = el('li', '', ul); el('i', '', li, '•'); el('span', '', li, T(L.clean(t, 200))); }
+    if (sp && Array.isArray(sp.bullets)) for (const b of sp.bullets.slice(0, 3)) if (typeof b === 'string') { const ic = [...b][0] || '•'; const li = el('li', '', ul); el('i', '', li, ic); el('span', '', li, T(L.clean(b.slice(ic.length).trim(), 200), vars)); }
+    const secs = Math.max(3, Math.min(120, +ex.secs || 12));
+    const bar = el('div', 'pt-timer', box); const i = el('i', '', bar);
+    try { i.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: secs * 1000, fill: 'forwards', easing: 'linear' }); } catch (e) {}
+    el('p', 'muted small center', box, S().look).style.marginTop = '12px';
+  }
+  // came in while a game is on that the host keeps closed: in for the next one, by itself
+  function waitNextScreen() {
+    if (G.joined) return;
+    G.tries = 0;
+    const v = view(gameName(), { tint: 'sun', night: true });
+    hero(v.body, T('The game has already started'), T('You\'re in for the next one. Keep this page open: you join by yourself as soon as this game ends.'), { node: booPic('boo:hi', 'float') });
+  }
   function showWait(text, boo, sub) {
     stopQ();
     const v = gameView();
@@ -1209,6 +1526,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (G.host && l.game) return wizard(l);
     G.ui = {};
     const v = partyView(l.gname || T('Party games'));
+    moreBtn(v);
     const games = Array.isArray(l.games) ? l.games : [];
     if (!l.game) {
       if (G.host) {
@@ -1387,6 +1705,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     const y = keep ? window.scrollY : 0;
     G.ui = { wiz: true };
     const v = partyView(l.gname || T('Party games'));
+    moreBtn(v);
     const wz = el('div', 'pt-wz', v.body);
     const pr = el('div', 'pt-prog', wz);
     pr.setAttribute('aria-hidden', 'true');
@@ -1589,9 +1908,10 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (isEmo() && ((q.extra && q.extra.emo) || q.kind === 'emojimake')) return emoQ(q);
     const ex = q.extra || {};
     if (q.kind === 'wait' && ex.tw && typeof ex.tw === 'object') return twScreen(q);
+    if (q.kind === 'wait' && Array.isArray(ex.rules)) return howtoScreen(ex);
     const inIt = q.who.includes(G.id);
     const imp = G.secret && (G.lobby || {}).game === 'imposter';
-    G.ui.clues = null; G.ui.worth = null;
+    G.ui.clues = null; G.ui.worth = null; G.ui.noteIn = null;
     if (!inIt || q.kind === 'wait') {
       const v = showWait(q.kind === 'wait' ? (L.clean(q.prompt, 160) || S().look) : G.out ? S().out : waitLine(ex) || S().look, G.out ? 'boo:sad' : ex.peek ? 'boo:peek' : 'boo:hi');
       if (imp) peekBox(v.body);
@@ -1726,19 +2046,27 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (!q || G.answered || G.locked || !q.who.includes(G.id)) return false;
     G.answered = true;
     if (G.host && G.revealQ && G.revealQ.n === q.n) setTimeout(() => { if (G.q === q && !G.res && G.revealQ) hostBar('reveal', q.n, G.revealQ.label, '👀'); }, 400);
-    const ms = Math.round(performance.now() - G.qAt);
+    const ms = Math.round(pnow() - G.qAt);
     const m = { k: 'ans', n: q.n, v, ms };
     send(m);
     // (once more a moment later, in case a relay dropped it: the TV counts it once)
     setTimeout(() => { if (G.q === q) send(m); }, 1300);
     buzz('tap');
     if (G.ui.body && G.ui.body.isConnected) {
-      let n = G.ui.body.querySelector('.pt-note.sent');
-      if (!n) { n = el('p', 'pt-note sent', G.ui.body); }
+      const par = noteBox();
+      let n = par.querySelector('.pt-note.sent');
+      if (!n) { n = el('p', 'pt-note sent', par); }
       n.textContent = (shown ? T('You picked: {x}.', { x: shown }) + ' ' : '') + S().answered;
       for (const x of G.ui.body.querySelectorAll('input, textarea, .btn.go')) x.disabled = true;
     }
     return true;
+  }
+  // (where a note goes: under the answers, or over the map on the pin screen, where it takes the tip's place)
+  function noteBox() {
+    const nb = G.ui.noteIn;
+    if (!nb || !nb.isConnected) return G.ui.body;
+    const t = nb.querySelector('.pt-mtip'); if (t) t.remove();
+    return nb;
   }
   function timerBar(parent, sec) {
     const t = el('div', 'pt-timer', parent);
@@ -1749,7 +2077,8 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       G.locked = true;
       buzz('bad');
       if (G.ui.body && G.ui.body.isConnected) {
-        el('p', 'pt-note', G.ui.body, '⏰ ' + S().timeUp);
+        const par = noteBox();
+        el('p', 'pt-note' + (par !== G.ui.body ? ' pt-tu' : ''), par, '⏰ ' + S().timeUp);
         for (const x of G.ui.body.querySelectorAll('button, input, textarea')) x.disabled = true;
       }
     });
@@ -1767,7 +2096,8 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     const src = mine && Array.isArray(mine.o) && Array.isArray(q.opts) && mine.o.length === q.opts.length ? mine.o : q.opts;
     const opts = (Array.isArray(src) ? src : []).slice(0, 6).map(o => L.clean(o, 140));
     const short = opts.every(o => [...o].length <= 4);
-    const grid = el('div', 'pt-ans' + (ex.two || (opts.length <= 2 && !short) ? ' one' : ''), b);
+    const kids = Array.isArray(ex.kidsc) && ex.kidsc.length === opts.length;
+    const grid = el('div', 'pt-ans' + (kids ? ' kids' : ex.two || (opts.length <= 2 && !short) ? ' one' : ''), b);
     const own = ex.own && typeof ex.own === 'object' ? ex.own[G.id] : undefined;
     // (the same letters as on the TV, in the game's language: A B C D, أ ب ج د, क ख ग घ, ক খ গ ঘ)
     const LETS = I() ? I().letters(G.lang) : ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -1776,6 +2106,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       a.type = 'button';
       a.style.setProperty('--c', ACOL[i]);
       el('span', 'l', a, LETS[i] || SHAPES[i]);
+      if (kids) { el('span', 'kc', a, L.clean(String(ex.kidsc[i] || ''), 8)); const c = Array.isArray(ex.kcol) && /^#[0-9a-f]{3,8}$/i.test(ex.kcol[i]) ? ex.kcol[i] : ACOL[i]; a.style.setProperty('--kc', c); }
       el('span', '', a, o);
       if (own === i) { a.classList.add('gone'); el('small', '', a, S().mine); }
       a.onclick = () => { if (answer(i, ex.letters ? (LETS[i] || SHAPES[i]) : '')) { a.classList.add('mine'); for (const x of G.ui.ans) if (x !== a) x.classList.add('dim'); } };
@@ -1804,7 +2135,20 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (!q || m.n !== q.n || !G.ui.ans) return;
     if (m.no) { G.used.delete(m.h); const x = G.ui.help && G.ui.help[m.h]; if (x && !G.answered && !G.locked) x.disabled = false; if (m.note) toast(L.clean(m.note, 140)); return; }
     if (m.h === 'fifty' && Array.isArray(m.hide)) { for (const i of m.hide) if (G.ui.ans[i]) G.ui.ans[i].classList.add('gone'); buzz('ok'); }
-    else if (m.h === 'hint' && typeof m.text === 'string') { const h = el('div', 'pt-hint', G.ui.body, '💡 ' + L.clean(m.text, 200)); h.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); buzz('ok'); }
+    else if (m.h === 'hint' && typeof m.text === 'string') {
+      // (the answer's shape as letter boxes: its first letters show, every other letter is a box)
+      const h = el('div', 'pt-thint', G.ui.body);
+      const pat = Array.isArray(m.pat) ? m.pat.filter(w => Array.isArray(w) && w.length).slice(0, 8) : [];
+      if (pat.length) {
+        el('p', '', h, '💡 ' + T('The answer looks like this:'));
+        const row = el('div', 'pt-shape', h);
+        row.dir = pat.some(w => w.some(c => typeof c === 'string' && /[\u0590-\u08ff]/.test(c))) ? 'rtl' : 'ltr';
+        const longest = Math.max(...pat.map(w => Math.min(24, w.length)));
+        row.style.setProperty('--tw', Math.max(17, Math.min(30, Math.floor(310 / longest) - 4)) + 'px');
+        for (const w of pat) { const wd = el('span', 'w', row); for (const c of w.slice(0, 24)) el('i', typeof c === 'string' && c ? 'on' : '', wd, typeof c === 'string' ? L.clean(c, 4) : ''); }
+      } else el('p', '', h, '💡 ' + L.clean(m.text, 200));
+      h.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); buzz('ok');
+    }
     else if (m.h === 'auto' && Number.isInteger(m.pick) && G.ui.ans[m.pick]) { G.ui.ans[m.pick].click(); }
     else if (m.h === 'boost') { const x = G.ui.help && G.ui.help.boost; if (x) x.classList.add('on'); if (typeof m.note === 'string' && m.note) toast(L.clean(m.note, 140), 'ok'); buzz('ok'); }
     else if (m.h === 'ask' && Array.isArray(m.tally)) {
@@ -1892,21 +2236,27 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
   async function pinQ(b, q) {
     const ex = q.extra || {};
     const mine = trOf(q);
+    // (one screen on any phone: nothing scrolls, the map takes the room that's left, and only the map zooms)
+    b.classList.add('pt-pinb');
+    noZoom(true);
     // (the clock: the bar, and the seconds beside it)
     const tm = b.querySelector('.pt-timer');
     if (tm && q.sec > 0) {
       const row = el('div', 'pt-trow'); tm.replaceWith(row); row.appendChild(tm);
       const num = el('b', '', row, String(q.sec));
-      const t0 = Date.now();
-      const iv = setInterval(() => { if (!num.isConnected) { clearInterval(iv); return; } const left = Math.max(0, q.sec - Math.floor((Date.now() - t0) / 1000)); num.textContent = String(left); num.classList.toggle('low', left <= 5); if (!left) clearInterval(iv); }, 250);
+      const t0 = pnow();
+      const iv = setInterval(() => { if (!num.isConnected) { clearInterval(iv); return; } const left = Math.max(0, q.sec - Math.floor((pnow() - t0) / 1000)); num.textContent = String(left); num.classList.toggle('low', left <= 5); if (!left) clearInterval(iv); }, 250);
     }
-    if (typeof ex.flag === 'string' && /^flags\/[a-z-]{2,6}\.png$/.test(ex.flag)) { const f = el('img', 'pt-flag', b); f.src = '../play/' + ex.flag; f.alt = ''; }
-    const qt = L.clean((mine && mine.q) || ex.q || '', 160);
-    if (qt) el('div', 'pt-wq', b, qt).dir = 'auto';
-    el('h2', 'pt-drop', b, S().dropPin);
-    G.ui.hints = el('div', 'pt-hints', b);
-    G.ui.hintN = q.n;
+    // (the question, the flag beside it, and x2 on a round worth double)
+    const qr = el('div', 'pt-qrow', b);
+    if (typeof ex.flag === 'string' && /^flags\/[a-z-]{2,6}\.png$/.test(ex.flag)) { const f = el('img', 'pt-flag', qr); f.src = '../play/' + ex.flag; f.alt = ''; }
+    el('div', 'pt-wq', qr, L.clean((mine && mine.q) || ex.q || '', 160) || S().dropPin).dir = 'auto';
+    if (ex.x2) el('b', 'pt-x2', qr, '\u00d72');
     const box = el('div', 'pt-map', b);
+    // (the hints as the TV sends them, over the top of the map)
+    const hints = el('div', 'pt-hints', box);
+    G.ui.hints = hints;
+    G.ui.hintN = q.n;
     const wait = el('div', 'spin', box); wait.style.cssText = 'position:absolute;left:50%;top:50%;margin:-13px';
     try { if (!window.BVMAP) await GO.script('../play/map.js'); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
     if (G.q !== q || !box.isConnected) return;
@@ -1927,6 +2277,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       touch: true, bounds: lim, maxS: 2.6, out: 1,
       onTap: (x, y) => {
         if (G.answered || G.locked) return;
+        tip.classList.add('gone');
         at = [x, y];
         if (mk) mk.move(x, y);
         else mk = map.add(M.pin({ color: G.color || '#ff5a6e', cls: 'pt-mypin' }), x, y);
@@ -1936,10 +2287,13 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
       }
     });
     map.fit(area, { pad: 4 });
+    box.appendChild(hints);
     // (big + and - for anyone who'd rather not pinch)
     const zm = el('div', 'zm', box);
     for (const [t, k] of [['+', 1.7], ['\u2212', 1 / 1.7]]) { const z = el('button', '', zm, t); z.type = 'button'; z.setAttribute('aria-label', T(t === '+' ? 'Zoom in' : 'Zoom out')); z.onclick = () => map.zoomBy(k, null, null, 260); }
-    el('p', 'muted small center', b, S().zoom).style.margin = '8px 0 10px';
+    // (how it works, on the map until the first tap; a note for this question takes its place)
+    const tip = el('div', 'pt-mtip', box); el('span', '', tip, S().zoom);
+    G.ui.noteIn = box;
     b.appendChild(lock);
     // (Boo's pin on the button)
     const pi = document.createElement('span'); pi.className = 'pt-lockpin'; pi.innerHTML = '<svg viewBox="0 0 64 84"><path d="M32 83C32 83 5 53 5 31.5A27 27 0 1 1 59 31.5C59 53 32 83 32 83Z" fill="#ff5a6e" stroke="#fff" stroke-width="4"/><path d="M32 14c-8 0-12 6-12 13v20q2.6-3 5.3 0t5.3 0t5.3 0t5.3 0t2.8 0V27c0-7-4-13-12-13z" fill="#fff"/><circle cx="27.5" cy="29" r="2.4" fill="#24164a"/><circle cx="36.5" cy="29" r="2.4" fill="#24164a"/></svg>';
@@ -2864,6 +3218,369 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     finally { b.disabled = false; }
   }
 
+  // ---------- share the winners (Where in the World?, Trivia, Guess It Right!) ----------
+  // A tall story picture (1080 x 1920) in the game's own look, the same one as the winners on the TV: a boarding pass for
+  // Where in the World?, Trivia's cosmic, disco or fireworks night, Guess It Right!'s gold. For Instagram, TikTok,
+  // Facebook, WhatsApp, Messages or anywhere; or saved, or the words copied.
+  const SHARE_GAMES = new Set(['world', 'trivia', 'gir']);
+  const shFont = (w2, px) => w2 + ' ' + px + 'px "BV Fun", ui-rounded, "Nunito", system-ui, sans-serif';
+  const shSans = (w2, px) => w2 + ' ' + px + 'px ui-rounded, "Nunito", system-ui, sans-serif';
+  const shEmo = px => px + 'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+  const shImg = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+  function shRR(g, x, y, w2, h2, rad) { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w2, y, x + w2, y + h2, rad); g.arcTo(x + w2, y + h2, x, y + h2, rad); g.arcTo(x, y + h2, x, y, rad); g.arcTo(x, y, x + w2, y, rad); g.closePath(); }
+  // (the biggest size up to px that fits the width)
+  function shFit(g, text, maxW, px, min, f) { g.font = f(px); while (g.measureText(text).width > maxW && px > min) { px -= 4; g.font = f(px); } return px; }
+  // (small labels with their letters spaced out; not the scripts that join their letters)
+  const shSp = s2 => (/[֐-ࣿऀ-෿฀-࿿က-႟　-鿿]/.test(s2) ? s2 : [...s2].join(String.fromCharCode(8202, 8202)));
+  // (the same picture every time for the same game: a random that starts from the names)
+  const shRnd = seed => { let s2 = (seed >>> 0) || 1; return () => { s2 = (Math.imul(s2, 1664525) + 1013904223) >>> 0; return s2 / 4294967296; }; };
+  const shSeed = str => { let h = 2166136261; for (const c of String(str)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const shKids = () => { const l = G.lobby || {}; return l.game === 'world' && !!l.settings && l.settings.mode === 'kids'; };
+  const shStars = sc => Math.max(0, Math.round((+sc || 0) / 100));
+  function shList() {
+    return (Array.isArray(G.ranking) ? G.ranking : []).filter(x => x && typeof x.name === 'string').slice(0, 10)
+      .map(x => ({ id: x.id, n: L.clean(x.name, 20), s: Math.max(0, Math.round(+x.score || 0)), av: x.av }));
+  }
+  // (a face: my own photo, or the player's Boo on white)
+  async function shFace(g, x, cx, cy, rad) {
+    const mine = x.id === G.id && G.photo;
+    const im = await shImg(mine ? G.photo : booUri(AVATARS.includes(x.av) ? x.av : 'boo:party') || booUri('boo:hi'));
+    g.save(); g.beginPath(); g.arc(cx, cy, rad, 0, Math.PI * 2); g.fillStyle = '#fff'; g.fill(); g.clip();
+    if (im) { if (mine) g.drawImage(im, cx - rad, cy - rad, rad * 2, rad * 2); else g.drawImage(im, cx - rad * 0.78, cy - rad * 0.74, rad * 1.56, rad * 1.56); }
+    g.restore();
+  }
+  function shMine() {
+    const me = G.endRes;
+    if (!me || !me.place) return '';
+    if (shKids()) return '⭐ ' + T('I got {n} stars!', { n: numFmt(shStars(me.score)) });
+    if (me.place === 1) return '🏆 ' + T('I won {game}!', { game: gameName() });
+    return T('I came {n}!', { n: '#' + numFmt(me.place) }) + '  ' + T('{n} points', { n: numFmt(+me.score || 0) });
+  }
+  function shStar(g, cx, cy, r1, r2, n) { g.beginPath(); for (let i = 0; i < n * 2; i++) { const a = Math.PI * i / n - Math.PI / 2, r = i % 2 ? r2 : r1; g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r); } g.closePath(); }
+  const shGold = (g, y0, y1) => { const gr = g.createLinearGradient(0, y0, 0, y1); gr.addColorStop(0, '#fff8d6'); gr.addColorStop(0.5, '#ffc93c'); gr.addColorStop(1, '#ff9a3c'); return gr; };
+
+  // Where in the World?: the winner's boarding pass, over the night and the map, with the flight that got them there
+  async function shWorld(g, list, o) {
+    const W2 = 1080, H2 = 1920, rtl = o.rtl, rnd = shRnd(o.seed);
+    const bg = g.createLinearGradient(0, 0, 0, H2); bg.addColorStop(0, '#0a1838'); bg.addColorStop(0.55, '#112a5e'); bg.addColorStop(1, '#070f28');
+    g.fillStyle = bg; g.fillRect(0, 0, W2, H2);
+    for (let i = 0; i < 150; i++) { g.globalAlpha = 0.2 + rnd() * 0.6; g.fillStyle = '#dfe9ff'; g.beginPath(); g.arc(rnd() * W2, rnd() * H2, 0.8 + rnd() * 2.2, 0, Math.PI * 2); g.fill(); }
+    g.globalAlpha = 1;
+    try {
+      const map = await shImg('../play/icons/wmap.svg');
+      if (map) {
+        const off = document.createElement('canvas'); off.width = 1500; off.height = 604;
+        const c2 = off.getContext('2d'); c2.drawImage(map, 0, 0, 1500, 604); c2.globalCompositeOperation = 'source-in'; c2.fillStyle = '#8fc0ff'; c2.fillRect(0, 0, 1500, 604);
+        g.globalAlpha = 0.15; g.drawImage(off, -210, 40); g.globalAlpha = 0.07; g.drawImage(off, -210, 1310); g.globalAlpha = 1;
+      }
+    } catch (e) { g.globalAlpha = 1; }
+    // the game's name
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const title = gameName(); shFit(g, title, 940, 104, 56, px => shFont(700, px));
+    g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowOffsetY = 8; g.fillStyle = shGold(g, 120, 230); g.fillText(title, 540, 215, 980); g.restore();
+    // (the flight: from a pin, across the top, to the plane)
+    const A = [rtl ? 940 : 140, 400], C = [540, 270], B = [rtl ? 140 : 940, 352];
+    g.save(); g.setLineDash([18, 16]); g.lineWidth = 6; g.lineCap = 'round'; g.strokeStyle = 'rgba(255,201,60,.8)';
+    g.beginPath(); g.moveTo(A[0], A[1]); g.quadraticCurveTo(C[0], C[1], B[0], B[1]); g.stroke(); g.restore();
+    g.font = shEmo(58); g.textBaseline = 'middle';
+    g.fillText('📍', A[0], A[1] - 24);
+    g.save(); g.translate(B[0], B[1]); const ang = Math.atan2(B[1] - C[1], B[0] - C[0]); g.rotate(ang + Math.PI / 4); g.fillText('✈️', 0, 0); g.restore();
+    g.textBaseline = 'alphabetic';
+    // the pass, drawn on its own so the notches can be cut out of it
+    const w1 = list[0];
+    const PW = 920, PH = 1120, CUT = 750;
+    const pc = document.createElement('canvas'); pc.width = PW; pc.height = PH;
+    const p = pc.getContext('2d');
+    try { p.direction = rtl ? 'rtl' : 'ltr'; } catch (e) {}
+    const X = x => (rtl ? PW - x : x);
+    shRR(p, 0, 0, PW, PH, 44); p.fillStyle = '#fffaf0'; p.fill();
+    p.save(); shRR(p, 0, 0, PW, PH, 44); p.clip();
+    const hb = p.createLinearGradient(0, 0, PW, 0); hb.addColorStop(0, '#ff5a6e'); hb.addColorStop(1, '#ff9a3c');
+    p.fillStyle = hb; p.fillRect(0, 0, PW, 150);
+    p.fillStyle = '#f5ead3'; p.fillRect(0, CUT, PW, PH - CUT);
+    p.restore();
+    p.textBaseline = 'middle'; p.textAlign = 'start'; p.fillStyle = '#fff';
+    p.font = shSans(900, 36); p.fillText('✈  ' + shSp(iup(T('Boarding pass'))), X(56), 78, 560);
+    p.textAlign = 'end'; p.font = shSans(800, 28); p.globalAlpha = 0.9; p.fillText(shSp('BLOKVANE'), X(PW - 56), 78); p.globalAlpha = 1;
+    p.textBaseline = 'alphabetic';
+    if (w1) {
+      const fx = X(PW - 186), fy = 318;
+      p.save(); p.shadowColor = 'rgba(255,180,40,.55)'; p.shadowBlur = 30; p.beginPath(); p.arc(fx, fy, 126, 0, Math.PI * 2); p.fillStyle = '#ffc93c'; p.fill(); p.restore();
+      await shFace(p, w1, fx, fy, 114);
+      p.font = shEmo(92); p.textAlign = 'center'; p.textBaseline = 'middle'; p.fillText('👑', fx, fy - 150); p.textBaseline = 'alphabetic';
+      p.textAlign = 'start'; p.fillStyle = '#8a90aa'; p.font = shSans(800, 26);
+      p.fillText(shSp(iup(o.team ? T('The winning team') : T('The winner'))), X(56), 238, 540);
+      const fs = shFit(p, w1.n, 530, 100, 48, px => shFont(700, px));
+      p.fillStyle = '#14224a'; p.fillText(w1.n, X(56), 252 + fs * 0.92, 540);
+      let ds = '';
+      try { ds = new Date().toLocaleDateString(G.lang, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { ds = new Date().toDateString(); }
+      const fields = [[o.kids ? T('Stars') : T('Points'), o.kids ? '⭐ ' + numFmt(shStars(w1.s)) : numFmt(w1.s)], [T('Seat'), '1A'], [T('Date'), ds]];
+      fields.forEach(([lb, val], i) => {
+        const x = 56 + i * 280;
+        p.textAlign = 'start'; p.fillStyle = '#8a90aa'; p.font = shSans(800, 24); p.fillText(shSp(iup(lb)), X(x), 512, 250);
+        p.fillStyle = '#14224a'; shFit(p, val, 250, 54, 26, px => shFont(700, px)); p.fillText(val, X(x), 580, 260);
+      });
+    }
+    // (from home to the trophy)
+    p.save(); p.strokeStyle = '#c9cde0'; p.lineWidth = 4; p.setLineDash([12, 12]); p.beginPath(); p.moveTo(120, 666); p.lineTo(PW - 120, 666); p.stroke(); p.restore();
+    p.font = shEmo(52); p.textAlign = 'center'; p.textBaseline = 'middle';
+    p.fillText('🏠', X(72), 666); p.fillText('🏆', X(PW - 72), 666);
+    p.save(); p.translate(PW / 2, 666); if (rtl) p.scale(-1, 1); p.rotate(Math.PI / 4); p.fillText('✈️', 0, 0); p.restore();
+    p.textBaseline = 'alphabetic';
+    // (the tear-off line and its two notches)
+    p.save(); p.strokeStyle = '#d8ccb4'; p.lineWidth = 4; p.setLineDash([14, 12]); p.beginPath(); p.moveTo(60, CUT); p.lineTo(PW - 60, CUT); p.stroke(); p.restore();
+    p.globalCompositeOperation = 'destination-out';
+    for (const x of [0, PW]) { p.beginPath(); p.arc(x, CUT, 38, 0, Math.PI * 2); p.fill(); }
+    p.globalCompositeOperation = 'source-over';
+    // the stub: second and third, and the barcode
+    const rest = list.slice(1, 3);
+    if (rest.length) {
+      p.textAlign = 'start'; p.fillStyle = '#8a90aa'; p.font = shSans(800, 24);
+      p.fillText(shSp(iup(T('Also on board'))), X(56), CUT + 70, PW - 112);
+      for (let i = 0; i < rest.length; i++) {
+        const x = rest[i], bx = 56 + i * 420, cy2 = CUT + 162, col = i ? '#ffb27a' : '#b9c6dc';
+        const fx = X(bx + 58);
+        p.beginPath(); p.arc(fx, cy2, 62, 0, Math.PI * 2); p.fillStyle = col; p.fill();
+        await shFace(p, x, fx, cy2, 54);
+        p.textAlign = 'start';
+        p.fillStyle = i ? '#c7743a' : '#6d7f9e'; p.font = shSans(900, 26); p.fillText('#' + numFmt(i + 2), X(bx + 140), cy2 - 24);
+        p.fillStyle = '#14224a'; shFit(p, x.n, 240, 44, 24, px => shFont(700, px)); p.fillText(x.n, X(bx + 140), cy2 + 18, 250);
+        p.fillStyle = '#8a90aa'; p.font = shSans(800, 24); p.fillText(o.kids ? '⭐ ' + numFmt(shStars(x.s)) : T('{n} points', { n: numFmt(x.s) }), X(bx + 140), cy2 + 54, 250);
+      }
+    }
+    const br = shRnd(o.seed + 7);
+    p.fillStyle = '#14224a';
+    for (let bx = 60; bx < PW - 60;) { const w = 3 + Math.floor(br() * 4) * 3; if (br() > 0.3) p.fillRect(bx, PH - 116, Math.min(w, PW - 60 - bx), 72); bx += w + 4; }
+    // the pass on the picture, a little tilted, then the stamp on it
+    g.save(); g.translate(540, 432 + PH / 2); g.rotate(rtl ? 0.022 : -0.022);
+    g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 60; g.shadowOffsetY = 26;
+    g.drawImage(pc, -PW / 2, -PH / 2); g.restore();
+    g.save(); g.translate(rtl ? 180 : 900, 1528); g.rotate(rtl ? 0.28 : -0.28); g.globalAlpha = 0.9;
+    g.strokeStyle = '#ff5a6e'; g.lineWidth = 9; g.beginPath(); g.arc(0, 0, 112, 0, Math.PI * 2); g.stroke();
+    g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 94, 0, Math.PI * 2); g.stroke();
+    g.fillStyle = '#ff5a6e'; g.textAlign = 'center'; g.font = shSans(900, 24); g.fillText(shSp(iup(T('The winner'))), 0, -34, 160);
+    g.font = shEmo(62); g.textBaseline = 'middle'; g.fillText(o.kids ? '⭐' : '🌍', 0, 18); g.textBaseline = 'alphabetic';
+    g.font = shSans(900, 22); g.fillText(String(new Date().getFullYear()), 0, 78);
+    g.restore();
+    // me, and where to play
+    g.textAlign = 'center';
+    const mine = shMine();
+    if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = '#ffc93c'; g.fillText(mine, 540, 1730, 980); }
+    g.font = shFont(700, 38); g.fillStyle = '#e6eeff'; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000);
+  }
+
+  // Trivia and Guess It Right!: the winner in the middle, second and third on the podium
+  const SH_NUM = { 1: '#ffc93c', 2: '#e3e9f6', 3: '#ffb27a' };
+  const SH_LOOKS = {
+    // Trivia's cosmic night: stars, two planets
+    cosmic: {
+      label: '#cdbcff', ring: '#ffc93c', glow: 'rgba(199,125,255,.85)', ring2: 'rgba(199,125,255,.55)',
+      bg(g, rnd) {
+        const bg = g.createRadialGradient(540, 700, 60, 540, 900, 1300); bg.addColorStop(0, '#3a1a7a'); bg.addColorStop(0.5, '#1a0d45'); bg.addColorStop(1, '#07041a');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        for (let i = 0; i < 260; i++) { g.globalAlpha = 0.2 + rnd() * 0.8; g.fillStyle = rnd() > 0.85 ? '#ffe9a8' : '#fff'; g.beginPath(); g.arc(rnd() * 1080, rnd() * 1920, 0.6 + rnd() * 2.4, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1;
+        const planet = (x, y, r, c, ring) => {
+          const pg = g.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.1, x, y, r); pg.addColorStop(0, c[0]); pg.addColorStop(0.6, c[1]); pg.addColorStop(1, c[2]);
+          g.fillStyle = pg; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
+          if (ring) { g.save(); g.translate(x, y); g.rotate(-0.4); g.strokeStyle = ring; g.globalAlpha = 0.8; g.lineWidth = 10; g.beginPath(); g.ellipse(0, 0, r * 1.7, r * 0.42, 0, 0, Math.PI * 2); g.stroke(); g.restore(); g.globalAlpha = 1; }
+        };
+        planet(150, 1470, 140, ['#e2a6ff', '#7a3cc8', '#2a0f5e'], '#ffc93c');
+        planet(950, 380, 78, ['#a8ecff', '#2f86d6', '#0d2a5e'], null);
+        g.fillStyle = '#ffc93c';
+        for (const [x, y, r] of [[120, 420, 16], [960, 1180, 20], [870, 600, 10], [210, 980, 12], [640, 1240, 9]]) { shStar(g, x, y, r, r * 0.3, 4); g.fill(); }
+      },
+      step(g, x, y, w, h) { const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#5a33b0'); sg.addColorStop(1, '#22105a'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 18); g.fill(); g.strokeStyle = 'rgba(199,125,255,.9)'; g.lineWidth = 4; g.stroke(); },
+      ink: '#fff'
+    },
+    // Trivia's disco: the ball, its colored beams, the dance floor
+    disco: {
+      label: '#ffd1e6', ring: '#ff5a8a', glow: 'rgba(255,90,138,.85)', ring2: 'rgba(90,209,255,.6)',
+      bg(g, rnd) {
+        const bg = g.createLinearGradient(0, 0, 0, 1920); bg.addColorStop(0, '#1d0634'); bg.addColorStop(0.7, '#12041f'); bg.addColorStop(1, '#0a0214');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        const cols = ['#ff5a8a', '#5ad1ff', '#ffc93c', '#34d399', '#c77dff', '#ff9a3c'];
+        g.save(); g.globalCompositeOperation = 'lighter';
+        for (let i = 0; i < 10; i++) {
+          const a = Math.PI * (0.14 + 0.72 * i / 9), sp = 0.05;
+          g.fillStyle = cols[i % cols.length]; g.globalAlpha = 0.13;
+          g.beginPath(); g.moveTo(540, 70); g.lineTo(540 + Math.cos(a - sp) * 2400, 70 + Math.sin(a - sp) * 2400); g.lineTo(540 + Math.cos(a + sp) * 2400, 70 + Math.sin(a + sp) * 2400); g.closePath(); g.fill();
+        }
+        g.restore(); g.globalAlpha = 1;
+        // (the floor)
+        for (let r = 0; r < 5; r++) {
+          const y = 1640 + r * 58, h = 58, n = 9, w = 1080 / n;
+          for (let c = 0; c < n; c++) { g.globalAlpha = 0.16 + rnd() * 0.2; g.fillStyle = cols[(r * 3 + c) % cols.length]; g.fillRect(c * w + 3, y + 3, w - 6, h - 6); }
+        }
+        g.globalAlpha = 1;
+        // (the ball)
+        g.save(); g.beginPath(); g.arc(540, 70, 108, 0, Math.PI * 2); g.clip();
+        const bgr = g.createRadialGradient(500, 40, 10, 540, 70, 120); bgr.addColorStop(0, '#ffffff'); bgr.addColorStop(0.5, '#b9c0d6'); bgr.addColorStop(1, '#4a4f66');
+        g.fillStyle = bgr; g.fillRect(420, -50, 240, 240);
+        for (let y = -40; y < 180; y += 22) for (let x = 430; x < 650; x += 22) { g.globalAlpha = 0.15 + rnd() * 0.5; g.fillStyle = rnd() > 0.7 ? '#fff' : '#6a7090'; g.fillRect(x, y, 19, 19); }
+        g.restore(); g.globalAlpha = 1;
+        g.fillStyle = '#fff'; for (const [x, y, r] of [[470, 30, 10], [610, 120, 7], [180, 600, 9], [900, 860, 12]]) { shStar(g, x, y, r * 2, r * 0.5, 4); g.fill(); }
+      },
+      step(g, x, y, w, h, pl) { const c = { 1: '#ffc93c', 2: '#5ad1ff', 3: '#ff5a8a' }[pl]; const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, c); sg.addColorStop(1, 'rgba(0,0,0,.35)'); g.fillStyle = c; shRR(g, x, y, w, h + 30, 18); g.fill(); g.fillStyle = sg; g.fill(); g.strokeStyle = 'rgba(255,255,255,.6)'; g.lineWidth = 3; g.stroke(); },
+      ink: '#fff', num: () => '#fff'
+    },
+    // Trivia's fireworks over the city
+    fireworks: {
+      label: '#bfe8ff', ring: '#5ad1ff', glow: 'rgba(90,209,255,.85)', ring2: 'rgba(255,201,60,.6)',
+      bg(g, rnd) {
+        const bg = g.createLinearGradient(0, 0, 0, 1920); bg.addColorStop(0, '#0b0a24'); bg.addColorStop(0.6, '#1d1450'); bg.addColorStop(1, '#0b0a24');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        for (let i = 0; i < 120; i++) { g.globalAlpha = 0.2 + rnd() * 0.6; g.fillStyle = '#fff'; g.beginPath(); g.arc(rnd() * 1080, rnd() * 1500, 0.6 + rnd() * 1.8, 0, Math.PI * 2); g.fill(); }
+        g.globalAlpha = 1;
+        const burst = (cx, cy, col, R) => {
+          const gl = g.createRadialGradient(cx, cy, 0, cx, cy, R * 1.3); gl.addColorStop(0, col); gl.addColorStop(1, 'rgba(0,0,0,0)');
+          g.globalAlpha = 0.25; g.fillStyle = gl; g.beginPath(); g.arc(cx, cy, R * 1.3, 0, Math.PI * 2); g.fill(); g.globalAlpha = 0.9;
+          g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 5; g.lineCap = 'round';
+          for (let i = 0; i < 26; i++) { const a = Math.PI * 2 * i / 26, r0 = R * 0.18, r1 = R * (0.78 + rnd() * 0.22); g.beginPath(); g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); g.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); g.stroke(); g.beginPath(); g.arc(cx + Math.cos(a) * (r1 + 12), cy + Math.sin(a) * (r1 + 12), 5, 0, Math.PI * 2); g.fill(); }
+          g.globalAlpha = 1;
+        };
+        burst(170, 470, '#ff5a8a', 150); burst(920, 430, '#5ad1ff', 130); burst(120, 1160, '#ffc93c', 110); burst(970, 1120, '#34d399', 120);
+        // (the city)
+        g.fillStyle = '#06051a';
+        let x = 0; while (x < 1080) { const w = 50 + rnd() * 90, h = 120 + rnd() * 220; g.fillRect(x, 1920 - h, w, h); for (let wy = 1920 - h + 20; wy < 1900; wy += 34) for (let wx = x + 12; wx < x + w - 14; wx += 26) if (rnd() > 0.55) { g.fillStyle = 'rgba(255,214,120,.45)'; g.fillRect(wx, wy, 10, 14); g.fillStyle = '#06051a'; } x += w + 6; }
+      },
+      step(g, x, y, w, h, pl) { const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#2c2475'); sg.addColorStop(1, '#130f3c'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 18); g.fill(); g.strokeStyle = SH_NUM[pl]; g.lineWidth = 4; g.stroke(); },
+      ink: '#fff'
+    },
+    // Guess It Right!: gold on deep purple, the sunburst, the frame, the stars
+    gir: {
+      label: '#ffe08a', ring: '#ffc93c', glow: 'rgba(255,201,60,.8)', ring2: 'rgba(255,201,60,.55)',
+      bg(g, rnd) {
+        const bg = g.createRadialGradient(540, 690, 40, 540, 900, 1300); bg.addColorStop(0, '#34208a'); bg.addColorStop(0.5, '#1d1050'); bg.addColorStop(1, '#0d0730');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        g.save(); g.translate(540, 690); g.fillStyle = 'rgba(255,201,60,.07)';
+        for (let i = 0; i < 40; i += 2) { const a0 = Math.PI * 2 * i / 40, a1 = Math.PI * 2 * (i + 1) / 40; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * 2000, Math.sin(a0) * 2000); g.lineTo(Math.cos(a1) * 2000, Math.sin(a1) * 2000); g.closePath(); g.fill(); }
+        g.restore();
+        g.strokeStyle = '#ffc93c'; g.lineWidth = 5; g.strokeRect(36, 36, 1008, 1848); g.lineWidth = 2; g.strokeRect(54, 54, 972, 1812);
+        for (const [cx, cy, a] of [[54, 54, 0], [1026, 54, Math.PI / 2], [1026, 1866, Math.PI], [54, 1866, -Math.PI / 2]]) {
+          g.save(); g.translate(cx, cy); g.rotate(a); g.lineWidth = 3;
+          for (const r of [60, 90]) { g.beginPath(); g.arc(0, 0, r, 0, Math.PI / 2); g.stroke(); }
+          for (let k = 1; k < 5; k++) { const t = Math.PI / 2 * k / 5; g.beginPath(); g.moveTo(Math.cos(t) * 60, Math.sin(t) * 60); g.lineTo(Math.cos(t) * 90, Math.sin(t) * 90); g.stroke(); }
+          g.restore();
+        }
+        g.fillStyle = '#ffc93c';
+        for (const [x, y, r] of [[150, 430, 22], [930, 420, 18], [120, 1060, 16], [960, 1000, 24], [250, 1250, 12], [840, 1300, 14]]) { shStar(g, x, y, r, r * 0.42, 8); g.fill(); }
+        g.font = shFont(700, 120); g.fillStyle = 'rgba(255,201,60,.12)'; g.textAlign = 'center';
+        for (const [x, y] of [[180, 820], [900, 780], [540, 1420]]) g.fillText('?', x + (rnd() - 0.5) * 30, y);
+      },
+      step(g, x, y, w, h) { const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#3a2490'); sg.addColorStop(1, '#1a0f4c'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 10); g.fill(); g.strokeStyle = '#ffc93c'; g.lineWidth = 4; g.stroke(); g.lineWidth = 1.5; shRR(g, x + 10, y + 10, w - 20, h + 10, 6); g.stroke(); },
+      ink: '#fff'
+    }
+  };
+  async function shPoster(g, list, o) {
+    const lk = SH_LOOKS[o.look] || SH_LOOKS.cosmic, rtl = o.rtl;
+    const X = x => (rtl ? 1080 - x : x);
+    lk.bg(g, shRnd(o.seed));
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const title = gameName(); shFit(g, title, 920, 116, 56, px => shFont(700, px));
+    g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = 8; g.fillStyle = shGold(g, 140, 260); g.fillText(title, 540, 258, 960); g.restore();
+    const w1 = list[0];
+    if (w1) {
+      g.font = shSans(900, 34); g.fillStyle = lk.label; g.fillText(shSp(iup(o.team ? T('The winning team') : T('The winner'))), 540, 366, 900);
+      const cy = 704, R = 186;
+      g.save(); g.shadowColor = lk.glow; g.shadowBlur = 80; g.beginPath(); g.arc(540, cy, R + 14, 0, Math.PI * 2); g.fillStyle = lk.ring; g.fill(); g.restore();
+      g.beginPath(); g.arc(540, cy, R + 32, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = lk.ring2; g.stroke();
+      await shFace(g, w1, 540, cy, R);
+      g.font = shEmo(124); g.textBaseline = 'middle'; g.fillText('👑', 540, cy - R - 46); g.textBaseline = 'alphabetic';
+      const fs = shFit(g, w1.n, 920, 130, 60, px => shFont(700, px));
+      g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = 8; g.fillStyle = shGold(g, 1030 - fs, 1040); g.fillText(w1.n, 540, 1030, 960); g.restore();
+      g.font = shSans(900, 48); g.fillStyle = '#fff'; g.fillText(T('Points: {n}', { n: numFmt(w1.s) }), 540, 1106, 900);
+    }
+    // (the podium)
+    if (list.length > 1) {
+      const base = 1600;
+      for (const [pl, cx, h] of [[2, X(270), 236], [3, X(810), 184], [1, 540, 300]]) {
+        const x = list[pl - 1];
+        if (!x) continue;
+        const top = base - h;
+        lk.step(g, cx - 128, top, 256, h, pl);
+        g.textAlign = 'center';
+        g.font = shFont(700, 88); g.fillStyle = lk.num ? lk.num(pl) : SH_NUM[pl]; g.fillText(numFmt(pl), cx, top + 92);
+        g.fillStyle = lk.ink; shFit(g, x.n, 230, 38, 22, px => shFont(700, px)); g.fillText(x.n, cx, top + 138, 236);
+        g.font = shSans(800, 26); g.globalAlpha = 0.85; g.fillText(numFmt(x.s), cx, top + 172, 236); g.globalAlpha = 1;
+        if (pl === 1) { g.font = shEmo(88); g.textBaseline = 'middle'; g.fillText('🏆', cx, top - 62); g.textBaseline = 'alphabetic'; }
+        else { const fy = top - 80; g.beginPath(); g.arc(cx, fy, 72, 0, Math.PI * 2); g.fillStyle = SH_NUM[pl]; g.fill(); await shFace(g, x, cx, fy, 64); }
+      }
+    }
+    const mine = shMine();
+    g.textAlign = 'center';
+    if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = '#ffc93c'; g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(mine, 540, 1712, 980); g.restore(); }
+    g.font = shFont(700, 38); g.fillStyle = '#fff3d6'; g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000); g.restore();
+  }
+  // the picture, made once for this end screen (and again when the table or my place changes)
+  const SH = { sig: '', blob: null, url: '', p: null };
+  function shSig() { return JSON.stringify([G.lobby && G.lobby.game, G.endLook, G.lang, G.ranking, G.endRes && [G.endRes.place, G.endRes.score], !!G.photo]); }
+  function sharePic() {
+    const sig = shSig();
+    if (SH.sig === sig && (SH.blob || SH.p)) return SH.blob ? Promise.resolve(SH.blob) : SH.p;
+    SH.sig = sig; SH.blob = null;
+    if (SH.url) { try { URL.revokeObjectURL(SH.url); } catch (e) {} SH.url = ''; }
+    const p = (async () => {
+      try { await Promise.all(['700 80px "BV Fun"', '800 40px Nunito'].map(f => document.fonts.load(f))); } catch (e) {}
+      const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920;
+      const g = cv.getContext('2d');
+      const rtl = document.documentElement.dir === 'rtl';
+      try { g.direction = rtl ? 'rtl' : 'ltr'; } catch (e) {}
+      const list = shList();
+      const gid = (G.lobby || {}).game;
+      const o = { rtl, seed: shSeed(list.map(x => x.n).join('|') + gid), kids: shKids(), team: !!G.endTeam, look: gid === 'gir' ? 'gir' : G.endLook };
+      if (gid === 'world') await shWorld(g, list, o); else await shPoster(g, list, o);
+      const blob = await new Promise(res => { try { cv.toBlob(b2 => res(b2), 'image/jpeg', 0.92); } catch (e) { res(null); } });
+      if (SH.sig === sig) { SH.blob = blob; SH.p = null; }
+      return blob;
+    })();
+    SH.p = p;
+    return p;
+  }
+  // on the last screen: the picture itself (tap it to share), Share, Save and Copy
+  function shareBlock(parent) {
+    const gid = (G.lobby || {}).game;
+    if (!SHARE_GAMES.has(gid) || !Array.isArray(G.ranking) || !G.ranking.length) return;
+    const sh = el('div', 'pt-share', parent);
+    const pv = el('button', 'pv wait', sh); pv.type = 'button'; pv.setAttribute('aria-label', T('Share the winners'));
+    const im = el('img', '', pv); im.alt = '';
+    const sb = el('button', 'go', sh, '📤 ' + T('Share the winners')); sb.type = 'button';
+    el('small', '', sh, T('Instagram, TikTok, Facebook, WhatsApp and more'));
+    const ch = el('div', 'ch', sh);
+    const save = el('button', '', ch, '💾 ' + T('Save the picture')); save.type = 'button';
+    const copy = el('button', '', ch, '📋 ' + T('Copy the text')); copy.type = 'button';
+    pv.onclick = () => shareWin('share', pv);
+    sb.onclick = () => shareWin('share', sb);
+    save.onclick = () => shareWin('save', save);
+    copy.onclick = () => shareWin('copy', copy);
+    sharePic().then(b2 => {
+      if (!b2 || !im.isConnected) return;
+      if (!SH.url) SH.url = URL.createObjectURL(b2);
+      im.src = SH.url; pv.classList.remove('wait');
+    });
+  }
+  async function shareWin(how, b) {
+    const gname = gameName();
+    const list = shList();
+    const text = T('We played {game}! The winner: {name}. Play it free at blokvane.com', { game: gname, name: list[0] ? list[0].n : '?' });
+    if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
+    b.disabled = true;
+    try {
+      // (the picture is ready by now, so sharing still counts as the tap: no waiting before it)
+      const blob = (SH.sig === shSig() && SH.blob) || await sharePic();
+      if (!blob) throw new Error('no picture');
+      const name = (String((G.lobby || {}).game || 'blokvane').replace(/[^a-z]/g, '') || 'blokvane') + '-winners.jpg';
+      let file = null;
+      try { file = new File([blob], name, { type: 'image/jpeg' }); } catch (e) {}
+      if (how === 'share' && file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text, title: gname }); return; } catch (e) { if (!e || e.name === 'AbortError') return; toast(T('Sharing didn\'t work here. The picture was saved instead.'), ''); }
+      } else if (how === 'share' && navigator.share) { try { await navigator.share({ text, title: gname }); } catch (e) {} }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      toast(T('The picture is saved.'), 'ok');
+    } catch (e) { toast(T('That didn\'t work. Try again.'), 'bad'); }
+    finally { b.disabled = false; }
+  }
+
   // a result
   function showRes(m) {
     if (m && m.emo && isEmo()) return emoRes(m);
@@ -2875,6 +3592,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     const box = el('div', 'pt-res ' + (ok ? 'ok' : some ? 'mid' : 'bad'), v.body);
     box.appendChild(booPic(typeof m.boo === 'string' && /^boo:[a-z]{2,12}$/.test(m.boo) ? m.boo : ok ? (m.first ? 'boo:hero' : 'boo:party') : m.out ? 'boo:boo' : some ? 'boo:hi' : 'boo:sad'));
     el('h1', '', box, typeof m.title === 'string' && m.title ? L.clean(m.title, 60) : ok ? (m.first ? S().first : S().right) : m.out ? S().out : S().wrong);
+    if (m.vd === 0 || m.vd === 1) el('div', 'pt-vd ' + (m.vd ? 'ok' : 'no'), box, (m.vd ? '\u2705 ' + S().right : '\u274c ' + S().wrong));
     if (m.pts) el('div', 'pts', box, T('+{n} points', { n: m.pts }));
     if (m.right != null && m.right !== '') el('p', '', box, T('The right answer: {x}', { x: L.clean(m.right, 140) }));
     if (m.note) el('p', '', box, L.clean(m.note, 160));
@@ -2891,22 +3609,38 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     const r = G.endRes;
     const box = el('div', 'pt-res ' + (r && r.place === 1 ? 'ok' : ''), v.body);
     box.appendChild(booPic(r && r.place === 1 ? 'boo:legend' : r && r.place <= 3 ? 'boo:party' : 'boo:love'));
-    if (r && r.place) { el('p', '', box, S().yourPlace); const h = el('h1', '', box, `${r.place === 1 ? '🏆 ' : r.place === 2 ? '🥈 ' : r.place === 3 ? '🥉 ' : ''}` + T('{a} of {b}', { a: r.place, b: r.of })); h.style.fontSize = '40px'; el('div', 'pts', box, T('{n} points', { n: r.score || 0 })); }
+    if (r && r.place && shKids()) {
+      // (Kids: no places, just the stars each one won)
+      const n = shStars(r.score);
+      el('p', '', box, n ? T('You got {n} stars!', { n: numFmt(n) }) : T('Thanks for playing!'));
+      const h = el('h1', '', box, '⭐ ' + numFmt(n)); h.style.fontSize = '44px';
+      if (n && !G.endFx) { G.endFx = true; confetti(); buzz('long'); }
+    } else if (r && r.place) { el('p', '', box, S().yourPlace); const h = el('h1', '', box, `${r.place === 1 ? '🏆 ' : r.place === 2 ? '🥈 ' : r.place === 3 ? '🥉 ' : ''}` + T('{a} of {b}', { a: r.place, b: r.of })); h.style.fontSize = '40px'; el('div', 'pts', box, T('{n} points', { n: r.score || 0 })); }
     else el('h1', '', box, S().look);
     if (r && r.place === 1 && !G.endFx) { G.endFx = true; confetti(); buzz('long'); }
+    shareBlock(v.body);
     if (Array.isArray(G.ranking) && G.ranking.length) {
       const ls = el('div', 'pt-list', v.body); ls.style.marginTop = '16px';
+      const kidsW = shKids();
       for (const x of G.ranking) {
         const row = el('div', 'r' + (x.id === G.id ? ' me' : ''), ls);
         el('span', 'n', row, String(x.place));
         el('b', '', row, x.id === G.id ? S().you : L.clean(x.name, 20));
-        el('span', '', row, String(x.score));
+        el('span', '', row, kidsW ? '⭐ ' + numFmt(shStars(x.score)) : String(x.score));
       }
     }
     if (G.host) {
       const again = btn(S().again, { kind: 'go', huge: true, full: true, icon: 'refresh' }, v.body, () => { send({ k: 'again' }); buzz('ok'); });
       again.style.marginTop = '16px';
       pair(v.body, [[S().otherGame, () => pickGameSheet((G.lobby || {}).games || [])], [S().changeName, () => joinScreen(true)]]);
+      // before the next game: more players (the join code on the TV), someone out, or another host
+      const l = G.lobby || {};
+      const pc = el('div', 'card pt-after', v.body);
+      el('h2', '', pc, '👥 ' + S().players);
+      const on = !!l.joinOn;
+      btn(on ? S().hideCode : T('Add more players'), { kind: on ? 'ghost' : 'tint', full: true, icon: 'phone' }, pc, () => { send({ k: 'showjoin', on: !on }); if (!on) toast(S().codeOn, 'ok'); buzz('tap'); });
+      el('p', 'muted small', pc, T('New players scan the code on the TV and join the next game. You can also make someone else the host, or take someone out.'));
+      playersAdmin(pc, l, null);
     } else { el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]); }
   }
 
@@ -3038,6 +3772,7 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     let where = store.get('party:where', 'here');
     document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en';
     const v = view('Party games', { tint: 'sun', night: true, back });
+    if (GO.backCard) GO.backCard(v.body);
     hero(v.body, 'Start a party game', 'Pick a game and where it shows. Everyone else joins by scanning the code on that screen: no app, no account.', { node: booPic('boo:party', 'float') });
     // 1. the game
     const c1 = el('div', 'card', v.body);
@@ -3124,6 +3859,8 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     if (G.lang === 'en' && I()) await useLang(I().pick());
     GO.say = T;
     const v = view(T('Join a game'), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    if (GO.backCard) GO.backCard(v.body);
+    nearTvs(v.body);
     hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: booPic('boo:party', 'float') });
     const card = el('div', 'card', v.body);
     const ci = input({ placeholder: 'ABC DEF', max: 7 });
@@ -3141,6 +3878,48 @@ html.no-flexgap .emo-share > * + * { margin-top: 8px; }
     go.style.marginTop = '6px';
     ci.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     setTimeout(() => { try { ci.focus(); } catch (e) {} }, 300);
+  }
+  // TVs near you: the ones on this Wi-Fi (BVLIVE.nearby), each with its game and its code (the same code the TV shows),
+  // and one tap joins. On another network there are none: the code is right under it.
+  function nearTvs(parent) {
+    if (!L.nearby) return;
+    const nc = el('div', 'card pt-near', parent);
+    el('h2', '', nc, '📺 ' + T('TVs near you'));
+    const st = el('p', 'muted small', nc, T('Looking for TVs on this Wi-Fi...'));
+    const ls = el('div', 'pt-games', nc);
+    const t0 = Date.now();
+    let nr = null, shown = '';
+    const draw = ps => {
+      if (!nc.isConnected) return;
+      const tvs = (ps || []).filter(p => p.role === 'tv' && p.info && typeof p.info.c === 'string' && /^[A-Z]{6}$/.test(p.info.c)).slice(0, 6);
+      const sig = JSON.stringify(tvs.map(p => p.info));
+      if (sig !== shown) {
+        shown = sig; ls.textContent = '';
+        for (const p of tvs) {
+          const i = p.info, g = GAME_LIST.find(x => x[0] === i.g);
+          const b = el('button', 'pt-game', ls); b.type = 'button';
+          b.appendChild(gameIcon(g ? g[0] : '', g ? g[1] : '📺'));
+          const t = el('span', '', b);
+          el('b', '', t, g ? T(g[2]) : T('Party games'));
+          el('small', '', t, i.c.slice(0, 3) + ' ' + i.c.slice(3) + ' · ' + (i.ph ? T('Playing now') : T('{n} players', { n: numFmt(Math.max(0, +i.p || 0)) })));
+          b.onclick = async () => {
+            b.disabled = true; buzz('tap');
+            try { const link = await byCode(i.c); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
+            catch (e) { toast(e && e.message ? e.message : T('That didn\'t work. Try again.'), 'bad'); }
+            finally { b.disabled = false; }
+          };
+        }
+      }
+      st.textContent = tvs.length ? T('Tap your TV to join. Its code is the one on the TV.') : Date.now() - t0 > 7000 ? T('No TV found on this Wi-Fi. Type the code instead.') : T('Looking for TVs on this Wi-Fi...');
+      nc.classList.toggle('none', !tvs.length && Date.now() - t0 > 7000);
+    };
+    L.nearby({ role: 'phone', onPeers: draw }).then(r => {
+      nr = r;
+      if (!nc.isConnected) { if (r) r.close(); return; }
+      if (!r) { st.textContent = T('No TV found on this Wi-Fi. Type the code instead.'); nc.classList.add('none'); return; }
+      setTimeout(() => draw(r.list()), 7200);
+    }).catch(() => { st.textContent = T('No TV found on this Wi-Fi. Type the code instead.'); nc.classList.add('none'); });
+    const watch = setInterval(() => { if (!nc.isConnected) { clearInterval(watch); if (nr) nr.close(); } }, 1500);
   }
   // the game a code belongs to (tries: how many times to ask; a game that is still opening needs a little longer)
   async function byCode(c, tries) {

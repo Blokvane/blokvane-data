@@ -106,10 +106,66 @@ var BVSOUND = (() => {
     eEvery5: ["e-every5.mp3", 0.372],
     eCorrect: ["e-correct.mp3", 0.394],
     eWrong: ["e-wrong.mp3", 0.389],
-    eTimesup: ["e-timesup.mp3", 0.582]
+    eTimesup: ["e-timesup.mp3", 0.582],
+    // Where in the World?'s own: the lobby tune, three tunes for the rounds (a different order each game), the winner's,
+    // and its next round, time's up and a pin that's far away (each as loud as the others, measured)
+    wvLobby: ["wv-lobby.mp3", 0.313, { stream: true, tail: 0.8, xf: 3 }],
+    wvP1: ["wv-play1.mp3", 0.292, { stream: true, tail: 0.8, xf: 4 }],
+    wvP2: ["wv-play2.mp3", 0.299, { stream: true, tail: 0.8, xf: 4 }],
+    wvP3: ["wv-play3.mp3", 0.272, { stream: true, tail: 0.8, xf: 4 }],
+    wvPlayA: ["", 1, { list: ["wvP1", "wvP2", "wvP3"], xf: 5 }],
+    wvPlayB: ["", 1, { list: ["wvP2", "wvP3", "wvP1"], xf: 5 }],
+    wvPlayC: ["", 1, { list: ["wvP3", "wvP1", "wvP2"], xf: 5 }],
+    wvWin: ["wv-win.mp3", 0.389, { stream: true, once: true, then: "wvLobby", tail: 0.8 }],
+    wvNext: ["wv-next.mp3", 0.343],
+    wvTimesup: ["wv-timesup.mp3", 0.596],
+    wvWrong: ["wv-wrong.mp3", 0.442]
   };
   const isStream = (f) => !!(f && f[2] && typeof f[2] === "object" && (f[2].stream || f[2].list));
+  const KIND = {
+    next: "next",
+    eNext: "next",
+    gNext: "next",
+    iNext: "next",
+    every5: "every5",
+    eEvery5: "every5",
+    gEvery5: "every5",
+    correct: "correct",
+    eCorrect: "correct",
+    gCorrect: "correct",
+    wrong: "wrong",
+    eWrong: "wrong",
+    gWrong: "wrong",
+    timesup: "timesup",
+    eTimesup: "timesup",
+    gTimesup: "timesup",
+    tick: "tick",
+    gTick: "tick",
+    win: "win",
+    eWin: "win",
+    gWin: "win",
+    wvNext: "next",
+    wvTimesup: "timesup",
+    wvWrong: "wrong",
+    wvWin: "win"
+  };
+  const kindOf = (name) => KIND[name] || (FILES[name] && FILES[name][2] ? "music" : "fx");
+  let offKinds = /* @__PURE__ */ new Set(), wantReal = null;
+  try {
+    const v = JSON.parse(localStorage.getItem("bvplay:soundoff") || "[]");
+    if (Array.isArray(v)) offKinds = new Set(v.filter((x) => typeof x === "string"));
+  } catch (e) {
+  }
+  const isOff = (name) => offKinds.has(kindOf(name));
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};
+  let musicBus = null, fxBus = null, vols = { music: 1, fx: 1 }, pausedNow = false, held = [];
+  try {
+    const v = JSON.parse(localStorage.getItem("bvplay:vol") || "null");
+    if (v) {
+      for (const k of ["music", "fx"]) if (+v[k] >= 0 && +v[k] <= 1) vols[k] = +v[k];
+    }
+  } catch (e) {
+  }
   const bufs = /* @__PURE__ */ new Map(), loading = /* @__PURE__ */ new Map(), stings = /* @__PURE__ */ new Set(), subs = /* @__PURE__ */ new Set();
   try {
     on = localStorage.getItem("bvplay:sound") !== "off";
@@ -132,6 +188,12 @@ var BVSOUND = (() => {
       master = ac.createGain();
       master.gain.value = on ? 1 : 0;
       master.connect(ac.destination);
+      musicBus = ac.createGain();
+      musicBus.gain.value = vols.music;
+      musicBus.connect(master);
+      fxBus = ac.createGain();
+      fxBus.gain.value = vols.fx;
+      fxBus.connect(master);
       ac.onstatechange = () => {
         changed();
         if (ac.state === "running" && want && !bed) startBed();
@@ -141,7 +203,7 @@ var BVSOUND = (() => {
     }
     return ac;
   }
-  const ready = () => !!(ac && ac.state === "running");
+  const ready = () => !!(ac && ac.state === "running" && !pausedNow);
   function load(name) {
     if (bufs.has(name)) return Promise.resolve(bufs.get(name));
     if (loading.has(name)) return loading.get(name);
@@ -164,6 +226,7 @@ var BVSOUND = (() => {
     for (const n of [].concat(names || [])) if (FILES[n]) load(n);
   }
   function unlock() {
+    if (pausedNow) return;
     const c = ctx();
     if (c && c.state !== "running") c.resume().then(changed, () => {
     });
@@ -257,7 +320,7 @@ var BVSOUND = (() => {
   function startStream(name, o) {
     const L = FILES[name][2], order = L.list || [name];
     const g = ac.createGain();
-    g.connect(master);
+    g.connect(musicBus || master);
     const vol = o.vol != null ? o.vol : 1;
     const now = ac.currentTime, t0 = now + (o.delay || 0) + 0.03, fin = o.fadeIn != null ? o.fadeIn : 0.8;
     g.gain.setValueAtTime(0, now);
@@ -373,7 +436,13 @@ var BVSOUND = (() => {
     }
   }
   function music(name, o = {}) {
-    want = FILES[name] ? name : null;
+    wantReal = FILES[name] ? name : null;
+    let n = wantReal;
+    if (n && isOff(n)) {
+      const f = FILES[n][2];
+      n = f && f.then && !isOff(f.then) ? f.then : null;
+    }
+    want = n;
     wantOpts = o;
     if (bed && bed.name === want) return;
     if (bed) {
@@ -394,7 +463,7 @@ var BVSOUND = (() => {
       if (!b || want !== name || bed && bed.name === name || !ready()) return;
       const f = FILES[name];
       const g = ac.createGain();
-      g.connect(master);
+      g.connect(musicBus || master);
       const now = ac.currentTime, t0 = now + (o.delay || 0) + 0.03, fin = o.fadeIn != null ? o.fadeIn : 0.8;
       g.gain.setValueAtTime(0, now);
       g.gain.setValueAtTime(0, t0);
@@ -443,7 +512,7 @@ var BVSOUND = (() => {
     });
   }
   function sting(name, o = {}) {
-    if (!FILES[name] || !ready()) return;
+    if (!FILES[name] || !ready() || isOff(name)) return;
     const b = bufs.get(name);
     if (!b) {
       load(name);
@@ -454,7 +523,7 @@ var BVSOUND = (() => {
     if (o.duck && bed) duck(bed, o.duck, b.duration + (o.delay || 0));
     const g = ac.createGain();
     g.gain.value = FILES[name][1] * (o.vol != null ? o.vol : 1);
-    g.connect(master);
+    g.connect(fxBus || master);
     const s = ac.createBufferSource();
     s.buffer = b;
     s.connect(g);
@@ -471,7 +540,7 @@ var BVSOUND = (() => {
   }
   const fxs = /* @__PURE__ */ new Set();
   function fx(name, o = {}) {
-    if (!FILES[name] || !ready()) return;
+    if (!FILES[name] || !ready() || isOff(name)) return;
     const b = bufs.get(name);
     if (!b) {
       load(name);
@@ -481,7 +550,7 @@ var BVSOUND = (() => {
     if (o.duck && bed) duck(bed, o.duck, b.duration + (o.delay || 0));
     const g = ac.createGain();
     g.gain.value = FILES[name][1] * (o.vol != null ? o.vol : 1);
-    g.connect(master);
+    g.connect(fxBus || master);
     const s = ac.createBufferSource();
     s.buffer = b;
     s.connect(g);
@@ -511,9 +580,95 @@ var BVSOUND = (() => {
     if (on && want && !bed) startBed();
     changed();
   }
-  const state = () => !ctx() ? "none" : !on ? "off" : ready() ? "on" : "locked";
-  return { preload, music, sting, fx, at, unlock, setOn, enabled: () => on, state, onChange: (f) => {
-    subs.add(f);
-    return () => subs.delete(f);
-  } };
+  function setOff(list) {
+    offKinds = new Set([].concat(list || []).filter((x) => typeof x === "string"));
+    try {
+      localStorage.setItem("bvplay:soundoff", JSON.stringify([...offKinds]));
+    } catch (e) {
+    }
+    if (wantReal) {
+      const w = wantReal, o = wantOpts;
+      if (bed && isOff(bed.name)) {
+        fadeStop(bed, 0.6);
+        bed = null;
+      }
+      want = null;
+      music(w, Object.assign({}, o, { delay: 0, fadeIn: 1 }));
+    }
+  }
+  function setVol(kind, v) {
+    if (!(kind in vols)) return;
+    vols[kind] = Math.max(0, Math.min(1, +v || 0));
+    try {
+      localStorage.setItem("bvplay:vol", JSON.stringify(vols));
+    } catch (e) {
+    }
+    const bus = kind === "music" ? musicBus : fxBus;
+    if (bus && ac) {
+      const now = ac.currentTime;
+      bus.gain.cancelScheduledValues(now);
+      bus.gain.setValueAtTime(bus.gain.value, now);
+      bus.gain.linearRampToValueAtTime(vols[kind], now + 0.25);
+    }
+  }
+  function pause() {
+    if (pausedNow) return;
+    pausedNow = true;
+    held = pool.filter((e) => e.busy && !e.a.paused);
+    for (const e of held) {
+      try {
+        e.a.pause();
+      } catch (er) {
+      }
+    }
+    try {
+      if (ac && ac.state === "running") ac.suspend().catch(() => {
+      });
+    } catch (e) {
+    }
+  }
+  function resume() {
+    if (!pausedNow) return;
+    pausedNow = false;
+    try {
+      if (ac && ac.state !== "running") ac.resume().then(changed, () => {
+      });
+    } catch (e) {
+    }
+    for (const e of held) {
+      if (!e.busy) continue;
+      try {
+        const p = e.a.play();
+        if (p && p.catch) p.catch(() => {
+        });
+      } catch (er) {
+      }
+    }
+    held = [];
+  }
+  const state = () => !ctx() ? "none" : !on ? "off" : ready() || pausedNow ? "on" : "locked";
+  return {
+    preload,
+    music,
+    sting,
+    fx,
+    at,
+    unlock,
+    setOn,
+    enabled: () => on,
+    state,
+    onChange: (f) => {
+      subs.add(f);
+      return () => subs.delete(f);
+    },
+    setOff,
+    offKinds: () => [...offKinds],
+    kindOf,
+    kindOff: (k) => offKinds.has(k),
+    setVol,
+    vol: (k) => k in vols ? vols[k] : 1,
+    pause,
+    resume,
+    isPaused: () => pausedNow
+  };
 })();

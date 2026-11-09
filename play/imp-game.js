@@ -181,9 +181,9 @@
     for (const c of cs) { c.style.animation = 'none'; void c.getBoundingClientRect(); c.style.animation = 'i-ringT ' + Math.max(1, sec) + 's linear 1 forwards'; }
     let left = sec;
     for (const n of ns) n.textContent = K.num(left);
-    const t0 = Date.now();
+    const now = K.now || Date.now, t0 = now();
     const iv = setInterval(() => {
-      const l = Math.max(0, Math.ceil(sec - (Date.now() - t0) / 1000));
+      const l = Math.max(0, Math.ceil(sec - (now() - t0) / 1000));
       if (l !== left) { left = l; for (const n of ns) n.textContent = K.num(l); if (l > 0 && l <= 3) K.snd.fx('tick', { vol: 0.5 }); }
       if (l <= 0 || K.over()) clearInterval(iv);
     }, 200);
@@ -666,7 +666,7 @@
     const names = who.map(p => p.name).join(' & ');
     const gk = who.length > 1 ? 'guessingP' : 'guessing';
     if (noteEl) noteEl.textContent = tx(gk, { name: names, n: K.num(left) });
-    const iv = setInterval(() => { left = Math.max(0, left - 1); if (noteEl) noteEl.textContent = tx(gk, { name: names, n: K.num(left) }); if (left > 0 && left <= 3) K.snd.fx('tick', { vol: 0.5 }); }, 1000);
+    const iv = setInterval(() => { if (K.paused && K.paused()) return; left = Math.max(0, left - 1); if (noteEl) noteEl.textContent = tx(gk, { name: names, n: K.num(left) }); if (left > 0 && left <= 3) K.snd.fx('tick', { vol: 0.5 }); }, 1000);
     K.say({ k: 'imp', t: 'guessing', names: who.map(p => p.name) });
     const got = await K.ask({ kind: 'choice', prompt: await K.tr('Guess the secret word!'), opts, sec, who: who.map(p => p.id), extra: { tr, imp: { guess: true, cat: res.catT, catTr: await catsFor(K, who, res) } } });
     clearInterval(iv);
