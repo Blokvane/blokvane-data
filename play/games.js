@@ -366,7 +366,7 @@
     step: ['Tap {letters}', 'Answer on your phone before time runs out.'], deco: 'letters', helpers: ['Remove two', 'Hint', 'Answer it for me', 'Ask everyone'],
     // its own sounds on the TV (sound.js): the lobby tune, "every 5 questions" and "next question", a tune for each
     // third of the game and one for the last two questions, "correct" and "wrong", time's up, between questions, the winner
-    sounds: ['theme', 'every5', 'next', 'easy', 'medium', 'hard', 'last2', 'correct', 'wrong', 'between', 'timesup', 'win'],
+    sounds: ['theme', 'every5', 'next', 'easy', 'medium', 'hard', 'last2', 'correct', 'wrong', 'between', 'timesup', 'win', 'tSpin'],
     credit: 'Questions written by Blokvane.',
     // (the questions start loading in the lobby, while people join; and in a player's own language once they pick it)
     prep: lang => { for (const c of qCats(lang)) qFile(lang, c); },
@@ -449,7 +449,7 @@
         const live = K.alive();
         if ((s.mode === 'knockout' || s.mode === 'lives') && K.players().length > 1 && live.length <= 1) break;
         // the category wheel: every 5 questions the TV spins for the next ones
-        if (s.wheel && i >= 5 && (i - 5) % 5 === 0) {
+        if (s.wheel && wheelCats.length && i >= 5 && (i - 5) % 5 === 0) {
           const wc = await wheel(K, wheelCats);
           wheelCat = wc[0];
           for (let j = i; j < Math.min(i + 5, qs.length); j++) qs[j] = pk.take(levels[j], wc[0]) || qs[j];
@@ -676,22 +676,42 @@
     const t = words > 1 ? 'It starts with "{c}" and has {n} words.' : 'It starts with "{c}".';
     return lg ? K.trFor(lg, t, { c: firstLetter(a), n: words }) : K.tr(t, { c: firstLetter(a), n: words });
   }
+  // the category wheel, every 5 questions: drawn exactly as its design (wheel.js; every phone shows the same wheel,
+  // turning with it), with the categories of its eight colors beside it. Where it lands is the next round's category.
   async function wheel(K, cats) {
-    const v = await qView(K, { title: await K.tr('Category wheel'), sub: await K.tr('Spinning for the next round...'), board: false });
-    const box = K.el('div', 'center grow', v.main);
-    const w = K.el('div', 'wheel', box);
-    const segs = cats.length, cols = P.COLORS;
-    w.style.background = 'conic-gradient(' + cats.map((c, i) => `${cols[i % cols.length]} ${i * 360 / segs}deg ${(i + 1) * 360 / segs}deg`).join(',') + ')';
-    const pick = Math.floor(Math.random() * segs);
-    const label = K.el('div', 'question', box, '');
-    await K.sleep(300);
-    w.style.transform = `rotate(${360 * 6 - (pick + 0.5) * 360 / segs}deg)`;
-    P.sfx('drum');
-    await K.sleep(4300);
-    label.textContent = await K.tr(cats[pick][1]);
-    P.sfx('right');
-    await K.sleep(2000);
-    return cats[pick];
+    const W = window.BVWHEEL;
+    if (!W) return P.pick(cats);
+    // (fewer than eight categories with questions left: they take turns around the wheel)
+    const segs = [0, 1, 2, 3, 4, 5, 6, 7].map(i => cats[i % cats.length]);
+    const en = segs.map(c => c[1]), names = await Promise.all(en.map(x => K.tr(x)));
+    const body = K.view(null);
+    body.classList.add('tws');
+    const side = K.el('div', 'tws-side', body);
+    K.el('h1', '', side, await K.tr('Category wheel'));
+    const st = K.el('p', 'tws-st', side, await K.tr('Spinning for the next round...'));
+    const leg = K.el('div', 'tws-leg', side);
+    const chips = names.map((nm, i) => { const x = K.el('div', 'tws-c', leg); x.style.setProperty('--cc', W.COLORS[i]); K.el('i', '', x); K.el('span', '', x, nm); return x; });
+    const wh = W.make(K.el('div', 'tws-wheel', body));
+    const pick = Math.floor(Math.random() * 8);
+    wh.ready(pick);
+    // (the phones: the same wheel, standing where the TV's stands, then turning with it)
+    const tw = { s: W.startFor(pick), c: en, t: names };
+    const say = await K.tr('Category wheel');
+    K.wait(say, { tw });
+    await K.sleep(1800);
+    if (K.over()) { wh.stop(); return segs[pick]; }
+    K.wait(say, { tw: Object.assign({ go: 1, p: pick }, tw) });
+    // (its sound: the design's clicks, one on each line as it passes the pin, and its little fanfare when it stops; the
+    // tune steps back a little under it, like under Guess It Right!'s moments)
+    K.snd.fx('tSpin', { duck: 0.65 });
+    await wh.spin();
+    chips.forEach((c, i) => c.classList.add(en[i] === en[pick] ? 'win' : 'off'));
+    st.textContent = '';
+    const res = K.el('div', 'tws-res', side, names[pick]);
+    res.style.setProperty('--cc', W.COLORS[pick]);
+    await K.sleep(2600);
+    wh.stop();
+    return segs[pick];
   }
 
   // =====================================================================
@@ -827,151 +847,6 @@
   });
 
   // =====================================================================
-  // Hot Boo
-  // =====================================================================
-  function challenge(kind, kids, r = Math.random) {
-    const k = kind === 'mix' ? P.pick(['math', 'odd', 'fruit', 'color'], r) : kind === 'words' ? P.pick(['odd', 'fruit'], r) : kind === 'colors' ? 'color' : kind;
-    if (k === 'math') {
-      const a = 1 + Math.floor(r() * (kids ? 5 : 12)), b = 1 + Math.floor(r() * (kids ? 5 : 12)), op = kids ? '+' : P.pick(['+', '-', '×'], r);
-      const ans = op === '+' ? a + b : op === '-' ? a - b : a * b;
-      const opts = P.shuffle([ans, ans + 1, ans - 1, ans + (r() < .5 ? 2 : -2)].filter((x, i, arr) => arr.indexOf(x) === i), r).slice(0, 4);
-      return { q: `${a} ${op} ${b} = ?`, opts: opts.map(String), ok: opts.indexOf(ans) };
-    }
-    if (k === 'odd') {
-      const sets = [['🍎', '🍌', '🍇', '🚗'], ['🐶', '🐱', '🐭', '🍕'], ['⚽', '🏀', '🎾', '🌵'], ['🚗', '🚌', '🚲', '🐟'], ['🌞', '🌙', '⭐', '🧦'], ['🎸', '🎹', '🥁', '🥕'], ['🐟', '🐬', '🐳', '🐘'], ['🍰', '🍩', '🍪', '🔨']];
-      const set = P.pick(sets, r);
-      const opts = P.shuffle(set, r);
-      return { q: 'Tap the odd one out', opts, ok: opts.indexOf(set[3]) };
-    }
-    if (k === 'fruit') {
-      const fruit = P.pick(['🍓', '🍍', '🍒', '🍑', '🍋', '🥝'], r);
-      const opts = P.shuffle([fruit, '🥦', '🧀', '🥖'], r);
-      return { q: 'Which one is a fruit?', opts, ok: opts.indexOf(fruit) };
-    }
-    const colors = [['Tap red', '🔴'], ['Tap blue', '🔵'], ['Tap green', '🟢'], ['Tap yellow', '🟡'], ['Tap purple', '🟣']];
-    const c = P.pick(colors, r);
-    const opts = P.shuffle(colors, r).slice(0, 4);
-    if (!opts.includes(c)) opts[0] = c;
-    const sh = P.shuffle(opts, r);
-    return { q: c[0], opts: sh.map(x => x[1]), ok: sh.indexOf(c) };
-  }
-  G({
-    id: 'hotboo', name: 'Hot Boo', emoji: '🤧', sub: 'Pass Boo on before he sneezes on you.',
-    step: ['Pass Boo fast', 'Answer the quick challenge before he sneezes.'], deco: '🤧⏱️💥❤️',
-    rules: ['Boo jumps onto one player\'s phone.', 'Answer the quick challenge right to pass him on. Wrong? Try another.', 'Nobody knows when he sneezes. Get sneezed on and you lose a life.'],
-    settings: [{ key: 'lives', label: 'Lives', type: 'seg', options: [[1, '1'], [2, '2'], [3, '3']], default: 2 }, { key: 'timer', label: 'Sneeze timer', type: 'seg', options: [['short', 'Short', 'Boo sneezes soon: about 12 to 22 seconds.'], ['long', 'Long', 'More time: about 28 to 45 seconds.'], ['random', 'Random', 'Anywhere from 10 to 45 seconds. Nobody knows!']], default: 'random' },
-      { key: 'pass', label: 'Passing', type: 'seg', options: [['pick', 'Pick who gets him', 'You choose who gets Boo next.'], ['random', 'Random', 'Boo jumps to a random player.']], default: 'pick' }, { key: 'ch', label: 'Challenges', type: 'seg', options: [['mix', 'A mix'], ['math', 'Math'], ['words', 'Words'], ['colors', 'Colors']], default: 'mix' }, KIDS('Super easy challenges, and Boo waits a little longer.')],
-    async tv(K) {
-      const s = K.settings;
-      K.players().forEach(p => { p.lives = +s.lives; });
-      let holder = P.pick(K.alive()).id;
-      while (K.alive().length > 1 && !K.over()) {
-        const span = s.timer === 'short' ? [12, 22] : s.timer === 'long' ? [28, 45] : [10, 45];
-        const fuse = (span[0] + Math.random() * (span[1] - span[0])) * (s.kids ? 1.3 : 1) * 1000;
-        const until = Date.now() + fuse;
-        const v = await qView(K, { title: await K.tr('Hot Boo'), sub: await K.tr('Pass him before he sneezes!'), lives: true });
-        const hot = K.el('div', 'center grow', v.main);
-        const face = K.el('img', '', hot); face.alt = ''; face.style.cssText = 'width:calc(34 * var(--u));height:calc(34 * var(--u));transition:filter .5s';
-        face.src = P.booUri('boo:scary');
-        const who = K.el('div', 'question', hot, '');
-        const tick = setInterval(() => { const left = (until - Date.now()) / fuse; face.style.filter = `hue-rotate(${-(1 - left) * 40}deg) saturate(${1 + (1 - left) * 2})`; face.animate([{ transform: 'rotate(-4deg)' }, { transform: 'rotate(4deg)' }], { duration: Math.max(120, 600 * left), iterations: 1 }); P.sfx('tick'); }, 900);
-        while (Date.now() < until && !K.over()) {
-          const p = K.player(holder);
-          if (!p || p.out || p.away) { holder = P.pick(K.alive()).id; continue; }
-          who.textContent = await K.tr('{name} has Boo!', { name: p.name });
-          const ch = challenge(s.ch, s.kids);
-          const left = Math.max(2, Math.min(20, (until - Date.now()) / 1000));
-          const a = (await K.ask({ kind: 'choice', prompt: await K.tr(ch.q), opts: ch.opts, sec: Math.ceil(left), who: [holder], extra: { hot: true } })).get(holder);
-          if (Date.now() >= until) break;
-          if (a && +a.v === ch.ok) {
-            P.sfx('pop');
-            let next = '';
-            const others = K.alive().filter(x => x.id !== holder);
-            if (s.pass === 'pick' && others.length > 1) {
-              const left2 = Math.max(2, Math.min(8, (until - Date.now()) / 1000));
-              const pk = (await K.ask({ kind: 'players', prompt: K.strings.toWho, opts: others.map(x => ({ id: x.id, name: x.name, ph: !!x.photo, av: x.av })), sec: Math.ceil(left2), who: [holder] })).get(holder);
-              next = pk && others.some(x => x.id === pk.v) ? pk.v : '';
-            }
-            if (Date.now() >= until) break;
-            holder = next || P.pick(others).id;
-          } else K.result(holder, { ok: false, note: await K.tr('Try another one, quick!') });
-        }
-        clearInterval(tick);
-        // ACHOO
-        const p = K.player(holder);
-        P.sfx('sneeze');
-        face.src = P.booUri('boo:mind');
-        who.textContent = await K.tr('ACHOO! Boo sneezed on {name}!', { name: p ? p.name : '...' });
-        hot.style.background = 'radial-gradient(circle, rgba(120,255,120,.35), transparent 60%)';
-        if (p) { p.lives--; if (p.lives <= 0) p.out = true; K.result(p.id, { ok: false, note: await K.tr('Slimed!'), lives: p.lives, out: p.out }); }
-        for (const x of K.alive()) if (!p || x.id !== p.id) x.score += 1;
-        v.board.draw();
-        K.wait();
-        await K.sleep(4000);
-        const al = K.alive();
-        if (al.length > 1) holder = P.pick(al).id;
-      }
-      return K.players().slice().sort((a, b) => (b.out ? 0 : 1) - (a.out ? 0 : 1) || b.lives - a.lives || b.score - a.score);
-    }
-  });
-
-  // =====================================================================
-  // Boo Says
-  // =====================================================================
-  // [the move, the command, the same with "Boo says", its emoji] (whole lines, so every language says them its own way)
-  const MOVES = [['shake', 'Shake your phone!', 'Boo says: shake your phone!', '📳'], ['flip', 'Flip your phone over!', 'Boo says: flip your phone over!', '🔄'], ['tilt', 'Tilt your phone!', 'Boo says: tilt your phone!', '↗️'],
-    ['tap:red', 'Tap red!', 'Boo says: tap red!', '🔴'], ['tap:blue', 'Tap blue!', 'Boo says: tap blue!', '🔵'], ['tap:green', 'Tap green!', 'Boo says: tap green!', '🟢'], ['tap:yellow', 'Tap yellow!', 'Boo says: tap yellow!', '🟡'],
-    ['still', 'Freeze! Don\'t move!', 'Boo says: freeze! Don\'t move!', '🧊']];
-  G({
-    id: 'boosays', name: 'Boo Says', emoji: '🙋', sub: 'Do what Boo says, but only when he says "Boo says".',
-    step: ['Move your phone', 'Shake, flip or tilt, but only when Boo says so.'], deco: '📳🔄↗️🧊',
-    rules: ['Boo gives a command on the TV, like "Boo says: shake your phone!".', 'Do it on your phone, fast. The phone feels shakes, flips and tilts.', 'No "Boo says" first? Don\'t do it, or you\'re caught!'],
-    settings: [{ key: 'speed', label: 'Speed', type: 'seg', options: [['relaxed', 'Relaxed', 'Plenty of time for each command.'], ['normal', 'Normal', 'A few seconds for each command. It gets faster.'], ['fast', 'Fast', 'Quick! And it keeps getting faster.']], default: 'normal' },
-      { key: 'scoring', label: 'Scoring', type: 'seg', options: [['knockout', 'Knockout', 'Do the wrong thing and you are out. The last one standing wins.'], ['points', 'Points (nobody goes out)', 'Nobody goes out. Each right move scores a point.']], default: 'knockout' },
-      { key: 'tricks', label: 'Tricks', type: 'seg', options: [[0.2, 'A few', 'Boo rarely leaves out "Boo says".'], [0.33, 'Some', 'Now and then, Boo tries to trick you.'], [0.5, 'Lots', 'Boo tries to trick you a lot!']], default: 0.33 },
-      { key: 'taps', label: 'Taps only (no shaking or tilting)', type: 'toggle', default: false }, rounds(15, [10, 15, 25]), KIDS('Slower commands, more fun moves, and nobody goes out.')],
-    async tv(K) {
-      const s = K.settings, knock = s.scoring === 'knockout' && !s.kids;
-      let sec = { relaxed: 6, normal: 4.5, fast: 3.2 }[s.speed] * (s.kids ? 1.4 : 1);
-      for (let r = 0; r < +s.rounds; r++) {
-        if (K.over() || (knock && K.players().length > 1 && K.alive().length <= 1)) break;
-        const pool = s.taps ? MOVES.filter(m => m[0].startsWith('tap')) : MOVES;
-        let mv = P.pick(pool);
-        const says = Math.random() > +s.tricks;
-        if (!says && mv[0] === 'still') mv = P.pick(pool.filter(m => m[0] !== 'still'));
-        const v = await qView(K, { title: await K.tr('Round {n}', { n: r + 1 }), board: true });
-        const big = K.el('div', 'center grow', v.main);
-        K.el('div', 'big', big, mv[3]).style.fontSize = 'calc(18 * var(--u))';
-        const line = await K.tr(says ? mv[2] : mv[1]);
-        K.el('div', 'question', big, line);
-        const face = K.el('img', '', big); face.alt = ''; face.src = P.booUri('boo:hi'); face.style.cssText = 'width:calc(16 * var(--u));height:calc(16 * var(--u))';
-        K.speak(line);
-        const got = await K.ask({ kind: 'move', prompt: line, sec: Math.ceil(sec), extra: { taps: !!s.taps } });
-        const caught = [];
-        const inNow = K.alive();
-        const isGood = p => { const a = got.get(p.id); const did = a && a.v && a.v !== 'none' ? String(a.v) : ''; return says ? (mv[0] === 'still' ? !did : did === mv[0]) : !did; };
-        // (everyone caught at once: nobody goes out this round)
-        const spare = knock && inNow.length > 1 && !inNow.some(isGood);
-        for (const p of inNow) {
-          if (isGood(p)) { p.score += 1; K.result(p.id, { ok: true, pts: 1, score: p.score }); }
-          else { caught.push(p); if (knock && !spare) p.out = true; K.result(p.id, { ok: false, out: p.out, note: spare ? await K.tr('Everyone was caught, so nobody goes out this time.') : says ? await K.tr('Too slow, or the wrong move!') : await K.tr('Boo didn\'t say "Boo says"!') }); }
-        }
-        if (caught.length) {
-          big.textContent = '';
-          K.el('div', 'question', big, await K.tr('Caught!'));
-          const row = K.el('div', 'players', big);
-          for (const p of caught) { const c = K.el('div', 'player', row); const av = K.el('div', 'av', c); const im = K.el('img', '', av); im.src = K.avatarUrl(p); im.alt = ''; K.el('b', '', c, p.name); c.animate([{ transform: 'rotate(-8deg)' }, { transform: 'rotate(8deg)' }], { duration: 300, iterations: 4, direction: 'alternate' }); }
-          K.boo('laugh'); P.sfx('wrong');
-        } else { K.boo('happy'); P.sfx('right'); }
-        v.board.draw();
-        await K.sleep(2600);
-        sec = Math.max(1.8, sec * 0.93);
-      }
-      return K.players().slice().sort((a, b) => (a.out - b.out) || b.score - a.score);
-    }
-  });
-
-  // =====================================================================
   // Emoji Riddles
   // =====================================================================
   G({
@@ -1033,7 +908,7 @@
         for (const [author, a] of made) {
           if (K.over()) break;
           const e = String((a.v && a.v.e) || '').slice(0, 24), ans = P.safe(a.v && a.v.a, 50);
-          if (!e || !ans || !/\p{Extended_Pictographic}/u.test(e)) continue;
+          if (!e || !ans || !BVRX.picto().test(e)) continue;
           const others = K.players().filter(p => p.id !== author);
           const v2 = await qView(K, { title: await K.tr('A riddle by {name}', { name: (K.player(author) || {}).name }), sec: 25 });
           K.el('div', 'big', K.el('div', 'center', v2.main), e).style.fontSize = 'calc(18 * var(--u))';
@@ -1270,116 +1145,4 @@
   // Who's the Imposter?: its own file (imp-game.js) takes this place in the list of games
   // =====================================================================
   G({ id: 'imposter', name: 'Who\'s the Imposter?', emoji: '🕵️', sub: 'Everyone has the same secret word, except one.', settings: [], async tv(K) { return K.players(); } });
-
-  // =====================================================================
-  // Boo Party: a board game around a haunted house, with mini games
-  // =====================================================================
-  const BOARDS = { haunted: ['🍬', '🍬', '👻', '❓', '🍬', '🔄', '🕸️', '🍬', '🛒', '🍬', '❓', '💀', '🍬', '⭐', '🍬', '🔄', '🕸️', '❓', '🍬', '🛒', '🍬', '💀', '🍬', '⭐'],
-    candy: ['🍭', '🍭', '🍩', '❓', '🍭', '🔄', '🍫', '🍭', '🛒', '🍭', '❓', '🦷', '🍭', '⭐', '🍭', '🔄', '🍫', '❓', '🍭', '🛒', '🍭', '🦷', '🍭', '⭐'],
-    space: ['🪐', '🪐', '👽', '❓', '🪐', '🔄', '☄️', '🪐', '🛒', '🪐', '❓', '🕳️', '🪐', '⭐', '🪐', '🔄', '☄️', '❓', '🪐', '🛒', '🪐', '🕳️', '🪐', '⭐'] };
-  G({
-    id: 'party', name: 'Boo Party', emoji: '🏚️', sub: 'A board game around a haunted house, with mini games between turns.', teams: true, teamsWin: true,
-    step: ['Shake to roll', 'Move around the board and grab the most candy.'], deco: '🎲🍬🏚️⭐',
-    rules: ['On your turn, shake your phone (or tap Roll) to move.', 'Where you land decides: candy, swaps, questions, traps or the shop.', 'After each round, everyone plays a quick mini game. Most candy wins!'],
-    settings: [rounds(10, [10, 15, 20]), { key: 'board', label: 'Board', type: 'seg', options: [['haunted', 'Haunted house'], ['candy', 'Candy land'], ['space', 'Outer space']], default: 'haunted' },
-      { key: 'minis', label: 'Mini games after each round', type: 'toggle', default: true },
-      { key: 'mTap', label: 'Tap race', type: 'toggle', default: true, when: ['minis', true] }, { key: 'mBar', label: 'Stop the bar', type: 'toggle', default: true, when: ['minis', true] },
-      { key: 'mMemory', label: 'Memory test', type: 'toggle', default: true, when: ['minis', true] }, { key: 'mMath', label: 'Quick math', type: 'toggle', default: true, when: ['minis', true] },
-      { key: 'teams', label: 'Teams (they share their candy)', type: 'toggle', default: false }, { key: 'teamN', label: 'How many teams', type: 'seg', options: [[2, '2'], [3, '3'], [4, '4']], default: 2, when: ['teams', true] }, KIDS('No stealing, gentler traps, and a shorter game.')],
-    async tv(K) {
-      const s = K.settings;
-      const spaces = BOARDS[s.board] || BOARDS.haunted;
-      const N = spaces.length;
-      const pos = new Map(), dbl = new Map();
-      K.players().forEach(p => { pos.set(p.id, 0); p.score = 5; });
-      const xy = i => { const a = (i / N) * Math.PI * 2 - Math.PI / 2; return [50 + 40 * Math.cos(a), 50 + 38 * Math.sin(a)]; };
-      const drawBoard = async (title) => {
-        const v = K.view(await K.tr('Boo Party'), title);
-        const wrap = K.el('div', 'board-game', v);
-        spaces.forEach((e, i) => { const sp = K.el('div', 'space', wrap, e); const [x, y] = xy(i); sp.style.left = x + '%'; sp.style.top = y + '%'; });
-        const mid = K.el('div', 'center', wrap); mid.style.cssText = 'position:absolute;left:30%;top:30%;width:40%;height:40%';
-        const pieces = new Map();
-        K.players().forEach((p, k) => { const pc = K.el('div', 'piece', wrap); const im = K.el('img', '', pc); im.src = K.avatarUrl(p); im.alt = ''; const [x, y] = xy(pos.get(p.id) || 0); pc.style.left = (x + (k % 3) * 1.2) + '%'; pc.style.top = (y + Math.floor(k / 3) * 1.2) + '%'; pieces.set(p.id, pc); });
-        const b = K.board(v, { title: await K.tr('Candy') });
-        return { v, wrap, mid, pieces, b };
-      };
-      // (kids: a shorter game)
-      const total = s.kids ? Math.min(8, +s.rounds) : +s.rounds;
-      for (let r = 0; r < total; r++) {
-        for (const p of K.players()) {
-          if (K.over()) return [];
-          const B = await drawBoard(await K.tr('Round {n} / {total}', { n: r + 1, total }));
-          K.el('div', 'question', B.mid, await K.tr('{name}: roll!', { name: p.name }));
-          const a = (await K.ask({ kind: 'roll', prompt: K.strings.shake, sec: 20, who: [p.id] })).get(p.id);
-          void a;
-          const two = dbl.get(p.id);
-          const roll = 1 + Math.floor(Math.random() * 6) + (two ? 1 + Math.floor(Math.random() * 6) : 0);
-          dbl.delete(p.id);
-          B.mid.textContent = '';
-          K.el('div', 'dice', B.mid, ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'][Math.min(6, roll)] || String(roll)).title = String(roll);
-          K.el('div', 'question', B.mid, String(roll));
-          P.sfx('drum');
-          // hop, hop, hop
-          for (let i = 0; i < roll; i++) { pos.set(p.id, (pos.get(p.id) + 1) % N); const [x, y] = xy(pos.get(p.id)); const pc = B.pieces.get(p.id); pc.style.left = x + '%'; pc.style.top = y + '%'; P.sfx('pop'); await K.sleep(330); }
-          const e = spaces[pos.get(p.id)];
-          let text = '';
-          if (['🍬', '🍭', '🪐'].includes(e)) { p.score += 3; text = await K.tr('+{n} candy!', { n: 3 }); }
-          else if (['👻', '🍩', '👽'].includes(e)) { p.score += 5; text = await K.tr('A friendly ghost gives you +{n}!', { n: 5 }); }
-          else if (['💀', '🦷', '🕳️'].includes(e)) { const back = s.kids ? 1 : 3; pos.set(p.id, (pos.get(p.id) - back + N) % N); p.score = Math.max(0, p.score - (s.kids ? 0 : 2)); text = await K.tr(s.kids ? 'Boo trap! Slide back {n}' : 'Boo trap! Slide back {n}, -{m} candy', { n: back, m: 2 }); }
-          else if (['🕸️', '🍫', '☄️'].includes(e)) { p.score = Math.max(0, p.score - (s.kids ? 0 : 1)); text = s.kids ? await K.tr('Sticky! Nothing happens.') : await K.tr('Stuck! -1 candy'); }
-          else if (e === '⭐') { p.score += 8; text = await K.tr('A star space: +8 candy!'); }
-          else if (e === '🔄') {
-            const others = K.players().filter(x => x.id !== p.id);
-            if (others.length && !s.kids) { const o = P.pick(others); const t = pos.get(o.id); pos.set(o.id, pos.get(p.id)); pos.set(p.id, t); text = await K.tr('Swap places with {name}!', { name: o.name }); }
-            else { p.score += 2; text = await K.tr('+{n} candy!', { n: 2 }); }
-          } else if (e === '🛒') {
-            if (p.score >= 5) { const buy = (await K.ask({ kind: 'choice', prompt: await K.tr('The shop: double dice next turn for 5 candy?'), opts: [await K.tr('Buy it'), await K.tr('No thanks')], sec: 12, who: [p.id] })).get(p.id); if (buy && +buy.v === 0) { p.score -= 5; dbl.set(p.id, true); text = await K.tr('Double dice next turn!'); } else text = await K.tr('Maybe next time.'); }
-            else text = await K.tr('The shop is closed for you: you need 5 candy.');
-          } else if (e === '❓') {
-            const q = P.pick(K.packs ? K.packs.easy : PK.easy);
-            const opts = P.shuffle([q[1], ...q[2]]);
-            const ans = (await K.ask({ kind: 'choice', prompt: await K.tr(q[0]), opts: await Promise.all(opts.map(o => K.tr(o))), sec: 15, who: [p.id], extra: { letters: true } })).get(p.id);
-            if (ans && opts[+ans.v] === q[1]) { p.score += 4; text = await K.tr('Right! +4 candy'); } else text = await K.tr('Not this time. It was {x}', { x: await K.tr(q[1]) });
-          }
-          B.mid.textContent = '';
-          K.el('div', 'big', B.mid, e).style.fontSize = 'calc(14 * var(--u))';
-          K.el('div', 'question', B.mid, text);
-          B.b.draw();
-          K.result(p.id, { ok: true, score: p.score, note: text });
-          await K.sleep(2600);
-        }
-        if (s.minis && !K.over()) await mini(K, r, ['tap', 'bar', 'memory', 'math'].filter(k => s['m' + k[0].toUpperCase() + k.slice(1)] !== false));
-      }
-      return K.players().slice().sort((a, b) => b.score - a.score);
-    }
-  });
-  // the mini games: everyone at once, 20 seconds or less, the winner gets bonus candy
-  async function mini(K, r, kinds) {
-    if (!kinds || !kinds.length) return;
-    const kind = kinds[r % kinds.length];
-    const v = await qView(K, { title: await K.tr('Mini game!'), sub: await K.tr({ tap: 'Tap race: tap as fast as you can!', bar: 'Stop the bar in the middle!', memory: 'Remember the emoji!', math: 'Quick math!' }[kind]) });
-    const box = K.el('div', 'center grow', v.main);
-    let got, best = null;
-    if (kind === 'tap') { K.el('div', 'big', box, '👆'); got = await K.ask({ kind: 'tap', prompt: K.strings.look, sec: 10 }); for (const [id, a] of got) if (!best || +a.v > best.v) best = { id, v: +a.v }; }
-    else if (kind === 'bar') { K.el('div', 'big', box, '🎯'); got = await K.ask({ kind: 'bar', prompt: K.strings.look, sec: 12 }); for (const [id, a] of got) { const d = Math.abs(+a.v - 0.5); if (!best || d < best.v) best = { id, v: d }; } }
-    else if (kind === 'memory') {
-      const set = P.shuffle(['🍕', '🐶', '🚀', '🎈', '🌵', '🐙', '🍩', '🎸', '⚽', '🦄', '🍎', '🌙']);
-      const shown = set.slice(0, 4);
-      const big = K.el('div', 'big', box, shown.join(' ')); big.style.fontSize = 'calc(14 * var(--u))';
-      await K.sleep(3500);
-      big.textContent = '❓';
-      const opts = P.shuffle([shown[Math.floor(Math.random() * 4)], ...set.slice(4, 7)]);
-      const right = opts.findIndex(o => shown.includes(o));
-      got = await K.ask({ kind: 'choice', prompt: await K.tr('Which one was on the TV?'), opts, sec: 10 });
-      for (const [id, a] of got) if (+a.v === right && (!best || a.ms < best.v)) best = { id, v: a.ms };
-    } else {
-      const ch = challenge('math', false);
-      K.el('div', 'question', box, ch.q);
-      got = await K.ask({ kind: 'choice', prompt: ch.q, opts: ch.opts, sec: 10 });
-      for (const [id, a] of got) if (+a.v === ch.ok && (!best || a.ms < best.v)) best = { id, v: a.ms };
-    }
-    if (best) { const p = K.player(best.id); p.score += 5; K.el('div', 'question', box, '🏆 ' + p.name + ' +5'); K.result(p.id, { ok: true, pts: 5, score: p.score }); P.sfx('win'); }
-    v.board.draw();
-    await K.sleep(3200);
-  }
 })();

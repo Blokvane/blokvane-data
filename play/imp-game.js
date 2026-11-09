@@ -425,13 +425,18 @@
     if (K.over()) return null;
     // ---- 2. the clues: one word each, round after round ----
     const rounds = clamp(s.rounds, 1, 10, 2), clueSec = clamp(s.clueSec, 3, 300, 15);
-    let order = s.order === 'joined' ? ps.slice() : P.shuffle(ps);
-    // (the imposter never goes first: they'd have nothing to go on)
-    if (isImp.has(order[0].id) && order.some(p => !isImp.has(p.id))) { const f = order.findIndex(p => !isImp.has(p.id)); order = order.slice(f).concat(order.slice(0, f)); }
+    const order = s.order === 'joined' ? ps.slice() : P.shuffle(ps);
+    // (an imposter never starts a round, they'd have nothing to go on: each round begins with the first player still here who
+    // knows the word, and the rest follow in the same order)
+    const roundOrder = () => {
+      const here = order.filter(p => K.alive().some(x => x.id === p.id));
+      const f = here.findIndex(p => !isImp.has(p.id));
+      return f > 0 ? here.slice(f).concat(here.slice(0, f)) : here;
+    };
     const said = [];
     const typed = s.clue === 'type';
     for (let r = 1; r <= rounds && !K.over(); r++) {
-      for (const p of order) {
+      for (const p of roundOrder()) {
         if (K.over()) return null;
         if (!K.alive().some(x => x.id === p.id)) continue;
         scr = screen(K, TPL.clue[look.clue], 'clue');

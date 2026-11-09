@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '14';
+  const VERSION = '15';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -296,7 +296,7 @@
           },
           onPeers: () => {
             const p = room.peer(pair.cid);
-            if (p) { seenAt = Math.max(seenAt, p.at); if (p.info) info = p.info; if (p.name && p.name !== self.name) { self.name = p.name; savePair({ ...pair, name: p.name }); } }
+            if (p) { seenAt = Math.max(seenAt, p.at); if (p.info) info = p.info; if (p.name && p.name !== self.name) { self.name = p.name; savePair(Object.assign({}, pair, { name: p.name })); } }
             fireStatus();
           },
           onPipe: P => { for (const fn of ons.get('pipe') || []) { try { fn(P); } catch (e) {} } }
@@ -528,7 +528,7 @@
   function confetti(parent) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const cv = el('canvas', '', parent || document.body);
-    cv.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:70';
+    cv.style.cssText = 'position:fixed;top:0;left:0;inset:0;width:100%;height:100%;pointer-events:none;z-index:70';
     const dpr = Math.min(2, devicePixelRatio || 1);
     cv.width = innerWidth * dpr; cv.height = innerHeight * dpr;
     const ctx = cv.getContext('2d');
@@ -638,7 +638,7 @@
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });
-  if (!(window.crypto && crypto.subtle) || typeof BigInt !== 'function' || !window.WebSocket) {
+  if (!(window.crypto && crypto.subtle) || !window.WebSocket) {
     const v = view('Blokvane');
     hero(v.body, 'This browser is too old for this', 'Open this link in Chrome, Safari, Edge or Firefox.', { sleepy: true });
     return;

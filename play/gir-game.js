@@ -543,7 +543,7 @@
         if (wheelEvery && i % wheelEvery === 0) {
           const ok = CATS.map((c, j) => j).filter(j => pk.left(j) > 0);
           if (ok.length) {
-            if (i % 5 === 0) K.snd.sting('gEvery5', { duck: 0.35 });
+            if (i % 5 === 0) K.snd.sting('gEvery5', { duck: 0.65 });
             const host = K.players().find(p => K.isHost(p.id));
             const who = turn ? turnIds() : host ? [host.id] : [];
             const whoText = turn ? '{team}, spin the wheel on your phone!' : '{name}, spin the wheel on your phone!';
@@ -570,7 +570,7 @@
         // shows which question it is; the tune keeps playing under it
         const big = i % 5 === 0 && !spunNow, lastN = race ? (lead() >= target - 1 ? 1 : 0) : (n - i <= 2 ? n - i : 0);
         K.wait();
-        K.snd.sting(big ? 'gEvery5' : 'gNext', { duck: 0.35 });
+        K.snd.sting(big ? 'gEvery5' : 'gNext', { duck: 0.65 });
         await intro(K, { num, total, cat: q.cat, turn, big, last: lastN, race });
         await K.sleep(K.snd.on() ? (big ? 4200 : 3000) : 1800);
         if (K.over()) break;
@@ -618,7 +618,7 @@
         // (Clue by clue: a new clue every 4 seconds; the points go down with each one)
         const clueRun = clueMode ? (async () => { for (let c = 1; c < 4; c++) { await K.sleep(4000); if (closed || K.over()) return; shown = c + 1; await v.showClue(c); v.setPts(await ptsLabel(shown)); K.snd.fx('gTick', { vol: 0.8 }); K.say({ k: 'gclue', n: qn, c: shown, w: worth[c] }); } })() : null;
         void clueRun;
-        const tuT = qsec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; K.snd.sting('gTimesup', { duck: 0.3 }); }, qsec * 1000) : 0;
+        const tuT = qsec ? setTimeout(() => { if (closed || K.over() || answered.size >= live.length) return; K.snd.sting('gTimesup', { duck: 0.65 }); }, qsec * 1000) : 0;
         const answers = await asking;
         closed = true; clearTimeout(tuT);
         if (stopReveal) stopReveal();
@@ -636,7 +636,7 @@
           if (top > 0) teamPick = [0, 1, 2, 3].filter(j => votes[j] === top).sort((a, b) => firstAt[a] - firstAt[b])[0];
         }
         const rightN = turn ? (teamPick === ok ? 1 : 0) : [...answers.values()].filter(a => +a.v === ok).length;
-        K.snd.sting(rightN ? 'gCorrect' : 'gWrong', { duck: 0.35 });
+        K.snd.sting(rightN ? 'gCorrect' : 'gWrong', { duck: 0.65 });
         await K.sleep(K.snd.on() ? 900 : 250);
         v.cells.forEach((c, j) => c.node.classList.add(j === ok ? 'right' : 'dim'));
         if (turn && teamPick >= 0) { const tf = K.el('span', 'tflag', v.cells[teamPick].node, await K.tr(turn[3])); tf.style.setProperty('--tc', turn[2]); if (teamPick !== ok) v.cells[teamPick].node.classList.add('miss'); }

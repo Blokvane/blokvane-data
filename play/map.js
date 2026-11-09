@@ -31,13 +31,13 @@ var BVMAP = (() => {
 .bvmap .bvm-fade{position:absolute;left:-${W}px;right:-${W}px;height:130px;pointer-events:none}
 .bvmap .bvm-fade.n{top:-2px;background:linear-gradient(#0b2043,rgba(11,32,67,0))}
 .bvmap .bvm-fade.s{top:${H - 128}px;background:linear-gradient(rgba(11,32,67,0),#0b2043)}
-.bvmap .bvm-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-.bvmap .bvm-marks{position:absolute;inset:0;pointer-events:none}
+.bvmap .bvm-svg{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+.bvmap .bvm-marks{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;pointer-events:none}
 .bvmap .bvm-mark{position:absolute;left:0;top:0;will-change:transform}
 .bvm-pin{position:absolute;left:0;top:0;width:var(--pw,44px);height:calc(var(--pw,44px) * 1.32);transform:translate(-50%,-100%);filter:drop-shadow(0 6px 8px rgba(0,0,0,.45))}
-.bvm-pin svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.bvm-pin svg{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;width:100%;height:100%;overflow:visible}
 .bvm-pin img,.bvm-pin .face{position:absolute;left:14%;top:7.5%;width:72%;height:54.5%;border-radius:50%;object-fit:cover;background:#fff}
-.bvm-pin .face{background:none;display:grid;place-items:center}
+.bvm-pin .face{background:none;display:grid;align-items:center;justify-items:center;place-items:center}
 .bvm-pin .face svg{position:static;width:78%;height:78%}`;
     document.head.appendChild(s);
   }

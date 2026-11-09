@@ -87,8 +87,8 @@ var BVLIVE = (() => {
   async function boxKey(myPriv, theirPub, topic) {
     const pub = await subtle.importKey('raw', C.unb64url(theirPub), ECDH, false, []);
     const bits = await subtle.deriveBits({ name: 'ECDH', public: pub }, myPriv, 256);
-    const hk = await subtle.importKey('raw', bits, 'HKDF', false, ['deriveKey']);
-    return subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: te.encode('bvlive-box-v1'), info: te.encode(topic) }, hk, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    // (C.hkdf: the browser's own HKDF, or the same made from HMAC where an older browser has none)
+    return subtle.importKey('raw', await C.hkdf(bits, te.encode('bvlive-box-v1'), te.encode(topic), 256), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
   }
 
   // ---------- a room ----------

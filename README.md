@@ -154,6 +154,26 @@ with Blokvane's own rules before it is shown, and none of it can run code.
 How they are built and checked (`node boobox/tools/build.js`, `node boobox/tools/check.js`), what
 each file holds and where each part comes from: see [boobox/README.md](boobox/README.md).
 
+## Party games on any browser (`play/`, `go/`)
+
+The party games (`play/`, the TV) and the phone page (`go/`) also run on older browsers, like the
+ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
+
+- `go/compat.js` loads first on both pages. It adds what those browsers lack (newer array and
+  text functions, pointer events on older iPhones, gaps in flex boxes, `min()` for the TV's size)
+  and only where a browser has no own version, so newer browsers run exactly as before.
+- `play/*.old.js` and `go/*.old.js` are copies of the TV's scripts for browsers that can't read
+  async functions. `play/index.html` loads them only there. Make them again after changing one of
+  those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
+  (`node tools/old-js.js --check` says if one is out of date).
+- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css go/go.css`
+  adds the older way of writing newer CSS just before it, after a stylesheet changes. The phone
+  page's own styles (in `go/m/party.js`) get the same. For the designed screens of Who's the
+  Imposter?, after they are made again: `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js`.
+- `play/wheel.js` is Trivia's category wheel, made from its design by
+  `python3 tools/make-wheel.py "<the design's export>/source/Spin Wheel.dc.html" > play/wheel.js`.
+  The TV and the phones both draw it from there.
+
 ## TV screens anywhere (`tv/`)
 
 `tv/` is the page a TV opens with a screen's private link from Blokvane, like
@@ -169,4 +189,4 @@ secret after `#` never leaves the TV (browsers don't send that part to any websi
 messages signed by the computer's own key are believed.
 
 `wt-core.js` and `wt-net.js` are copies of `blokvane/lib/wt-core.js` and `blokvane/lib/wt-net.js`
-in the extension. Copy them again when those change.
+in the extension (and of `go/wt-core.js` and `go/wt-net.js`). Copy them again when those change.

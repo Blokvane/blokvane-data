@@ -1,0 +1,438 @@
+// Made from common.js by tools/old-js.js for older TV browsers (async functions written the older way).
+// Do not edit this copy: change common.js and run node tools/old-js.js again.
+var __async = (__this, __arguments, generator) => {
+  return new Promise((resolve, reject) => {
+    var fulfilled = (value) => {
+      try {
+        step(generator.next(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var rejected = (value) => {
+      try {
+        step(generator.throw(value));
+      } catch (e) {
+        reject(e);
+      }
+    };
+    var step = (x) => x.done ? resolve(x.value) : Promise.resolve(x.value).then(fulfilled, rejected);
+    step((generator = generator.apply(__this, __arguments)).next());
+  });
+};
+var BVPLAYC = (() => {
+  "use strict";
+  const I18N = BVI18N;
+  const RX = BVRX.rx;
+  const NOT_LM1 = "(?:[\\0-@\\[-`\\{-\\xA9\\xAB-\\xB4\\xB6-\\xB9\\xBB-\\xBF\\xD7\\xF7\\u02C2-\\u02C5\\u02D2-\\u02DF\\u02E5-\\u02EB\\u02ED\\u02EF-\\u02FF\\u0375\\u0378\\u0379\\u037E\\u0380-\\u0385\\u0387\\u038B\\u038D\\u03A2\\u03F6\\u0482\\u0530\\u0557\\u055A-\\u055F\\u0589\\u058A\\u058D-\\u0590\\u05BE\\u05C0\\u05C3\\u05C6\\u05CA-\\u05CF\\u05EB-\\u05EE\\u05F3-\\u060F\\u061B-\\u061F\\u0660-\\u066D\\u06D4\\u06DD\\u06DE\\u06E9\\u06F0-\\u06F9\\u06FD\\u06FE\\u0700-\\u070F\\u074B\\u074C\\u07B2-\\u07C9\\u07F6-\\u07F9\\u07FB\\u07FC\\u07FE\\u07FF\\u082E-\\u083F\\u085C-\\u085F\\u086B-\\u086F\\u0888\\u0890-\\u0896\\u08E2\\u0964-\\u0970\\u0984\\u098D\\u098E\\u0991\\u0992\\u09A9\\u09B1\\u09B3-\\u09B5\\u09BA\\u09BB\\u09C5\\u09C6\\u09C9\\u09CA\\u09CF-\\u09D6\\u09D8-\\u09DB\\u09DE\\u09E4-\\u09EF\\u09F2-\\u09FB\\u09FD\\u09FF\\u0A00\\u0A04\\u0A0B-\\u0A0E\\u0A11\\u0A12\\u0A29\\u0A31\\u0A34\\u0A37\\u0A3A\\u0A3B\\u0A3D\\u0A43-\\u0A46\\u0A49\\u0A4A\\u0A4E-\\u0A50\\u0A52-\\u0A58\\u0A5D\\u0A5F-\\u0A6F\\u0A76-\\u0A80\\u0A84\\u0A8E\\u0A92\\u0AA9\\u0AB1\\u0AB4\\u0ABA\\u0ABB\\u0AC6\\u0ACA\\u0ACE\\u0ACF\\u0AD1-\\u0ADF\\u0AE4-\\u0AF8\\u0B00\\u0B04\\u0B0D\\u0B0E\\u0B11\\u0B12\\u0B29\\u0B31\\u0B34\\u0B3A\\u0B3B\\u0B45\\u0B46\\u0B49\\u0B4A\\u0B4E-\\u0B52\\u0B58-\\u0B5B\\u0B5E\\u0B64-\\u0B70\\u0B72-\\u0B81\\u0B84\\u0B8B-\\u0B8D\\u0B91\\u0B96-\\u0B98\\u0B9B\\u0B9D\\u0BA0-\\u0BA2\\u0BA5-\\u0BA7\\u0BAB-\\u0BAD\\u0BBA-\\u0BBD\\u0BC3-\\u0BC5\\u0BC9\\u0BCE\\u0BCF\\u0BD1-\\u0BD6\\u0BD8-\\u0BFF\\u0C0D\\u0C11\\u0C29\\u0C3A\\u0C3B\\u0C45\\u0C49\\u0C4E-\\u0C54\\u0C57\\u0C5B\\u0C5E\\u0C5F\\u0C64-\\u0C7F\\u0C84\\u0C8D\\u0C91\\u0CA9\\u0CB4\\u0CBA\\u0CBB\\u0CC5\\u0CC9\\u0CCE-\\u0CD4\\u0CD7-\\u0CDB\\u0CDF\\u0CE4-\\u0CF0\\u0CF4-\\u0CFF\\u0D0D\\u0D11\\u0D45\\u0D49\\u0D4F-\\u0D53\\u0D58-\\u0D5E\\u0D64-\\u0D79\\u0D80\\u0D84\\u0D97-\\u0D99\\u0DB2\\u0DBC\\u0DBE\\u0DBF\\u0DC7-\\u0DC9\\u0DCB-\\u0DCE\\u0DD5\\u0DD7\\u0DE0-\\u0DF1\\u0DF4-\\u0E00\\u0E3B-\\u0E3F\\u0E4F-\\u0E80\\u0E83\\u0E85\\u0E8B\\u0EA4\\u0EA6\\u0EBE\\u0EBF\\u0EC5\\u0EC7\\u0ECF-\\u0EDB\\u0EE0-\\u0EFF\\u0F01-\\u0F17\\u0F1A-\\u0F34\\u0F36\\u0F38\\u0F3A-\\u0F3D\\u0F48\\u0F6D-\\u0F70\\u0F85\\u0F98\\u0FBD-\\u0FC5\\u0FC7-\\u0FFF\\u1040-\\u104F\\u1090-\\u1099\\u109E\\u109F\\u10C6\\u10C8-\\u10CC\\u10CE\\u10CF\\u10FB\\u1249\\u124E\\u124F\\u1257\\u1259\\u125E\\u125F\\u1289\\u128E\\u128F\\u12B1\\u12B6\\u12B7\\u12BF\\u12C1\\u12C6\\u12C7\\u12D7\\u1311\\u1316\\u1317\\u135B\\u135C\\u1360-\\u137F\\u1390-\\u139F\\u13F6\\u13F7\\u13FE-\\u1400\\u166D\\u166E\\u1680\\u169B-\\u169F\\u16EB-\\u16F0\\u16F9-\\u16FF\\u1716-\\u171E\\u1735-\\u173F\\u1754-\\u175F\\u176D\\u1771\\u1774-\\u177F\\u17D4-\\u17D6\\u17D8-\\u17DB\\u17DE-\\u180A\\u180E\\u1810-\\u181F\\u1879-\\u187F\\u18AB-\\u18AF\\u18F6-\\u18FF\\u191F\\u192C-\\u192F\\u193C-\\u194F\\u196E\\u196F\\u1975-\\u197F\\u19AC-\\u19AF\\u19CA-\\u19FF\\u1A1C-\\u1A1F\\u1A5F\\u1A7D\\u1A7E\\u1A80-\\u1AA6\\u1AA8-\\u1AAF\\u1AF1-\\u1AFF\\u1B4D-\\u1B6A\\u1B74-\\u1B7F\\u1BB0-\\u1BB9\\u1BF4-\\u1BFF\\u1C38-\\u1C4C\\u1C50-\\u1C59\\u1C7E\\u1C7F\\u1C8B-\\u1C8F\\u1CBB\\u1CBC\\u1CC0-\\u1CCF\\u1CD3\\u1CFB-\\u1CFF\\u1F16\\u1F17\\u1F1E\\u1F1F\\u1F46\\u1F47\\u1F4E\\u1F4F\\u1F58\\u1F5A\\u1F5C\\u1F5E\\u1F7E\\u1F7F\\u1FB5\\u1FBD\\u1FBF-\\u1FC1\\u1FC5\\u1FCD-\\u1FCF\\u1FD4\\u1FD5\\u1FDC-\\u1FDF\\u1FED-\\u1FF1\\u1FF5\\u1FFD-\\u2070\\u2072-\\u207E\\u2080-\\u208E\\u20A0-\\u20CF\\u20F1-\\u2101\\u2103-\\u2106\\u2108\\u2109\\u2114\\u2116-\\u2118\\u211E-\\u2123\\u2125\\u2127\\u2129\\u212E\\u213A\\u213B\\u2140-\\u2144\\u214A-\\u214D\\u214F-\\u2182\\u2185-\\u2BFF\\u2CE5-\\u2CEA\\u2CF4-\\u2CFF\\u2D26\\u2D28-\\u2D2C\\u2D2E\\u2D2F\\u2D68-\\u2D6E\\u2D70-\\u2D7E\\u2D97-\\u2D9F\\u2DA7\\u2DAF\\u2DB7\\u2DBF\\u2DC7\\u2DCF\\u2DD7\\u2DDF\\u2E00-\\u2E2E\\u2E30-\\u3004\\u3007-\\u3029\\u3030\\u3036-\\u303A\\u303D-\\u3040\\u3097\\u3098\\u309B\\u309C\\u30A0\\u30FB\\u3100-\\u3104\\u3130\\u318F-\\u319F\\u31C0-\\u31EF\\u3200-\\u33FF\\u4DC0-\\u4DFF\\uA48D-\\uA4CF\\uA4FE\\uA4FF\\uA60D-\\uA60F\\uA620-\\uA629\\uA62C-\\uA63F\\uA673\\uA67E\\uA6E6-\\uA6EF\\uA6F2-\\uA716\\uA720\\uA721\\uA789\\uA78A\\uA7DE-\\uA7E1\\uA7E3-\\uA7F0\\uA828-\\uA82B\\uA82D-\\uA83F\\uA874-\\uA87F\\uA8C6-\\uA8DF\\uA8F8-\\uA8FA\\uA8FC\\uA900-\\uA909\\uA92E\\uA92F\\uA954-\\uA95F\\uA97D-\\uA97F\\uA9C1-\\uA9CE\\uA9D0-\\uA9DF\\uA9F0-\\uA9F9\\uA9FF\\uAA37-\\uAA3F\\uAA4E-\\uAA5F\\uAA77-\\uAA79\\uAAC3-\\uAADA\\uAADE\\uAADF\\uAAF0\\uAAF1\\uAAF7-\\uAB00\\uAB07\\uAB08\\uAB0F\\uAB10\\uAB17-\\uAB1F\\uAB27\\uAB2F\\uAB5B\\uAB6A\\uAB6B\\uAB6E\\uAB6F\\uABEB\\uABEE-\\uABFF\\uD7A4-\\uD7AF\\uD7C7-\\uD7CA\\uD7FC-\\uD7FF\\uE000-\\uF8FF\\uFA6E\\uFA6F\\uFADA-\\uFAFF\\uFB07-\\uFB12\\uFB18-\\uFB1C\\uFB29\\uFB37\\uFB3D\\uFB3F\\uFB42\\uFB45\\uFBB2-\\uFBD2\\uFD3E-\\uFD4F\\uFD90\\uFD91\\uFDC8-\\uFDEF\\uFDFC-\\uFDFF\\uFE10-\\uFE1F\\uFE30-\\uFE6F\\uFE75\\uFEFD-\\uFF20\\uFF3B-\\uFF40\\uFF5B-\\uFF65\\uFFBF-\\uFFC1\\uFFC8\\uFFC9\\uFFD0\\uFFD1\\uFFD8\\uFFD9\\uFFDD-\\uFFFF]|\\uD800[\\uDC0C\\uDC27\\uDC3B\\uDC3E\\uDC4E\\uDC4F\\uDC5E-\\uDC7F\\uDCFB-\\uDDFC\\uDDFE-\\uDE7F\\uDE9D-\\uDE9F\\uDED1-\\uDEDF\\uDEE1-\\uDEFF\\uDF20-\\uDF2C\\uDF41\\uDF4A-\\uDF4F\\uDF7B-\\uDF7F\\uDF9E\\uDF9F\\uDFC4-\\uDFC7\\uDFD0-\\uDFFF]|\\uD801[\\uDC9E-\\uDCAF\\uDCD4-\\uDCD7\\uDCFC-\\uDCFF\\uDD28-\\uDD2F\\uDD64-\\uDD6F\\uDD7B\\uDD8B\\uDD93\\uDD96\\uDDA2\\uDDB2\\uDDBA\\uDDBD-\\uDDBF\\uDDF4-\\uDDFF\\uDF37-\\uDF3F\\uDF56-\\uDF5F\\uDF68-\\uDF7F\\uDF86\\uDFB1\\uDFC0-\\uDFFF]|\\uD802[\\uDC06\\uDC07\\uDC09\\uDC36\\uDC39-\\uDC3B\\uDC3D\\uDC3E\\uDC56-\\uDC5F\\uDC77-\\uDC7F\\uDC9F-\\uDCDF\\uDCF3\\uDCF6-\\uDCFF\\uDD16-\\uDD1F\\uDD3A-\\uDD3F\\uDD5A-\\uDD7F\\uDDB8-\\uDDBD\\uDDC0-\\uDDFF\\uDE04\\uDE07-\\uDE0B\\uDE14\\uDE18\\uDE36\\uDE37\\uDE3B-\\uDE3E\\uDE40-\\uDE5F\\uDE7D-\\uDE7F\\uDE9D-\\uDEBF\\uDEC8\\uDEE7-\\uDEFF\\uDF36-\\uDF3F\\uDF56-\\uDF5F\\uDF73-\\uDF7F\\uDF92-\\uDFFF]|\\uD803[\\uDC49-\\uDC7F\\uDCB3-\\uDCBF\\uDCF3-\\uDCFF\\uDD28-\\uDD49\\uDD66-\\uDD68\\uDD6E\\uDD86-\\uDE7F\\uDEAA\\uDEAD-\\uDEAF\\uDEB2-\\uDEC1\\uDEC8-\\uDECA\\uDED0-\\uDED8\\uDEEF\\uDF1D-\\uDF26\\uDF28-\\uDF2F\\uDF51-\\uDF6F\\uDF86-\\uDFAF\\uDFC5-\\uDFDF\\uDFF7-\\uDFFF]|\\uD804[\\uDC47-\\uDC6F\\uDC76-\\uDC7E\\uDCBB-\\uDCC1\\uDCC3-\\uDCCF\\uDCE9-\\uDCFF\\uDD35-\\uDD43\\uDD48-\\uDD4F\\uDD74\\uDD75\\uDD77-\\uDD7F\\uDDC5-\\uDDC8\\uDDCD\\uDDD0-\\uDDD9\\uDDDB\\uDDDD-\\uDDFF\\uDE12\\uDE38-\\uDE3D\\uDE42-\\uDE7F\\uDE87\\uDE89\\uDE8E\\uDE9E\\uDEA9-\\uDEAF\\uDEEB-\\uDEFF\\uDF04\\uDF0D\\uDF0E\\uDF11\\uDF12\\uDF29\\uDF31\\uDF34\\uDF3A\\uDF45\\uDF46\\uDF49\\uDF4A\\uDF4E\\uDF4F\\uDF51-\\uDF56\\uDF58-\\uDF5C\\uDF64\\uDF65\\uDF6D-\\uDF6F\\uDF75-\\uDF7F\\uDF8A\\uDF8C\\uDF8D\\uDF8F\\uDFB6\\uDFC1\\uDFC3\\uDFC4\\uDFC6\\uDFCB\\uDFD4-\\uDFE0\\uDFE3-\\uDFFF]|\\uD805[\\uDC4B-\\uDC5D\\uDC62-\\uDC7F\\uDCC6\\uDCC8-\\uDD7F\\uDDB6\\uDDB7\\uDDC1-\\uDDD7\\uDDDE-\\uDDFF\\uDE41-\\uDE43\\uDE45-\\uDE7F\\uDEB9-\\uDEFF\\uDF1B\\uDF1C\\uDF2C-\\uDF3F\\uDF47-\\uDFFF]|\\uD806[\\uDC3B-\\uDC9F\\uDCE0-\\uDCFE\\uDD07\\uDD08\\uDD0A\\uDD0B\\uDD14\\uDD17\\uDD36\\uDD39\\uDD3A\\uDD44-\\uDD9F\\uDDA8\\uDDA9\\uDDD8\\uDDD9\\uDDE2\\uDDE5-\\uDDFF\\uDE3F-\\uDE46\\uDE48-\\uDE4F\\uDE9A-\\uDE9C\\uDE9E-\\uDEAF\\uDEF9-\\uDF09\\uDF0B-\\uDF5F\\uDF68-\\uDFBF\\uDFE1-\\uDFFF]|\\uD807[\\uDC09\\uDC37\\uDC41-\\uDC71\\uDC90\\uDC91\\uDCA8\\uDCB7-\\uDCFF\\uDD07\\uDD0A\\uDD37-\\uDD39\\uDD3B\\uDD3E\\uDD48-\\uDD5F\\uDD66\\uDD69\\uDD8F\\uDD92\\uDD99-\\uDDAF\\uDDDC-\\uDDEF\\uDDF2-\\uDEDF\\uDEF7-\\uDEFF\\uDF11\\uDF3B-\\uDF3D\\uDF43-\\uDF59\\uDF5B-\\uDFAF\\uDFB1-\\uDFFF]|\\uD808[\\uDF9A-\\uDFFF]|\\uD809[\\uDC00-\\uDC7F\\uDD44-\\uDFFF]|[\\uD80A\\uD812-\\uD817\\uD819\\uD825-\\uD82A\\uD82D\\uD82E\\uD830-\\uD832\\uD83C-\\uD83F\\uD87C\\uD87D\\uD87F\\uD88E-\\uD8B3\\uD8C0-\\uDB3F\\uDB41-\\uDBFF][\\uDC00-\\uDFFF]|\\uD80B[\\uDC00-\\uDF8F\\uDFF1-\\uDFFF]|\\uD80D[\\uDC30-\\uDC3F\\uDC56-\\uDC5F]|\\uD810[\\uDFFB-\\uDFFF]|\\uD811[\\uDE47-\\uDFFF]|\\uD818[\\uDC00-\\uDCFF\\uDD30-\\uDFFF]|\\uD81A[\\uDE39-\\uDE3F\\uDE5F-\\uDE6F\\uDEBF-\\uDECF\\uDEEE\\uDEEF\\uDEF5-\\uDEFF\\uDF37-\\uDF3F\\uDF44-\\uDF62\\uDF78-\\uDF7C\\uDF90-\\uDFFF]|\\uD81B[\\uDC00-\\uDD3F\\uDD6D-\\uDE3F\\uDE80-\\uDE9F\\uDEB9\\uDEBA\\uDED4-\\uDEFF\\uDF4B-\\uDF4E\\uDF88-\\uDF8E\\uDFA0-\\uDFDF\\uDFE2\\uDFE5-\\uDFEF\\uDFF4-\\uDFFF]|\\uD823[\\uDCDB-\\uDCFE\\uDD21-\\uDD7F\\uDDF3-\\uDDFF]|\\uD824[\\uDD92-\\uDD9F\\uDDD3-\\uDFFF]|\\uD82B[\\uDC00-\\uDFEF\\uDFF4\\uDFFC\\uDFFF]|\\uD82C[\\uDD29-\\uDD31\\uDD33-\\uDD4F\\uDD53\\uDD54\\uDD56-\\uDD63\\uDD69-\\uDD6F\\uDEFC-\\uDFFF]|\\uD82F[\\uDC6B-\\uDC6F\\uDC7D-\\uDC7F\\uDC89-\\uDC8F\\uDC9A-\\uDC9C\\uDC9F-\\uDFFF]|\\uD833[\\uDC00-\\uDEFF\\uDF2E\\uDF2F\\uDF47-\\uDFFF]|\\uD834[\\uDC00-\\uDD26\\uDD29-\\uDD64\\uDD6A-\\uDD6C\\uDD73-\\uDD7A\\uDD83\\uDD84\\uDD8C-\\uDDA9\\uDDAE-\\uDE41\\uDE45-\\uDE4F\\uDE53-\\uDE5A\\uDE5D\\uDE5E\\uDE60-\\uDE7F\\uDE82-\\uDFFF]|\\uD835[\\uDC55\\uDC9D\\uDCA0\\uDCA1\\uDCA3\\uDCA4\\uDCA7\\uDCA8\\uDCAD\\uDCBA\\uDCBC\\uDCC4\\uDD06\\uDD0B\\uDD0C\\uDD15\\uDD1D\\uDD3A\\uDD3F\\uDD45\\uDD47-\\uDD49\\uDD51\\uDEA7\\uDEC1\\uDEDB\\uDEFB\\uDF15\\uDF35\\uDF4F\\uDF6F\\uDF89\\uDFA9\\uDFC3\\uDFCC-\\uDFFF]|\\uD836[\\uDC00-\\uDDFF\\uDE37-\\uDE3A\\uDE6D-\\uDE74\\uDE76-\\uDE83\\uDE85-\\uDE9A\\uDEA0\\uDEB0-\\uDFFF]|\\uD837[\\uDC00-\\uDEFF\\uDF82-\\uDF8F\\uDF97-\\uDFCC]|\\uD838[\\uDC07\\uDC19\\uDC1A\\uDC22\\uDC25\\uDC2B-\\uDC2F\\uDC6E-\\uDC8E\\uDC90-\\uDCFF\\uDD2D-\\uDD2F\\uDD3E-\\uDD4D\\uDD4F-\\uDE8F\\uDEAF-\\uDEBF\\uDEF0-\\uDFFF]|\\uD839[\\uDC00-\\uDCCF\\uDCF0-\\uDDCF\\uDDF1-\\uDEBF\\uDEDF\\uDEF6-\\uDEFD\\uDF00-\\uDFDF\\uDFE7\\uDFEC\\uDFEF\\uDFFF]|\\uD83A[\\uDCC5-\\uDCCF\\uDCD7-\\uDCFF\\uDD4C-\\uDFFF]|\\uD83B[\\uDC00-\\uDDFF\\uDE04\\uDE20\\uDE23\\uDE25\\uDE26\\uDE28\\uDE33\\uDE38\\uDE3A\\uDE3C-\\uDE41\\uDE43-\\uDE46\\uDE48\\uDE4A\\uDE4C\\uDE50\\uDE53\\uDE55\\uDE56\\uDE58\\uDE5A\\uDE5C\\uDE5E\\uDE60\\uDE63\\uDE65\\uDE66\\uDE6B\\uDE73\\uDE78\\uDE7D\\uDE7F\\uDE8A\\uDE9C-\\uDEA0\\uDEA4\\uDEAA\\uDEBC-\\uDFFF]|\\uD869[\\uDEE0-\\uDEFF]|\\uD86E\\uDC1F|\\uD873[\\uDEAE\\uDEAF]|\\uD87A[\\uDFE1-\\uDFEF]|\\uD87B[\\uDE5E-\\uDFFF]|\\uD87E[\\uDE1E-\\uDFFF]|\\uD884[\\uDF4B-\\uDF4F]|\\uD88D[\\uDC7A-\\uDFFF]|\\uD8BF[\\uDC40-\\uDFFF]|\\uDB40[\\uDC00-\\uDCFF\\uDDF0-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF])";
+  const HAS_P = (() => {
+    try {
+      return !!new RegExp("\\p{L}", "u");
+    } catch (e) {
+      return false;
+    }
+  })();
+  const RX_NOT_LM = RX("[^\\p{L}\\p{M}]+", "u", "(?:" + NOT_LM1 + ")+");
+  const RX_MARKS = RX("\\p{M}", "gu", "(?:[\\u0300-\\u036F\\u0483-\\u0489\\u0591-\\u05BD\\u05BF\\u05C1\\u05C2\\u05C4\\u05C5\\u05C7-\\u05C9\\u0610-\\u061A\\u064B-\\u065F\\u0670\\u06D6-\\u06DC\\u06DF-\\u06E4\\u06E7\\u06E8\\u06EA-\\u06ED\\u0711\\u0730-\\u074A\\u07A6-\\u07B0\\u07EB-\\u07F3\\u07FD\\u0816-\\u0819\\u081B-\\u0823\\u0825-\\u0827\\u0829-\\u082D\\u0859-\\u085B\\u0897-\\u089F\\u08CA-\\u08E1\\u08E3-\\u0903\\u093A-\\u093C\\u093E-\\u094F\\u0951-\\u0957\\u0962\\u0963\\u0981-\\u0983\\u09BC\\u09BE-\\u09C4\\u09C7\\u09C8\\u09CB-\\u09CD\\u09D7\\u09E2\\u09E3\\u09FE\\u0A01-\\u0A03\\u0A3C\\u0A3E-\\u0A42\\u0A47\\u0A48\\u0A4B-\\u0A4D\\u0A51\\u0A70\\u0A71\\u0A75\\u0A81-\\u0A83\\u0ABC\\u0ABE-\\u0AC5\\u0AC7-\\u0AC9\\u0ACB-\\u0ACD\\u0AE2\\u0AE3\\u0AFA-\\u0AFF\\u0B01-\\u0B03\\u0B3C\\u0B3E-\\u0B44\\u0B47\\u0B48\\u0B4B-\\u0B4D\\u0B53-\\u0B57\\u0B62\\u0B63\\u0B82\\u0BBE-\\u0BC2\\u0BC6-\\u0BC8\\u0BCA-\\u0BCD\\u0BD7\\u0C00-\\u0C04\\u0C3C\\u0C3E-\\u0C44\\u0C46-\\u0C48\\u0C4A-\\u0C4D\\u0C55\\u0C56\\u0C62\\u0C63\\u0C81-\\u0C83\\u0CBC\\u0CBE-\\u0CC4\\u0CC6-\\u0CC8\\u0CCA-\\u0CCD\\u0CD5\\u0CD6\\u0CE2\\u0CE3\\u0CF3\\u0D00-\\u0D03\\u0D3B\\u0D3C\\u0D3E-\\u0D44\\u0D46-\\u0D48\\u0D4A-\\u0D4D\\u0D57\\u0D62\\u0D63\\u0D81-\\u0D83\\u0DCA\\u0DCF-\\u0DD4\\u0DD6\\u0DD8-\\u0DDF\\u0DF2\\u0DF3\\u0E31\\u0E34-\\u0E3A\\u0E47-\\u0E4E\\u0EB1\\u0EB4-\\u0EBC\\u0EC8-\\u0ECE\\u0F18\\u0F19\\u0F35\\u0F37\\u0F39\\u0F3E\\u0F3F\\u0F71-\\u0F84\\u0F86\\u0F87\\u0F8D-\\u0F97\\u0F99-\\u0FBC\\u0FC6\\u102B-\\u103E\\u1056-\\u1059\\u105E-\\u1060\\u1062-\\u1064\\u1067-\\u106D\\u1071-\\u1074\\u1082-\\u108D\\u108F\\u109A-\\u109D\\u135D-\\u135F\\u1712-\\u1715\\u1732-\\u1734\\u1752\\u1753\\u1772\\u1773\\u17B4-\\u17D3\\u17DD\\u180B-\\u180D\\u180F\\u1885\\u1886\\u18A9\\u1920-\\u192B\\u1930-\\u193B\\u1A17-\\u1A1B\\u1A55-\\u1A5E\\u1A60-\\u1A7C\\u1A7F\\u1AB0-\\u1AF0\\u1B00-\\u1B04\\u1B34-\\u1B44\\u1B6B-\\u1B73\\u1B80-\\u1B82\\u1BA1-\\u1BAD\\u1BE6-\\u1BF3\\u1C24-\\u1C37\\u1CD0-\\u1CD2\\u1CD4-\\u1CE8\\u1CED\\u1CF4\\u1CF7-\\u1CF9\\u1DC0-\\u1DFF\\u20D0-\\u20F0\\u2CEF-\\u2CF1\\u2D7F\\u2DE0-\\u2DFF\\u302A-\\u302F\\u3099\\u309A\\uA66F-\\uA672\\uA674-\\uA67D\\uA69E\\uA69F\\uA6F0\\uA6F1\\uA802\\uA806\\uA80B\\uA823-\\uA827\\uA82C\\uA880\\uA881\\uA8B4-\\uA8C5\\uA8E0-\\uA8F1\\uA8FF\\uA926-\\uA92D\\uA947-\\uA953\\uA980-\\uA983\\uA9B3-\\uA9C0\\uA9E5\\uAA29-\\uAA36\\uAA43\\uAA4C\\uAA4D\\uAA7B-\\uAA7D\\uAAB0\\uAAB2-\\uAAB4\\uAAB7\\uAAB8\\uAABE\\uAABF\\uAAC1\\uAAEB-\\uAAEF\\uAAF5\\uAAF6\\uABE3-\\uABEA\\uABEC\\uABED\\uFB1E\\uFE00-\\uFE0F\\uFE20-\\uFE2F]|\\uD800[\\uDDFD\\uDEE0\\uDF76-\\uDF7A]|\\uD802[\\uDE01-\\uDE03\\uDE05\\uDE06\\uDE0C-\\uDE0F\\uDE38-\\uDE3A\\uDE3F\\uDEE5\\uDEE6]|\\uD803[\\uDD24-\\uDD27\\uDD69-\\uDD6D\\uDEAB\\uDEAC\\uDECB-\\uDECF\\uDEF0-\\uDEFF\\uDF46-\\uDF50\\uDF82-\\uDF85]|\\uD804[\\uDC00-\\uDC02\\uDC38-\\uDC46\\uDC70\\uDC73\\uDC74\\uDC7F-\\uDC82\\uDCB0-\\uDCBA\\uDCC2\\uDD00-\\uDD02\\uDD27-\\uDD34\\uDD45\\uDD46\\uDD73\\uDD80-\\uDD82\\uDDB3-\\uDDC0\\uDDC9-\\uDDCC\\uDDCE\\uDDCF\\uDE2C-\\uDE37\\uDE3E\\uDE41\\uDEDF-\\uDEEA\\uDF00-\\uDF03\\uDF3B\\uDF3C\\uDF3E-\\uDF44\\uDF47\\uDF48\\uDF4B-\\uDF4D\\uDF57\\uDF62\\uDF63\\uDF66-\\uDF6C\\uDF70-\\uDF74\\uDFB8-\\uDFC0\\uDFC2\\uDFC5\\uDFC7-\\uDFCA\\uDFCC-\\uDFD0\\uDFD2\\uDFE1\\uDFE2]|\\uD805[\\uDC35-\\uDC46\\uDC5E\\uDCB0-\\uDCC3\\uDDAF-\\uDDB5\\uDDB8-\\uDDC0\\uDDDC\\uDDDD\\uDE30-\\uDE40\\uDEAB-\\uDEB7\\uDF1D-\\uDF2B]|\\uD806[\\uDC2C-\\uDC3A\\uDD30-\\uDD35\\uDD37\\uDD38\\uDD3B-\\uDD3E\\uDD40\\uDD42\\uDD43\\uDDD1-\\uDDD7\\uDDDA-\\uDDE0\\uDDE4\\uDE01-\\uDE0A\\uDE33-\\uDE39\\uDE3B-\\uDE3E\\uDE47\\uDE51-\\uDE5B\\uDE8A-\\uDE99\\uDF60-\\uDF67]|\\uD807[\\uDC2F-\\uDC36\\uDC38-\\uDC3F\\uDC92-\\uDCA7\\uDCA9-\\uDCB6\\uDD31-\\uDD36\\uDD3A\\uDD3C\\uDD3D\\uDD3F-\\uDD45\\uDD47\\uDD8A-\\uDD8E\\uDD90\\uDD91\\uDD93-\\uDD97\\uDDF0\\uDEF3-\\uDEF6\\uDF00\\uDF01\\uDF03\\uDF34-\\uDF3A\\uDF3E-\\uDF42\\uDF5A]|\\uD80D[\\uDC40\\uDC47-\\uDC55]|\\uD818[\\uDD1E-\\uDD2F]|\\uD81A[\\uDEF0-\\uDEF4\\uDF30-\\uDF36]|\\uD81B[\\uDF4F\\uDF51-\\uDF87\\uDF8F-\\uDF92\\uDFE4\\uDFF0\\uDFF1]|\\uD82F[\\uDC9D\\uDC9E]|\\uD833[\\uDF00-\\uDF2D\\uDF30-\\uDF46]|\\uD834[\\uDD27\\uDD28\\uDD65-\\uDD69\\uDD6D-\\uDD72\\uDD7B-\\uDD82\\uDD85-\\uDD8B\\uDDAA-\\uDDAD\\uDE42-\\uDE44\\uDE50-\\uDE52\\uDE5B\\uDE5C\\uDE5F\\uDE80\\uDE81]|\\uD836[\\uDE00-\\uDE36\\uDE3B-\\uDE6C\\uDE75\\uDE84\\uDE9B-\\uDE9F\\uDEA1-\\uDEAF]|\\uD838[\\uDC00-\\uDC06\\uDC08-\\uDC18\\uDC1B-\\uDC21\\uDC23\\uDC24\\uDC26-\\uDC2A\\uDC8F\\uDD30-\\uDD36\\uDEAE\\uDEEC-\\uDEEF]|\\uD839[\\uDCEC-\\uDCEF\\uDDEE\\uDDEF\\uDEE3\\uDEE6\\uDEEE\\uDEEF\\uDEF5]|\\uD83A[\\uDCD0-\\uDCD6\\uDD44-\\uDD4A]|\\uDB40[\\uDD00-\\uDDEF])");
+  const RX_NOT_LN = RX("[^\\p{L}\\p{N} ]+", "gu", "(?:[\\0-\\x1F!-\\/:-@\\[-`\\{-\\xA9\\xAB-\\xB1\\xB4\\xB6-\\xB8\\xBB\\xBF\\xD7\\xF7\\u02C2-\\u02C5\\u02D2-\\u02DF\\u02E5-\\u02EB\\u02ED\\u02EF-\\u036F\\u0375\\u0378\\u0379\\u037E\\u0380-\\u0385\\u0387\\u038B\\u038D\\u03A2\\u03F6\\u0482-\\u0489\\u0530\\u0557\\u055A-\\u055F\\u0589\\u058A\\u058D-\\u05CF\\u05EB-\\u05EE\\u05F3-\\u061F\\u064B-\\u065F\\u066A-\\u066D\\u0670\\u06D4\\u06D6-\\u06E4\\u06E7-\\u06ED\\u06FD\\u06FE\\u0700-\\u070F\\u0711\\u0730-\\u074C\\u07A6-\\u07B0\\u07B2-\\u07BF\\u07EB-\\u07F3\\u07F6-\\u07F9\\u07FB-\\u07FF\\u0816-\\u0819\\u081B-\\u0823\\u0825-\\u0827\\u0829-\\u083F\\u0859-\\u085F\\u086B-\\u086F\\u0888\\u0890-\\u089F\\u08CA-\\u0903\\u093A-\\u093C\\u093E-\\u094F\\u0951-\\u0957\\u0962-\\u0965\\u0970\\u0981-\\u0984\\u098D\\u098E\\u0991\\u0992\\u09A9\\u09B1\\u09B3-\\u09B5\\u09BA-\\u09BC\\u09BE-\\u09CD\\u09CF-\\u09DB\\u09DE\\u09E2-\\u09E5\\u09F2\\u09F3\\u09FA\\u09FB\\u09FD-\\u0A04\\u0A0B-\\u0A0E\\u0A11\\u0A12\\u0A29\\u0A31\\u0A34\\u0A37\\u0A3A-\\u0A58\\u0A5D\\u0A5F-\\u0A65\\u0A70\\u0A71\\u0A75-\\u0A84\\u0A8E\\u0A92\\u0AA9\\u0AB1\\u0AB4\\u0ABA-\\u0ABC\\u0ABE-\\u0ACF\\u0AD1-\\u0ADF\\u0AE2-\\u0AE5\\u0AF0-\\u0AF8\\u0AFA-\\u0B04\\u0B0D\\u0B0E\\u0B11\\u0B12\\u0B29\\u0B31\\u0B34\\u0B3A-\\u0B3C\\u0B3E-\\u0B5B\\u0B5E\\u0B62-\\u0B65\\u0B70\\u0B78-\\u0B82\\u0B84\\u0B8B-\\u0B8D\\u0B91\\u0B96-\\u0B98\\u0B9B\\u0B9D\\u0BA0-\\u0BA2\\u0BA5-\\u0BA7\\u0BAB-\\u0BAD\\u0BBA-\\u0BCF\\u0BD1-\\u0BE5\\u0BF3-\\u0C04\\u0C0D\\u0C11\\u0C29\\u0C3A-\\u0C3C\\u0C3E-\\u0C57\\u0C5B\\u0C5E\\u0C5F\\u0C62-\\u0C65\\u0C70-\\u0C77\\u0C7F\\u0C81-\\u0C84\\u0C8D\\u0C91\\u0CA9\\u0CB4\\u0CBA-\\u0CBC\\u0CBE-\\u0CDB\\u0CDF\\u0CE2-\\u0CE5\\u0CF0\\u0CF3-\\u0D03\\u0D0D\\u0D11\\u0D3B\\u0D3C\\u0D3E-\\u0D4D\\u0D4F-\\u0D53\\u0D57\\u0D62-\\u0D65\\u0D79\\u0D80-\\u0D84\\u0D97-\\u0D99\\u0DB2\\u0DBC\\u0DBE\\u0DBF\\u0DC7-\\u0DE5\\u0DF0-\\u0E00\\u0E31\\u0E34-\\u0E3F\\u0E47-\\u0E4F\\u0E5A-\\u0E80\\u0E83\\u0E85\\u0E8B\\u0EA4\\u0EA6\\u0EB1\\u0EB4-\\u0EBC\\u0EBE\\u0EBF\\u0EC5\\u0EC7-\\u0ECF\\u0EDA\\u0EDB\\u0EE0-\\u0EFF\\u0F01-\\u0F1F\\u0F34-\\u0F3F\\u0F48\\u0F6D-\\u0F87\\u0F8D-\\u0FFF\\u102B-\\u103E\\u104A-\\u104F\\u1056-\\u1059\\u105E-\\u1060\\u1062-\\u1064\\u1067-\\u106D\\u1071-\\u1074\\u1082-\\u108D\\u108F\\u109A-\\u109F\\u10C6\\u10C8-\\u10CC\\u10CE\\u10CF\\u10FB\\u1249\\u124E\\u124F\\u1257\\u1259\\u125E\\u125F\\u1289\\u128E\\u128F\\u12B1\\u12B6\\u12B7\\u12BF\\u12C1\\u12C6\\u12C7\\u12D7\\u1311\\u1316\\u1317\\u135B-\\u1368\\u137D-\\u137F\\u1390-\\u139F\\u13F6\\u13F7\\u13FE-\\u1400\\u166D\\u166E\\u1680\\u169B-\\u169F\\u16EB-\\u16ED\\u16F9-\\u16FF\\u1712-\\u171E\\u1732-\\u173F\\u1752-\\u175F\\u176D\\u1771-\\u177F\\u17B4-\\u17D6\\u17D8-\\u17DB\\u17DD-\\u17DF\\u17EA-\\u17EF\\u17FA-\\u180F\\u181A-\\u181F\\u1879-\\u187F\\u1885\\u1886\\u18A9\\u18AB-\\u18AF\\u18F6-\\u18FF\\u191F-\\u1945\\u196E\\u196F\\u1975-\\u197F\\u19AC-\\u19AF\\u19CA-\\u19CF\\u19DB-\\u19FF\\u1A17-\\u1A1F\\u1A55-\\u1A7F\\u1A8A-\\u1A8F\\u1A9A-\\u1AA6\\u1AA8-\\u1B04\\u1B34-\\u1B44\\u1B4D-\\u1B4F\\u1B5A-\\u1B82\\u1BA1-\\u1BAD\\u1BE6-\\u1BFF\\u1C24-\\u1C3F\\u1C4A-\\u1C4C\\u1C7E\\u1C7F\\u1C8B-\\u1C8F\\u1CBB\\u1CBC\\u1CC0-\\u1CE8\\u1CED\\u1CF4\\u1CF7-\\u1CF9\\u1CFB-\\u1CFF\\u1DC0-\\u1DFF\\u1F16\\u1F17\\u1F1E\\u1F1F\\u1F46\\u1F47\\u1F4E\\u1F4F\\u1F58\\u1F5A\\u1F5C\\u1F5E\\u1F7E\\u1F7F\\u1FB5\\u1FBD\\u1FBF-\\u1FC1\\u1FC5\\u1FCD-\\u1FCF\\u1FD4\\u1FD5\\u1FDC-\\u1FDF\\u1FED-\\u1FF1\\u1FF5\\u1FFD-\\u206F\\u2072\\u2073\\u207A-\\u207E\\u208A-\\u208E\\u20A0-\\u2101\\u2103-\\u2106\\u2108\\u2109\\u2114\\u2116-\\u2118\\u211E-\\u2123\\u2125\\u2127\\u2129\\u212E\\u213A\\u213B\\u2140-\\u2144\\u214A-\\u214D\\u214F\\u218A-\\u245F\\u249C-\\u24E9\\u2500-\\u2775\\u2794-\\u2BFF\\u2CE5-\\u2CEA\\u2CEF-\\u2CF1\\u2CF4-\\u2CFC\\u2CFE\\u2CFF\\u2D26\\u2D28-\\u2D2C\\u2D2E\\u2D2F\\u2D68-\\u2D6E\\u2D70-\\u2D7F\\u2D97-\\u2D9F\\u2DA7\\u2DAF\\u2DB7\\u2DBF\\u2DC7\\u2DCF\\u2DD7\\u2DDF-\\u2E2E\\u2E30-\\u3004\\u3008-\\u3020\\u302A-\\u3030\\u3036\\u3037\\u303D-\\u3040\\u3097-\\u309C\\u30A0\\u30FB\\u3100-\\u3104\\u3130\\u318F-\\u3191\\u3196-\\u319F\\u31C0-\\u31EF\\u3200-\\u321F\\u322A-\\u3247\\u3250\\u3260-\\u327F\\u328A-\\u32B0\\u32C0-\\u33FF\\u4DC0-\\u4DFF\\uA48D-\\uA4CF\\uA4FE\\uA4FF\\uA60D-\\uA60F\\uA62C-\\uA63F\\uA66F-\\uA67E\\uA69E\\uA69F\\uA6F0-\\uA716\\uA720\\uA721\\uA789\\uA78A\\uA7DE-\\uA7E1\\uA7E3-\\uA7F0\\uA802\\uA806\\uA80B\\uA823-\\uA82F\\uA836-\\uA83F\\uA874-\\uA881\\uA8B4-\\uA8CF\\uA8DA-\\uA8F1\\uA8F8-\\uA8FA\\uA8FC\\uA8FF\\uA926-\\uA92F\\uA947-\\uA95F\\uA97D-\\uA983\\uA9B3-\\uA9CE\\uA9DA-\\uA9DF\\uA9E5\\uA9FF\\uAA29-\\uAA3F\\uAA43\\uAA4C-\\uAA4F\\uAA5A-\\uAA5F\\uAA77-\\uAA79\\uAA7B-\\uAA7D\\uAAB0\\uAAB2-\\uAAB4\\uAAB7\\uAAB8\\uAABE\\uAABF\\uAAC1\\uAAC3-\\uAADA\\uAADE\\uAADF\\uAAEB-\\uAAF1\\uAAF5-\\uAB00\\uAB07\\uAB08\\uAB0F\\uAB10\\uAB17-\\uAB1F\\uAB27\\uAB2F\\uAB5B\\uAB6A\\uAB6B\\uAB6E\\uAB6F\\uABE3-\\uABEF\\uABFA-\\uABFF\\uD7A4-\\uD7AF\\uD7C7-\\uD7CA\\uD7FC-\\uD7FF\\uE000-\\uF8FF\\uFA6E\\uFA6F\\uFADA-\\uFAFF\\uFB07-\\uFB12\\uFB18-\\uFB1C\\uFB1E\\uFB29\\uFB37\\uFB3D\\uFB3F\\uFB42\\uFB45\\uFBB2-\\uFBD2\\uFD3E-\\uFD4F\\uFD90\\uFD91\\uFDC8-\\uFDEF\\uFDFC-\\uFE6F\\uFE75\\uFEFD-\\uFF0F\\uFF1A-\\uFF20\\uFF3B-\\uFF40\\uFF5B-\\uFF65\\uFFBF-\\uFFC1\\uFFC8\\uFFC9\\uFFD0\\uFFD1\\uFFD8\\uFFD9\\uFFDD-\\uFFFF]|\\uD800[\\uDC0C\\uDC27\\uDC3B\\uDC3E\\uDC4E\\uDC4F\\uDC5E-\\uDC7F\\uDCFB-\\uDD06\\uDD34-\\uDD3F\\uDD79-\\uDD89\\uDD8C-\\uDE7F\\uDE9D-\\uDE9F\\uDED1-\\uDEE0\\uDEFC-\\uDEFF\\uDF24-\\uDF2C\\uDF4B-\\uDF4F\\uDF76-\\uDF7F\\uDF9E\\uDF9F\\uDFC4-\\uDFC7\\uDFD0\\uDFD6-\\uDFFF]|\\uD801[\\uDC9E\\uDC9F\\uDCAA-\\uDCAF\\uDCD4-\\uDCD7\\uDCFC-\\uDCFF\\uDD28-\\uDD2F\\uDD64-\\uDD6F\\uDD7B\\uDD8B\\uDD93\\uDD96\\uDDA2\\uDDB2\\uDDBA\\uDDBD-\\uDDBF\\uDDF4-\\uDDFF\\uDF37-\\uDF3F\\uDF56-\\uDF5F\\uDF68-\\uDF7F\\uDF86\\uDFB1\\uDFC0-\\uDFFF]|\\uD802[\\uDC06\\uDC07\\uDC09\\uDC36\\uDC39-\\uDC3B\\uDC3D\\uDC3E\\uDC56\\uDC57\\uDC77\\uDC78\\uDC9F-\\uDCA6\\uDCB0-\\uDCDF\\uDCF3\\uDCF6-\\uDCFA\\uDD1C-\\uDD1F\\uDD3A-\\uDD3F\\uDD5A-\\uDD7F\\uDDB8-\\uDDBB\\uDDD0\\uDDD1\\uDE01-\\uDE0F\\uDE14\\uDE18\\uDE36-\\uDE3F\\uDE49-\\uDE5F\\uDE7F\\uDEA0-\\uDEBF\\uDEC8\\uDEE5-\\uDEEA\\uDEF0-\\uDEFF\\uDF36-\\uDF3F\\uDF56\\uDF57\\uDF73-\\uDF77\\uDF92-\\uDFA8\\uDFB0-\\uDFFF]|\\uD803[\\uDC49-\\uDC7F\\uDCB3-\\uDCBF\\uDCF3-\\uDCF9\\uDD24-\\uDD2F\\uDD3A-\\uDD3F\\uDD66-\\uDD6E\\uDD86-\\uDE5F\\uDE7F\\uDEAA-\\uDEAF\\uDEB2-\\uDEC1\\uDEC8-\\uDED8\\uDEEF-\\uDEFF\\uDF28-\\uDF2F\\uDF46-\\uDF50\\uDF55-\\uDF6F\\uDF82-\\uDFAF\\uDFCC-\\uDFDF\\uDFF7-\\uDFFF]|\\uD804[\\uDC00-\\uDC02\\uDC38-\\uDC51\\uDC70\\uDC73\\uDC74\\uDC76-\\uDC82\\uDCB0-\\uDCCF\\uDCE9-\\uDCEF\\uDCFA-\\uDD02\\uDD27-\\uDD35\\uDD40-\\uDD43\\uDD45\\uDD46\\uDD48-\\uDD4F\\uDD73-\\uDD75\\uDD77-\\uDD82\\uDDB3-\\uDDC0\\uDDC5-\\uDDCF\\uDDDB\\uDDDD-\\uDDE0\\uDDF5-\\uDDFF\\uDE12\\uDE2C-\\uDE3E\\uDE41-\\uDE7F\\uDE87\\uDE89\\uDE8E\\uDE9E\\uDEA9-\\uDEAF\\uDEDF-\\uDEEF\\uDEFA-\\uDF04\\uDF0D\\uDF0E\\uDF11\\uDF12\\uDF29\\uDF31\\uDF34\\uDF3A-\\uDF3C\\uDF3E-\\uDF4F\\uDF51-\\uDF5C\\uDF62-\\uDF7F\\uDF8A\\uDF8C\\uDF8D\\uDF8F\\uDFB6\\uDFB8-\\uDFD0\\uDFD2\\uDFD4-\\uDFFF]|\\uD805[\\uDC35-\\uDC46\\uDC4B-\\uDC4F\\uDC5A-\\uDC5E\\uDC62-\\uDC7F\\uDCB0-\\uDCC3\\uDCC6\\uDCC8-\\uDCCF\\uDCDA-\\uDD7F\\uDDAF-\\uDDD7\\uDDDC-\\uDDFF\\uDE30-\\uDE43\\uDE45-\\uDE4F\\uDE5A-\\uDE7F\\uDEAB-\\uDEB7\\uDEB9-\\uDEBF\\uDECA-\\uDECF\\uDEE4-\\uDEFF\\uDF1B-\\uDF2F\\uDF3C-\\uDF3F\\uDF47-\\uDFFF]|\\uD806[\\uDC2C-\\uDC9F\\uDCF3-\\uDCFE\\uDD07\\uDD08\\uDD0A\\uDD0B\\uDD14\\uDD17\\uDD30-\\uDD3E\\uDD40\\uDD42-\\uDD4F\\uDD5A-\\uDD9F\\uDDA8\\uDDA9\\uDDD1-\\uDDE0\\uDDE2\\uDDE4-\\uDDFF\\uDE01-\\uDE0A\\uDE33-\\uDE39\\uDE3B-\\uDE4F\\uDE51-\\uDE5B\\uDE8A-\\uDE9C\\uDE9E-\\uDEAF\\uDEF9-\\uDF09\\uDF0B-\\uDFBF\\uDFE1-\\uDFEF\\uDFFA-\\uDFFF]|\\uD807[\\uDC09\\uDC2F-\\uDC3F\\uDC41-\\uDC4F\\uDC6D-\\uDC71\\uDC90-\\uDCFF\\uDD07\\uDD0A\\uDD31-\\uDD45\\uDD47-\\uDD4F\\uDD5A-\\uDD5F\\uDD66\\uDD69\\uDD8A-\\uDD97\\uDD99-\\uDD9F\\uDDAA-\\uDDAF\\uDDDC-\\uDDDF\\uDDEA-\\uDDF0\\uDDF2-\\uDEDF\\uDEF3-\\uDF01\\uDF03\\uDF11\\uDF34-\\uDF4F\\uDF5A-\\uDFAF\\uDFB1-\\uDFBF\\uDFD5-\\uDFFF]|\\uD808[\\uDF9A-\\uDFFF]|\\uD809[\\uDC70-\\uDC74\\uDD44-\\uDD4F\\uDE87-\\uDFFF]|[\\uD80A\\uD812-\\uD817\\uD819\\uD825-\\uD82A\\uD82D\\uD82E\\uD830-\\uD832\\uD836\\uD83D\\uD83F\\uD87C\\uD87D\\uD87F\\uD88E-\\uD8B3\\uD8C0-\\uDBFF][\\uDC00-\\uDFFF]|\\uD80B[\\uDC00-\\uDF8F\\uDFF1-\\uDFFF]|\\uD80D[\\uDC30-\\uDC40\\uDC47-\\uDC5F]|\\uD810[\\uDFFB-\\uDFFF]|\\uD811[\\uDE47-\\uDFFF]|\\uD818[\\uDC00-\\uDCFF\\uDD1E-\\uDD2F\\uDD3A-\\uDFFF]|\\uD81A[\\uDE39-\\uDE3F\\uDE5F\\uDE6A-\\uDE6F\\uDEBF\\uDECA-\\uDECF\\uDEEE-\\uDEFF\\uDF30-\\uDF3F\\uDF44-\\uDF4F\\uDF5A\\uDF62\\uDF78-\\uDF7C\\uDF90-\\uDFFF]|\\uD81B[\\uDC00-\\uDD3F\\uDD6D-\\uDD6F\\uDD7A-\\uDE3F\\uDE97-\\uDE9F\\uDEB9\\uDEBA\\uDED4-\\uDEFF\\uDF4B-\\uDF4F\\uDF51-\\uDF92\\uDFA0-\\uDFDF\\uDFE2\\uDFE4-\\uDFF1\\uDFF7-\\uDFFF]|\\uD823[\\uDCDB-\\uDCFE\\uDD21-\\uDD7F\\uDDF3-\\uDDFF]|\\uD824[\\uDD92-\\uDD9F\\uDDD3-\\uDFFF]|\\uD82B[\\uDC00-\\uDFEF\\uDFF4\\uDFFC\\uDFFF]|\\uD82C[\\uDD29-\\uDD31\\uDD33-\\uDD4F\\uDD53\\uDD54\\uDD56-\\uDD63\\uDD69-\\uDD6F\\uDEFC-\\uDFFF]|\\uD82F[\\uDC6B-\\uDC6F\\uDC7D-\\uDC7F\\uDC89-\\uDC8F\\uDC9A-\\uDFFF]|\\uD833[\\uDC00-\\uDCEF\\uDCFA-\\uDFFF]|\\uD834[\\uDC00-\\uDEBF\\uDED4-\\uDEDF\\uDEF4-\\uDF5F\\uDF79-\\uDFFF]|\\uD835[\\uDC55\\uDC9D\\uDCA0\\uDCA1\\uDCA3\\uDCA4\\uDCA7\\uDCA8\\uDCAD\\uDCBA\\uDCBC\\uDCC4\\uDD06\\uDD0B\\uDD0C\\uDD15\\uDD1D\\uDD3A\\uDD3F\\uDD45\\uDD47-\\uDD49\\uDD51\\uDEA7\\uDEC1\\uDEDB\\uDEFB\\uDF15\\uDF35\\uDF4F\\uDF6F\\uDF89\\uDFA9\\uDFC3\\uDFCC\\uDFCD]|\\uD837[\\uDC00-\\uDEFF\\uDF82-\\uDF8F\\uDF97-\\uDFCC]|\\uD838[\\uDC00-\\uDC2F\\uDC6E-\\uDCFF\\uDD2D-\\uDD36\\uDD3E\\uDD3F\\uDD4A-\\uDD4D\\uDD4F-\\uDE8F\\uDEAE-\\uDEBF\\uDEEC-\\uDEEF\\uDEFA-\\uDFFF]|\\uD839[\\uDC00-\\uDCCF\\uDCEC-\\uDCEF\\uDCFA-\\uDDCF\\uDDEE\\uDDEF\\uDDFB-\\uDEBF\\uDEDF\\uDEE3\\uDEE6\\uDEEE\\uDEEF\\uDEF5-\\uDEFD\\uDF00-\\uDFDF\\uDFE7\\uDFEC\\uDFEF\\uDFFF]|\\uD83A[\\uDCC5\\uDCC6\\uDCD0-\\uDCFF\\uDD44-\\uDD4A\\uDD4C-\\uDD4F\\uDD5A-\\uDFFF]|\\uD83B[\\uDC00-\\uDC70\\uDCAC\\uDCB0\\uDCB5-\\uDD00\\uDD2E\\uDD3E-\\uDDFF\\uDE04\\uDE20\\uDE23\\uDE25\\uDE26\\uDE28\\uDE33\\uDE38\\uDE3A\\uDE3C-\\uDE41\\uDE43-\\uDE46\\uDE48\\uDE4A\\uDE4C\\uDE50\\uDE53\\uDE55\\uDE56\\uDE58\\uDE5A\\uDE5C\\uDE5E\\uDE60\\uDE63\\uDE65\\uDE66\\uDE6B\\uDE73\\uDE78\\uDE7D\\uDE7F\\uDE8A\\uDE9C-\\uDEA0\\uDEA4\\uDEAA\\uDEBC-\\uDFFF]|\\uD83C[\\uDC00-\\uDCFF\\uDD0D-\\uDFFF]|\\uD83E[\\uDC00-\\uDFEF\\uDFFA-\\uDFFF]|\\uD869[\\uDEE0-\\uDEFF]|\\uD86E\\uDC1F|\\uD873[\\uDEAE\\uDEAF]|\\uD87A[\\uDFE1-\\uDFEF]|\\uD87B[\\uDE5E-\\uDFFF]|\\uD87E[\\uDE1E-\\uDFFF]|\\uD884[\\uDF4B-\\uDF4F]|\\uD88D[\\uDC7A-\\uDFFF]|\\uD8BF[\\uDC40-\\uDFFF]|[\\uD800-\\uDBFF](?![\\uDC00-\\uDFFF])|(?:[^\\uD800-\\uDBFF]|^)[\\uDC00-\\uDFFF])+");
+  const RX_HAN = RX("\\p{Script=Han}", "u", "(?:[\\u2E80-\\u2E99\\u2E9B-\\u2EF3\\u2F00-\\u2FD5\\u3005\\u3007\\u3021-\\u3029\\u3038-\\u303B\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFA6D\\uFA70-\\uFAD9]|\\uD81B[\\uDFE2\\uDFE3\\uDFF0-\\uDFF6]|[\\uD840-\\uD868\\uD86A-\\uD86D\\uD86F-\\uD872\\uD874-\\uD879\\uD880-\\uD883\\uD885-\\uD88C][\\uDC00-\\uDFFF]|\\uD869[\\uDC00-\\uDEDF\\uDF00-\\uDFFF]|\\uD86E[\\uDC00-\\uDC1E\\uDC20-\\uDFFF]|\\uD873[\\uDC00-\\uDEAD\\uDEB0-\\uDFFF]|\\uD87A[\\uDC00-\\uDFE0\\uDFF0-\\uDFFF]|\\uD87B[\\uDC00-\\uDE5D]|\\uD87E[\\uDC00-\\uDE1D]|\\uD884[\\uDC00-\\uDF4A\\uDF50-\\uDFFF]|\\uD88D[\\uDC00-\\uDC79])");
+  const BAD = [
+    "fuck",
+    "shit",
+    "bitch",
+    "cunt",
+    "dick",
+    "cock",
+    "pussy",
+    "fag",
+    "faggot",
+    "nigger",
+    "nigga",
+    "slut",
+    "whore",
+    "retard",
+    "bastard",
+    "asshole",
+    "arsehole",
+    "wanker",
+    "twat",
+    "prick",
+    "boob",
+    "tits",
+    "penis",
+    "vagina",
+    "porn",
+    "sex",
+    "rape",
+    "nazi",
+    "hitler",
+    "kill yourself",
+    "kys",
+    "puta",
+    "mierda",
+    "pendejo",
+    "cabron",
+    "coño",
+    "joder",
+    "merde",
+    "putain",
+    "salope",
+    "connard",
+    "scheisse",
+    "scheiße",
+    "arschloch",
+    "fotze",
+    "cazzo",
+    "stronzo",
+    "vaffanculo",
+    "caralho",
+    "porra",
+    "buceta",
+    "kurwa",
+    "blyat",
+    "suka",
+    "sharmouta",
+    "kos",
+    "zebi",
+    "kalb",
+    // (more in the seven game languages, in their own letters and the way people type them in Latin letters)
+    "gilipollas",
+    "maricon",
+    "culero",
+    "chingar",
+    "chingada",
+    "verga",
+    "encule",
+    "enculer",
+    "nique",
+    "batard",
+    "pute",
+    "couille",
+    "chutiya",
+    "chutiye",
+    "bhosdi",
+    "bhosdike",
+    "madarchod",
+    "behenchod",
+    "bhenchod",
+    "gandu",
+    "khanki",
+    "bokachoda",
+    "شرموطة",
+    "شرموط",
+    "منيوك",
+    "قحبة",
+    "عاهرة",
+    "خول",
+    "طيز",
+    "زب",
+    "كس",
+    "चूतिया",
+    "चुतिया",
+    "भोसड़ी",
+    "भोसडी",
+    "मादरचोद",
+    "बहनचोद",
+    "भेनचोद",
+    "रंडी",
+    "गांडू",
+    "गाँडू",
+    "लौड़ा",
+    "लौडा",
+    "খানকি",
+    "মাগী",
+    "মাগি",
+    "চুদি",
+    "চোদা",
+    "বোকাচোদা",
+    "বেশ্যা"
+  ];
+  const BAD_ZH = ["傻逼", "傻b", "傻比", "操你", "肏", "他妈的", "婊子", "鸡巴", "王八蛋", "贱人", "草泥马", "屌"];
+  const norm = (s) => String(s || "").toLowerCase().normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[4@]/g, "a").replace(/[1!|]/g, "i").replace(/0/g, "o").replace(/3/g, "e").replace(/[5$]/g, "s").replace(/7/g, "t").replace(/(.)\1{2,}/g, "$1$1");
+  const once = (x) => x.replace(/(.)\1+/g, "$1");
+  const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const EDGE = HAS_P ? "[^\\p{L}\\p{M}]" : NOT_LM1, FL = HAS_P ? "u" : "";
+  const EDGE_A = "(^|" + EDGE + ")", EDGE_B = "($|" + EDGE + ")";
+  const WORDS = BAD.map((w) => {
+    const a = norm(w), b = once(a);
+    return { a: new RegExp(EDGE_A + esc(a) + EDGE_B, FL), b: new RegExp(EDGE_A + esc(b) + EDGE_B, FL), flat: /^[a-z ]+$/.test(b) ? b.replace(/\s+/g, "") : "" };
+  });
+  function bad(s) {
+    const t = norm(s);
+    const forms = [t, once(t)];
+    let run = "";
+    for (const k of t.split(RX_NOT_LM).filter(Boolean).concat([""])) {
+      if ([...k].length === 1) run += k;
+      else {
+        if ([...run].length > 2) forms.push(run, once(run));
+        run = "";
+      }
+    }
+    const flat = once(t.replace(/[^a-z]+/g, ""));
+    if (BAD_ZH.some((w) => t.replace(/\s+/g, "").includes(w))) return true;
+    return WORDS.some((w) => forms.some((f2) => w.a.test(f2) || w.b.test(f2)) || w.flat.length >= 5 && flat.includes(w.flat));
+  }
+  const clean = (v, max) => String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max || 40);
+  const safe = (v, max, fallback) => {
+    const c = clean(v, max);
+    return c && !bad(c) ? c : fallback || "";
+  };
+  const NICE = ["Happy Ghost", "Lucky Star", "Brave Bear", "Clever Fox", "Sunny Day", "Jolly Panda", "Quick Cat", "Kind Owl"];
+  const name = (v) => safe(v, 16) || I18N.t(tLang, NICE[Math.floor(Math.random() * NICE.length)]);
+  function rng(seed) {
+    let a = seed >>> 0 || 1;
+    return () => {
+      a = a + 1831565813 >>> 0;
+      let t = a;
+      t = Math.imul(t ^ t >>> 15, t | 1);
+      t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(a, r = Math.random) {
+    const o = a.slice();
+    for (let i = o.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      [o[i], o[j]] = [o[j], o[i]];
+    }
+    return o;
+  }
+  const pick = (a, r = Math.random) => a[Math.floor(r() * a.length)];
+  function km(a, b) {
+    const R = 6371, t = (x) => x * Math.PI / 180;
+    const dl = t(b[0] - a[0]), dp = t(b[1] - a[1]);
+    const h = Math.sin(dp / 2) ** 2 + Math.cos(t(a[1])) * Math.cos(t(b[1])) * Math.sin(dl / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+  const ARTICLES = /(^| )(the|a|an|el|la|los|las|un|una|unos|unas|le|les|l|une|des|du|de)(?= )/g;
+  function matchForm(s) {
+    let x = String(s == null ? "" : s).toLowerCase().replace(/œ/g, "oe").replace(/æ/g, "ae").replace(/ß/g, "ss").normalize("NFKD").replace(RX_MARKS, "").replace(/[أإآٱ]/g, "ا").replace(/ة/g, "ه").replace(/ى/g, "ي").replace(/ؤ/g, "و").replace(/ئ/g, "ي").replace(/ـ/g, "").replace(RX_NOT_LN, " ").replace(/\s+/g, " ").trim();
+    x = (" " + x + " ").replace(ARTICLES, "$1").trim();
+    x = x.split(" ").map((w) => w.length > 3 && w.startsWith("ال") ? w.slice(2) : w).join("");
+    return [...x];
+  }
+  function close(a, b) {
+    const x = matchForm(a), y = matchForm(b);
+    if (!x.length || !y.length) return false;
+    if (x.join("") === y.join("")) return true;
+    const d = (s, t) => {
+      const m = s.length, n = t.length;
+      const dp = Array.from({ length: m + 1 }, (_, i) => [i]);
+      for (let j = 1; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + (s[i - 1] === t[j - 1] ? 0 : 1));
+      return dp[m][n];
+    };
+    const han = y.some((c) => RX_HAN.test(c));
+    const allow = han ? y.length >= 4 ? 1 : 0 : Math.max(1, Math.floor(y.length / 5));
+    return d(x, y) <= allow;
+  }
+  const LETTERS = ["A", "B", "C", "D", "E", "F"];
+  const SHAPES = ["▲", "◆", "●", "■", "★", "♥"];
+  const COLORS = ["#ff5f57", "#3d8bff", "#ffbf3c", "#2fd59a", "#a46bff", "#ff7ac8", "#38d3e6", "#ff9a3c", "#8bd450", "#f5f5f5", "#c084fc", "#fb7185"];
+  const TEAMS = [["red", "Red", "#ff5f57"], ["blue", "Blue", "#3d8bff"], ["gold", "Gold", "#ffbf3c"], ["green", "Green", "#2fd59a"]];
+  const AVATARS = ["boo:hi", "boo:laugh", "boo:cool", "boo:love", "boo:wow", "boo:party", "boo:hero", "boo:legend", "boo:peek", "boo:mind", "boo:scary", "boo:boo"];
+  const booUri = (id) => typeof BVWATCH_BOO !== "undefined" && BVWATCH_BOO.get(id) ? BVWATCH_BOO.uri(id) : "";
+  const STR = {
+    join: "Join the game",
+    name: "Your name",
+    pickBoo: "Pick your Boo",
+    selfie: "Take a selfie",
+    ready: "I'm ready!",
+    notReady: "Not ready yet",
+    host: "You're the host",
+    hostWait: "Waiting for the host to start",
+    start: "Start the game",
+    settings: "Game settings",
+    look: "Look at the TV!",
+    answered: "Got it! Waiting for the others...",
+    right: "Right!",
+    wrong: "Not this time",
+    out: "You're out, but you can still help!",
+    again: "Play again",
+    otherGame: "Pick another game",
+    you: "You",
+    points: "points",
+    place: "place",
+    send: "Send",
+    typeHere: "Type here",
+    skip: "Skip",
+    done: "Done",
+    helpers: "Helpers",
+    fifty: "Remove two",
+    hint: "Hint",
+    auto: "Answer it for me",
+    ask: "Ask everyone",
+    peek: "Hold to peek",
+    imposter: "You're the imposter!",
+    vote: "Vote",
+    bingo: "BINGO!",
+    yourTurn: "Your turn!",
+    team: "Team",
+    guess: "Your guess",
+    dropPin: "Drop your pin",
+    zoom: "Pinch to zoom, tap to drop the pin",
+    lockPin: "Lock in my pin",
+    giveFake: "Give me a fake",
+    yourEmoji: "Your emoji",
+    theAnswer: "The answer",
+    print: "Print the paper cards",
+    checkPaper: "Check a paper card",
+    cardNo: "Card number",
+    check: "Check",
+    holdTip: "Hold it down to see your word. Let go to hide it.",
+    category: "Category",
+    word: "Your secret word",
+    noWord: "You get no word. Listen, and blend in!",
+    marks: "The numbers mark themselves",
+    tapNums: "Tap the numbers the TV calls",
+    lang: "Language",
+    players: "Players",
+    pickGame: "Pick a game",
+    picking: "The host is picking a game",
+    timeUp: "Time's up!",
+    theRight: "The right answer:",
+    yourPlace: "Your place",
+    of: "of",
+    first: "You were the fastest!",
+    youPicked: "You picked",
+    red: "Red",
+    blue: "Blue",
+    green: "Green",
+    gold: "Gold",
+    changeName: "Change my name or Boo",
+    needMore: "This game needs more players",
+    endGame: "End the game",
+    endSure: "End the game now? The scores so far count.",
+    keepPlaying: "Keep playing",
+    hostAgain: "The host can play again or pick another game.",
+    mine: "That one is yours",
+    imposterSays: "Category:",
+    helpers1: "Each helper works once."
+  };
+  const cache = /* @__PURE__ */ new Map();
+  let translator = null, tLang = "en";
+  const fill = (s, vars) => vars ? String(s).replace(/\{(\w+)\}/g, (m, k) => vars[k] != null ? String(vars[k]) : m) : String(s);
+  function useLang(lang) {
+    return __async(this, null, function* () {
+      tLang = lang || "en";
+      translator = null;
+      if (tLang === "en") return true;
+      if (I18N.FULL.has(tLang)) return I18N.load(tLang, true);
+      try {
+        const T = self.Translator || self.ai && self.ai.translator;
+        if (!T) return false;
+        const ok = T.availability ? yield T.availability({ sourceLanguage: "en", targetLanguage: tLang }) : "available";
+        if (ok === "unavailable" || ok === "no") return false;
+        translator = T.create ? yield T.create({ sourceLanguage: "en", targetLanguage: tLang }) : yield T.createTranslator({ sourceLanguage: "en", targetLanguage: tLang });
+        return true;
+      } catch (e) {
+        translator = null;
+        return false;
+      }
+    });
+  }
+  function tr(text, vars) {
+    return __async(this, null, function* () {
+      if (text == null || text === "") return text;
+      if (tLang === "en" || I18N.FULL.has(tLang)) return I18N.t(tLang, text, vars);
+      const s = fill(text, vars);
+      if (!translator) return s;
+      const k = tLang + "|" + s;
+      if (cache.has(k)) return cache.get(k);
+      let out = s;
+      try {
+        out = yield translator.translate(s);
+      } catch (e) {
+      }
+      cache.set(k, out);
+      return out;
+    });
+  }
+  function f(text, vars) {
+    if (tLang === "en" || I18N.FULL.has(tLang)) return I18N.t(tLang, text, vars);
+    const s = fill(text, vars);
+    return cache.get(tLang + "|" + s) || s;
+  }
+  function trAll(obj) {
+    return __async(this, null, function* () {
+      const out = {};
+      for (const [k, v] of Object.entries(obj)) out[k] = yield tr(v);
+      return out;
+    });
+  }
+  const RTL = I18N.RTL;
+  let ac = null, muted = false;
+  const mute = (on) => {
+    muted = !!on;
+  };
+  function sfx(kind) {
+    if (muted || window.BVSOUND && !BVSOUND.enabled()) return;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === "suspended") ac.resume();
+      const notes = { right: [[660, 0], [880, 0.1], [1320, 0.2]], wrong: [[300, 0], [220, 0.16]], tick: [[880, 0]], join: [[520, 0], [780, 0.09]], win: [[523, 0], [659, 0.15], [784, 0.3], [1047, 0.45]], pop: [[700, 0]], drum: [[110, 0], [110, 0.08], [110, 0.16]] }[kind] || [[600, 0]];
+      for (const [f2, at] of notes) {
+        const o = ac.createOscillator(), g = ac.createGain();
+        o.type = kind === "wrong" ? "sawtooth" : kind === "drum" ? "square" : "triangle";
+        o.frequency.value = f2;
+        o.connect(g);
+        g.connect(ac.destination);
+        const t = ac.currentTime + at, len = kind === "tick" ? 0.08 : 0.3;
+        g.gain.setValueAtTime(1e-4, t);
+        g.gain.exponentialRampToValueAtTime(kind === "tick" ? 0.08 : 0.18, t + 0.02);
+        g.gain.exponentialRampToValueAtTime(1e-4, t + len);
+        o.start(t);
+        o.stop(t + len + 0.05);
+      }
+    } catch (e) {
+    }
+  }
+  function speak(text, lang) {
+    const code = lang || "en";
+    if (code === "en" || I18N.FULL.has(code)) return I18N.speak(text, code);
+    try {
+      if (!window.speechSynthesis || !text) return false;
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = code;
+      u.rate = 0.95;
+      speechSynthesis.cancel();
+      speechSynthesis.speak(u);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  function confetti(n = 220) {
+    if (muted) return;
+    try {
+      if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    } catch (e) {
+    }
+    const cv = document.createElement("canvas");
+    cv.style.cssText = "position:fixed;top:0;left:0;inset:0;width:100%;height:100%;pointer-events:none;z-index:60";
+    document.body.appendChild(cv);
+    const W = cv.width = innerWidth, H = cv.height = innerHeight, g = cv.getContext("2d");
+    const bits = Array.from({ length: n }, (_, i) => ({ x: W * Math.random(), y: -20 - Math.random() * H * 0.5, vx: (Math.random() - 0.5) * 3, vy: 2 + Math.random() * 4, r: 5 + Math.random() * 7, c: COLORS[i % 8], a: Math.random() * 6, va: (Math.random() - 0.5) * 0.3 }));
+    const t0 = performance.now();
+    (function f2(t) {
+      g.clearRect(0, 0, W, H);
+      for (const b of bits) {
+        b.vy += 0.03;
+        b.x += b.vx + Math.sin(t / 300 + b.a);
+        b.y += b.vy;
+        b.a += b.va;
+        g.save();
+        g.translate(b.x, b.y);
+        g.rotate(b.a);
+        g.fillStyle = b.c;
+        g.fillRect(-b.r, -b.r / 3, b.r * 2, b.r * 0.66);
+        g.restore();
+      }
+      if (t - t0 < 5e3) requestAnimationFrame(f2);
+      else cv.remove();
+    })(t0);
+  }
+  return { bad, clean, safe, name, rng, shuffle, pick, km, close, LETTERS, SHAPES, COLORS, TEAMS, AVATARS, booUri, STR, useLang, tr, f, trAll, RTL, sfx, mute, speak, confetti, norm, get lang() {
+    return tLang;
+  } };
+})();

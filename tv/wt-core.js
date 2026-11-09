@@ -16,6 +16,21 @@ var BVWT_CORE = (() => {
   function unb64(s) { const b = atob(s); const u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
   function concat(...parts) { let n = 0; for (const p of parts) n += p.length; const out = new Uint8Array(n); let o = 0; for (const p of parts) { out.set(p, o); o += p.length; } return out; }
   const sha256 = async u => new Uint8Array(await subtle.digest('SHA-256', u));
+  // HKDF (RFC 5869) with SHA-256: the browser's own, or where it has none (some older TV browsers) the same thing made
+  // from HMAC, which every browser with crypto.subtle has. Both give the same bytes.
+  async function hkdf(ikm, salt, info, bits) {
+    try {
+      const k = await subtle.importKey('raw', ikm, 'HKDF', false, ['deriveBits']);
+      return new Uint8Array(await subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info }, k, bits));
+    } catch (e) {
+      const hmac = async (key, data) => new Uint8Array(await subtle.sign('HMAC', await subtle.importKey('raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']), data));
+      const prk = await hmac(salt, new Uint8Array(ikm.buffer || ikm));
+      const out = new Uint8Array(bits / 8);
+      let t = new Uint8Array(0);
+      for (let i = 1, o = 0; o < out.length; i++, o += 32) { t = await hmac(prk, concat(t, info, Uint8Array.of(i))); out.set(t.subarray(0, Math.min(32, out.length - o)), o); }
+      return out;
+    }
+  }
 
   // ---------- party codes ----------
   // 12 characters from Crockford's base32 (no I, L, O or U, so nothing looks alike): 60 random bits.
@@ -62,10 +77,9 @@ var BVWT_CORE = (() => {
     if (!c) throw new Error('That party code is not complete.');
     const base = await subtle.importKey('raw', te.encode(c), 'PBKDF2', false, ['deriveBits']);
     const root = await subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: SALT, iterations: 210000 }, base, 256);
-    const hk = await subtle.importKey('raw', root, 'HKDF', false, ['deriveBits', 'deriveKey']);
     const salt = new Uint8Array(32);
-    const topic = hex(new Uint8Array(await subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: te.encode('bvwatch topic') }, hk, 160)));
-    const key = await subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: te.encode('bvwatch aes-gcm') }, hk, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const topic = hex(await hkdf(root, salt, te.encode('bvwatch topic'), 160));
+    const key = await subtle.importKey('raw', await hkdf(root, salt, te.encode('bvwatch aes-gcm'), 256), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
     return { code: c, topic, key };
   }
 
@@ -73,10 +87,9 @@ var BVWT_CORE = (() => {
   // with no slow stretching (a random secret can't be guessed the way a typed code can). label keeps uses apart.
   async function secretKeys(secret, label) {
     if (!isBytes(secret) || secret.length < 16) throw new Error('That link is not complete.');
-    const hk = await subtle.importKey('raw', secret, 'HKDF', false, ['deriveBits', 'deriveKey']);
     const salt = te.encode('blokvane-' + label + '-v1');
-    const topic = hex(new Uint8Array(await subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt, info: te.encode(label + ' topic') }, hk, 160)));
-    const key = await subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt, info: te.encode(label + ' aes-gcm') }, hk, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+    const topic = hex(await hkdf(secret, salt, te.encode(label + ' topic'), 160));
+    const key = await subtle.importKey('raw', await hkdf(secret, salt, te.encode(label + ' aes-gcm'), 256), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
     return { topic, key };
   }
   // base64 for addresses (no + / = that a link would mangle)
@@ -171,47 +184,51 @@ var BVWT_CORE = (() => {
   // Every Nostr event must carry a valid signature or relays refuse it. The key is random, made fresh each
   // time the background starts, and says nothing about you. (Relay event signatures aren't checked on arrival:
   // what counts is the member's own signature inside the sealed message, checked by verifier() above.)
-  const P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
-  const N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
-  const G = [0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n, 0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n, 1n];
-  const INF = [0n, 1n, 0n];
-  const md = (a, m = P) => { a %= m; return a < 0n ? a + m : a; };
+  const BI = typeof BigInt === 'function' ? BigInt : null;
+  const canSign = !!BI;
+  const n0 = BI ? BI(0) : 0, n1 = BI ? BI(1) : 1, n2 = BI ? BI(2) : 2, n3 = BI ? BI(3) : 3, n4 = BI ? BI(4) : 4, n8 = BI ? BI(8) : 8;
+  const P = BI ? BI('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2F') : 0;
+  const N = BI ? BI('0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141') : 0;
+  const G = BI ? [BI('0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798'), BI('0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8'), n1] : null;
+  const INF = [n0, n1, n0];
+  const md = (a, m = P) => { a %= m; return a < n0 ? a + m : a; };
   function inv(a, m = P) {
-    let lm = 1n, hm = 0n, low = md(a, m), high = m;
-    while (low > 1n) { const r = high / low; const nm = hm - lm * r, nw = high - low * r; hm = lm; high = low; lm = nm; low = nw; }
+    let lm = n1, hm = n0, low = md(a, m), high = m;
+    while (low > n1) { const r = high / low; const nm = hm - lm * r, nw = high - low * r; hm = lm; high = low; lm = nm; low = nw; }
     return md(lm, m);
   }
   // points in Jacobian form [X, Y, Z]: x = X/Z^2, y = Y/Z^3
   function dbl(p) {
     const [X, Y, Z] = p;
-    if (Z === 0n || Y === 0n) return INF;
-    const YY = md(Y * Y), S = md(4n * X * YY), M = md(3n * X * X);
-    const X3 = md(M * M - 2n * S);
-    return [X3, md(M * (S - X3) - 8n * YY * YY), md(2n * Y * Z)];
+    if (Z === n0 || Y === n0) return INF;
+    const YY = md(Y * Y), S = md(n4 * X * YY), M = md(n3 * X * X);
+    const X3 = md(M * M - n2 * S);
+    return [X3, md(M * (S - X3) - n8 * YY * YY), md(n2 * Y * Z)];
   }
   function add(p, q) {
     const [X1, Y1, Z1] = p, [X2, Y2, Z2] = q;
-    if (Z1 === 0n) return q;
-    if (Z2 === 0n) return p;
+    if (Z1 === n0) return q;
+    if (Z2 === n0) return p;
     const Z1Z1 = md(Z1 * Z1), Z2Z2 = md(Z2 * Z2);
     const U1 = md(X1 * Z2Z2), U2 = md(X2 * Z1Z1), S1 = md(Y1 * Z2 * Z2Z2), S2 = md(Y2 * Z1 * Z1Z1);
     if (U1 === U2) return S1 === S2 ? dbl(p) : INF;
     const H = md(U2 - U1), R = md(S2 - S1), HH = md(H * H), HHH = md(H * HH);
-    const X3 = md(R * R - HHH - 2n * U1 * HH);
+    const X3 = md(R * R - HHH - n2 * U1 * HH);
     return [X3, md(R * (U1 * HH - X3) - S1 * HHH), md(H * Z1 * Z2)];
   }
-  function mul(k, p = G) { let r = INF, a = p; while (k > 0n) { if (k & 1n) r = add(r, a); a = dbl(a); k >>= 1n; } return r; }
+  function mul(k, p = G) { let r = INF, a = p; while (k > n0) { if (k & n1) r = add(r, a); a = dbl(a); k >>= n1; } return r; }
   function affine(p) { const zi = inv(p[2]), z2 = md(zi * zi); return [md(p[0] * z2), md(p[1] * z2 * zi)]; }
-  const toInt = u => BigInt('0x' + (hex(u) || '0'));
+  const toInt = u => BI('0x' + (hex(u) || '0'));
   const toBytes32 = n => unhex(n.toString(16).padStart(64, '0'));
   const tagHashes = {};
   async function tagged(tag, msg) { const t = tagHashes[tag] || (tagHashes[tag] = await sha256(te.encode(tag))); return sha256(concat(t, t, msg)); }
   // a fresh signing key; d is already flipped so its public point has an even y (BIP-340)
   function newSigner(secret) {
-    let d = secret ? toInt(secret) % N : 0n;
-    while (d === 0n) d = toInt(rand(32)) % N;
+    if (!BI) throw new Error('This browser has no BigInt: Nostr relays are skipped, MQTT carries the messages.');
+    let d = secret ? toInt(secret) % N : n0;
+    while (d === n0) d = toInt(rand(32)) % N;
     const [px, py] = affine(mul(d));
-    if (py & 1n) d = N - d;
+    if (py & n1) d = N - d;
     const pxb = toBytes32(px);
     return { d, db: toBytes32(d), px: pxb, pub: hex(pxb) };
   }
@@ -219,9 +236,9 @@ var BVWT_CORE = (() => {
     const ah = await tagged('BIP0340/aux', aux);
     const t = s.db.map((b, i) => b ^ ah[i]);
     const k0 = toInt(await tagged('BIP0340/nonce', concat(t, s.px, msg))) % N;
-    if (k0 === 0n) throw new Error('bad nonce');
+    if (k0 === n0) throw new Error('bad nonce');
     const [rx, ry] = affine(mul(k0));
-    const k = ry & 1n ? N - k0 : k0;
+    const k = ry & n1 ? N - k0 : k0;
     const rb = toBytes32(rx);
     const e = toInt(await tagged('BIP0340/challenge', concat(rb, s.px, msg))) % N;
     return concat(rb, toBytes32(md(k + e * s.d, N)));
@@ -283,7 +300,7 @@ var BVWT_CORE = (() => {
   };
 
   return { rand, hex, unhex, b64, unb64, concat, sha256, newCode, normCode, prettyCode, INVITE_BASE, inviteLink, invitePage, inviteCode,
-    roomKeys, secretKeys, b64url, unb64url, seal, open, newMember, memberId, sealSigned, openSigned, verifier, MAX_PLAIN,
+    roomKeys, secretKeys, hkdf, canSign, b64url, unb64url, seal, open, newMember, memberId, sealSigned, openSigned, verifier, MAX_PLAIN,
     newSigner, schnorr, nostrEvent, nostrKind, MQ, _ec: { mul, affine, G, N, P, toInt, toBytes32 } };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = BVWT_CORE;

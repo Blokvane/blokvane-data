@@ -20,7 +20,7 @@ var BVPLAY = (() => {
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'hotboo', 'boosays', 'emoji', 'higher', 'party', 'bingo', 'imposter', 'gir']);
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'emoji', 'higher', 'bingo', 'imposter', 'gir']);
   const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
@@ -154,6 +154,8 @@ var BVPLAY = (() => {
         if (!p && players.size >= 40) { R.send({ k: 'full' }, m.f).catch(() => {}); return; }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: '' };
         pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.at = Date.now(); pl.heard = Date.now();
+        // (a new Boo picked in the middle of a game, instead of a selfie: the selfie goes)
+        if (m.nophoto) pl.photo = '';
         if (!p) pl.away = false;
         // (a phone that answers "still there?" says so when it joins)
         pl.cap = +m.cap || 0;
@@ -493,7 +495,7 @@ var BVPLAY = (() => {
     const dk = g && g.deco ? g.deco : 'letters';
     if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
     else if (dk === 'bingo') for (const x of 'BINGO') el('span', 'tile-b', deco, x);
-    else for (const x of [...dk.matchAll(/\p{Extended_Pictographic}(‍\p{Extended_Pictographic}|️)*/gu)].map(m => m[0]).slice(0, 4)) el('span', 'tile-e', deco, x);
+    else for (const x of (dk.match(BVRX.pictoSeq('g')) || []).slice(0, 4)) el('span', 'tile-e', deco, x);
     // (a game can dress the top in its own design: Who's the Imposter?'s signs and its title's neon word)
     if (g && g.lobbyTop) { try { g.lobbyTop(t, el); } catch (e) {} }
     const body = el('div', 'body lob', page);
@@ -742,7 +744,10 @@ var BVPLAY = (() => {
       const max = Math.max(1, ...ps.map(p => p.score));
       ps.forEach((p, i) => {
         let r = rows.get(p.id);
-        if (!r) { r = el('div', 'row', b); const bar = el('i', 'bar', r); const im = el('img', '', r); im.src = avatarUrl(p); im.alt = ''; el('b', '', r, p.name); const h = el('span', 'hearts', r); const pts = el('span', 'pts', r); r._bar = bar; r._pts = pts; r._h = h; rows.set(p.id, r); }
+        if (!r) { r = el('div', 'row', b); const bar = el('i', 'bar', r); const im = el('img', '', r); im.alt = ''; const nm = el('b', '', r); const h = el('span', 'hearts', r); const pts = el('span', 'pts', r); r._bar = bar; r._pts = pts; r._h = h; r._im = im; r._nm = nm; rows.set(p.id, r); }
+        // (a new picture or name from a phone in the middle of the game shows here too)
+        const pic = avatarUrl(p); if (r._pic !== pic) { r._pic = pic; r._im.src = pic; }
+        if (r._nm.textContent !== p.name) r._nm.textContent = p.name;
         r.style.order = String(i);
         r._bar.style.width = (100 * p.score / max) + '%';
         r._pts.textContent = String(p.score);
@@ -785,7 +790,7 @@ var BVPLAY = (() => {
   }
 
   // ---------- asking every phone at once ----------
-  // o: { kind ('choice', 'text', 'pin', 'players', 'number', 'tap', 'bar', 'move', 'wait'...), prompt, opts, sec, who (ids, default: everyone in), extra,
+  // o: { kind ('choice', 'text', 'pin', 'players', 'number', 'emojimake', 'spin', 'wait'...), prompt, opts, sec, who (ids, default: everyone in), extra,
   //      onAns(id, a) } -> Map(id -> { v, ms })   (ms is measured on each phone, from when the question showed there)
   const cur = { q: null };
   function ask(o) {
@@ -993,7 +998,7 @@ var BVPLAY = (() => {
     const t1 = el('h1', '', c, P.f('Blokvane party games'));
     el('p', '', c, P.f('Getting the room ready...'));
     void t1;
-    if (!(window.crypto && crypto.subtle) || typeof BigInt !== 'function' || !window.WebSocket) { c.lastChild.textContent = P.f('This browser is too old for party games. Try Chrome, Edge, Safari or a newer TV.'); return; }
+    if (!(window.crypto && crypto.subtle) || !window.WebSocket) { c.lastChild.textContent = P.f('This browser is too old for party games. Try Chrome, Edge, Safari or a newer TV.'); return; }
     const given = h[2] && /^[A-Z]{6}$/.test(h[2]) ? L.normShort(h[2], 6) : '';
     await open(given || '');
     if (games.has(h[0])) choose(h[0]); else { lobby(); retranslate(); }

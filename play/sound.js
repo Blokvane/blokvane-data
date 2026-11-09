@@ -38,8 +38,9 @@ var BVSOUND = (() => {
     gAfter: ['g-after.mp3', 0.31, { stream: true, tail: 1.2, xf: 4 }],
     gSnake: ['g-snake.mp3', 0.285, { stream: true, tail: 0.3, xf: 4 }],
     gPlay: ['', 1, { list: ['gSnake', 'gAfter'], xf: 6 }],
-    gNext: ['g-next.mp3', 0.61], gEvery5: ['g-every5.mp3', 0.76], gCorrect: ['g-correct.mp3', 0.82], gWrong: ['g-wrong.mp3', 0.86],
-    gTimesup: ['g-timesup.mp3', 0.79], gWin: ['g-win.mp3', 0.88], gSpin: ['g-spin.mp3', 1], gLand: ['g-land.mp3', 1], gTick: ['g-tick.mp3', 0.9],
+    // (its moments sit just above the tune, all equally loud (about 2 dB over it), so the tune never has to drop far)
+    gNext: ['g-next.mp3', 0.42], gEvery5: ['g-every5.mp3', 0.52], gCorrect: ['g-correct.mp3', 0.56], gWrong: ['g-wrong.mp3', 0.59],
+    gTimesup: ['g-timesup.mp3', 0.65], gWin: ['g-win.mp3', 0.88], gSpin: ['g-spin.mp3', 1], gLand: ['g-land.mp3', 1], gTick: ['g-tick.mp3', 0.9],
     // Who's the Imposter?: its lobby tune (also after the reveal, until the next game starts), two game tunes that take
     // turns while everyone peeks and gives clues, the tune for talking it over and voting, "next player" before each
     // clue, and The Mask Falls for the reveal: it plays once, the imposter shows exactly 8 seconds in (at() below), and
@@ -50,7 +51,9 @@ var BVSOUND = (() => {
     iPlay: ['', 1, { list: ['iAlibi', 'iHeart'], xf: 5 }],
     iVote: ['i-vote.mp3', 0.3, { stream: true, tail: 0.6, xf: 3 }],
     iReveal: ['i-reveal.mp3', 0.62, { stream: true, once: true, then: 'iLobby', tail: 0.4 }],
-    iNext: ['i-next.mp3', 0.75]
+    iNext: ['i-next.mp3', 0.75],
+    // Trivia's category wheel: the clicks and the little fanfare of its design, timed to its spin (play/wheel.js)
+    tSpin: ['t-spin.mp3', 1]
   };
   const isStream = f => !!(f && f[2] && typeof f[2] === 'object' && (f[2].stream || f[2].list));
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};

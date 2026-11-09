@@ -30,7 +30,7 @@
         const b = el('button', 'btn full', list);
         b.type = 'button';
         b.style.cssText += ';justify-content:space-between;min-height:70px;position:relative;overflow:hidden';
-        const bar = el('i', '', b); bar.style.cssText = `position:absolute;inset:0 auto 0 0;width:${Math.round(100 * counts[i] / total)}%;background:${mine === i ? 'rgba(255,107,94,.35)' : 'rgba(255,255,255,.06)'};transition:width .5s`;
+        const bar = el('i', '', b); bar.style.cssText = `position:absolute;top:0;bottom:0;left:0;inset:0 auto 0 0;width:${Math.round(100 * counts[i] / total)}%;background:${mine === i ? 'rgba(255,107,94,.35)' : 'rgba(255,255,255,.06)'};transition:width .5s`;
         const t = el('span', '', b, (mine === i ? '✓ ' : '') + o); t.style.position = 'relative';
         const n = el('span', '', b, mine != null ? Math.round(100 * counts[i] / total) + '%' : ''); n.style.position = 'relative';
         b.onclick = () => { if (poll.closed) { toast('This poll is closed.'); return; } votes.set(me.id, i); buzz('ok'); draw(); };

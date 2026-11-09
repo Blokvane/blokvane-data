@@ -64,7 +64,8 @@ var BVWT_NET = (() => {
   function create(o) {
     const now = o.now || (() => Date.now());
     const WS = o.WebSocket || WebSocket;
-    const nostrList = ((o.relays && o.relays.nostr) || NOSTR).filter(okUrl);
+    // (a browser with no BigInt can't sign Nostr events, so it uses the MQTT brokers alone)
+    const nostrList = C.canSign === false ? [] : ((o.relays && o.relays.nostr) || NOSTR).filter(okUrl);
     const mqttList = ((o.relays && o.relays.mqtt) || MQTT).filter(m => m && okUrl(m.url));
     const conns = new Map();   // url -> connection
     const rooms = new Map();   // topic -> { topic, order }

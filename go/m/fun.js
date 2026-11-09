@@ -59,7 +59,7 @@
     btn('Start', { kind: 'go', huge: true, full: true }, v.body, async () => {
       const lock = await wake();
       const f = el('div', '', document.body);
-      f.style.cssText = 'position:fixed;inset:0;z-index:80;background:#000;transition:background-color .35s linear';
+      f.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:80;background:#000;transition:background-color .35s linear';
       try { await (document.documentElement.requestFullscreen ? document.documentElement.requestFullscreen() : Promise.resolve()); } catch (e) {}
       const hint = el('div', '', f, 'Tap to stop'); hint.style.cssText = 'position:absolute;bottom:20px;left:0;right:0;text-align:center;color:rgba(255,255,255,.5);font:600 14px system-ui';
       setTimeout(() => hint.remove(), 3000);
