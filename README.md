@@ -166,10 +166,17 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   async functions. `play/index.html` loads them only there. Make them again after changing one of
   those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
   (`node tools/old-js.js --check` says if one is out of date).
-- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css go/go.css`
+- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/emoji.css go/go.css`
   adds the older way of writing newer CSS just before it, after a stylesheet changes. The phone
   page's own styles (in `go/m/party.js`) get the same. For the designed screens of Who's the
-  Imposter?, after they are made again: `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js`.
+  Imposter? and Emoji Riddles, after they are made again:
+  `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js play/emoji-tpl.js`.
+- Emoji Riddles is its own game: `play/emoji-game.js` (the TV), `play/emoji-tpl.js` (its designed
+  screens: three question looks and three winner screens, made from the designs in
+  `Games/Emoji Riddles`), `play/emoji.css` (its fonts, the lobby's Cinema Marquee, the green and
+  red answers), `play/emoji-data.js` (its riddles, with their answers in all seven languages, loaded
+  once the game is picked) and `play/sounds/e-*.mp3` (its music). The phones' screens for it are in
+  `go/m/party.js`, with the winners' picture to share.
 - `play/wheel.js` is Trivia's category wheel, made from its design by
   `python3 tools/make-wheel.py "<the design's export>/source/Spin Wheel.dc.html" > play/wheel.js`.
   The TV and the phones both draw it from there.

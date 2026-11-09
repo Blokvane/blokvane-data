@@ -535,7 +535,7 @@ var BVPLAY = (() => {
       seen.add(p.id);
       c.style.setProperty('--pc', p.color);
       const av = el('div', 'av', c); const im = el('img', '', av); im.src = avatarUrl(p); im.alt = '';
-      if (p.ready || p.id === host) el('span', 'ok', av, '✓');
+      if (p.ready || p.id === host) { el('span', 'ok', av, '✓'); c.classList.add('rd'); }
       // (a player whose phone shows the questions in their own language)
       if (p.lang && g && g.mlang) { const lg = el('span', 'lg', av, p.lang.toUpperCase()); lg.title = (I18N.LANGS.find(x => x[0] === p.lang) || [0, ''])[1]; }
       el('b', '', c, p.name);
@@ -653,6 +653,7 @@ var BVPLAY = (() => {
     // (the empty seats finish the last row)
     const free = Math.max(0, best.c * Math.ceil(want / best.c) - n);
     empties.forEach((e, i) => { e.hidden = i >= free; e.classList.toggle('r2', n + i >= best.c); });
+    seated(grid);
   }
   // A full room (more than 8): the game mode card sits under the QR code (more compact if it has to be), and the players
   // have the whole right side: as seats while those stay big enough to read from the sofa, otherwise as chips (a face
@@ -703,7 +704,10 @@ var BVPLAY = (() => {
     grid.style.gridAutoRows = Math.max(3 * u, rowH) + 'px';
     grid.style.gap = gap + 'px';
     empties.forEach((e, i) => { e.hidden = i >= free; });
+    seated(grid);
   }
+  // (a game can dress the seats once they have their places: Emoji Riddles' rows of theater seats)
+  function seated(grid) { if (game && game.seated) { try { game.seated(grid); } catch (e) {} } }
   addEventListener('resize', () => { if (phase !== 'play') requestAnimationFrame(fitLobby); });
   // the game mode, explained on the TV while the host picks it: a medal, its name and what it means, three short rules,
   // and the main settings. It plays a short reveal when the host picks another mode.

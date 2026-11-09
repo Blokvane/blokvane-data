@@ -1,4 +1,5 @@
-// Blokvane party games: the game packs Blokvane wrote itself (questions, words, places, emoji riddles, numbers).
+// Blokvane party games: the game packs Blokvane wrote itself (questions, words, places, numbers). Emoji Riddles has its
+// own riddles (emoji-data.js).
 // Facts here were checked against public sources (numbers are rounded, which is all a party game needs).
 var BVPACKS = {
   // ---------- Trivia: an easy start (the first 5 questions come from here) ----------
@@ -242,27 +243,6 @@ var BVPACKS = {
     ['What did the inventor of the Frisbee become after he died?', 'A Frisbee', ['A statue', 'A tree', 'A museum'], 'history'], ['Which bird can fly backwards?', 'The hummingbird', ['The crow', 'The penguin', 'The parrot'], 'animals'],
     ['What is the name for a group of owls?', 'A parliament', ['A wisdom', 'A hoot', 'A council'], 'animals'], ['In Switzerland, it is against the law to own just one of which pet?', 'A guinea pig', ['A goldfish', 'A cat', 'A hamster'], 'animals']
   ],
-
-  // ---------- Emoji riddles [emoji, answer] by pack ----------
-  emoji: {
-    movies: [['🦁👑', 'The Lion King'], ['❄️👸', 'Frozen'], ['🕷️🧑', 'Spider-Man'], ['🦖🏝️', 'Jurassic Park'], ['🚢🧊💔', 'Titanic'], ['🧸🤠🚀', 'Toy Story'], ['🐠🔍', 'Finding Nemo'], ['🧙‍♂️💍🌋', 'The Lord of the Rings'], ['🦇🧑', 'Batman'], ['👻🚫', 'Ghostbusters'],
-      ['🧜‍♀️', 'The Little Mermaid'], ['🐀👨‍🍳', 'Ratatouille'], ['🏠🎈👴', 'Up'], ['👽📞🏠', 'E.T.'], ['🦈', 'Jaws'], ['🍫🏭', 'Charlie and the Chocolate Factory'], ['⭐⚔️', 'Star Wars'], ['🧙‍♂️⚡👓', 'Harry Potter'], ['🐼🥋', 'Kung Fu Panda'], ['🚗⚡', 'Cars'],
-      ['👸🍎', 'Snow White'], ['🐝🎬', 'Bee Movie'], ['🦍🏙️', 'King Kong'], ['🤖❤️🌱', 'WALL-E'], ['🧞‍♂️🪔', 'Aladdin'], ['😈👗', 'The Devil Wears Prada'], ['🐒🦁🐗', 'The Jungle Book'], ['🦸‍♂️🔨⚡', 'Thor'], ['🐉🏠', 'How to Train Your Dragon'], ['🍝🐶❤️', 'Lady and the Tramp']],
-    food: [['🍕🇮🇹', 'Pizza'], ['🌮🇲🇽', 'Tacos'], ['🍣🇯🇵', 'Sushi'], ['🥐🇫🇷', 'Croissant'], ['🍔🍟', 'Burger and fries'], ['🌭', 'Hot dog'], ['🥞🍯', 'Pancakes'], ['🍦', 'Ice cream'], ['🍩☕', 'Coffee and donuts'], ['🥜🧈🍞', 'Peanut butter sandwich'],
-      ['🍿🎬', 'Popcorn'], ['🥗', 'Salad'], ['🍝🍅', 'Spaghetti'], ['🍳🥓', 'Bacon and eggs'], ['🥧🍎', 'Apple pie'], ['🧀🍞🔥', 'Grilled cheese'], ['🍜🥢', 'Noodle soup'], ['🍫🍪', 'Chocolate chip cookie'], ['🎂🕯️', 'Birthday cake'], ['🥨', 'Pretzel'],
-      ['🍤', 'Shrimp'], ['🧆', 'Falafel'], ['🥟', 'Dumplings'], ['🍉', 'Watermelon'], ['🌽🧈', 'Corn on the cob']],
-    animals: [['🐘👂', 'Elephant'], ['🦒🌳', 'Giraffe'], ['🐧❄️', 'Penguin'], ['🦘🇦🇺', 'Kangaroo'], ['🐼🎋', 'Panda'], ['🦉🌙', 'Owl'], ['🐙8️⃣', 'Octopus'], ['🦓⬛⬜', 'Zebra'], ['🐢🐌', 'Turtle'], ['🦈🌊', 'Shark'],
-      ['🐝🍯', 'Bee'], ['🦋🐛', 'Butterfly'], ['🐊🦷', 'Crocodile'], ['🦩🩷', 'Flamingo'], ['🐨🌿', 'Koala'], ['🦔', 'Hedgehog'], ['🐳💦', 'Whale'], ['🦇🌙', 'Bat'], ['🦁👑', 'Lion'], ['🐬🎾', 'Dolphin'],
-      ['🦥', 'Sloth'], ['🐫🏜️', 'Camel'], ['🦜🗣️', 'Parrot'], ['🐻‍❄️❄️', 'Polar bear'], ['🦦', 'Otter']],
-    places: [['🗽🍎', 'New York'], ['🗼🥖', 'Paris'], ['🎡☔🇬🇧', 'London'], ['🗻🍣', 'Tokyo'], ['🎰🌵', 'Las Vegas'], ['🎬🌴', 'Hollywood'], ['🏛️🍝', 'Rome'], ['🐨🌊🏄', 'Australia'], ['🌷🚲', 'Amsterdam'], ['🐪🏜️🔺', 'Egypt'],
-      ['🎭🎶🌉', 'San Francisco'], ['🌋🌺', 'Hawaii'], ['🍁🏒', 'Canada'], ['🏔️🧀🍫', 'Switzerland'], ['🐉🧱', 'China'], ['🌮🌵🎉', 'Mexico'], ['🦁🌍', 'Africa'], ['🧊🐻‍❄️', 'The North Pole'], ['🎢🏰🐭', 'Disneyland'], ['☕🌧️🌲', 'Seattle'],
-      ['🕌✨🏙️', 'Dubai'], ['🍺🥨🏰', 'Germany'], ['🎸🤠', 'Nashville'], ['⚽🎉🏖️', 'Brazil'], ['🍀🌈', 'Ireland']],
-    sayings: [['⏰💰', 'Time is money'], ['🍎👨‍⚕️', 'An apple a day keeps the doctor away'], ['🐦🐦🪨', 'Kill two birds with one stone'], ['🌧️🐱🐶', 'Raining cats and dogs'], ['🧊🧊🥶', 'Break the ice'], ['🐘🏠', 'The elephant in the room'], ['🍰🍰', 'Piece of cake'], ['🙈🙉🙊', 'See no evil, hear no evil, speak no evil'],
-      ['🌙🌙', 'Once in a blue moon'], ['🐮🏠', 'Until the cows come home'], ['💤🐕', 'Let sleeping dogs lie'], ['🥚🥚🧺', 'Don\'t put all your eggs in one basket'], ['🦶👄', 'Put your foot in your mouth'], ['🌊🌊⛵', 'Don\'t rock the boat'], ['🐟🐟🌊', 'Plenty of fish in the sea'],
-      ['🏃‍♂️🌧️', 'Saved by the bell'], ['🔥🔥🔥', 'On fire'], ['📖🗂️', 'Don\'t judge a book by its cover'], ['🐎🛒', 'Don\'t put the cart before the horse'], ['🤐', 'My lips are sealed']],
-    kids: [['🐭🏰', 'Mickey Mouse'], ['🧽🍍🌊', 'SpongeBob'], ['🐶🐾👮', 'Paw Patrol'], ['👸❄️⛄', 'Elsa'], ['🐷🎈', 'Peppa Pig'], ['🦕💜', 'Barney'], ['🐻🍯🎈', 'Winnie the Pooh'], ['🚂😊', 'Thomas the Train'], ['🐵❓👨', 'Curious George'], ['🧸❤️', 'Teddy bear'],
-      ['🎃👻', 'Halloween'], ['🎅🎄', 'Christmas'], ['🐰🥚', 'Easter'], ['🎂🎈🎁', 'Birthday party'], ['🦄🌈', 'Unicorn'], ['🧚✨', 'Fairy'], ['🏴‍☠️🦜💰', 'Pirate'], ['🚀🌕', 'Astronaut'], ['🦖🦴', 'Dinosaur'], ['🤖', 'Robot']]
-  },
 
   // ---------- Higher or Lower [emoji, name, number] by topic (the question says what the number is) ----------
   higher: {

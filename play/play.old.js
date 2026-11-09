@@ -916,7 +916,10 @@ var BVPLAY = (() => {
         const im = el("img", "", av);
         im.src = avatarUrl(p);
         im.alt = "";
-        if (p.ready || p.id === host) el("span", "ok", av, "✓");
+        if (p.ready || p.id === host) {
+          el("span", "ok", av, "✓");
+          c2.classList.add("rd");
+        }
         if (p.lang && g && g.mlang) {
           const lg = el("span", "lg", av, p.lang.toUpperCase());
           lg.title = (I18N.LANGS.find((x) => x[0] === p.lang) || [0, ""])[1];
@@ -1067,6 +1070,7 @@ var BVPLAY = (() => {
       e.hidden = i >= free;
       e.classList.toggle("r2", n + i >= best.c);
     });
+    seated(grid);
   }
   function fitCrowd(grid) {
     const card = stage.querySelector(".lob-l > .spot, .lob-l > .lob-x");
@@ -1118,6 +1122,15 @@ var BVPLAY = (() => {
     empties.forEach((e, i) => {
       e.hidden = i >= free;
     });
+    seated(grid);
+  }
+  function seated(grid) {
+    if (game && game.seated) {
+      try {
+        game.seated(grid);
+      } catch (e) {
+      }
+    }
   }
   addEventListener("resize", () => {
     if (phase !== "play") requestAnimationFrame(fitLobby);

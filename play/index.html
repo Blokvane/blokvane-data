@@ -12,13 +12,15 @@
 <link rel="stylesheet" href="world.css?v=15">
 <link rel="stylesheet" href="gir.css?v=15">
 <link rel="stylesheet" href="imp.css?v=15">
+<link rel="stylesheet" href="emoji.css?v=16">
 <!-- Blokvane party games: this page is the TV (or a laptop or tablet: any screen everyone can see). Players join from
      their phones by scanning the QR code: no app, no account. There is no Blokvane server: the phones and this page
      talk through free public relays, sealed and signed (../go/live-kit.js). Every game speaks seven languages fully
      (i18n.js and lang/). Trivia's questions are Blokvane's own, thousands in every language (q/). Guess It Right! is
      written in English and Arabic, with its own questions (gir-data.js), look (gir.css) and music (sounds/g-*.mp3).
      Who's the Imposter? has its own designed screens (imp-tpl.js), words in every language (imp-words.js), look (imp.css)
-     and music (sounds/i-*.mp3). -->
+     and music (sounds/i-*.mp3). Emoji Riddles has its own designed screens (emoji-tpl.js), riddles with their answers in
+     every language (emoji-data.js), look (emoji.css) and music (sounds/e-*.mp3). -->
 </head>
 <body>
 <main id="stage" class="stage" aria-live="polite"></main>
@@ -28,7 +30,7 @@
 (function () {
   var old = false;
   try { new Function('async function f() { await 0; }'); } catch (e) { old = true; }
-  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1 };
+  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1 };
   var list = ['../go/compat.js?v=15',
     '../go/wt-core.js?v=15',
     '../go/wt-net.js?v=15',
@@ -37,18 +39,20 @@
     'watch-boo.js?v=11',
     'i18n.js?v=15',
     'common.js?v=15',
-    'sound.js?v=15',
-    'packs.js?v=11',
+    'sound.js?v=16',
+    'packs.js?v=16',
     'map.js?v=15',
-    'play.js?v=15',
+    'play.js?v=16',
     'q/index.js?v=11',
     'wheel.js?v=15',
-    'games.js?v=15',
+    'games.js?v=16',
     'world-game.js?v=12',
     'gir-game.js?v=15',
     'imp-tpl.js?v=15',
     'imp-words.js?v=14',
-    'imp-game.js?v=15'];
+    'imp-game.js?v=15',
+    'emoji-tpl.js?v=16',
+    'emoji-game.js?v=16'];
   for (var i = 0; i < list.length; i++) {
     var src = list[i], name = src.split('?')[0].split('/').pop().replace(/\.js$/, '');
     if (old && hasOld[name]) src = src.replace(/\.js\?/, '.old.js?');

@@ -1,0 +1,431 @@
+/* Blokvane party games: Emoji Riddles on the TV. Its fonts (Fredoka and Nunito, with Cairo for Arabic and Noto Sans for
+   Hindi and Bengali), the canvas its designed screens sit on (1920 x 1080, scaled to fit any TV), the moment the answer
+   shows (the right one lights up green, the wrong picks red, with everyone's face on what they picked), and the lobby
+   in the game's design: the Cinema Marquee. (A "dpx" here is a pixel of the design: --u is a hundredth of the screen's
+   height, so 1080 dpx are 100 --u.) */
+@font-face { font-family: 'EMO Fredoka'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/imp-fredoka-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'EMO Fredoka'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/imp-fredoka-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1E00-1E9F, U+20A0-20AB, U+20AD-20C0, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'EMO Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/imp-nunito-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'EMO Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/imp-nunito-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+/* (Arabic in Cairo, as the design has it; Hindi and Bengali in Noto Sans: the same families, so every line keeps its look.
+   Every face of a family has the same weights written, or Chrome treats them as different fonts and skips some.) */
+@font-face { font-family: 'EMO Fredoka'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/cairo-arabic.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'EMO Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(fonts/cairo-arabic.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0898-08E1, U+08E3-08FF, U+200C-200E, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'EMO Fredoka'; font-style: normal; font-weight: 200 1000; font-display: swap; src: local('Noto Sans Devanagari'), local('Nirmala UI'), url(fonts/noto-sans-devanagari.woff2) format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; }
+@font-face { font-family: 'EMO Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: local('Noto Sans Devanagari'), local('Nirmala UI'), url(fonts/noto-sans-devanagari.woff2) format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; }
+@font-face { font-family: 'EMO Fredoka'; font-style: normal; font-weight: 200 1000; font-display: swap; src: local('Noto Sans Bengali'), local('Nirmala UI'), url(fonts/noto-sans-bengali.woff2) format('woff2');
+  unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+200C-200D, U+20B9, U+25CC; }
+@font-face { font-family: 'EMO Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: local('Noto Sans Bengali'), local('Nirmala UI'), url(fonts/noto-sans-bengali.woff2) format('woff2');
+  unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+200C-200D, U+20B9, U+25CC; }
+
+/* ---------- the designed screens: a 1920 x 1080 canvas, scaled and centered on any TV ---------- */
+.emo-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; overflow: hidden; background: #0c0410; z-index: 4; }
+.emo-cv { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: 'EMO Nunito', sans-serif; color: #f3eefe; line-height: normal; letter-spacing: normal; text-align: left; direction: ltr; }
+.emo-cv bv-if { display: contents; }
+.emo-cv bv-if[hidden] { display: none; }
+.emo-cv [hidden] { display: none !important; }
+.emo-cv img.emo-face { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: contain; }
+.emo-cv img.emo-face.ph { object-fit: cover; }
+/* (the emoji: each one its own size, the same font on every screen) */
+.emo-cv [data-k="ems"] > span { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', 'EMO Nunito', sans-serif; }
+.emo-cv [data-k="ems"] > span.emo-q { opacity: .28; filter: grayscale(1); animation: none !important; }
+.emo-cv [data-k="ems"] > span.emo-in { animation: e-emoIn .6s cubic-bezier(.2, 1.5, .4, 1) both, e-popE 2.4s .6s ease-in-out infinite !important; }
+@keyframes e-emoIn { from { transform: scale(.2) rotate(-14deg); opacity: 0; } to { transform: none; opacity: 1; } }
+/* (an answer's text keeps to its card: long ones wrap, then get smaller) */
+.emo-cv [data-k="answers"] [data-k="t"] { flex: 1 1 auto; min-width: 0; max-height: 104px; overflow: hidden; line-height: 1.08; overflow-wrap: normal; }
+/* (the cards keep their shine inside their round corners; the check or cross and the faces sit on their edge, like
+   stickers, so the answer keeps all its room) */
+.emo-cv .emo-card { overflow: visible !important; }
+.emo-cv .emo-card > div:first-child { border-radius: inherit; }
+.emo-cv .emo-card > .emo-badge { position: absolute; top: -18px; inset-inline-end: -12px; z-index: 3; width: 60px; height: 60px; font-size: 36px; }
+@supports not (inset-inline-end: 0) {
+  .emo-cv .emo-card > .emo-badge { right: -12px; }
+  html[dir="rtl"] .emo-cv .emo-card > .emo-badge { left: -12px; }
+}
+.emo-cv .emo-card > .emo-who { position: absolute; bottom: -18px; inset-inline-end: 64px; z-index: 3; }
+@supports not (inset-inline-end: 0) {
+  .emo-cv .emo-card > .emo-who { right: 64px; }
+  html[dir="rtl"] .emo-cv .emo-card > .emo-who { left: 64px; }
+}
+.emo-cv .emo-card > .emo-who > * { width: 46px; height: 46px; }
+.emo-cv .emo-card > .emo-who > * + * { margin-inline-start: -14px; }
+@supports not (margin-inline-start: 0) {
+  .emo-cv .emo-card > .emo-who > * + * { margin-left: -14px; }
+  html[dir="rtl"] .emo-cv .emo-card > .emo-who > * + * { margin-right: -14px; }
+}
+.emo-cv [data-k="title"], .emo-cv [data-k="sub"] { white-space: nowrap; }
+.emo-cv [data-k="nm"] { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------- a riddle: its little extras ---------- */
+/* the golden riddle (every fifth): double points, and the frame shines gold */
+.emo-cv .emo-gold { display: inline-flex; align-items: center; grid-gap: 10px; gap: 10px; margin-inline-start: 18px; padding: 6px 18px; border-radius: 999px; vertical-align: middle;
+  background: linear-gradient(180deg, #fff2b0, #ffc93c 55%, #e0880b); color: #2a1700; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 28px; line-height: 1.1; text-shadow: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .35), 0 0 30px rgba(255, 201, 60, .8); animation: e-goldP 1.6s ease-in-out infinite; }
+@supports not (margin-inline-start: 0) {
+  .emo-cv .emo-gold { margin-left: 18px; }
+  html[dir="rtl"] .emo-cv .emo-gold { margin-right: 18px; }
+}
+html.no-flexgap .emo-cv .emo-gold > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-gold > * + * { margin-left: 0; margin-right: 10px; }
+@keyframes e-goldP { 0%, 100% { box-shadow: 0 0 0 3px rgba(255, 255, 255, .35), 0 0 22px rgba(255, 201, 60, .6); } 50% { box-shadow: 0 0 0 3px rgba(255, 255, 255, .6), 0 0 48px rgba(255, 201, 60, 1); } }
+.emo-cv.emo-golden [data-k="frame"] { animation: e-goldF 1.6s ease-in-out infinite; }
+@keyframes e-goldF { 0%, 100% { filter: drop-shadow(0 0 10px rgba(255, 201, 60, .5)); } 50% { filter: drop-shadow(0 0 34px rgba(255, 201, 60, .95)); } }
+/* the line under the riddle: worth so many points (slow reveal), a hint (type it), how many have answered */
+.emo-cv .emo-line { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; grid-gap: 16px; gap: 16px; min-height: 64px; }
+html.no-flexgap .emo-cv .emo-line > * { margin: 0 16px 16px 0; }
+.emo-cv .emo-pill { display: inline-flex; align-items: center; grid-gap: 12px; gap: 12px; padding: 12px 26px; border-radius: 999px; background: rgba(10, 4, 18, .7); border: 2px solid rgba(255, 201, 60, .45);
+  font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 30px; color: #fff3d6; line-height: 1.15; }
+html.no-flexgap .emo-cv .emo-pill > * + * { margin-left: 12px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-pill > * + * { margin-left: 0; margin-right: 12px; }
+.emo-cv .emo-pill.hint { border-color: #7df9ff; color: #e8fdff; box-shadow: 0 0 24px rgba(125, 249, 255, .35); letter-spacing: .04em; }
+.emo-cv .emo-pill.ok { border-color: #34d399; color: #d9fff0; box-shadow: 0 0 26px rgba(52, 211, 153, .45); }
+.emo-cv .emo-pill.bad { border-color: #ff4d6a; color: #ffe3e8; box-shadow: 0 0 26px rgba(255, 77, 106, .4); }
+.emo-cv .emo-pill img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: #1d1238; }
+.emo-cv .emo-pill img.emo-boo { object-fit: contain; padding: 3px; box-sizing: border-box; }
+.emo-cv .emo-pill .emo-fire { font-size: 34px; line-height: 1; }
+.emo-cv .emo-pop { animation: e-pillIn .55s cubic-bezier(.2, 1.4, .4, 1) both; }
+@keyframes e-pillIn { from { transform: scale(.5); opacity: 0; } to { transform: none; opacity: 1; } }
+/* the clock: its ring empties over the time; the last seconds glow red */
+.emo-cv [data-k="ring"] circle + circle { animation: none; }
+.emo-cv .emo-low [data-k="rn"] { color: #ff8aa0; animation: e-tickP 1s ease-in-out infinite; }
+@keyframes e-tickP { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+.emo-cv .emo-noclock [data-k="ring"] circle + circle { stroke-dasharray: none; }
+.emo-cv .emo-noclock [data-k="rn"] { font-size: 60px; }
+
+/* ---------- the answer: green for right, red for a wrong pick, and the faces of who picked what ---------- */
+.emo-cv [data-k="answers"] > div { transition: transform .35s cubic-bezier(.2, 1.4, .4, 1), opacity .35s, filter .35s, box-shadow .35s !important; }
+.emo-cv [data-k="answers"] > div.emo-right { transform: scale(1.04) !important; opacity: 1 !important; z-index: 2;
+  box-shadow: 0 0 0 6px #34d399, 0 0 70px 12px rgba(52, 211, 153, .75), 0 10px 0 rgba(0, 0, 0, .35) !important; animation: e-rightG 1.3s ease-in-out infinite; }
+@keyframes e-rightG { 0%, 100% { box-shadow: 0 0 0 6px #34d399, 0 0 50px 8px rgba(52, 211, 153, .6), 0 10px 0 rgba(0, 0, 0, .35); } 50% { box-shadow: 0 0 0 8px #6ff0c0, 0 0 95px 22px rgba(52, 211, 153, .9), 0 10px 0 rgba(0, 0, 0, .35); } }
+.emo-cv [data-k="answers"] > div.emo-wrong { opacity: .92 !important; transform: scale(.98) !important; filter: saturate(.75);
+  box-shadow: 0 0 0 6px #ff4d6a, 0 0 56px 8px rgba(255, 77, 106, .65), 0 10px 0 rgba(0, 0, 0, .35) !important; animation: e-shake .5s cubic-bezier(.36, .07, .19, .97) both; }
+@keyframes e-shake { 10%, 90% { translate: -2px 0; } 20%, 80% { translate: 4px 0; } 30%, 50%, 70% { translate: -8px 0; } 40%, 60% { translate: 8px 0; } }
+.emo-cv [data-k="answers"] > div.emo-off { opacity: .32 !important; filter: grayscale(.7); transform: scale(.97) !important; }
+/* (the badge on a card: a check or a cross, in a glowing circle) */
+.emo-cv .emo-badge { position: relative; flex: none; width: 70px; height: 70px; border-radius: 50%; display: grid; align-items: center; justify-items: center; place-items: center; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 44px; line-height: 1; color: #fff;
+  animation: e-badgeIn .5s .15s cubic-bezier(.2, 1.6, .4, 1) both; }
+.emo-cv .emo-badge.ok { background: radial-gradient(circle at 35% 30%, #6ff0c0, #17a673 70%); box-shadow: 0 0 0 4px #fff, 0 0 30px rgba(52, 211, 153, .9); }
+.emo-cv .emo-badge.bad { background: radial-gradient(circle at 35% 30%, #ff8aa0, #c8213f 70%); box-shadow: 0 0 0 4px #fff, 0 0 30px rgba(255, 77, 106, .9); }
+@keyframes e-badgeIn { from { transform: scale(0) rotate(-40deg); opacity: 0; } to { transform: none; opacity: 1; } }
+/* (the faces of everyone who picked a card, a little pile of them) */
+.emo-cv .emo-who { position: relative; flex: none; display: flex; align-items: center; }
+.emo-cv .emo-who > * + * { margin-inline-start: -18px; }
+@supports not (margin-inline-start: 0) {
+  .emo-cv .emo-who > * + * { margin-left: -18px; }
+  html[dir="rtl"] .emo-cv .emo-who > * + * { margin-right: -18px; }
+}
+.emo-cv .emo-who > * { flex: none; width: 58px; height: 58px; border-radius: 50%; background: #1d1238; box-shadow: 0 0 0 3px var(--pc, #fff), 0 4px 10px rgba(0, 0, 0, .5); overflow: hidden;
+  animation: e-faceIn .45s cubic-bezier(.2, 1.5, .4, 1) both; }
+.emo-cv .emo-who > img { object-fit: cover; }
+.emo-cv .emo-who > img.emo-boo { object-fit: contain; padding: 3px; box-sizing: border-box; }
+.emo-cv .emo-who > b { display: grid; align-items: center; justify-items: center; place-items: center; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 24px; color: #fff; background: rgba(10, 4, 18, .85); box-shadow: 0 0 0 3px #fff; }
+@keyframes e-faceIn { from { transform: translateY(18px) scale(.4); opacity: 0; } to { transform: none; opacity: 1; } }
+/* the scoreboard while everyone answers (a check on whoever is in) and once the answer shows (green points, a red cross) */
+.emo-cv [data-k="rows"] > div { position: relative; transition: border-color .3s, background .3s, box-shadow .3s; }
+.emo-cv [data-k="rows"] > div.emo-in { border-color: #ffc93c !important; background: rgba(255, 201, 60, .12) !important; }
+.emo-cv [data-k="rows"] > div.emo-in [data-k="av"]::after { content: '✓'; position: absolute; margin: 30px 0 0 34px; width: 26px; height: 26px; border-radius: 50%; background: #ffc93c; color: #2a1700;
+  display: grid; align-items: center; justify-items: center; place-items: center; font: 900 17px/1 'EMO Nunito', sans-serif; box-shadow: 0 0 0 3px #1a0c16; }
+.emo-cv [data-k="rows"] > div.emo-ok { border-color: #34d399 !important; background: linear-gradient(90deg, rgba(52, 211, 153, .3), rgba(52, 211, 153, .08)) !important; box-shadow: 0 0 24px rgba(52, 211, 153, .35); }
+.emo-cv [data-k="rows"] > div.emo-bad { border-color: #ff4d6a !important; background: linear-gradient(90deg, rgba(255, 77, 106, .26), rgba(255, 77, 106, .06)) !important; }
+.emo-cv [data-k="rows"] > div.emo-none { opacity: .62; }
+.emo-cv [data-k="rows"] > div.emo-outp { opacity: .4; filter: grayscale(1); }
+.emo-cv [data-k="av"] { position: relative; flex: none; overflow: visible; }
+.emo-cv .emo-chip { flex: none; padding: 4px 12px; border-radius: 999px; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 22px; line-height: 1.2; animation: e-pillIn .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+.emo-cv .emo-chip.ok { background: #34d399; color: #06281b; box-shadow: 0 0 16px rgba(52, 211, 153, .7); }
+.emo-cv .emo-chip.bad { background: #ff4d6a; color: #fff; box-shadow: 0 0 16px rgba(255, 77, 106, .6); }
+.emo-cv .emo-chip.none { background: rgba(255, 255, 255, .14); color: #d9cfe8; }
+.emo-cv .emo-hearts { flex: none; font-size: 20px; letter-spacing: -2px; line-height: 1; }
+.emo-cv .emo-team { flex: none; width: 14px; height: 14px; border-radius: 50%; background: var(--tc, #fff); box-shadow: 0 0 10px var(--tc, #fff); }
+
+/* ---------- Type it: no cards; a box for the typing, then the answer and everyone's guesses ---------- */
+.emo-cv .emo-typebox { display: flex; flex-direction: column; align-items: center; grid-gap: 18px; gap: 18px; padding: 26px 30px; border-radius: 28px; background: rgba(10, 4, 18, .55); border: 2px dashed rgba(255, 201, 60, .45); text-align: center; }
+html.no-flexgap .emo-cv .emo-typebox > * + * { margin-top: 18px; }
+.emo-cv .emo-typebox b { font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 44px; color: #fff3d6; }
+.emo-cv .emo-typebox .emo-dots { display: flex; grid-gap: 12px; gap: 12px; }
+html.no-flexgap .emo-cv .emo-typebox .emo-dots > * + * { margin-left: 12px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-typebox .emo-dots > * + * { margin-left: 0; margin-right: 12px; }
+.emo-cv .emo-typebox .emo-dots i { width: 16px; height: 16px; border-radius: 50%; background: #ffc93c; animation: e-typing 1.2s ease-in-out infinite; }
+.emo-cv .emo-typebox .emo-dots i:nth-child(2) { animation-delay: .2s; }
+.emo-cv .emo-typebox .emo-dots i:nth-child(3) { animation-delay: .4s; }
+.emo-cv .emo-ansbig { position: relative; display: flex; align-items: center; justify-content: center; grid-gap: 22px; gap: 22px; min-height: 124px; padding: 14px 30px; border-radius: 26px; background: linear-gradient(160deg, #34d399, #17a673); color: #06281b;
+  font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 54px; line-height: 1.05; text-align: center; box-shadow: 0 0 0 6px #34d399, 0 0 70px 12px rgba(52, 211, 153, .7), 0 10px 0 rgba(0, 0, 0, .35); animation: e-pillIn .6s cubic-bezier(.2, 1.4, .4, 1) both; }
+html.no-flexgap .emo-cv .emo-ansbig > * + * { margin-left: 22px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-ansbig > * + * { margin-left: 0; margin-right: 22px; }
+.emo-cv .emo-ansbig.miss { background: linear-gradient(160deg, #ffc93c, #d99a14); color: #2a1700; box-shadow: 0 0 0 6px #ffc93c, 0 0 60px 10px rgba(255, 201, 60, .55), 0 10px 0 rgba(0, 0, 0, .35); }
+.emo-cv .emo-guesses { display: flex; flex-wrap: wrap; justify-content: center; grid-gap: 12px; gap: 12px; }
+html.no-flexgap .emo-cv .emo-guesses > * { margin: 0 12px 12px 0; }
+.emo-cv .emo-guess { display: inline-flex; align-items: center; grid-gap: 12px; gap: 12px; max-width: 520px; padding: 8px 18px 8px 8px; border-radius: 999px; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 26px; line-height: 1.15;
+  animation: e-pillIn .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+html.no-flexgap .emo-cv .emo-guess > * + * { margin-left: 12px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-guess > * + * { margin-left: 0; margin-right: 12px; }
+.emo-cv .emo-guess img { flex: none; width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #1d1238; }
+.emo-cv .emo-guess img.emo-boo { object-fit: contain; padding: 2px; box-sizing: border-box; }
+.emo-cv .emo-guess span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.emo-cv .emo-guess.ok { background: rgba(52, 211, 153, .22); box-shadow: inset 0 0 0 3px #34d399, 0 0 22px rgba(52, 211, 153, .4); color: #d9fff0; }
+.emo-cv .emo-guess.bad { background: rgba(255, 77, 106, .18); box-shadow: inset 0 0 0 3px #ff4d6a; color: #ffe3e8; }
+.emo-cv .emo-guess.none { background: rgba(255, 255, 255, .08); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .2); color: #c8bde6; }
+.emo-cv .emo-guess .emo-badge { width: 40px; height: 40px; font-size: 24px; box-shadow: 0 0 0 2px #fff; }
+
+/* ---------- how to play (before the first riddle) and the make-your-own round, on the Cinema look ---------- */
+.emo-cv .emo-rules { display: flex; flex-direction: column; grid-gap: 14px; gap: 14px; }
+html.no-flexgap .emo-cv .emo-rules > * + * { margin-top: 14px; }
+.emo-cv .emo-rule { position: relative; display: flex; align-items: stretch; min-height: 92px; border-radius: 18px; background: linear-gradient(180deg, #ffe7a8, #f3c25a); color: #2a1700; box-shadow: 0 12px 26px rgba(0, 0, 0, .45);
+  animation: e-ruleIn .55s cubic-bezier(.2, 1.3, .4, 1) both; }
+.emo-cv .emo-rule i { flex: none; width: 96px; display: grid; align-items: center; justify-items: center; place-items: center; font-style: normal; font-size: 46px; border-inline-end: 4px dashed rgba(42, 23, 0, .35); }
+@supports not (border-inline-end: 0) {
+  .emo-cv .emo-rule i { border-right: 4px dashed rgba(42, 23, 0, .35); }
+  html[dir="rtl"] .emo-cv .emo-rule i { border-left: 4px dashed rgba(42, 23, 0, .35); }
+}
+.emo-cv .emo-rule span { flex: 1; align-self: center; padding: 14px 26px; font-weight: 800; font-size: 30px; line-height: 1.25; }
+.emo-cv .emo-rule::before, .emo-cv .emo-rule::after { content: ''; position: absolute; inset-inline-start: 84px; width: 24px; height: 24px; border-radius: 50%; background: #170a1a; }
+@supports not (inset-inline-start: 0) {
+  .emo-cv .emo-rule::before, .emo-cv .emo-rule::after { left: 84px; }
+  html[dir="rtl"] .emo-cv .emo-rule::before, html[dir="rtl"] .emo-cv .emo-rule::after { right: 84px; }
+}
+.emo-cv .emo-rule::before { top: -12px; }
+.emo-cv .emo-rule::after { bottom: -12px; }
+@keyframes e-ruleIn { from { transform: translateY(30px) rotate(-1.5deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.emo-cv .emo-mode { font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 34px; color: #ffd9a8; text-align: center; margin-top: 4px; }
+.emo-cv .emo-author { display: inline-flex; align-items: center; grid-gap: 14px; gap: 14px; }
+html.no-flexgap .emo-cv .emo-author > * + * { margin-left: 14px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-author > * + * { margin-left: 0; margin-right: 14px; }
+.emo-cv .emo-author img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: #1d1238; box-shadow: 0 0 0 4px #ffc93c; }
+.emo-cv .emo-author img.emo-boo { object-fit: contain; padding: 3px; box-sizing: border-box; }
+/* (a riddle a player made: whose it is, under the emoji) */
+.emo-cv .emo-made { display: flex; flex-wrap: wrap; justify-content: center; grid-gap: 14px; gap: 14px; }
+html.no-flexgap .emo-cv .emo-made > * { margin: 0 14px 14px 0; }
+.emo-cv .emo-made > span { display: inline-flex; align-items: center; grid-gap: 10px; gap: 10px; padding: 8px 16px 8px 8px; border-radius: 999px; background: rgba(255, 255, 255, .07); border: 2px solid rgba(255, 201, 60, .3);
+  font-family: 'EMO Fredoka', sans-serif; font-weight: 700; font-size: 24px; animation: e-pillIn .45s cubic-bezier(.2, 1.4, .4, 1) both; }
+html.no-flexgap .emo-cv .emo-made > span > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .emo-cv .emo-made > span > * + * { margin-left: 0; margin-right: 10px; }
+.emo-cv .emo-made > span.in { border-color: #34d399; background: rgba(52, 211, 153, .14); }
+.emo-cv .emo-made img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #1d1238; }
+.emo-cv .emo-made img.emo-boo { object-fit: contain; padding: 2px; box-sizing: border-box; }
+
+/* ---------- the winners: confetti and floating emoji on every look ---------- */
+.emo-cv .emo-rain { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 7; pointer-events: none; }
+.emo-cv [data-k="pt1"], .emo-cv [data-k="pt2"], .emo-cv [data-k="pt3"] { white-space: nowrap; }
+.emo-cv .emo-teamav { display: grid; align-items: center; justify-items: center; place-items: center; width: 100%; height: 100%; border-radius: 50%; font-size: 60%; }
+/* the phones' reactions, floating up the screen */
+.emo-cv .emo-react { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 9; pointer-events: none; overflow: hidden; }
+.emo-cv .emo-rx { position: absolute; bottom: -130px; display: flex; flex-direction: column; align-items: center; animation: e-rxUp 3.2s cubic-bezier(.2, .6, .4, 1) forwards; }
+.emo-cv .emo-rx span { font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif; font-size: 88px; line-height: 1; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .45)); }
+.emo-cv .emo-rx img { position: relative; z-index: 1; width: 46px; height: 46px; margin-bottom: -14px; border-radius: 50%; object-fit: cover; background: #1d1238; box-shadow: 0 0 0 3px #fff, 0 4px 10px rgba(0, 0, 0, .4); }
+.emo-cv .emo-rx img.emo-boo { object-fit: contain; padding: 3px; box-sizing: border-box; }
+@keyframes e-rxUp { 0% { transform: translate(0, 0) scale(.4); opacity: 0; } 12% { transform: translate(0, -150px) scale(1.12); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--dx, 0), -920px) scale(.9); opacity: 0; } }
+/* (a big confetti burst for each right answer in Kids) */
+.emo-burst { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 8; pointer-events: none; }
+
+/* (people who asked for less motion: no shaking, no pulsing) */
+@media (prefers-reduced-motion: reduce) { .emo-cv *, .emo-cv *::before, .emo-cv *::after { animation-duration: .01s !important; animation-iteration-count: 1 !important; } }
+
+/* ---------- the lobby, in the game's design: the Cinema Marquee ---------- */
+body[data-game="emoji"] { background: #0c0410; }
+body[data-game="emoji"] .stage { font-family: 'EMO Nunito', sans-serif; color: #f3eefe; padding: calc(5.185 * var(--u)) calc(8.148 * var(--u)) calc(4.074 * var(--u)); grid-gap: calc(2.963 * var(--u)); gap: calc(2.963 * var(--u)); overflow: hidden;
+  background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 154, 60, .25), transparent 70%), linear-gradient(180deg, #22091f, #0c0410); }
+html.no-flexgap body[data-game="emoji"] .stage > * + * { margin-top: calc(2.963 * var(--u)); }
+/* (the curtains: a striped valance on top, and a curtain on each side) */
+body[data-game="emoji"] .stage::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(3.704 * var(--u)); z-index: 2; pointer-events: none;
+  background: repeating-linear-gradient(90deg, #7a1230 0 calc(5.556 * var(--u)), #5a0c22 calc(5.556 * var(--u)) calc(11.111 * var(--u))); box-shadow: 0 calc(0.926 * var(--u)) calc(1.852 * var(--u)) rgba(0, 0, 0, .5); }
+body[data-game="emoji"] .stage::after { content: ''; position: absolute; left: 0; right: 0; top: 0; bottom: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) calc(6.481 * var(--u)) 0 / calc(1.852 * var(--u)) 100% no-repeat, linear-gradient(270deg, rgba(0, 0, 0, .5), rgba(0, 0, 0, 0)) calc(100% - calc(6.481 * var(--u))) 0 / calc(1.852 * var(--u)) 100% no-repeat,
+    repeating-linear-gradient(90deg, #7a1230 0 calc(1.296 * var(--u)), #4a0a1c calc(1.296 * var(--u)) calc(2.593 * var(--u))) 0 0 / calc(6.481 * var(--u)) 100% no-repeat, repeating-linear-gradient(90deg, #7a1230 0 calc(1.296 * var(--u)), #4a0a1c calc(1.296 * var(--u)) calc(2.593 * var(--u))) 100% 0 / calc(6.481 * var(--u)) 100% no-repeat; }
+body[data-game="emoji"] .stage > .lob-top, body[data-game="emoji"] .stage > .body.lob, body[data-game="emoji"] .stage > .lob-foot { position: relative; z-index: 3; }
+/* the marquee: the game's name in lights, a row of bulbs above and below it */
+body[data-game="emoji"] .lob-top { align-self: center; min-height: 0; padding: calc(3.519 * var(--u)) calc(5.185 * var(--u)); grid-gap: calc(3.148 * var(--u)); gap: calc(3.148 * var(--u)); border-radius: calc(2.407 * var(--u)); background: linear-gradient(180deg, #3b1530, #1e0a1c);
+  border: calc(0.37 * var(--u)) solid #ffc93c; box-shadow: 0 0 0 calc(0.741 * var(--u)) #1a0c16, 0 0 calc(5.556 * var(--u)) rgba(255, 201, 60, .35); max-width: 100%; }
+html.no-flexgap body[data-game="emoji"] .lob-top > * + * { margin-left: calc(3.148 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .lob-top > * + * { margin-left: 0; margin-right: calc(3.148 * var(--u)); }
+body[data-game="emoji"] .emo-bulbs { position: absolute; left: calc(1.296 * var(--u)); right: calc(1.296 * var(--u)); display: flex; justify-content: space-between; pointer-events: none; }
+body[data-game="emoji"] .emo-bulbs.t { top: calc(0.556 * var(--u)); }
+body[data-game="emoji"] .emo-bulbs.b { bottom: calc(0.556 * var(--u)); }
+body[data-game="emoji"] .emo-bulbs i { flex: none; width: calc(1.296 * var(--u)); height: calc(1.296 * var(--u)); border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff8d6, #ffc93c 60%, #b9771a); box-shadow: 0 0 calc(0.926 * var(--u)) #ffc93c; animation: e-bulb 1.2s 0s steps(1) infinite; }
+body[data-game="emoji"] .emo-bulbs i:nth-child(2n) { animation-delay: .6s; }
+body[data-game="emoji"] .lob-top .logo { flex: none; width: calc(9.63 * var(--u)); height: calc(9.63 * var(--u)); border-radius: calc(2.593 * var(--u)); padding: 0; background: none; box-shadow: 0 calc(0.926 * var(--u)) calc(2.778 * var(--u)) rgba(255, 154, 60, .35); }
+body[data-game="emoji"] .lob-top .logo img { width: 100%; height: 100%; border-radius: calc(2.593 * var(--u)); }
+body[data-game="emoji"] .lob-top .grow { flex: 0 1 auto; display: flex; flex-direction: column; grid-gap: calc(0.741 * var(--u)); gap: calc(0.741 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="emoji"] .lob-top .grow > * + * { margin-top: calc(0.741 * var(--u)); }
+body[data-game="emoji"] .lob-top h1 { font-family: 'EMO Fredoka', 'BV Script', sans-serif; font-weight: 700; font-size: calc(8.519 * var(--u)); line-height: 1; letter-spacing: .02em; color: #fff3d6; white-space: nowrap;
+  text-shadow: 0 0 calc(0.556 * var(--u)) #fff, 0 0 calc(2.037 * var(--u)) #ffc93c, 0 0 calc(4.63 * var(--u)) #ff9a3c; }
+body[data-game="emoji"] .lob-top .sub { margin: 0; font-size: calc(2.593 * var(--u)); font-weight: 700; color: #ffd9a8; line-height: 1.25; }
+/* (Arabic letters reach higher and lower than Latin ones: a little more room between the lines) */
+html[dir="rtl"] body[data-game="emoji"] .lob-top h1 { line-height: 1.3; }
+body[data-game="emoji"] .lob-top .deco { flex: none; display: flex; flex-direction: column; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); margin-inline-start: calc(0.926 * var(--u)); align-self: center; }
+@supports not (margin-inline-start: 0) {
+  body[data-game="emoji"] .lob-top .deco { margin-left: calc(0.926 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .lob-top .deco { margin-right: calc(0.926 * var(--u)); }
+}
+html.no-flexgap body[data-game="emoji"] .lob-top .deco > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="emoji"] .lob-top .deco .tile-e { width: auto; height: auto; padding: 0; border: 0; background: none; box-shadow: none; font-size: calc(3.148 * var(--u)); line-height: 1; animation: none; transform: none; }
+/* the two columns: how to join on the left (the QR code, the code, two ticket stubs), the players on the right */
+body[data-game="emoji"] .body.lob { display: grid; grid-template-columns: calc(59.259 * var(--u)) minmax(0, 1fr); grid-gap: calc(4.444 * var(--u)); gap: calc(4.444 * var(--u)); flex: 1; min-height: 0; }
+body[data-game="emoji"] .lob-l { width: auto; display: flex; flex-direction: column; grid-gap: calc(1.667 * var(--u)); gap: calc(1.667 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="emoji"] .lob-l > * + * { margin-top: calc(1.667 * var(--u)); }
+body[data-game="emoji"] .lob .card { box-shadow: none; }
+body[data-game="emoji"] .lob .join { display: flex; align-items: center; grid-gap: calc(2.037 * var(--u)); gap: calc(2.037 * var(--u)); padding: calc(1.852 * var(--u)); border-radius: calc(2.222 * var(--u)); background: rgba(0, 0, 0, .3); border: calc(0.185 * var(--u)) solid rgba(255, 201, 60, .35); }
+html.no-flexgap body[data-game="emoji"] .lob .join > * + * { margin-left: calc(2.037 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .lob .join > * + * { margin-left: 0; margin-right: calc(2.037 * var(--u)); }
+body[data-game="emoji"] .lob .qr { flex: none; width: calc(18.519 * var(--u)); height: calc(18.519 * var(--u)); padding: 0; background: none; border-radius: 0; }
+body[data-game="emoji"] .lob .qr svg { display: block; box-sizing: border-box; width: calc(18.519 * var(--u)); height: calc(18.519 * var(--u)); background: #fff; border-radius: calc(2.037 * var(--u)); padding: calc(1.481 * var(--u)); }
+body[data-game="emoji"] .jt { display: flex; flex-direction: column; grid-gap: calc(1.111 * var(--u)); gap: calc(1.111 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="emoji"] .jt > * + * { margin-top: calc(1.111 * var(--u)); }
+body[data-game="emoji"] .jt .stp { display: block; }
+body[data-game="emoji"] .jt .stp .n { display: inline; width: auto; height: auto; background: none; box-shadow: none; border-radius: 0; padding: 0; font: 700 calc(2.963 * var(--u))/1.15 'EMO Fredoka', 'BV Script', sans-serif; color: #f3eefe; }
+body[data-game="emoji"] .jt .stp .n::after { content: ' · '; }
+body[data-game="emoji"] .jt .stp b { display: inline; font: 700 calc(2.963 * var(--u))/1.15 'EMO Fredoka', 'BV Script', sans-serif; white-space: normal; }
+body[data-game="emoji"] .jt .or { font-size: calc(2.037 * var(--u)); color: #ffd9a8; font-weight: 700; margin: 0; }
+body[data-game="emoji"] .codetiles { display: flex; grid-gap: calc(0.556 * var(--u)); gap: calc(0.556 * var(--u)); flex-wrap: nowrap; }
+html.no-flexgap body[data-game="emoji"] .codetiles > * + * { margin-left: calc(0.556 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .codetiles > * + * { margin-left: 0; margin-right: calc(0.556 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .codetiles > * + * { margin-left: calc(0.556 * var(--u)); }
+body[data-game="emoji"] .codetiles span { flex: 0 1 calc(4.259 * var(--u)); min-width: 0; width: calc(4.259 * var(--u)); height: calc(5.741 * var(--u)); border-radius: calc(0.741 * var(--u)); background: #111; border: calc(0.185 * var(--u)) solid #ffc93c; box-shadow: none;
+  display: grid; align-items: center; justify-items: center; place-items: center; font: 700 calc(3.519 * var(--u))/1 'EMO Fredoka', sans-serif; color: #fff3d6; text-shadow: 0 0 calc(0.926 * var(--u)) #ffc93c; }
+/* (the steps as ticket stubs: the number on the stub, a dashed tear line, a punched hole above and below it) */
+body[data-game="emoji"] .steps2 { display: flex; flex-direction: column; grid-gap: calc(1.667 * var(--u)); gap: calc(1.667 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .steps2 > * + * { margin-top: calc(1.667 * var(--u)); }
+body[data-game="emoji"] .stp-c { position: relative; display: grid; grid-template-columns: calc(8.889 * var(--u)) minmax(0, 1fr); grid-template-rows: auto auto; padding: 0; border: 0; border-radius: calc(1.667 * var(--u)); overflow: hidden;
+  background: linear-gradient(180deg, #ffe7a8, #f3c25a); color: #2a1700; box-shadow: 0 calc(1.481 * var(--u)) calc(2.778 * var(--u)) rgba(0, 0, 0, .45); }
+body[data-game="emoji"] .stp-c .stp { display: contents; }
+body[data-game="emoji"] .stp-c .stp .n { grid-column: 1; grid-row: 1 / span 2; width: auto; height: auto; display: grid; align-items: center; justify-items: center; place-items: center; border-radius: 0; background: none; box-shadow: none;
+  border-inline-end: calc(0.37 * var(--u)) dashed rgba(42, 23, 0, .35); font: 700 calc(5.185 * var(--u))/1 'EMO Fredoka', sans-serif; color: #c2410c; }
+@supports not (border-inline-end: 0) {
+  body[data-game="emoji"] .stp-c .stp .n { border-right: calc(0.37 * var(--u)) dashed rgba(42, 23, 0, .35); }
+  html[dir="rtl"] body[data-game="emoji"] .stp-c .stp .n { border-left: calc(0.37 * var(--u)) dashed rgba(42, 23, 0, .35); }
+}
+body[data-game="emoji"] .stp-c .stp b { grid-column: 2; grid-row: 1; padding: calc(1.852 * var(--u)) calc(2.222 * var(--u)) 0; font: 700 calc(2.963 * var(--u))/1 'EMO Fredoka', 'BV Script', sans-serif; color: #2a1700; white-space: normal; }
+body[data-game="emoji"] .stp-c p { grid-column: 2; grid-row: 2; margin: 0; padding: calc(0.741 * var(--u)) calc(2.222 * var(--u)) calc(1.852 * var(--u)); font-size: calc(2.037 * var(--u)); font-weight: 700; line-height: 1.35; color: #5a3a10; }
+body[data-game="emoji"] .stp-c::before, body[data-game="emoji"] .stp-c::after { content: ''; position: absolute; inset-inline-start: calc(7.778 * var(--u)); width: calc(2.222 * var(--u)); height: calc(2.222 * var(--u)); border-radius: 50%; background: #170a1a; }
+@supports not (inset-inline-start: 0) {
+  body[data-game="emoji"] .stp-c::before, body[data-game="emoji"] .stp-c::after { left: calc(7.778 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .stp-c::before, html[dir="rtl"] body[data-game="emoji"] .stp-c::after { right: calc(7.778 * var(--u)); }
+}
+body[data-game="emoji"] .stp-c::before { top: calc(-1.111 * var(--u)); }
+body[data-game="emoji"] .stp-c::after { bottom: calc(-1.111 * var(--u)); }
+@supports not (inset-inline-start: 0) {
+  body[data-game="emoji"] .stp-c::before, body[data-game="emoji"] .stp-c::after { left: calc(7.778 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .stp-c::before, html[dir="rtl"] body[data-game="emoji"] .stp-c::after { left: auto; right: calc(7.778 * var(--u)); }
+}
+/* the players: rows of theater seats, each row its own velvet panel (play/emoji-game.js draws the panels) */
+body[data-game="emoji"] .lob-r { display: flex; flex-direction: column; grid-gap: calc(1.667 * var(--u)); gap: calc(1.667 * var(--u)); min-height: 0; min-width: 0; }
+html.no-flexgap body[data-game="emoji"] .lob-r > * + * { margin-top: calc(1.667 * var(--u)); }
+body[data-game="emoji"] .ph { min-height: 0; display: flex; align-items: center; justify-content: space-between; grid-gap: calc(1.481 * var(--u)); gap: calc(1.481 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .ph > * + * { margin-left: calc(1.481 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .ph > * + * { margin-left: 0; margin-right: calc(1.481 * var(--u)); }
+body[data-game="emoji"] .ph h2 { margin: 0; font: 700 calc(4.074 * var(--u))/1.1 'EMO Fredoka', 'BV Script', sans-serif; }
+body[data-game="emoji"] .ph .pill { margin: 0; padding: calc(0.926 * var(--u)) calc(2.407 * var(--u)); border-radius: calc(1.111 * var(--u)); border: 0; background: #ffc93c; color: #2a1700; font: 700 calc(2.222 * var(--u))/1.2 'EMO Fredoka', 'BV Script', sans-serif; box-shadow: 0 0 calc(1.852 * var(--u)) rgba(255, 201, 60, .4); }
+body[data-game="emoji"] .slots { position: relative; padding: 0; border: 0; background: none; justify-content: space-around; align-content: start; }
+body[data-game="emoji"] .slots > .emo-rowbg { position: absolute; left: 0; right: 0; z-index: 0; border-radius: calc(2.222 * var(--u)) calc(2.222 * var(--u)) calc(5.556 * var(--u)) calc(5.556 * var(--u)); background: linear-gradient(180deg, #5a1630, #33091c); box-shadow: inset 0 calc(-1.111 * var(--u)) 0 rgba(0, 0, 0, .25); pointer-events: none; }
+body[data-game="emoji"] .slots > .emo-rowbg.empty { opacity: .6; }
+body[data-game="emoji"] .lob .slots.fit .seat { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; grid-gap: calc(var(--ss, 250px) * .032); gap: calc(var(--ss, 250px) * .032);
+  padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+html.no-flexgap body[data-game="emoji"] .lob .slots.fit .seat > * + * { margin-top: calc(var(--ss, 250px) * .032); }
+body[data-game="emoji"] .lob .slots.fit .seat .av { position: relative; flex: none; width: calc(var(--ss, 250px) * .384); height: calc(var(--ss, 250px) * .384); max-width: calc(8.889 * var(--u)); max-height: calc(8.889 * var(--u)); padding: calc(0.278 * var(--u)); border-radius: 50%; box-sizing: border-box;
+  background: conic-gradient(var(--pc, #ff5a6e), rgba(255, 255, 255, .27), var(--pc, #ff5a6e)); box-shadow: none; }
+body[data-game="emoji"] .lob .slots.fit .seat .av img { display: block; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: radial-gradient(circle at 40% 30%, #3a2870, #1a1236); }
+body[data-game="emoji"] .lob .slots.fit .seat .av .ok { display: none; }
+body[data-game="emoji"] .lob .slots.fit .seat b { max-width: 100%; font: 700 calc(var(--ss, 250px) * .096)/1.15 'EMO Fredoka', 'BV Script', sans-serif; font: 700 min(calc(2.222 * var(--u)), calc(var(--ss, 250px) * .096))/1.15 'EMO Fredoka', 'BV Script', sans-serif; color: #f3eefe; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body[data-game="emoji"] .lob .slots.fit .seat.rd::after { content: var(--emo-ready, '✓'); font: 900 calc(var(--ss, 250px) * .06)/1 'EMO Nunito', sans-serif; font: 900 min(calc(1.389 * var(--u)), calc(var(--ss, 250px) * .06))/1 'EMO Nunito', sans-serif; letter-spacing: .12em; color: #34d399; white-space: nowrap; }
+body[data-game="emoji"] .lob .slots.fit .seat.empty { opacity: .55; }
+body[data-game="emoji"] .lob .slots.fit .seat.empty::before { content: var(--emo-join, ''); flex: none; width: calc(var(--ss, 250px) * .384); height: calc(var(--ss, 250px) * .384); max-width: calc(8.889 * var(--u)); max-height: calc(8.889 * var(--u)); box-sizing: border-box; border-radius: 50%;
+  border: calc(0.278 * var(--u)) dashed rgba(255, 201, 60, .4); display: grid; align-items: center; justify-items: center; place-items: center; font: 400 calc(var(--ss, 250px) * .088)/1 'EMO Fredoka', sans-serif; font: 400 min(calc(2.037 * var(--u)), calc(var(--ss, 250px) * .088))/1 'EMO Fredoka', sans-serif; color: #a99bd0; }
+body[data-game="emoji"] .lob .slots.fit .seat.empty span { display: none; }
+body[data-game="emoji"] .seat .lg { font-size: calc(1.296 * var(--u)); }
+body[data-game="emoji"] .seat small.team { font: 700 calc(1.481 * var(--u))/1 'EMO Fredoka', sans-serif; }
+body[data-game="emoji"] .slots.chips .emo-rowbg { display: none; }
+/* how to play, with Boo bobbing beside it */
+body[data-game="emoji"] .lob-x { position: relative; margin-top: auto; display: flex; flex-direction: column; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); padding-inline-end: calc(15.741 * var(--u)); min-height: calc(12.037 * var(--u)); }
+@supports not (padding-inline-end: 0) {
+  body[data-game="emoji"] .lob-x { padding-right: calc(15.741 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .lob-x { padding-left: calc(15.741 * var(--u)); }
+}
+html.no-flexgap body[data-game="emoji"] .lob-x > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="emoji"] .lob-x::after { content: ''; position: absolute; inset-inline-end: 0; bottom: calc(-0.926 * var(--u)); width: calc(13.889 * var(--u)); height: calc(12.407 * var(--u)); background: url(icons/emoji-boo.png) center / contain no-repeat; animation: e-bob 3s ease-in-out infinite; }
+@supports not (inset-inline-end: 0) {
+  body[data-game="emoji"] .lob-x::after { right: 0; }
+  html[dir="rtl"] body[data-game="emoji"] .lob-x::after { left: 0; }
+}
+@supports not (inset-inline-end: 0) {
+  body[data-game="emoji"] .lob-x { padding-right: calc(15.741 * var(--u)); }
+  body[data-game="emoji"] .lob-x::after { right: 0; }
+  html[dir="rtl"] body[data-game="emoji"] .lob-x { padding-right: 0; padding-left: calc(15.741 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .lob-x::after { right: auto; left: 0; }
+}
+body[data-game="emoji"] .lob-x .lbl { margin: 0; font-size: calc(1.852 * var(--u)); font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: #ffc93c; }
+body[data-game="emoji"] .howto2 { list-style: none; margin: 0; padding: 0; counter-reset: emorule; display: flex; flex-direction: column; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); font-size: calc(2.037 * var(--u)); line-height: 1.35; color: #f2dccf; }
+html.no-flexgap body[data-game="emoji"] .howto2 > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="emoji"] .howto2 li { counter-increment: emorule; display: flex; grid-gap: calc(1.111 * var(--u)); gap: calc(1.111 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .howto2 li > * + * { margin-left: calc(1.111 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .howto2 li > * + * { margin-left: 0; margin-right: calc(1.111 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .howto2 li > * + * { margin-left: calc(1.111 * var(--u)); }
+body[data-game="emoji"] .howto2 li::before { content: counter(emorule) '.'; flex: none; font-family: 'EMO Fredoka', sans-serif; font-weight: 700; color: #ffc93c; }
+/* (a full room: the QR code and how to play share the left side, the players have the right) */
+body[data-game="emoji"] .body.lob.crowd { grid-template-columns: calc(51.852 * var(--u)) minmax(0, 1fr); }
+body[data-game="emoji"] .lob.crowd .join { padding: calc(1.481 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .qr, body[data-game="emoji"] .lob.crowd .qr svg { width: calc(14.444 * var(--u)); height: calc(14.444 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .qr svg { padding: calc(1.111 * var(--u)); border-radius: calc(1.667 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .jt .stp .n, body[data-game="emoji"] .lob.crowd .jt .stp b { font-size: calc(2.407 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .jt .or { font-size: calc(1.759 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .codetiles span { flex-basis: calc(3.704 * var(--u)); width: calc(3.704 * var(--u)); height: calc(5 * var(--u)); font-size: calc(2.963 * var(--u)); }
+body[data-game="emoji"] .lob.crowd .lob-x { margin-top: 0; padding-inline-end: 0; min-height: 0; }
+@supports not (padding-inline-end: 0) {
+  body[data-game="emoji"] .lob.crowd .lob-x { padding-right: 0; }
+  html[dir="rtl"] body[data-game="emoji"] .lob.crowd .lob-x { padding-left: 0; }
+}
+body[data-game="emoji"] .lob.crowd .lob-x::after { display: none; }
+@supports not (inset-inline-end: 0) { body[data-game="emoji"] .lob.crowd .lob-x { padding-left: 0; padding-right: 0; } }
+/* (still too tall for the left side: smaller lines, then two of them) */
+body[data-game="emoji"] .lob-x.s1 .howto2, body[data-game="emoji"] .lob-x.s2 .howto2 { font-size: calc(1.759 * var(--u)); }
+body[data-game="emoji"] .lob-x.s2 .howto2 li:nth-child(n + 3), body[data-game="emoji"] .lob-x.s3 .howto2 li:nth-child(n + 2), body[data-game="emoji"] .lob-x.s4 .howto2 { display: none; }
+/* the bottom: what happens next, and the buttons for sound, size and full screen */
+body[data-game="emoji"] .lob-foot { align-items: center; }
+body[data-game="emoji"] .lob-foot .lf { display: flex; align-items: center; grid-gap: calc(1.852 * var(--u)); gap: calc(1.852 * var(--u)); }
+html.no-flexgap body[data-game="emoji"] .lob-foot .lf > * + * { margin-left: calc(1.852 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .lob-foot .lf > * + * { margin-left: 0; margin-right: calc(1.852 * var(--u)); }
+body[data-game="emoji"] .lob-foot b { font: 600 calc(2.593 * var(--u))/1.2 'EMO Fredoka', 'BV Script', sans-serif; margin-inline-end: calc(0.741 * var(--u)); color: #f3eefe; }
+@supports not (margin-inline-end: 0) {
+  body[data-game="emoji"] .lob-foot b { margin-right: calc(0.741 * var(--u)); }
+  html[dir="rtl"] body[data-game="emoji"] .lob-foot b { margin-left: calc(0.741 * var(--u)); }
+}
+body[data-game="emoji"] .lob-foot .snd, body[data-game="emoji"] .lob-foot .zm, body[data-game="emoji"] .lob-foot .fs { height: calc(4.259 * var(--u)); padding: 0 calc(2.037 * var(--u)); border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .05);
+  display: inline-flex; align-items: center; grid-gap: calc(1.111 * var(--u)); gap: calc(1.111 * var(--u)); font-family: 'EMO Nunito', sans-serif; font-size: calc(1.852 * var(--u)); font-weight: 800; color: #f3eefe; opacity: 1; }
+html.no-flexgap body[data-game="emoji"] .lob-foot .snd > * + *, html.no-flexgap body[data-game="emoji"] .lob-foot .zm > * + *, html.no-flexgap body[data-game="emoji"] .lob-foot .fs > * + * { margin-left: calc(1.111 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="emoji"] .lob-foot .snd > * + *, html.no-flexgap body[data-game="emoji"] .lob-foot .zm > * + *, html.no-flexgap body[data-game="emoji"] .lob-foot .fs > * + * { margin-left: 0; margin-right: calc(1.111 * var(--u)); }
+body[data-game="emoji"] .lob-foot .zm .zv { font-size: calc(1.481 * var(--u)); color: #ffe08a; }
+body[data-game="emoji"] .lob-foot .zm button { font-family: 'EMO Nunito', sans-serif; font-size: calc(1.852 * var(--u)); font-weight: 800; color: #f3eefe; background: none; border: 0; }
+body[data-game="emoji"] .credit { position: relative; z-index: 3; }
+/* (the 3, 2, 1 and the end of a game: the same dark plum, under the curtains) */
+body[data-game="emoji"] .cover { background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(255, 154, 60, .25), transparent 70%), linear-gradient(180deg, #22091f, #0c0410); }
+body[data-game="emoji"] .cover .big { font-family: 'EMO Fredoka', sans-serif; color: #fff3d6; text-shadow: 0 0 calc(.6 * var(--u)) #fff, 0 0 calc(2 * var(--u)) #ffc93c, 0 0 calc(4.6 * var(--u)) #ff9a3c; }
+
+/* the designs' own moves (made by the template tool) */
+@keyframes e-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes e-bulb{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes e-clap{0%,70%,100%{transform:rotate(-14deg)}78%{transform:rotate(0)}}
+@keyframes e-coin{0%{transform:translateY(-100px) rotateY(0)}100%{transform:translateY(1200px) rotateY(720deg)}}
+@keyframes e-dizzy{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+@keyframes e-fallE{0%{transform:translateY(-120px) rotate(0)}100%{transform:translateY(1200px) rotate(360deg)}}
+@keyframes e-flash{0%,92%,100%{opacity:0}94%{opacity:1}}
+@keyframes e-flick{0%,19%,21%,60%,62%,100%{opacity:1}20%,61%{opacity:.4}}
+@keyframes e-floatE{0%,100%{transform:translateY(0) rotate(var(--r))}50%{transform:translateY(-16px) rotate(var(--r))}}
+@keyframes e-glowP{0%,100%{box-shadow:0 0 0 6px #ffc93c,0 0 40px rgba(255,201,60,.6)}50%{box-shadow:0 0 0 6px #ffc93c,0 0 80px rgba(255,201,60,.9)}}
+@keyframes e-neon{0%,18%,22%,25%,53%,57%,100%{opacity:1}20%,24%,55%{opacity:.35;text-shadow:none}}
+@keyframes e-popE{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes e-reel{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+@keyframes e-ring{from{stroke-dashoffset:0}to{stroke-dashoffset:339}}
+@keyframes e-shine{0%,100%{opacity:.6}50%{opacity:1}}
+@keyframes e-spinR{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes e-stat{0%{background-position:0 0}100%{background-position:0 -200px}}
+@keyframes e-stripMove{to{transform:translateX(-240px)}}
+@keyframes e-sweepL{0%,100%{transform:rotate(-16deg)}50%{transform:rotate(8deg)}}
+@keyframes e-sweepR{0%,100%{transform:rotate(16deg)}50%{transform:rotate(-8deg)}}
+@keyframes e-twinkle{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+@keyframes e-twk{0%,100%{opacity:.2}50%{opacity:1}}
+@keyframes e-typing{0%,60%,100%{opacity:.25;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}

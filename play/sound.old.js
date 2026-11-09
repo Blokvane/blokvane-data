@@ -89,7 +89,24 @@ var BVSOUND = (() => {
     iReveal: ["i-reveal.mp3", 0.62, { stream: true, once: true, then: "iLobby", tail: 0.4 }],
     iNext: ["i-next.mp3", 0.75],
     // Trivia's category wheel: the clicks and the little fanfare of its design, timed to its spin (play/wheel.js)
-    tSpin: ["t-spin.mp3", 1]
+    tSpin: ["t-spin.mp3", 1],
+    // Emoji Riddles: the Marimba Gambit in the lobby; three game tunes that take turns, each game starting with a
+    // different one (Between the Moves, Solving for Smiles, The Quick Answer); the Winning Wink for the winners, then the
+    // lobby tune again. The tunes all sit at the same level, under the room's voices; the moments ("next riddle", "every
+    // 5 questions", "correct", "wrong", "time's up") come 2 dB over them, so the tune only dips a little under them.
+    eLobby: ["e-lobby.mp3", 0.309, { stream: true, tail: 0.8, xf: 3 }],
+    eP1: ["e-play1.mp3", 0.295, { stream: true, tail: 0.8, xf: 4 }],
+    eP2: ["e-play2.mp3", 0.295, { stream: true, tail: 0.8, xf: 4 }],
+    eP3: ["e-play3.mp3", 0.305, { stream: true, tail: 0.8, xf: 4 }],
+    ePlayA: ["", 1, { list: ["eP1", "eP2", "eP3"], xf: 5 }],
+    ePlayB: ["", 1, { list: ["eP2", "eP3", "eP1"], xf: 5 }],
+    ePlayC: ["", 1, { list: ["eP3", "eP1", "eP2"], xf: 5 }],
+    eWin: ["e-win.mp3", 0.389, { stream: true, once: true, then: "eLobby", tail: 0.8 }],
+    eNext: ["e-next.mp3", 0.422],
+    eEvery5: ["e-every5.mp3", 0.372],
+    eCorrect: ["e-correct.mp3", 0.394],
+    eWrong: ["e-wrong.mp3", 0.389],
+    eTimesup: ["e-timesup.mp3", 0.582]
   };
   const isStream = (f) => !!(f && f[2] && typeof f[2] === "object" && (f[2].stream || f[2].list));
   let ac = null, master = null, on = true, bed = null, want = null, wantOpts = {};

@@ -1016,108 +1016,11 @@ Answer: ${answer}`);
       });
     }
   });
-  G({
-    id: "emoji",
-    name: "Emoji Riddles",
-    emoji: "🦁",
-    sub: "Guess the movie, food or saying from a row of emoji.",
-    step: ["Guess the emoji", "Pick or type what the emoji mean."],
-    deco: "🦁🍕🎬💬",
-    rules: ["A row of emoji shows on the TV.", "Pick or type what they mean. Faster scores more.", "In the last round, everyone makes their own riddle."],
-    settings: [
-      { key: "pack", label: "Pack", type: "seg", options: [["mix", "A mix"], ["movies", "Movies"], ["food", "Food"], ["animals", "Animals"], ["places", "Places"], ["sayings", "Sayings"], ["kids", "Kids' shows"]], default: "mix" },
-      { key: "answers", label: "Answers", type: "seg", options: [["choices", "Four choices", "Pick from four answers. The easiest way to play."], ["typing", "Typing", "Type the answer. Small typos still count."]], default: "choices" },
-      rounds(10, [10, 15, 20]),
-      { key: "make", label: "Last round: make your own", type: "toggle", default: true, desc: "At the end, everyone makes a riddle and the others guess it." },
-      KIDS("Simple riddles with four choices, and no timer.")
-    ],
-    tv(K) {
-      return __async(this, null, function* () {
-        const s = K.settings;
-        const EM = K.packs ? K.packs.emoji : PK.emoji;
-        const PACK = { movies: "Movies", food: "Food", animals: "Animals", places: "Places", sayings: "Sayings", kids: "Kids' shows" };
-        const packs = (s.kids ? ["kids", "animals", "food"] : s.pack === "mix" ? Object.keys(EM) : [s.pack]).filter((k) => Array.isArray(EM[k]));
-        const pool = P.shuffle(packs.flatMap((k) => EM[k].map((x) => ({ e: x[0], a: x[1], pack: k }))));
-        const typing = s.answers === "typing" && !s.kids;
-        const sec = s.kids ? 0 : 20;
-        for (let r = 0; r < Math.min(+s.rounds, pool.length); r++) {
-          if (K.over()) break;
-          const it = pool[r];
-          const v = yield qView(K, { title: yield K.tr("Riddle {n}", { n: r + 1 }), sub: yield K.tr(PACK[it.pack] || it.pack), sec });
-          const big = K.el("div", "center", v.main);
-          const em = K.el("div", "big", big, it.e);
-          em.style.fontSize = "calc(20 * var(--u))";
-          em.animate([{ transform: "scale(.4) rotate(-10deg)", opacity: 0 }, { transform: "scale(1.1)", opacity: 1 }, { transform: "scale(1)" }], { duration: 700, easing: "cubic-bezier(.2,1.4,.4,1)" });
-          const ansT = yield K.tr(it.a);
-          let opts = [], ok = -1;
-          if (!typing) {
-            const others = P.shuffle(EM[it.pack].filter((x) => x[1] !== it.a)).slice(0, 3).map((x) => x[1]);
-            opts = P.shuffle([it.a, ...others]);
-            ok = opts.indexOf(it.a);
-            yield answersGrid(K, v.main, yield Promise.all(opts.map((o) => K.tr(o))));
-          }
-          const askOnce = (secs) => __async(this, null, function* () {
-            return K.ask(typing ? { kind: "text", prompt: it.e, sec: secs, extra: { max: 60, place: yield K.tr("What is it?") } } : { kind: "choice", prompt: it.e, opts: yield Promise.all(opts.map((o) => K.tr(o))), sec: secs, extra: { letters: true } });
-          });
-          const isRight = (a) => typing ? P.close(a.v, ansT) || P.close(a.v, it.a) : +a.v === ok;
-          let got = yield askOnce(sec);
-          if (![...got.values()].some(isRight) && typing) {
-            const zh = K.lang === "zh", nw = zh ? [...ansT.replace(/\s+/g, "")].length : ansT.trim().split(/\s+/).length;
-            K.el("div", "question", big, yield K.tr(zh ? 'Hint: {n} characters, it starts with "{c}"' : nw > 1 ? 'Hint: {n} words, it starts with "{c}"' : 'It starts with "{c}".', { n: nw, c: firstLetter(ansT) }));
-            const again = yield askOnce(15);
-            for (const [id, a] of again) if (!got.has(id) || !isRight(got.get(id))) got.set(id, Object.assign({}, a, { late: true }));
-          }
-          if (v.ring) v.ring.stop();
-          let first = null;
-          for (const p of K.players()) {
-            const a = got.get(p.id);
-            const good = a && isRight(a);
-            let pts = 0;
-            if (good) {
-              pts = sec ? K.award(p, a.late ? 50 : 100, a.ms, sec) : (p.score += 100, 100);
-              if (!first || a.ms < first.ms) first = { p, ms: a.ms };
-            }
-            K.result(p.id, { ok: !!good, pts, score: p.score, right: ansT });
-          }
-          K.el("div", "question", big, ansT).style.color = "var(--gold)";
-          if (first) yield firstBadge(K, v.main, first.p, first.ms);
-          K.boo(first ? "happy" : "mind");
-          v.board.draw();
-          yield K.sleep(4200);
-        }
-        if (s.make && !s.kids && K.players().length >= 2 && !K.over()) {
-          const v = yield qView(K, { title: yield K.tr("Make your own riddle!"), sub: yield K.tr("Type some emoji and what they mean"), sec: 60 });
-          K.el("div", "question", v.main, yield K.tr("On your phone: some emoji, and the answer."));
-          const made = yield K.ask({ kind: "emojimake", prompt: yield K.tr("Your emoji riddle"), sec: 60, extra: { place: yield K.tr("The answer") } });
-          for (const [author, a] of made) {
-            if (K.over()) break;
-            const e = String(a.v && a.v.e || "").slice(0, 24), ans = P.safe(a.v && a.v.a, 50);
-            if (!e || !ans || !BVRX.picto().test(e)) continue;
-            const others = K.players().filter((p) => p.id !== author);
-            const v2 = yield qView(K, { title: yield K.tr("A riddle by {name}", { name: (K.player(author) || {}).name }), sec: 25 });
-            K.el("div", "big", K.el("div", "center", v2.main), e).style.fontSize = "calc(18 * var(--u))";
-            const g = yield K.ask({ kind: "text", prompt: e, sec: 25, who: others.map((p) => p.id), extra: { max: 60 } });
-            const right = [...g].filter(([, x]) => P.close(x.v, ans)).map(([id]) => id);
-            for (const id of right) {
-              const p = K.player(id);
-              p.score += 50;
-              K.result(id, { ok: true, pts: 50, score: p.score, right: ans });
-            }
-            const au = K.player(author);
-            if (au) {
-              const pts = right.length && right.length < others.length ? 40 * right.length : 0;
-              au.score += pts;
-              K.result(author, { ok: pts > 0, pts, score: au.score, note: right.length === others.length ? yield K.tr("Too easy: everyone got it!") : "" });
-            }
-            K.el("div", "question", v2.main, ans).style.color = "var(--gold)";
-            v2.board.draw();
-            yield K.sleep(3800);
-          }
-        }
-        return K.players().slice().sort((a, b) => b.score - a.score);
-      });
-    }
-  });
+  G({ id: "emoji", name: "Emoji Riddles", emoji: "🦁", sub: "Guess the movie, food or saying from a row of emoji.", settings: [], tv(K) {
+    return __async(this, null, function* () {
+      return K.players();
+    });
+  } });
   G({
     id: "higher",
     name: "Higher or Lower",

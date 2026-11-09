@@ -507,6 +507,106 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
 .pt-howto h2+.r{border-top:0}
 .pt-howto .r i{flex:none;width:26px;font-style:normal;font-size:19px;line-height:1.15;text-align:center}
 .g-gir .pt-howto,.g-gir .pt-lang{border-color:rgba(255,201,60,.45)}
+html.g-emo.pt-night{--ink:#170812;--panel:#2a0f22;--raise:#3a1430;--raise2:#4a1a3c;--dk:#331022;--line:rgba(255,201,60,.14);--dim:#d9c2cc;--faint:#a88c9a}
+html.g-emo.pt-night body{background:radial-gradient(110% 50% at 50% -8%,rgba(255,154,60,.22),transparent 65%),linear-gradient(180deg,#22091f 0%,#160714 55%,#0c0410 100%) fixed}
+html.g-emo.pt-night body::before{content:'';position:fixed;left:0;right:0;top:0;height:7px;z-index:80;pointer-events:none;background:repeating-linear-gradient(90deg,#7a1230 0 22px,#5a0c22 22px 44px);box-shadow:0 3px 10px rgba(0,0,0,.45)}
+html.g-emo .pt-howto,html.g-emo .pt-lang{border-color:rgba(255,201,60,.4)}
+.emo-mq{position:relative;margin:2px 0 14px;padding:18px 14px 20px;border-radius:24px;background:linear-gradient(180deg,#3b1530,#1e0a1c);border:3px solid #ffc93c;box-shadow:0 0 0 5px #1a0c16,0 0 34px rgba(255,201,60,.3);text-align:center}
+.emo-mq::before,.emo-mq::after{content:'';position:absolute;left:12px;right:12px;height:10px;background:radial-gradient(circle,#fff8d6 0,#ffc93c 2.6px,rgba(255,201,60,0) 4.4px) 0 50%/18px 10px repeat-x;animation:emoBulb 1.2s steps(1) infinite;pointer-events:none}
+.emo-mq::before{top:-7px}
+.emo-mq::after{bottom:-7px;animation-delay:.6s}
+@keyframes emoBulb{0%,100%{opacity:1}50%{opacity:.45}}
+.emo-mq .h{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;grid-gap:6px 8px;gap:6px 8px;font:700 15px/1.25 var(--fun);color:#ffd9a8;margin-bottom:10px}
+html.no-flexgap .emo-mq .h > * + * { margin-left: 8px; }
+.emo-mq .h b{color:#fff3d6;text-shadow:0 0 10px rgba(255,201,60,.7)}
+.emo-mq .gold{padding:3px 10px;border-radius:999px;background:linear-gradient(180deg,#fff2b0,#ffc93c 55%,#e0880b);color:#2a1700;font:800 13px/1.2 var(--round);box-shadow:0 0 14px rgba(255,201,60,.7)}
+.emo-ems{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;grid-gap:4px 12px;gap:4px 12px;direction:ltr;font-size:52px;line-height:1.15;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+html.no-flexgap .emo-ems > * { margin: 0 6px 4px; }
+.emo-ems span{display:inline-block;animation:emoPop .55s cubic-bezier(.2,1.5,.4,1) both}
+.emo-ems span.q{opacity:.28;filter:grayscale(1)}
+@keyframes emoPop{from{transform:scale(.3) rotate(-12deg);opacity:0}}
+.emo-hint{margin:-4px 0 12px;padding:10px 14px;border-radius:16px;background:rgba(125,249,255,.08);border:1.5px solid rgba(125,249,255,.5);color:#e8fdff;font:700 17px/1.35 var(--round);text-align:center;letter-spacing:.04em;overflow-wrap:anywhere}
+.emo-ans{display:grid;grid-template-columns:1fr 1fr;grid-gap:12px;gap:12px}
+.emo-a{position:relative;display:flex;align-items:center;grid-gap:10px;gap:10px;min-height:96px;padding:12px;border:0;border-radius:22px;color:var(--t);background:linear-gradient(160deg,var(--c1),var(--c2));box-shadow:0 7px 0 rgba(0,0,0,.35),0 12px 22px rgba(0,0,0,.3);font:700 18px/1.15 var(--fun);text-align:start;overflow:hidden;overflow-wrap:anywhere;transition:transform .12s,opacity .25s,filter .25s,box-shadow .25s}
+html.no-flexgap .emo-a > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .emo-a > * + * { margin-left: 0; margin-right: 10px; }
+.emo-a::before{content:'';position:absolute;top:0;right:0;bottom:0;left:0;background:linear-gradient(180deg,rgba(255,255,255,.22),transparent 50%);pointer-events:none}
+.emo-a .l{position:relative;flex:none;width:40px;height:40px;border-radius:12px;background:rgba(0,0,0,.18);display:grid;align-items:center;justify-items:center;place-items:center;font:700 20px/1 var(--fun)}
+.emo-a span:last-child{position:relative;flex:1;min-width:0}
+.emo-a:active{transform:translateY(4px);box-shadow:0 3px 0 rgba(0,0,0,.35)}
+.emo-a.mine{box-shadow:0 0 0 4px #fff,0 0 26px rgba(255,255,255,.5);transform:scale(1.03)}
+.emo-a.dim{opacity:.38;filter:grayscale(.55)}
+.emo-kids .emo-a{min-height:118px;font-size:21px}
+.emo-kids .emo-a .l{width:52px;height:52px;font-size:28px;border-radius:16px}
+.emo-kids .emo-ems{font-size:64px}
+.emo-ph .pt-note.sent{margin-top:14px;text-align:center;font:700 16px/1.35 var(--round);color:#ffd9a8}
+.emo-ph .input{border-color:rgba(255,201,60,.4)}
+.emo-res{position:relative;text-align:center;padding:22px 16px 20px;border-radius:28px;margin-top:4px;animation:pt-pop .45s cubic-bezier(.2,1.4,.4,1)}
+.emo-res.ok{background:linear-gradient(180deg,rgba(52,211,153,.3),rgba(52,211,153,.06));border:2px solid rgba(52,211,153,.6);box-shadow:0 0 34px rgba(52,211,153,.25)}
+.emo-res.bad{background:linear-gradient(180deg,rgba(255,77,106,.28),rgba(255,77,106,.05));border:2px solid rgba(255,77,106,.55);box-shadow:0 0 30px rgba(255,77,106,.2)}
+.emo-res.kid{background:linear-gradient(180deg,rgba(255,201,60,.26),rgba(255,201,60,.05));border:2px solid rgba(255,201,60,.55)}
+.emo-res .big{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;display:grid;align-items:center;justify-items:center;place-items:center;font:700 58px/1 var(--fun);color:#fff;animation:emoBadge .55s .1s cubic-bezier(.2,1.6,.4,1) both}
+.emo-res.ok .big{background:radial-gradient(circle at 35% 30%,#6ff0c0,#17a673 70%);box-shadow:0 0 0 5px #fff,0 0 40px rgba(52,211,153,.9)}
+.emo-res.bad .big{background:radial-gradient(circle at 35% 30%,#ff8aa0,#c8213f 70%);box-shadow:0 0 0 5px #fff,0 0 40px rgba(255,77,106,.85)}
+.emo-res.kid .big{background:radial-gradient(circle at 35% 30%,#fff2b0,#e0880b 70%);box-shadow:0 0 0 5px #fff,0 0 40px rgba(255,201,60,.85);font-size:50px}
+@keyframes emoBadge{from{transform:scale(0) rotate(-40deg);opacity:0}}
+.emo-res h1{margin:4px 0 6px;font-size:32px}
+.emo-res .pts{font:700 30px/1.2 var(--fun);color:#ffc93c}
+.emo-res .tags{display:flex;flex-wrap:wrap;justify-content:center;grid-gap:8px;gap:8px;margin:10px 0 4px}
+html.no-flexgap .emo-res .tags > * { margin: 0 4px 8px; }
+.emo-res .tags span{padding:5px 12px;border-radius:999px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.14);font:800 14px/1.25 var(--round)}
+.emo-res p{margin:8px 0 0;color:var(--dim);font-size:16px}
+.emo-res .ans{margin:12px auto 0;max-width:420px;padding:12px 14px;border-radius:18px;background:rgba(10,4,18,.45);border:1.5px solid rgba(255,201,60,.3)}
+.emo-res .ans .e{font-size:34px;line-height:1.15;direction:ltr}
+.emo-res .ans small{display:block;margin-top:6px;color:var(--dim);font:700 13px/1.2 var(--round)}
+.emo-res .ans b{display:block;font:700 22px/1.25 var(--fun);color:#fff3d6;margin-top:2px;overflow-wrap:anywhere}
+.emo-res .place{margin-top:12px;color:var(--dim);font:700 15px/1.3 var(--round)}
+.emo-wait{text-align:center;padding:18px 10px 10px}
+.emo-wait .e{font-size:56px;line-height:1.15;animation:emoBob 2.6s ease-in-out infinite}
+@keyframes emoBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.emo-wait h2{margin:8px 0 6px;font-size:26px;color:#fff3d6;text-shadow:0 0 12px rgba(255,201,60,.6)}
+.emo-wait p{margin:0;color:var(--dim);font:700 16px/1.45 var(--round)}
+.emo-ph .pt-howto{margin-top:12px}
+.emo-poster{position:relative;margin:4px 0 14px;padding:22px 16px 18px;border-radius:24px;border:5px solid #f3e2b8;background:radial-gradient(ellipse at 50% 30%,#5b2a8a,#2a1050 60%,#160a2e);overflow:hidden;text-align:center;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.emo-poster::before{content:'';position:absolute;left:50%;top:38%;width:900px;height:900px;margin:-450px 0 0 -450px;background:repeating-conic-gradient(rgba(255,201,60,.09) 0 8deg,transparent 8deg 16deg);animation:emoSpin 40s linear infinite;pointer-events:none}
+@keyframes emoSpin{to{transform:rotate(360deg)}}
+.emo-poster>*{position:relative}
+.emo-poster .pr{font:900 11px/1.2 var(--round);letter-spacing:.42em;color:#f3e2b8}
+.emo-poster .wk{margin-top:6px;font:700 22px/1.2 var(--fun);color:#ffc93c}
+.emo-poster .av{position:relative;width:118px;height:118px;margin:34px auto 10px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#3a2870,#1a1236);box-shadow:0 0 0 5px #ffc93c,0 0 34px rgba(255,201,60,.6);display:grid;align-items:center;justify-items:center;place-items:center}
+.emo-poster .av img{width:80%;height:80%;object-fit:contain}
+.emo-poster .av img.ph{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.emo-poster .av::before{content:'👑';position:absolute;top:-38px;left:50%;transform:translateX(-50%);font-size:36px}
+.emo-poster .lf{position:absolute;top:50%;width:36px;height:92px;margin-top:-50px}
+.emo-poster .lf svg{display:block;width:100%;height:100%}
+.emo-poster .lf.l{left:-46px}
+.emo-poster .lf.r{right:-46px;transform:scaleX(-1)}
+.emo-poster .nm{font:700 44px/1.05 var(--fun);background:linear-gradient(180deg,#fff8d6,#ffc93c 50%,#ff9a3c);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));overflow-wrap:anywhere}
+.emo-poster .pt{margin-top:4px;font:800 18px/1.2 var(--round);color:#fff}
+.emo-poster .rest{display:flex;justify-content:center;grid-gap:18px;gap:18px;margin-top:14px;padding-top:12px;border-top:2px solid rgba(243,226,184,.3)}
+html.no-flexgap .emo-poster .rest > * + * { margin-left: 18px; }
+.emo-poster .rest>div{display:flex;align-items:center;grid-gap:8px;gap:8px;min-width:0}
+html.no-flexgap .emo-poster .rest > div > * + * { margin-left: 8px; }
+.emo-poster .rest .a2{flex:none;width:42px;height:42px;border-radius:50%;background:#1a1236;display:grid;align-items:center;justify-items:center;place-items:center;box-shadow:0 0 0 3px var(--rc)}
+.emo-poster .rest .a2 img{width:78%;height:78%;object-fit:contain}
+.emo-poster .rest .a2 img.ph{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.emo-poster .rest span{min-width:0}
+.emo-poster .rest small{display:block;font:900 11px/1 var(--round);letter-spacing:.15em;color:var(--rc);text-align:start}
+.emo-poster .rest b{display:block;font:700 17px/1.15 var(--fun);color:#fff;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:start}
+.emo-poster .rest i{display:block;font:800 12px/1.2 var(--round);font-style:normal;color:var(--rc);text-align:start}
+.emo-me{margin:0 0 12px;text-align:center;font:700 20px/1.3 var(--fun);color:#ffc93c}
+.emo-share{display:flex;flex-direction:column;grid-gap:8px;gap:8px;margin:0 0 16px}
+html.no-flexgap .emo-share > * + * { margin-top: 8px; }
+.emo-share .go{width:100%;min-height:58px;border:0;border-radius:18px;background:linear-gradient(180deg,#fff2b0,#ffc93c 55%,#e0880b);color:#2a1700;font:700 19px/1.2 var(--fun);box-shadow:0 8px 0 rgba(0,0,0,.3),0 0 26px rgba(255,201,60,.35)}
+.emo-share .go:active{transform:translateY(3px);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.emo-share small{text-align:center;color:var(--dim);font:700 13px/1.3 var(--round)}
+.emo-share .ch{display:grid;grid-template-columns:1fr 1fr;grid-gap:8px;gap:8px}
+.emo-share .ch button{min-height:46px;border-radius:14px;border:1px solid rgba(255,201,60,.35);background:rgba(255,255,255,.05);color:var(--text);font:800 15px/1.2 var(--round)}
+.emo-share button:disabled{opacity:.55}
+.emo-rxbar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));grid-gap:6px;gap:6px;margin:16px 0 4px;padding:8px;border-radius:20px;background:rgba(10,4,18,.4);border:1px solid rgba(255,201,60,.22)}
+.emo-rxbar button{height:52px;border:0;border-radius:14px;background:rgba(255,255,255,.06);font-size:30px;line-height:1;font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+.emo-rxbar button:active{background:rgba(255,201,60,.22)}
+@media (prefers-reduced-motion:reduce){.emo-mq::before,.emo-mq::after,.emo-poster::before,.emo-wait .e{animation:none}}
 `;
   }
 
@@ -839,6 +939,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
       case 'hint': return onHint(m);
       case 'res': return onRes(m);
       case 'imp': return isImpGame() ? onImp(m) : undefined;
+      case 'emo': return isEmo() ? onEmo(m) : undefined;
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
       case 'gclue': return onClue(m);
@@ -879,6 +980,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
     G.host = m.host === G.id;
     document.documentElement.classList.toggle('g-gir', m.game === 'gir');
     document.documentElement.classList.toggle('g-imp', m.game === 'imposter');
+    document.documentElement.classList.toggle('g-emo', m.game === 'emoji');
     if (m.game === 'imposter') impLoad();
     if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
@@ -892,7 +994,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
     // (after a game, "Play again": the host's phone opens on the last step, everything as it was, ready to start)
     if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; showWait(S().look, 'boo:hi'); }
+      if (was !== 'play') { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1484,6 +1586,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
     if (!q) return showWait();
     if (G.bingo) return showBingo();
     if (isImpGame()) { if (q.kind !== 'wait' && Array.isArray(q.who) && q.who.includes(G.id)) G.impQ = q; return impDraw(); }
+    if (isEmo() && ((q.extra && q.extra.emo) || q.kind === 'emojimake')) return emoQ(q);
     const ex = q.extra || {};
     if (q.kind === 'wait' && ex.tw && typeof ex.tw === 'object') return twScreen(q);
     const inIt = q.who.includes(G.id);
@@ -2432,11 +2535,330 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
       if (!blob) throw new Error('no picture');
       const file = new File([blob], 'whos-the-imposter.png', { type: 'image/png' });
       if (how === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
-        try { await navigator.share({ files: [file], text, title: T('Who\'s the Imposter?') }); } catch (e) { if (e && e.name !== 'AbortError') toast(T('Sharing didn\'t work here. The picture was saved instead.'), ''); else return; }
-        return;
-      }
-      if (how === 'share' && navigator.share) { try { await navigator.share({ text, title: T('Who\'s the Imposter?') }); } catch (e) {} }
+        try { await navigator.share({ files: [file], text, title: T('Who\'s the Imposter?') }); return; } catch (e) { if (!e || e.name === 'AbortError') return; toast(T('Sharing didn\'t work here. The picture was saved instead.'), ''); }
+      } else if (how === 'share' && navigator.share) { try { await navigator.share({ text, title: T('Who\'s the Imposter?') }); } catch (e) {} }
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'whos-the-imposter.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+      toast(T('The picture is saved.'), 'ok');
+    } catch (e) { toast(T('That didn\'t work. Try again.'), 'bad'); }
+    finally { b.disabled = false; }
+  }
+
+  // ---------- Emoji Riddles: its screens in the game's look (the TV's marquee, its four colored answer cards) ----------
+  // The TV sends each riddle's emoji with the question (extra.emo), so this phone shows them too, and the answers in this
+  // phone's language. After each riddle: a big green check or a red cross, the points, the right answer. At the end: the
+  // winners as a movie poster, with a picture of it to share (Instagram, TikTok, Facebook, WhatsApp, Messages...).
+  const isEmo = () => (G.lobby || {}).game === 'emoji';
+  const ECOL = [['#ff5a6e', '#c8213f', '#fff'], ['#4c8dff', '#2253c9', '#fff'], ['#ffc93c', '#d99a14', '#2a1700'], ['#34d399', '#17a673', '#06281b']];
+  const ESEG = (() => { try { return new Intl.Segmenter(undefined, { granularity: 'grapheme' }); } catch (e) { return null; } })();
+  function emoSplit(s) {
+    const t = String(s || '').replace(/\s+/g, '').slice(0, 64);
+    if (!t) return [];
+    if (ESEG) return [...ESEG.segment(t)].map(x => x.segment).slice(0, 12);
+    return (t.match(/\uD83C[\uDDE6-\uDDFF]\uD83C[\uDDE6-\uDDFF]|[0-9#*]️?⃣|(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[ -⯿　-〿])(?:️|\uD83C[\uDFFB-\uDFFF])*(?:‍(?:[\uD800-\uDBFF][\uDC00-\uDFFF]|[ -⯿])(?:️|\uD83C[\uDFFB-\uDFFF])*)*/g) || [t]).slice(0, 12);
+  }
+  function emoView() {
+    const v = gameView();
+    v.body.classList.add('emo-ph');
+    return v;
+  }
+  // the marquee with the riddle: which one it is, its category, and its emoji (Slow reveal: the ones out so far)
+  function emoCard(parent, q, e) {
+    const mine = trOf(q);
+    const box = el('div', 'emo-mq', parent);
+    const h = el('div', 'h', box);
+    if (e.made) { h.append('✍️ '); el('b', '', h, T('A riddle by {name}', { name: L.clean(e.made, 16) })); }
+    else if (e.n) { el('b', '', h, T('Riddle {n} / {total}', { n: numFmt(+e.n || 1), total: numFmt(+e.of || 1) })); const c = L.clean((mine && mine.cat) || e.cat || '', 40); if (c) h.append('· ' + c); }
+    if (e.gold) el('span', 'gold', h, '⭐ ×2');
+    G.ui.emo = { row: el('div', 'emo-ems', box), list: emoSplit(e.e), shown: +e.shown || 0, was: null };
+    emoPaint();
+    return box;
+  }
+  function emoPaint() {
+    const u = G.ui.emo;
+    if (!u || !u.row) return;
+    const n = u.shown > 0 ? Math.min(u.shown, u.list.length) : u.list.length;
+    u.row.textContent = '';
+    u.list.forEach((x, i) => {
+      const sp = el('span', i < n ? '' : 'q', u.row, i < n ? x : '❔');
+      // (only the new ones pop in)
+      if (u.was != null && i < u.was) sp.style.animation = 'none'; else sp.style.animationDelay = (u.was == null ? i * 0.12 : 0) + 's';
+    });
+    u.was = n;
+    if (u.list.length > 4) u.row.style.fontSize = Math.max(30, 52 - (u.list.length - 4) * 5) + 'px';
+  }
+  // a riddle on this phone: the emoji, then the four answers (or a box to type it), with the clock
+  function emoQ(q) {
+    const ex = q.extra || {};
+    const e = ex.emo || {};
+    if (q.kind === 'wait') return emoWait(e, q);
+    if (!q.who.includes(G.id)) return emoWait({ t: G.out ? 'out' : e.made ? 'mine' : 'look' }, q);
+    const v = emoView();
+    const b = v.body;
+    if (e.kids) b.classList.add('emo-kids');
+    G.ui.body = b;
+    if (q.kind === 'emojimake') {
+      if (q.sec > 0) timerBar(b, q.sec);
+      const w = el('div', 'emo-wait', b);
+      el('div', 'e', w, '✍️🤔💡');
+      el('h2', '', w, T('Make your own riddle!'));
+      el('p', '', w, T('A few emoji, and what they mean. Not too easy: if everyone gets it, you get nothing!'));
+      emojiMakeQ(b, q);
+      return;
+    }
+    if (q.sec > 0) timerBar(b, q.sec);
+    emoCard(b, q, e);
+    // (Type it, the second try: the hint, in this phone's language)
+    const ht = e.hints && typeof e.hints === 'object' && typeof e.hints[G.lang] === 'string' ? e.hints[G.lang] : e.hint;
+    if (ht) el('div', 'emo-hint', b, '💡 ' + T('Hint: {x}', { x: L.clean(ht, 80) }));
+    if (q.kind === 'text') return textQ(b, q);
+    const mine = trOf(q);
+    const src = mine && Array.isArray(mine.o) && Array.isArray(q.opts) && mine.o.length === q.opts.length ? mine.o : q.opts;
+    const opts = (Array.isArray(src) ? src : []).slice(0, 4).map(o => L.clean(o, 140));
+    const LETS = I() ? I().letters(G.lang) : ['A', 'B', 'C', 'D'];
+    const grid = el('div', 'emo-ans', b);
+    G.ui.ans = opts.map((o, i) => {
+      const a = el('button', 'emo-a', grid);
+      a.type = 'button';
+      const c = ECOL[i % 4];
+      a.style.setProperty('--c1', c[0]); a.style.setProperty('--c2', c[1]); a.style.setProperty('--t', c[2]);
+      el('span', 'l', a, LETS[i] || SHAPES[i]);
+      el('span', '', a, o);
+      a.onclick = () => { if (answer(i, LETS[i] || SHAPES[i])) { a.classList.add('mine'); for (const x of G.ui.ans) if (x !== a) x.classList.add('dim'); emoReact(b); } };
+      return a;
+    });
+  }
+  // reactions for the TV: tap one and it floats up the big screen with your face (one a second at most)
+  const EMO_RX = ['😂', '😮', '🔥', '👏', '😭', '🤯'];
+  function emoReact(parent) {
+    const bar = el('div', 'emo-rxbar', parent);
+    for (const x of EMO_RX) {
+      const b = el('button', '', bar, x);
+      b.type = 'button';
+      b.onclick = () => {
+        const t = Date.now();
+        if (t - (G.rxAt || 0) < 1100) return;
+        G.rxAt = t;
+        send({ k: 'react', e: x });
+        buzz('tap');
+        try { b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.35) translateY(-6px)' }, { transform: 'scale(1)' }], { duration: 380, easing: 'cubic-bezier(.2,1.4,.4,1)' }); } catch (er) {}
+      };
+    }
+    return bar;
+  }
+  // the moments in between: how to play, get ready, look at the TV
+  function emoWait(e, q) {
+    stopQ();
+    const v = emoView();
+    const b = v.body;
+    const w = el('div', 'emo-wait', b);
+    if (e.t === 'rules') {
+      el('div', 'e', w, '🎬🍕🦁');
+      el('h2', '', w, T('How to play'));
+      el('p', '', w, T('The first riddle starts soon. Look at the TV!'));
+      if (+e.sec > 0) { const t = el('div', 'pt-timer', b); const i = el('i', '', t); try { i.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: +e.sec * 1000, fill: 'forwards', easing: 'linear' }); } catch (er) {} }
+      howtoCard(b, G.lobby || {});
+    } else if (e.t === 'out') { el('div', 'e', w, '👻'); el('h2', '', w, S().out); el('p', '', w, S().look); }
+    else if (e.t === 'mine') { el('div', 'e', w, '✍️'); el('h2', '', w, T('This one is your riddle!')); el('p', '', w, T('Watch the others guess it on the TV.')); }
+    else {
+      el('div', 'e', w, e.gold ? '⭐' : '📺');
+      el('h2', '', w, e.gold ? T('Golden riddle: double points!') : S().look);
+      if (e.n) el('p', '', w, T('Riddle {n} / {total}', { n: numFmt(+e.n || 1), total: numFmt(+e.of || 1) }));
+      else if (q && q.prompt) el('p', '', w, L.clean(q.prompt, 160));
+    }
+    if (e.t !== 'rules') emoReact(b);
+  }
+  // the TV's news in the middle of a riddle: one more emoji (Slow reveal), and the winners at the end
+  function onEmo(m) {
+    if (m.t === 'more') { if (G.q && G.q.n === m.n && G.ui.emo && G.ui.emo.row && G.ui.emo.row.isConnected) { G.ui.emo.shown = Math.max(G.ui.emo.shown, +m.shown || 0); emoPaint(); buzz('tap'); } return; }
+    if (m.t === 'win') { G.emoWin = m; if (G.phase === 'end') showEnd(); }
+  }
+  // right or not: a big green check or a red cross, the points, a streak, the right answer, your place
+  function emoRes(m) {
+    stopQ();
+    const e = m.emo || {};
+    const v = emoView();
+    const b = v.body;
+    const ok = !!m.ok, kid = !!e.kids && !ok;
+    const box = el('div', 'emo-res ' + (ok ? 'ok' : kid ? 'kid' : 'bad'), b);
+    el('div', 'big', box, ok ? '✓' : kid ? '🌈' : '✗');
+    const title = typeof m.title === 'string' && m.title ? L.clean(m.title, 60) : e.maker ? (ok ? T('Your riddle scored!') : T('Nobody scored with your riddle')) : ok ? (e.first ? S().first : S().right) : kid ? T('So close! Let\'s try the next one!') : e.none ? S().timeUp : S().wrong;
+    el('h1', '', box, title);
+    if (m.pts) el('div', 'pts', box, T('+{n} points', { n: numFmt(m.pts) }));
+    const tags = el('div', 'tags', box);
+    if (e.gold && ok) el('span', '', tags, '⭐ ' + T('Golden riddle: double points!'));
+    if (e.streak >= 2) el('span', '', tags, '🔥 ' + T('{n} in a row!', { n: numFmt(e.streak) }));
+    if (e.late && ok) el('span', '', tags, '💡 ' + T('Half points, with the hint'));
+    if (typeof m.lives === 'number' && !m.out) el('span', '', tags, m.lives > 0 ? '❤️'.repeat(Math.max(0, Math.min(10, m.lives))) : '💀');
+    if (e.spare) el('span', '', tags, '🛡️ ' + T('Everyone missed, so nobody loses a life.'));
+    if (!tags.children.length) tags.remove();
+    if (m.out) el('p', '', box, S().out);
+    if (m.right != null && m.right !== '' && !e.maker) {
+      const a = el('div', 'ans', box);
+      if (e.e) el('div', 'e', a, emoSplit(e.e).join(''));
+      el('small', '', a, S().theRight);
+      el('b', '', a, L.clean(m.right, 140));
+    }
+    if (e.place && e.of > 1) el('div', 'place', box, S().yourPlace + ': ' + T('{a} of {b}', { a: numFmt(e.place), b: numFmt(e.of) }));
+    emoReact(b);
+    buzz(ok ? 'ok' : 'bad');
+    if (ok && (e.first || e.kids || e.streak >= 3)) confetti();
+  }
+  // the end: the winners as a movie poster (the TV's Movie Poster look), your place, sharing it, and what's next
+  // (a gold laurel branch: six leaves along a curve)
+  const EMO_LAUREL = '<svg viewBox="0 0 40 100" aria-hidden="true"><path d="M30 96C14 76 10 46 22 6" fill="none" stroke="#ffc93c" stroke-width="3" stroke-linecap="round"/>' +
+    [[23, 12, -35], [17, 26, -20], [14, 41, -8], [14, 56, 6], [17, 71, 20], [22, 85, 34]].map(([x, y, r]) => '<ellipse cx="' + (x + 7) + '" cy="' + y + '" rx="8" ry="4.2" transform="rotate(' + r + ' ' + (x + 7) + ' ' + y + ')" fill="#ffc93c"/><ellipse cx="' + (x - 6) + '" cy="' + (y + 3) + '" rx="8" ry="4.2" transform="rotate(' + (-r - 30) + ' ' + (x - 6) + ' ' + (y + 3) + ')" fill="#f5b52a"/>').join('') + '</svg>';
+  const emoFace = (x, mine) => (mine && G.photo ? G.photo : booUri(AVATARS.includes(x.av) ? x.av : 'boo:party') || booUri('boo:hi'));
+  function emoEnd() {
+    const r = G.emoWin || {};
+    const v = emoView();
+    const b = v.body;
+    const list = (Array.isArray(r.list) ? r.list : []).filter(x => x && typeof x.n === 'string').slice(0, 10);
+    const w1 = list[0];
+    const card = el('div', 'emo-poster', b);
+    el('div', 'pr', card, iup(T('Emoji Riddles presents')));
+    el('div', 'wk', card, r.team ? T('The winning team') : T('The winner'));
+    if (w1) {
+      const av = el('div', 'av', card);
+      const im = el('img', w1.id === G.id && G.photo ? 'ph' : '', av); im.src = emoFace(w1, w1.id === G.id); im.alt = '';
+      for (const k of ['l', 'r']) { const lf = el('i', 'lf ' + k, av); lf.innerHTML = EMO_LAUREL; }
+      el('div', 'nm', card, L.clean(w1.n, 20));
+      el('div', 'pt', card, T('Points: {n}', { n: numFmt(+w1.s || 0) }));
+      const rest = list.slice(1, 3);
+      if (rest.length) {
+        const rw = el('div', 'rest', card);
+        rest.forEach((x, i) => {
+          const d = el('div', '', rw); d.style.setProperty('--rc', i ? '#d9ccf2' : '#9fc4ff');
+          const a2 = el('span', 'a2', d); const im2 = el('img', x.id === G.id && G.photo ? 'ph' : '', a2); im2.src = emoFace(x, x.id === G.id); im2.alt = '';
+          const t = el('span', '', d); el('small', '', t, '#' + numFmt(i + 2)); el('b', '', t, L.clean(x.n, 16)); el('i', '', t, T('Points: {n}', { n: numFmt(+x.s || 0) }));
+        });
+      }
+    }
+    // (you: your place)
+    const me = G.endRes;
+    if (me && me.place) el('div', 'emo-me', b, (me.place === 1 ? '🏆 ' : me.place === 2 ? '🥈 ' : me.place === 3 ? '🥉 ' : '') + S().yourPlace + ': ' + T('{a} of {b}', { a: numFmt(me.place), b: numFmt(me.of || list.length) }) + ' · ' + T('{n} points', { n: numFmt(+me.score || 0) }));
+    // share the winners: a picture of the poster, for Instagram, TikTok, Facebook, WhatsApp, Messages or anywhere
+    const sh = el('div', 'emo-share', b);
+    const sb = el('button', 'go', sh, '📤 ' + T('Share the winners')); sb.type = 'button';
+    el('small', '', sh, T('Instagram, TikTok, Facebook, WhatsApp and more'));
+    const ch = el('div', 'ch', sh);
+    const save = el('button', '', ch, '💾 ' + T('Save the picture')); save.type = 'button';
+    const copy = el('button', '', ch, '📋 ' + T('Copy the text')); copy.type = 'button';
+    sb.onclick = () => emoShare(r, 'share', sb);
+    save.onclick = () => emoShare(r, 'save', save);
+    copy.onclick = () => emoShare(r, 'copy', copy);
+    // the table
+    if (list.length > 1) {
+      const ls = el('div', 'pt-list', b);
+      list.forEach((x, i) => { const row = el('div', 'r' + (x.id === G.id ? ' me' : ''), ls); el('span', 'n', row, numFmt(i + 1)); el('b', '', row, x.id === G.id ? S().you : L.clean(x.n, 20)); el('span', '', row, numFmt(+x.s || 0)); });
+    }
+    if (G.host) {
+      const again = btn(S().again, { kind: 'go', huge: true, full: true, icon: 'refresh' }, b, () => { send({ k: 'again' }); buzz('ok'); });
+      again.style.marginTop = '16px';
+      pair(b, [[S().otherGame, () => pickGameSheet((G.lobby || {}).games || [])], [S().changeName, () => joinScreen(true)]]);
+    } else { el('p', 'pt-note', b, S().hostAgain); pair(b, [[S().changeName, () => joinScreen(true)]]); }
+    if (!G.endFx) { G.endFx = true; if (me && me.place === 1) { confetti(); buzz('long'); } else buzz('ok'); }
+  }
+  // the picture to share: the winners as a movie poster between two film strips (a tall story picture, 1080 x 1920)
+  async function emoPic(r) {
+    const W2 = 1080, H2 = 1920;
+    const cv = document.createElement('canvas'); cv.width = W2; cv.height = H2;
+    const g = cv.getContext('2d');
+    const rtl = document.documentElement.dir === 'rtl';
+    try { g.direction = rtl ? 'rtl' : 'ltr'; } catch (e) {}
+    try { await Promise.all(['700 80px "BV Fun"', '800 40px Nunito'].map(f => document.fonts.load(f))); } catch (e) {}
+    const F = (w2, px) => w2 + ' ' + px + 'px "BV Fun", ui-rounded, "Nunito", system-ui, sans-serif';
+    const N = (w2, px) => w2 + ' ' + px + 'px ui-rounded, "Nunito", system-ui, sans-serif';
+    const EM = px => px + 'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
+    const rr = (x, y, w2, h2, rad) => { g.beginPath(); g.moveTo(x + rad, y); g.arcTo(x + w2, y, x + w2, y + h2, rad); g.arcTo(x + w2, y + h2, x, y + h2, rad); g.arcTo(x, y + h2, x, y, rad); g.arcTo(x, y, x + w2, y, rad); g.closePath(); };
+    const img = src => new Promise(res => { if (!src) return res(null); const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+    // the night, and two film strips full of emoji
+    g.fillStyle = '#0c0410'; g.fillRect(0, 0, W2, H2);
+    const glow = g.createRadialGradient(540, 960, 0, 540, 960, 900); glow.addColorStop(0, 'rgba(91,42,138,.55)'); glow.addColorStop(1, 'rgba(12,4,16,0)'); g.fillStyle = glow; g.fillRect(0, 0, W2, H2);
+    const strip = (y, rot, ems) => {
+      g.save(); g.translate(540, y); g.rotate(rot);
+      g.fillStyle = '#1b1030'; g.fillRect(-700, -95, 1400, 190);
+      g.fillStyle = '#c8bde6'; for (let x = -690; x < 700; x += 44) { g.globalAlpha = 0.55; g.fillRect(x, -82, 22, 14); g.fillRect(x, 68, 22, 14); }
+      g.globalAlpha = 1;
+      g.font = EM(84); g.textAlign = 'center'; g.textBaseline = 'middle';
+      for (let i = 0; i < 6; i++) { const x = -625 + i * 250; g.fillStyle = '#2a1846'; g.fillRect(x - 105, -58, 210, 116); g.fillText(ems[i % ems.length], x, 4); }
+      g.restore();
+    };
+    strip(150, -0.035, ['🍕', '🦁', '💬', '🍿', '⭐', '🎬']);
+    strip(1780, 0.03, ['🍿', '⭐', '🎬', '🍕', '🦁', '💬']);
+    // the poster
+    const X0 = 110, Y0 = 300, PW = 860, PH = 1300;
+    g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 50; rr(X0, Y0, PW, PH, 46); g.fillStyle = '#f3e2b8'; g.fill(); g.restore();
+    rr(X0 + 16, Y0 + 16, PW - 32, PH - 32, 34);
+    const bg = g.createRadialGradient(540, Y0 + 480, 40, 540, Y0 + 480, 900); bg.addColorStop(0, '#5b2a8a'); bg.addColorStop(0.55, '#2a1050'); bg.addColorStop(1, '#160a2e');
+    g.fillStyle = bg; g.fill();
+    g.save(); rr(X0 + 16, Y0 + 16, PW - 32, PH - 32, 34); g.clip();
+    g.translate(540, Y0 + 470); for (let i = 0; i < 24; i++) { g.rotate(Math.PI / 12); g.fillStyle = 'rgba(255,201,60,.07)'; g.beginPath(); g.moveTo(0, 0); g.lineTo(-110, -1300); g.lineTo(110, -1300); g.closePath(); g.fill(); }
+    g.restore();
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const list = (Array.isArray(r.list) ? r.list : []).filter(x => x && typeof x.n === 'string');
+    const w1 = list[0];
+    const sp = s2 => (/[֐-ࣿऀ-෿฀-࿿က-႟　-鿿]/.test(s2) ? s2 : [...s2].join(String.fromCharCode(8202, 8202)));
+    g.font = N(900, 28); g.fillStyle = '#f3e2b8'; g.fillText(sp(iup(T('Emoji Riddles presents'))), 540, Y0 + 110, PW - 80);
+    g.font = F(700, 62); g.fillStyle = '#ffc93c'; g.fillText(r.team ? T('The winning team') : T('The winner'), 540, Y0 + 195, PW - 80);
+    if (w1) {
+      const cy = Y0 + 470;
+      // (laurel leaves on both sides, the crown on top)
+      g.fillStyle = '#ffc93c';
+      for (const sd of [-1, 1]) for (let k = 0; k < 6; k++) { g.save(); g.translate(540 + sd * (215 - k * 3), cy + 90 - k * 42); g.rotate(sd * (0.5 + k * 0.08)); g.beginPath(); g.ellipse(0, 0, 34, 16, 0, 0, Math.PI * 2); g.fill(); g.restore(); }
+      g.save(); g.shadowColor = 'rgba(255,201,60,.7)'; g.shadowBlur = 50; g.beginPath(); g.arc(540, cy, 170, 0, Math.PI * 2); g.fillStyle = '#1d1238'; g.fill(); g.restore();
+      g.beginPath(); g.arc(540, cy, 170, 0, Math.PI * 2); g.lineWidth = 14; g.strokeStyle = '#ffc93c'; g.stroke();
+      const mine = w1.id === G.id;
+      const face = await img(emoFace(w1, mine));
+      if (face) { g.save(); g.beginPath(); g.arc(540, cy, 163, 0, Math.PI * 2); g.clip(); if (mine && G.photo) g.drawImage(face, 540 - 163, cy - 163, 326, 326); else g.drawImage(face, 540 - 120, cy - 120, 240, 240); g.restore(); }
+      g.font = EM(110); g.textBaseline = 'middle'; g.fillText('👑', 540, cy - 205); g.textBaseline = 'alphabetic';
+      // the name, in gold
+      let fs = 132; g.font = F(700, fs); const nm = L.clean(w1.n, 20);
+      while (g.measureText(nm).width > PW - 110 && fs > 60) { fs -= 6; g.font = F(700, fs); }
+      const gr = g.createLinearGradient(0, cy + 220, 0, cy + 360); gr.addColorStop(0, '#fff8d6'); gr.addColorStop(0.5, '#ffc93c'); gr.addColorStop(1, '#ff9a3c');
+      g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = 8; g.fillStyle = gr; g.fillText(nm, 540, cy + 340, PW - 80); g.restore();
+      g.font = N(900, 46); g.fillStyle = '#fff'; g.fillText(T('Points: {n}', { n: numFmt(+w1.s || 0) }), 540, cy + 420, PW - 80);
+      // second and third
+      const rest = list.slice(1, 3);
+      if (rest.length) {
+        const y = cy + 470;
+        g.strokeStyle = 'rgba(243,226,184,.3)'; g.lineWidth = 3; g.beginPath(); g.moveTo(X0 + 70, y); g.lineTo(X0 + PW - 70, y); g.stroke();
+        const colW = rest.length === 1 ? 0 : 380;
+        for (let i = 0; i < rest.length; i++) {
+          const x = rest[i], cx = 540 + (rest.length === 1 ? 0 : (i ? 1 : -1) * colW / 2), yy = y + 120;
+          const col = i ? '#d9ccf2' : '#9fc4ff';
+          g.beginPath(); g.arc(cx - 110, yy, 54, 0, Math.PI * 2); g.fillStyle = '#1a1236'; g.fill(); g.lineWidth = 8; g.strokeStyle = col; g.stroke();
+          const f2 = await img(emoFace(x, x.id === G.id));
+          if (f2) { g.save(); g.beginPath(); g.arc(cx - 110, yy, 50, 0, Math.PI * 2); g.clip(); if (x.id === G.id && G.photo) g.drawImage(f2, cx - 160, yy - 50, 100, 100); else g.drawImage(f2, cx - 148, yy - 38, 76, 76); g.restore(); }
+          g.textAlign = 'left';
+          g.font = N(900, 26); g.fillStyle = col; g.fillText('#' + numFmt(i + 2), cx - 40, yy - 22);
+          g.font = F(700, 42); g.fillStyle = '#fff'; g.fillText(L.clean(x.n, 12), cx - 40, yy + 22, 230);
+          g.font = N(800, 24); g.fillStyle = col; g.fillText(T('Points: {n}', { n: numFmt(+x.s || 0) }), cx - 40, yy + 58, 230);
+          g.textAlign = 'center';
+        }
+      }
+    }
+    // (my own place, when I'm not the winner)
+    const me = G.endRes;
+    const meRow = list.find(x => x.id === G.id);
+    if (me && me.place > 1 && meRow) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText(T('I came {n}!', { n: '#' + numFmt(me.place) }) + '  ' + T('{n} points', { n: numFmt(+me.score || 0) }), 540, Y0 + PH - 70, PW - 80); }
+    else if (me && me.place === 1) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText('🏆 ' + T('I won Emoji Riddles!'), 540, Y0 + PH - 70, PW - 80); }
+    g.font = F(700, 38); g.fillStyle = '#fff3d6'; g.fillText(T('Play it free at blokvane.com'), 540, 1648, 1000);
+    return new Promise(res => cv.toBlob(b2 => res(b2), 'image/png'));
+  }
+  async function emoShare(r, how, b) {
+    const list = (Array.isArray(r.list) ? r.list : []);
+    const w1 = list[0];
+    const text = T('We played Emoji Riddles! The winner: {name}. Play it free at blokvane.com', { name: w1 ? L.clean(w1.n, 20) : '?' });
+    if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
+    b.disabled = true;
+    try {
+      const blob = await emoPic(r);
+      if (!blob) throw new Error('no picture');
+      const file = new File([blob], 'emoji-riddles.png', { type: 'image/png' });
+      if (how === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try { await navigator.share({ files: [file], text, title: T('Emoji Riddles') }); return; } catch (e) { if (!e || e.name === 'AbortError') return; toast(T('Sharing didn\'t work here. The picture was saved instead.'), ''); }
+      } else if (how === 'share' && navigator.share) { try { await navigator.share({ text, title: T('Emoji Riddles') }); } catch (e) {} }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'emoji-riddles.png'; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
       toast(T('The picture is saved.'), 'ok');
     } catch (e) { toast(T('That didn\'t work. Try again.'), 'bad'); }
     finally { b.disabled = false; }
@@ -2444,6 +2866,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
 
   // a result
   function showRes(m) {
+    if (m && m.emo && isEmo()) return emoRes(m);
     stopQ();
     const v = gameView();
     const ok = !!m.ok;
@@ -2463,6 +2886,7 @@ html.no-flexgap[dir="rtl"] .pt-howto .r > * + * { margin-left: 0; margin-right: 
   function showEnd() {
     stopQ();
     if (isImpGame() && (G.impFinal || G.impRes)) return impEnd();
+    if (isEmo() && G.emoWin) return emoEnd();
     const v = gameView();
     const r = G.endRes;
     const box = el('div', 'pt-res ' + (r && r.place === 1 ? 'ok' : ''), v.body);
