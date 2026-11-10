@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "date": "2026-11-10",
+    "score": 99,
+    "gotThrough": 6,
+    "added": [],
+    "droppedForBreaking": [],
+    "brokenSites": [],
+    "skipped": [
+      {
+        "host": "ssl.p.jwpcdn.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "vid.connatix.com",
+        "why": "not on a public ad or tracker list"
+      }
+    ]
+  }
+]
