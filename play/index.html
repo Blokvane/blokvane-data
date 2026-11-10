@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="emoji.css?v=16">
 <link rel="stylesheet" href="trivia.css?v=17">
 <link rel="stylesheet" href="wlook.css?v=17">
+<link rel="stylesheet" href="bwlook.css?v=18">
 <!-- Blokvane party games: this page is the TV (or a laptop or tablet: any screen everyone can see). Players join from
      their phones by scanning the QR code: no app, no account. There is no Blokvane server: the phones and this page
      talk through free public relays, sealed and signed (../go/live-kit.js). Every game speaks seven languages fully
@@ -23,7 +24,8 @@
      Who's the Imposter? has its own designed screens (imp-tpl.js), words in every language (imp-words.js), look (imp.css)
      and music (sounds/i-*.mp3). Emoji Riddles has its own designed screens (emoji-tpl.js), riddles with their answers in
      every language (emoji-data.js), look (emoji.css) and music (sounds/e-*.mp3). Where in the World? has its own lobby
-     looks (wlook.css), winner screens (world-tpl.js) and music (sounds/wv-*.mp3). -->
+     looks (wlook.css), winner screens (world-tpl.js) and music (sounds/wv-*.mp3). Boo Who? has its own designed
+     screens (boowho-tpl.js), questions and Boo's lines in every language (bw/), look (bwlook.css) and music (sounds/bw-*.mp3). -->
 </head>
 <body>
 <main id="stage" class="stage" aria-live="polite"></main>
@@ -33,22 +35,24 @@
 (function () {
   var old = false;
   try { new Function('async function f() { await 0; }'); } catch (e) { old = true; }
-  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1 };
+  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'boowho-game': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1 };
   var list = ['../go/compat.js?v=15',
     '../go/wt-core.js?v=15',
     '../go/wt-net.js?v=17',
     '../go/live-kit.js?v=17',
     '../go/qrcode.js?v=11',
     'watch-boo.js?v=11',
-    'i18n.js?v=17',
+    'i18n.js?v=18',
     'common.js?v=17',
-    'sound.js?v=17',
+    'sound.js?v=18',
     'packs.js?v=17',
     'map.js?v=15',
-    'play.js?v=17',
+    'play.js?v=18',
     'q/index.js?v=12',
     'wheel.js?v=15',
-    'games.js?v=17',
+    'games.js?v=18',
+    'boowho-tpl.js?v=18',
+    'boowho-game.js?v=18',
     'world-tpl.js?v=17',
     'world-game.js?v=17',
     'gir-game.js?v=17',

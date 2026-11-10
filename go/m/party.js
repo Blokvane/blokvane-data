@@ -711,6 +711,64 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
 .pt-gc:active{transform:scale(.98)}
 .pt-gc.bad span{color:#ff8f8a}
 .pt-fs{display:flex;align-items:center;justify-content:center;grid-gap:8px;gap:8px;width:100%;min-height:48px;margin-top:10px;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:#fff;font:700 15px/1.2 var(--fun)}
+.pt-bwgold{display:flex;align-items:center;justify-content:center;grid-gap:8px;gap:8px;margin:2px auto 10px;padding:9px 18px;border-radius:999px;width:fit-content;max-width:100%;background:linear-gradient(180deg,#ffe58a,#ffb020);color:#4a2a00;font:900 15px/1.2 var(--round);box-shadow:0 0 0 2px rgba(255,255,255,.4),0 6px 22px rgba(255,176,32,.45);animation:pt-gold 1.6s ease-in-out infinite}
+html.no-flexgap .pt-bwgold > * + * { margin-left: 8px; }
+@keyframes pt-gold{0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)}}
+.pt-bw{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-gap:10px;gap:10px;margin-top:4px}
+.pt-bw.c2{grid-template-columns:repeat(2,minmax(0,1fr));grid-gap:12px;gap:12px}
+.pt-bw.c4{grid-template-columns:repeat(4,minmax(0,1fr));grid-gap:7px;gap:7px}
+.pt-bwp{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;grid-gap:8px;gap:8px;padding:14px 6px 11px;border-radius:22px;border:2px solid rgba(255,255,255,.1);background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));color:var(--text);font:800 15px/1.15 var(--round);min-width:0;cursor:pointer;transition:transform .15s,opacity .25s,border-color .25s,box-shadow .25s;-webkit-tap-highlight-color:transparent}
+html.no-flexgap .pt-bwp > * + * { margin-top: 8px; }
+.pt-bwp .f{position:relative;flex:none;width:68px;height:68px;border-radius:50%;background:#2a1d5a;display:grid;align-items:center;justify-items:center;place-items:center;box-shadow:0 0 0 4px var(--c),0 0 18px var(--c)}
+.pt-bwp .f img{width:80%;height:80%;object-fit:contain}
+.pt-bwp .f img.ph{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.pt-bwp b{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pt-bwp:active{transform:scale(.95)}
+.pt-bwp.on{border-color:var(--c);box-shadow:0 0 0 2px var(--c),0 10px 30px rgba(0,0,0,.35);transform:scale(1.04)}
+.pt-bwp.on::after{content:'✓';position:absolute;top:7px;inset-inline-end:9px;width:24px;height:24px;border-radius:50%;background:var(--c);color:#1a1033;font:900 15px/24px var(--round);text-align:center}
+@supports not (inset-inline-end: 0) { .pt-bwp.on::after { right: 9px; } }
+.pt-bw.done .pt-bwp:not(.on){opacity:.32}
+.pt-bwp.no{opacity:.32;cursor:default}
+.pt-bwp.no small{display:block;color:var(--dim);font:700 11px var(--round);margin-top:-4px}
+.pt-bw.c4 .pt-bwp{padding:9px 3px 8px;border-radius:16px;font-size:12px;grid-gap:6px;gap:6px}
+.pt-bw.c4 .pt-bwp .f{width:46px;height:46px;box-shadow:0 0 0 3px var(--c),0 0 10px var(--c)}
+.pt-bw.duel{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center}
+.pt-bw.duel .vs{font:900 30px/1 var(--fun);color:var(--sun);text-shadow:0 3px 0 rgba(0,0,0,.35)}
+.pt-bw.duel .pt-bwp{padding:20px 8px 16px;font-size:18px}
+.pt-bw.duel .pt-bwp .f{width:100px;height:100px}
+.pt-bw.kids .pt-bwp{font-size:17px;border-radius:26px}
+.pt-bw.kids .pt-bwp .f{width:78px;height:78px}
+.pt-bw.kids.c4 .pt-bwp .f{width:54px;height:54px}
+.pt-bwwho{margin-top:16px;text-align:center;color:var(--dim);font:700 14px/1.35 var(--round)}
+.pt-bwwho .row{display:flex;flex-wrap:wrap;justify-content:center;grid-gap:6px;gap:6px;margin-top:8px}
+html.no-flexgap .pt-bwwho .row > * { margin: 3px; }
+.pt-bwwho .row i{position:relative;width:30px;height:30px;border-radius:50%;background:#fff center/82% no-repeat;opacity:.3;filter:grayscale(1);transition:opacity .3s,filter .3s}
+.pt-bwwho .row i.on{opacity:1;filter:none;box-shadow:0 0 0 2px #34d399}
+.pt-bwres .pt-bwtop{display:flex;flex-wrap:wrap;justify-content:center;grid-gap:14px 18px;gap:14px 18px;margin:14px 0 6px}
+.pt-bwres .pt-bwtop .c{margin-top:22px}
+html.no-flexgap .pt-bwres .pt-bwtop > * { margin: 7px; }
+.pt-bwres .pt-bwtop small{flex-basis:100%;color:var(--dim);font:800 13px var(--round);letter-spacing:.12em;text-transform:uppercase}
+.pt-bwres .pt-bwtop .c{display:flex;flex-direction:column;align-items:center;grid-gap:5px;gap:5px;min-width:0;max-width:44%}
+.pt-bwres .pt-bwtop .c .f{position:relative;width:62px;height:62px;border-radius:50%;background:#2a1d5a;display:grid;place-items:center;box-shadow:0 0 0 4px var(--c),0 0 16px var(--c)}
+.pt-bwres .pt-bwtop .c .f img{width:80%;height:80%;object-fit:contain}
+.pt-bwres .pt-bwtop .c .f img.ph{width:100%;height:100%;border-radius:50%;object-fit:cover}
+.pt-bwres .pt-bwtop .c .f::before{content:'👑';position:absolute;top:-24px;font-size:24px}
+.pt-bwres .pt-bwtop .c b{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:800 16px var(--round)}
+.pt-bwres .pt-bwtop .c span{color:var(--sun);font:800 13px var(--round)}
+.pt-bwsay{position:relative;display:flex;align-items:center;grid-gap:10px;gap:10px;margin:16px 0 4px;text-align:start}
+html.no-flexgap .pt-bwsay > * + * { margin-left: 10px; }
+.pt-bwsay .boo{flex:none;width:58px !important;height:58px !important;margin:0 !important}
+.pt-bwsay p{position:relative;flex:1;margin:0 !important;padding:12px 15px;border-radius:18px;background:#fff;color:#1a1033 !important;font:800 15px/1.32 var(--round) !important;box-shadow:0 0 0 3px #ff5a8a}
+.pt-bwres .you{margin-top:10px;color:var(--text);font:800 15px var(--round)}
+.pt-bwres .x2{display:inline-block;margin-inline-start:6px;padding:2px 9px;border-radius:999px;background:#ffc93c;color:#4a2a00;font:900 13px var(--round);vertical-align:middle}
+.pt-multi{display:flex;flex-wrap:wrap;grid-gap:8px;gap:8px}
+html.no-flexgap .pt-multi > * { margin: 4px; }
+.pt-multi button{display:inline-flex;align-items:center;grid-gap:6px;gap:6px;padding:10px 14px;border-radius:999px;border:1.5px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);color:var(--text);font:800 14px/1.2 var(--round);cursor:pointer}
+.pt-multi button[aria-pressed="true"]{background:linear-gradient(180deg,rgba(255,201,60,.28),rgba(255,201,60,.12));border-color:#ffc93c;color:#fff}
+.pt-multi button[aria-pressed="true"]::after{content:'✓';font-weight:900;color:#ffc93c}
+.pt-multi-all{display:flex;grid-gap:8px;gap:8px;margin:10px 0 2px}
+html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
+.pt-multi-all button{flex:1;padding:9px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--dim);font:800 13px var(--round)}
 `;
   }
 
@@ -1157,6 +1215,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
       case 'nextq': return onNextQ(m);
       case 'revealq': return onRevealQ(m);
       case 'hint': return onHint(m);
+      case 'bwv': return onBwv(m);
       case 'res': return onRes(m);
       case 'imp': return isImpGame() ? onImp(m) : undefined;
       case 'emo': return isEmo() ? onEmo(m) : undefined;
@@ -1481,7 +1540,8 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
   function updMe() {
     const u = G.ui.me;
     if (!u || !u.sc.isConnected) return;
-    u.sc.textContent = String(G.score || 0);
+    // (Kids in Boo Who? and Where in the World?: stars, not points)
+    u.sc.textContent = shKids() ? '⭐ ' + numFmt(shStars(G.score)) : String(G.score || 0);
     u.hearts.textContent = usesLives() && G.lives != null ? '❤️'.repeat(Math.max(0, Math.min(5, G.lives))) || '💀' : '';
   }
   // how to play, before the first question (the TV shows the same): the mode, the rules, and a bar for the time
@@ -1802,6 +1862,23 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
       if (desc) el('p', 'pt-info', parent, desc);
       return;
     }
+    // a choice of several: chips to turn on and off (at least one stays on), and all or none at once
+    if (f.type === 'multi' && Array.isArray(f.options)) {
+      const opts = f.options.filter(o => Array.isArray(o)).map(o => [o[0], L.clean(o[1], 48)]);
+      const all = opts.map(o => o[0]);
+      let sel = new Set((Array.isArray(cur) ? cur : Array.isArray(f.default) ? f.default : all).map(String));
+      const box = el('div', 'pt-multi', parent);
+      const paint = () => { for (const b2 of box.children) b2.setAttribute('aria-pressed', String(sel.has(b2.dataset.v))); };
+      let tm = 0;
+      const push = () => { paint(); clearTimeout(tm); tm = setTimeout(() => send({ k: 'set', key: f.key, v: all.filter(x => sel.has(String(x))) }), 350); buzz('tap'); };
+      for (const [v, t] of opts) { const b2 = el('button', '', box, t); b2.type = 'button'; b2.dataset.v = String(v); b2.onclick = () => { if (sel.has(String(v))) { if (sel.size > 1) sel.delete(String(v)); } else sel.add(String(v)); push(); }; }
+      const ab = el('div', 'pt-multi-all', parent);
+      const a1 = el('button', '', ab, T('All of them')); a1.type = 'button'; a1.onclick = () => { sel = new Set(all.map(String)); push(); };
+      const a2 = el('button', '', ab, T('Just one')); a2.type = 'button'; a2.onclick = () => { sel = new Set([String(all[0])]); push(); };
+      paint();
+      if (desc) el('p', 'pt-info', parent, desc);
+      return;
+    }
     if (!Array.isArray(f.options)) return;
     const opts = f.options.filter(o => Array.isArray(o)).map(o => [o[0], L.clean(o[1], 48), o[2] ? L.clean(o[2], 200) : '']);
     // a choice with a line about each (a game mode): cards, the picked one with a check
@@ -1850,6 +1927,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
         if (f.type === 'toggle') { toggles++; if (v) vals.push(L.clean(f.label, 40)); }
         else if (f.type === 'number') vals.push(v + (f.unit ? ' ' + L.clean(f.unit, 20) : ''));
         else if (f.type === 'text') { const n = String(v || '').split('\n').filter(Boolean).length; if (n) vals.push('✍️ ' + n); }
+        else if (f.type === 'multi' && Array.isArray(f.options)) { const on = Array.isArray(v) ? v.map(String) : []; vals.push(on.length >= f.options.length ? T('All of them') : f.options.filter(o2 => Array.isArray(o2) && on.includes(String(o2[0]))).map(o2 => L.clean(o2[1], 30)).join(', ')); }
         else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push(L.clean(o[1], 40)); }
       }
       if (!vals.length && toggles) vals.push(S().none);
@@ -1932,7 +2010,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
     G.ui.body = b;
     switch (q.kind) {
       case 'choice': choiceQ(b, q); break;
-      case 'players': playersQ(b, q); break;
+      case 'players': if (ex.bw && typeof ex.bw === 'object') bwVote(b, q); else playersQ(b, q); break;
       case 'text': textQ(b, q); break;
       case 'number': numberQ(b, q); break;
       case 'pin': pinQ(b, q); break;
@@ -2156,6 +2234,90 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
       m.tally.forEach((n, i) => { const a = G.ui.ans[i]; if (!a) return; let t = a.querySelector('.tally'); if (!t) t = el('span', 'tally', a); t.textContent = Math.round(100 * (+n || 0) / total) + '%'; });
       buzz('ok');
     }
+  }
+  // Boo Who?: everyone on the board as a big face in their color (the same as on the TV), the golden sign, and who has
+  // voted so far (the TV says as each vote comes in)
+  const BW_C = /^#[0-9a-f]{6}$/i;
+  function bwFace(parent, p) {
+    const f = el('span', 'f', parent);
+    const me = p.id === G.id, im = el('img', me && G.photo ? 'ph' : '', f);
+    im.src = me && G.photo ? G.photo : booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi') || booUri('boo:hi'); im.alt = '';
+    return f;
+  }
+  function bwVote(b, q) {
+    const ex = q.extra.bw;
+    const opts = (Array.isArray(q.opts) ? q.opts : []).filter(p => p && L.okId(p.id)).slice(0, 40);
+    if (ex.gold) { const g = el('div', 'pt-bwgold', null, '⭐ ' + T('Golden question! Double points')); const qe = b.querySelector('.pt-q'); b.insertBefore(g, qe || null); }
+    const n = opts.length, duel = n === 2;
+    const grid = el('div', 'pt-bw ' + (duel ? 'duel' : n <= 4 ? 'c2' : n <= 9 ? 'c3' : 'c4') + (ex.m === 'kids' ? ' kids' : ''), b);
+    const cards = [];
+    opts.forEach((p, i) => {
+      if (duel && i === 1) el('span', 'vs', grid, 'VS');
+      const me = p.id === G.id;
+      const x = el('button', 'pt-bwp', grid); x.type = 'button';
+      x.style.setProperty('--c', BW_C.test(p.c) ? p.c : '#a77bff');
+      bwFace(x, p);
+      const nm = me ? S().you : L.clean(p.name, 16);
+      el('b', '', x, nm);
+      if (me && !ex.self) { x.disabled = true; x.classList.add('no'); el('small', '', x, T('Not yourself')); }
+      x.onclick = () => { if (x.disabled) return; if (answer(p.id, nm)) { x.classList.add('on'); grid.classList.add('done'); buzz('ok'); } };
+      cards.push(x);
+    });
+    G.ui.bwWho = el('div', 'pt-bwwho', b);
+    bwWho();
+  }
+  function onBwv(m) {
+    if (!G.q || m.n !== G.q.n || !Array.isArray(m.v)) return;
+    G.bwv = { n: m.n, v: new Set(m.v.filter(x => L.okId(x))) };
+    bwWho();
+  }
+  function bwWho() {
+    const box = G.ui.bwWho, q = G.q;
+    if (!box || !box.isConnected || !q) return;
+    const who = Array.isArray(q.who) ? q.who : [];
+    const got = G.bwv && G.bwv.n === q.n ? G.bwv.v : new Set();
+    const ps = Array.isArray((G.lobby || {}).players) ? G.lobby.players : [];
+    const nameOf = id => { const p = ps.find(x => x && x.id === id); return p ? (id === G.id ? S().you : L.clean(p.name, 16)) : ''; };
+    const left = who.filter(id => !got.has(id) && id !== G.id).map(nameOf).filter(Boolean);
+    box.textContent = '';
+    el('div', '', box, '✓ ' + T('{n} of {t} voted', { n: numFmt(Math.min(got.size, who.length)), t: numFmt(who.length) }) + (got.size && left.length && left.length <= 4 ? '  ·  ' + T('Waiting for {names}', { names: left.join(', ') }) : ''));
+    const row = el('div', 'row', box);
+    for (const id of who.slice(0, 40)) {
+      const p = ps.find(x => x && x.id === id);
+      const i = el('i', got.has(id) ? 'on' : '', row);
+      i.style.backgroundImage = 'url("' + (id === G.id && G.photo ? G.photo : booUri(p && AVATARS.includes(p.av) ? p.av : 'boo:hi')) + '")';
+      if (id === G.id && G.photo) i.style.backgroundSize = 'cover';
+      i.title = nameOf(id);
+    }
+  }
+  // (Boo Who?: who got the most votes, what you got, and Boo's line in your language)
+  function bwRes(m) {
+    stopQ();
+    const v = gameView();
+    const kids = !!m.kids;
+    const box = el('div', 'pt-res pt-bwres ' + (m.ok ? 'ok' : 'mid'), v.body);
+    box.appendChild(booPic(typeof m.boo === 'string' && /^boo:[a-z]{2,12}$/.test(m.boo) ? m.boo : m.ok ? 'boo:party' : 'boo:hi'));
+    el('h1', '', box, L.clean(m.title, 70) || S().look);
+    if (m.pts) { const st = Math.round(m.pts / 100); const pt = el('div', 'pts', box, kids ? '⭐ ' + (st === 1 ? T('+1 star') : T('+{n} stars', { n: numFmt(st) })) : T('+{n} points', { n: numFmt(m.pts) })); if (m.gold && !kids) el('span', 'x2', pt, '×2'); }
+    const top = Array.isArray(m.top) ? m.top.filter(t => t && L.okId(t.id)).slice(0, 4) : [];
+    const ps = Array.isArray((G.lobby || {}).players) ? G.lobby.players : [];
+    if (top.length) {
+      const row = el('div', 'pt-bwtop', box);
+      el('small', '', row, top.length > 1 ? T('Most votes: a tie!') : T('Most votes'));
+      for (const t of top) {
+        const c = el('div', 'c', row);
+        c.style.setProperty('--c', BW_C.test(t.c) ? t.c : '#ffc93c');
+        const p = ps.find(x => x && x.id === t.id) || { id: t.id };
+        bwFace(c, p);
+        el('b', '', c, t.id === G.id ? S().you : L.clean(t.n, 16));
+        el('span', '', c, T(+t.v === 1 ? '1 vote' : '{n} votes', { n: numFmt(+t.v || 0) }));
+      }
+    }
+    if (m.note) { const say = el('div', 'pt-bwsay', box); say.appendChild(booPic('boo:laugh')); el('p', '', say, L.clean(m.note, 160)).dir = 'auto'; }
+    if (+m.you > 0 && !kids) el('div', 'you', box, T(+m.you === 1 ? 'You got 1 vote' : 'You got {n} votes', { n: numFmt(+m.you) }));
+    el('p', 'muted small', box, S().look).style.marginTop = '14px';
+    buzz(m.ok ? 'ok' : 'tap');
+    if (m.ok && kids) confetti();
   }
   function playersQ(b, q) {
     const grid = el('div', 'pt-players', b);
@@ -3222,7 +3384,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
   // A tall story picture (1080 x 1920) in the game's own look, the same one as the winners on the TV: a boarding pass for
   // Where in the World?, Trivia's cosmic, disco or fireworks night, Guess It Right!'s gold. For Instagram, TikTok,
   // Facebook, WhatsApp, Messages or anywhere; or saved, or the words copied.
-  const SHARE_GAMES = new Set(['world', 'trivia', 'gir']);
+  const SHARE_GAMES = new Set(['world', 'trivia', 'gir', 'boowho']);
   const shFont = (w2, px) => w2 + ' ' + px + 'px "BV Fun", ui-rounded, "Nunito", system-ui, sans-serif';
   const shSans = (w2, px) => w2 + ' ' + px + 'px ui-rounded, "Nunito", system-ui, sans-serif';
   const shEmo = px => px + 'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
@@ -3235,7 +3397,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
   // (the same picture every time for the same game: a random that starts from the names)
   const shRnd = seed => { let s2 = (seed >>> 0) || 1; return () => { s2 = (Math.imul(s2, 1664525) + 1013904223) >>> 0; return s2 / 4294967296; }; };
   const shSeed = str => { let h = 2166136261; for (const c of String(str)) { h ^= c.codePointAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
-  const shKids = () => { const l = G.lobby || {}; return l.game === 'world' && !!l.settings && l.settings.mode === 'kids'; };
+  const shKids = () => { const l = G.lobby || {}; return (l.game === 'world' || l.game === 'boowho') && !!l.settings && l.settings.mode === 'kids'; };
   const shStars = sc => Math.max(0, Math.round((+sc || 0) / 100));
   function shList() {
     return (Array.isArray(G.ranking) ? G.ranking : []).filter(x => x && typeof x.name === 'string').slice(0, 10)
@@ -3447,6 +3609,59 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
       step(g, x, y, w, h, pl) { const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#2c2475'); sg.addColorStop(1, '#130f3c'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 18); g.fill(); g.strokeStyle = SH_NUM[pl]; g.lineWidth = 4; g.stroke(); },
       ink: '#fff'
     },
+    // Boo Who?'s carnival: the striped awning, the big wheel, the prizes
+    'bw-carnival': {
+      label: '#ffc93c', ring: '#ffc93c', glow: 'rgba(255,201,60,.8)', ring2: 'rgba(255,246,216,.6)',
+      bg(g, rnd) {
+        const bg = g.createRadialGradient(540, 760, 60, 540, 900, 1300); bg.addColorStop(0, '#5a1a6a'); bg.addColorStop(0.55, '#2a0d3e'); bg.addColorStop(1, '#12051f');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        // (the big wheel, faint, on the left)
+        g.save(); g.globalAlpha = 0.28; g.strokeStyle = '#ff9ab0'; g.lineWidth = 12; g.beginPath(); g.arc(90, 1050, 380, 0, Math.PI * 2); g.stroke();
+        g.lineWidth = 5; for (let i = 0; i < 12; i++) { const a = Math.PI * 2 * i / 12; g.beginPath(); g.moveTo(90, 1050); g.lineTo(90 + Math.cos(a) * 380, 1050 + Math.sin(a) * 380); g.stroke(); }
+        g.restore();
+        // (the awning: red and cream stripes with a scalloped edge)
+        for (let i = 0; i < 9; i++) { g.fillStyle = i % 2 ? '#fff6e8' : '#e8132a'; g.fillRect(i * 120, 0, 120, 120); g.beginPath(); g.arc(i * 120 + 60, 120, 60, 0, Math.PI); g.fill(); }
+        g.font = shEmo(64); g.textAlign = 'center'; g.textBaseline = 'middle';
+        for (const [e, x, y] of [['🎈', 110, 420], ['🎟️', 960, 460], ['🍭', 980, 1220], ['🧸', 100, 1330], ['🎈', 930, 820]]) g.fillText(e, x + (rnd() - 0.5) * 20, y);
+        g.textBaseline = 'alphabetic';
+      },
+      step(g, x, y, w, h, pl) { const c = { 1: '#ffc93c', 2: '#4a7aff', 3: '#34d399' }[pl]; const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, c); sg.addColorStop(1, 'rgba(0,0,0,.4)'); g.fillStyle = c; shRR(g, x, y, w, h + 30, 18); g.fill(); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 18); g.fill(); g.strokeStyle = '#fff6d8'; g.lineWidth = 5; shRR(g, x, y, w, h + 30, 18); g.stroke(); },
+      ink: '#fff', num: () => '#fff'
+    },
+    // Boo Who?'s party glow: spotlights, light rays, confetti
+    'bw-glow': {
+      label: '#ffc93c', ring: '#ffc93c', glow: 'rgba(255,90,138,.85)', ring2: 'rgba(167,123,255,.6)',
+      bg(g, rnd) {
+        const bg = g.createRadialGradient(540, 760, 60, 540, 900, 1300); bg.addColorStop(0, '#4a1d7a'); bg.addColorStop(0.55, '#22104a'); bg.addColorStop(1, '#0e0822');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        g.save(); g.translate(540, 760); g.fillStyle = 'rgba(255,140,200,.07)';
+        for (let i = 0; i < 36; i += 2) { const a0 = Math.PI * 2 * i / 36, a1 = Math.PI * 2 * (i + 1) / 36; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * 2000, Math.sin(a0) * 2000); g.lineTo(Math.cos(a1) * 2000, Math.sin(a1) * 2000); g.closePath(); g.fill(); }
+        g.restore();
+        for (const [x, c] of [[-120, 'rgba(124,92,255,.32)'], [1200, 'rgba(255,90,138,.3)']]) { const lg = g.createLinearGradient(0, 0, 0, 1700); lg.addColorStop(0, c); lg.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = lg; g.beginPath(); g.moveTo(x - 40, -40); g.lineTo(x + 40, -40); g.lineTo(x + (x < 540 ? 640 : -640), 1700); g.lineTo(x + (x < 540 ? 120 : -120), 1700); g.closePath(); g.fill(); }
+        const cols = ['#ff5a8a', '#ffc93c', '#5ad1ff', '#34d399', '#a77bff', '#fff'];
+        for (let i = 0; i < 90; i++) { g.save(); g.translate(rnd() * 1080, rnd() * 1920); g.rotate(rnd() * 6.28); g.globalAlpha = 0.5 + rnd() * 0.5; g.fillStyle = cols[i % cols.length]; g.fillRect(-9, -4, 18, 8); g.restore(); }
+        g.globalAlpha = 1;
+        g.font = shFont(700, 110); g.fillStyle = 'rgba(255,255,255,.06)'; g.textAlign = 'center';
+        for (const [x, y] of [[170, 880], [920, 840], [540, 1440]]) g.fillText('?', x + (rnd() - 0.5) * 30, y);
+      },
+      step(g, x, y, w, h, pl) { const c = { 1: ['#ffcf3d', '#e09a12'], 2: ['#7c5cff', '#3a1a9a'], 3: ['#ff5a8a', '#8a1a44'] }[pl]; const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, c[0]); sg.addColorStop(1, c[1]); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 10); g.fill(); },
+      ink: '#fff', num: () => 'rgba(255,255,255,.92)'
+    },
+    // Boo Who?'s yearbook: lined paper, doodles, the winner's photo taped on
+    'bw-yearbook': {
+      label: '#e8507a', ring: '#ffffff', glow: 'rgba(60,40,20,.35)', ring2: 'rgba(232,80,122,.5)', light: true, title: '#2a2050', text: '#e8507a', mine: '#4a7aff', foot: '#2a2050',
+      bg(g, rnd) {
+        g.fillStyle = '#fbf6ea'; g.fillRect(0, 0, 1080, 1920);
+        g.strokeStyle = 'rgba(74,122,255,.22)'; g.lineWidth = 2; for (let y = 120; y < 1920; y += 56) { g.beginPath(); g.moveTo(0, y); g.lineTo(1080, y); g.stroke(); }
+        g.strokeStyle = 'rgba(232,80,122,.45)'; g.lineWidth = 4; g.beginPath(); g.moveTo(96, 0); g.lineTo(96, 1920); g.stroke();
+        g.font = shFont(700, 84); g.textAlign = 'center';
+        for (const [t, x, y, c] of [['★', 190, 420, '#e0a52a'], ['♥', 930, 400, '#e8507a'], ['✿', 160, 1180, '#34a37a'], ['☺', 920, 1240, '#4a7aff'], ['?!', 880, 1500, '#7c5cff']]) { g.save(); g.translate(x, y); g.rotate((rnd() - 0.5) * 0.5); g.fillStyle = c; g.fillText(t, 0, 0); g.restore(); }
+        // (the tape on the photo)
+        g.save(); g.translate(540, 470); g.rotate(0.05); g.fillStyle = 'rgba(255,233,163,.85)'; g.fillRect(-90, -24, 180, 48); g.restore();
+      },
+      step(g, x, y, w, h, pl) { const c = { 1: '#ffe9a3', 2: '#dde8ff', 3: '#ffdbe6' }[pl]; g.save(); g.translate(x + w / 2, y + h / 2); g.rotate(pl === 2 ? -0.04 : pl === 3 ? 0.04 : 0); g.fillStyle = c; g.shadowColor = 'rgba(60,40,20,.25)'; g.shadowBlur = 20; g.shadowOffsetY = 10; g.fillRect(-w / 2, -h / 2, w, h + 30); g.restore(); },
+      ink: '#2a2050', num: pl => ({ 1: '#e0a52a', 2: '#4a7aff', 3: '#e8507a' }[pl])
+    },
     // Guess It Right!: gold on deep purple, the sunburst, the frame, the stars
     gir: {
       label: '#ffe08a', ring: '#ffc93c', glow: 'rgba(255,201,60,.8)', ring2: 'rgba(255,201,60,.55)',
@@ -3478,7 +3693,8 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
     lk.bg(g, shRnd(o.seed));
     g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     const title = gameName(); shFit(g, title, 920, 116, 56, px => shFont(700, px));
-    g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = 8; g.fillStyle = shGold(g, 140, 260); g.fillText(title, 540, 258, 960); g.restore();
+    const ink = (y0, y1) => (lk.light ? lk.title : shGold(g, y0, y1)), shd = lk.light ? 'rgba(232,80,122,.25)' : 'rgba(0,0,0,.45)';
+    g.save(); g.shadowColor = shd; g.shadowOffsetY = 8; g.fillStyle = ink(140, 260); g.fillText(title, 540, 258, 960); g.restore();
     const w1 = list[0];
     if (w1) {
       g.font = shSans(900, 34); g.fillStyle = lk.label; g.fillText(shSp(iup(o.team ? T('The winning team') : T('The winner'))), 540, 366, 900);
@@ -3488,8 +3704,8 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
       await shFace(g, w1, 540, cy, R);
       g.font = shEmo(124); g.textBaseline = 'middle'; g.fillText('👑', 540, cy - R - 46); g.textBaseline = 'alphabetic';
       const fs = shFit(g, w1.n, 920, 130, 60, px => shFont(700, px));
-      g.save(); g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowOffsetY = 8; g.fillStyle = shGold(g, 1030 - fs, 1040); g.fillText(w1.n, 540, 1030, 960); g.restore();
-      g.font = shSans(900, 48); g.fillStyle = '#fff'; g.fillText(T('Points: {n}', { n: numFmt(w1.s) }), 540, 1106, 900);
+      g.save(); g.shadowColor = shd; g.shadowOffsetY = 8; g.fillStyle = ink(1030 - fs, 1040); g.fillText(w1.n, 540, 1030, 960); g.restore();
+      g.font = shSans(900, 48); g.fillStyle = lk.text || '#fff'; g.fillText(o.kids ? '⭐ ' + T('{n} stars', { n: numFmt(shStars(w1.s)) }) : T('Points: {n}', { n: numFmt(w1.s) }), 540, 1106, 900);
     }
     // (the podium)
     if (list.length > 1) {
@@ -3502,15 +3718,15 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
         g.textAlign = 'center';
         g.font = shFont(700, 88); g.fillStyle = lk.num ? lk.num(pl) : SH_NUM[pl]; g.fillText(numFmt(pl), cx, top + 92);
         g.fillStyle = lk.ink; shFit(g, x.n, 230, 38, 22, px => shFont(700, px)); g.fillText(x.n, cx, top + 138, 236);
-        g.font = shSans(800, 26); g.globalAlpha = 0.85; g.fillText(numFmt(x.s), cx, top + 172, 236); g.globalAlpha = 1;
+        g.font = shSans(800, 26); g.globalAlpha = 0.85; g.fillText(o.kids ? '⭐ ' + numFmt(shStars(x.s)) : numFmt(x.s), cx, top + 172, 236); g.globalAlpha = 1;
         if (pl === 1) { g.font = shEmo(88); g.textBaseline = 'middle'; g.fillText('🏆', cx, top - 62); g.textBaseline = 'alphabetic'; }
         else { const fy = top - 80; g.beginPath(); g.arc(cx, fy, 72, 0, Math.PI * 2); g.fillStyle = SH_NUM[pl]; g.fill(); await shFace(g, x, cx, fy, 64); }
       }
     }
     const mine = shMine();
     g.textAlign = 'center';
-    if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = '#ffc93c'; g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(mine, 540, 1712, 980); g.restore(); }
-    g.font = shFont(700, 38); g.fillStyle = '#fff3d6'; g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000); g.restore();
+    if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = lk.mine || '#ffc93c'; g.save(); g.shadowColor = lk.light ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(mine, 540, 1712, 980); g.restore(); }
+    g.font = shFont(700, 38); g.fillStyle = lk.foot || '#fff3d6'; g.save(); g.shadowColor = lk.light ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000); g.restore();
   }
   // the picture, made once for this end screen (and again when the table or my place changes)
   const SH = { sig: '', blob: null, url: '', p: null };
@@ -3584,6 +3800,7 @@ html.no-flexgap .pt-rc > * + *{margin-left:8px}
   // a result
   function showRes(m) {
     if (m && m.emo && isEmo()) return emoRes(m);
+    if (m && m.bw && (G.lobby || {}).game === 'boowho') return bwRes(m);
     stopQ();
     const v = gameView();
     const ok = !!m.ok;

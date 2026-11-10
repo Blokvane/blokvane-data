@@ -750,7 +750,12 @@ var BVPLAY = (() => {
         return;
       }
       if (f.type === "toggle") settings[key] = !!v;
-      else if (f.options && f.options.some((o) => String(o[0]) === String(v))) settings[key] = f.options.find((o) => String(o[0]) === String(v))[0];
+      else if (f.type === "multi") {
+        const want = (Array.isArray(v) ? v : [v]).map(String);
+        const ok = (f.options || []).filter((o) => want.includes(String(o[0]))).map((o) => o[0]);
+        if (!ok.length) return;
+        settings[key] = ok;
+      } else if (f.options && f.options.some((o) => String(o[0]) === String(v))) settings[key] = f.options.find((o) => String(o[0]) === String(v))[0];
       else if (f.type === "text") settings[key] = String(v == null ? "" : v).split(/\n/).map((x) => P.safe(x, 90)).filter(Boolean).join("\n").slice(0, 1500);
       else if (f.type === "number") {
         const n = Math.round(Number(v));
@@ -1053,6 +1058,7 @@ var BVPLAY = (() => {
       document.body.dataset.game = "";
       delete document.body.dataset.tlook;
       delete document.body.dataset.wlook;
+      delete document.body.dataset.bwlook;
       document.body.classList.remove("tw-on");
       const t = yield Promise.all(["The game is closed", "Thanks for playing!", "Start a new game"].map((x) => P.tr(x)));
       stage.textContent = "";
@@ -1283,6 +1289,7 @@ var BVPLAY = (() => {
       document.body.dataset.game = g ? g.id : "";
       delete document.body.dataset.tlook;
       delete document.body.dataset.wlook;
+      delete document.body.dataset.bwlook;
       document.body.classList.remove("tw-on");
       stage.append(...page.childNodes);
       if (g && g.lobbyDone) {
@@ -1452,6 +1459,8 @@ var BVPLAY = (() => {
     if (m) return P.tr("{n} min", { n: m[1] });
     m = /^(\d+) balls$/.exec(x);
     if (m) return P.tr("{n} balls", { n: m[1] });
+    m = /^(\S+) (.+)$/.exec(x);
+    if (m && !/[A-Za-z0-9]/.test(m[1]) && /[\u2190-\u2bff\ud83c-\ud83e]/.test(m[1])) return P.tr(m[2]).then((t2) => m[1] + " " + t2);
     return P.tr(x);
   }
   function board(parent2, o = {}) {
@@ -1602,6 +1611,7 @@ var BVPLAY = (() => {
       document.body.dataset.game = game.id;
       delete document.body.dataset.tlook;
       delete document.body.dataset.wlook;
+      delete document.body.dataset.bwlook;
       document.body.classList.remove("tw-on");
       for (const p of players.values()) {
         p.score = 0;

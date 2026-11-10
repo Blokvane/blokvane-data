@@ -419,6 +419,8 @@ var BVPLAY = (() => {
     if (f.vol) { const o = f.options.find(x => String(x[0]) === String(v)); if (!o) return; settings[key] = o[0]; if (SND.setVol) SND.setVol(f.vol, o[0]); sayLobby(); return; }
     if (f.kit) { settings[key] = f.type === 'toggle' ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default)); applyKit(); if (phase === 'lobby') lobby(); sayLobby(); return; }
     if (f.type === 'toggle') settings[key] = !!v;
+    // (a choice of several, like Boo Who?'s categories: at least one stays picked)
+    else if (f.type === 'multi') { const want = (Array.isArray(v) ? v : [v]).map(String); const ok = (f.options || []).filter(o => want.includes(String(o[0]))).map(o => o[0]); if (!ok.length) return; settings[key] = ok; }
     else if (f.options && f.options.some(o => String(o[0]) === String(v))) settings[key] = f.options.find(o => String(o[0]) === String(v))[0];
     else if (f.type === 'text') settings[key] = String(v == null ? '' : v).split(/\n/).map(x => P.safe(x, 90)).filter(Boolean).join('\n').slice(0, 1500);
     else if (f.type === 'number') { const n = Math.round(Number(v)); if (!Number.isFinite(n)) return; settings[key] = Math.max(f.min || 0, Math.min(f.max || 999, n)); }
@@ -598,7 +600,7 @@ var BVPLAY = (() => {
     if (booEl) booEl.hidden = true;
     SND.music(null, { fadeOut: 1 }); P.mute(true);
     document.body.dataset.game = '';
-    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; delete document.body.dataset.bwlook; document.body.classList.remove('tw-on');
     const t = await Promise.all(['The game is closed', 'Thanks for playing!', 'Start a new game'].map(x => P.tr(x)));
     stage.textContent = '';
     const cv = el('div', 'cover closed', stage);
@@ -750,7 +752,7 @@ var BVPLAY = (() => {
     stage.textContent = '';
     document.body.dataset.game = g ? g.id : '';
     // (a game's own look for its lobby, like Trivia's four designs, and its winners' dressing, are gone until it puts them back)
-    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; delete document.body.dataset.bwlook; document.body.classList.remove('tw-on');
     stage.append(...page.childNodes);
     if (g && g.lobbyDone) { try { g.lobbyDone(stage, el, settings); } catch (e) { console.warn('Blokvane play', e); } }
     if (sndOff) sndOff();
@@ -893,6 +895,8 @@ var BVPLAY = (() => {
     let m = /^(\d+(?:\.\d+)?) s$/.exec(x); if (m) return P.tr('{n} s', { n: m[1] });
     m = /^(\d+(?:\.\d+)?) min$/.exec(x); if (m) return P.tr('{n} min', { n: m[1] });
     m = /^(\d+) balls$/.exec(x); if (m) return P.tr('{n} balls', { n: m[1] });
+    // (an emoji before the words, like Boo Who?'s categories: the words in the game's language)
+    m = /^(\S+) (.+)$/.exec(x); if (m && !/[A-Za-z0-9]/.test(m[1]) && /[\u2190-\u2bff\ud83c-\ud83e]/.test(m[1])) return P.tr(m[2]).then(t2 => m[1] + ' ' + t2);
     return P.tr(x);
   }
   // the scoreboard: score bars slide, out players fade (sorted, the leader on top)
@@ -989,7 +993,7 @@ var BVPLAY = (() => {
     phase = 'play';
     played = true;
     document.body.dataset.game = game.id;
-    delete document.body.dataset.tlook; delete document.body.dataset.wlook; document.body.classList.remove('tw-on');
+    delete document.body.dataset.tlook; delete document.body.dataset.wlook; delete document.body.dataset.bwlook; document.body.classList.remove('tw-on');
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();

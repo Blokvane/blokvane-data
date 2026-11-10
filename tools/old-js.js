@@ -10,7 +10,7 @@ const ROOT = path.join(__dirname, '..');
 // the TV's scripts that use async functions (the others, and the data files lang/*.js, gir-data.js and world-data.js, are
 // old JavaScript already: play/index.html loads them as they are; go/compat.js is written for every browser)
 const FILES = ['go/wt-core.js', 'go/wt-net.js', 'go/live-kit.js', 'play/i18n.js', 'play/common.js', 'play/sound.js', 'play/play.js', 'play/games.js',
-  'play/world-game.js', 'play/gir-game.js', 'play/imp-game.js', 'play/emoji-game.js'];
+  'play/world-game.js', 'play/gir-game.js', 'play/imp-game.js', 'play/emoji-game.js', 'play/boowho-game.js'];
 const TARGET = ['chrome53'];
 const check = process.argv.includes('--check');
 let stale = 0;

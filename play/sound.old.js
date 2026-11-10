@@ -119,7 +119,22 @@ var BVSOUND = (() => {
     wvWin: ["wv-win.mp3", 0.389, { stream: true, once: true, then: "wvLobby", tail: 0.8 }],
     wvNext: ["wv-next.mp3", 0.343],
     wvTimesup: ["wv-timesup.mp3", 0.596],
-    wvWrong: ["wv-wrong.mp3", 0.442]
+    wvWrong: ["wv-wrong.mp3", 0.442],
+    // Boo Who?'s own: Ready for Round One in the lobby; One Clue Too Many, Tiptoeing Through Trophies and Winning Hand
+    // taking turns all game long (a different one first each game); the High Score Confetti theme for the winners, then
+    // the lobby tune again; and its next question, every 5 questions and time's up. Measured, so each sits where the
+    // other games' do: the tunes under the room's voices, the moments 2 dB over them.
+    bwLobby: ["bw-lobby.mp3", 0.302, { stream: true, tail: 1.6, xf: 3 }],
+    bwP1: ["bw-play1.mp3", 0.339, { stream: true, tail: 1.8, xf: 4 }],
+    bwP2: ["bw-play2.mp3", 0.324, { stream: true, tail: 2.2, xf: 4 }],
+    bwP3: ["bw-play3.mp3", 0.327, { stream: true, tail: 1.5, xf: 4 }],
+    bwPlayA: ["", 1, { list: ["bwP1", "bwP2", "bwP3"], xf: 5 }],
+    bwPlayB: ["", 1, { list: ["bwP2", "bwP3", "bwP1"], xf: 5 }],
+    bwPlayC: ["", 1, { list: ["bwP3", "bwP1", "bwP2"], xf: 5 }],
+    bwWin: ["bw-win.mp3", 0.389, { stream: true, once: true, then: "bwLobby", tail: 2.6 }],
+    bwNext: ["bw-next.mp3", 0.442],
+    bwEvery5: ["bw-every5.mp3", 0.367],
+    bwTimesup: ["bw-timesup.mp3", 0.556]
   };
   const isStream = (f) => !!(f && f[2] && typeof f[2] === "object" && (f[2].stream || f[2].list));
   const KIND = {
@@ -147,7 +162,11 @@ var BVSOUND = (() => {
     wvNext: "next",
     wvTimesup: "timesup",
     wvWrong: "wrong",
-    wvWin: "win"
+    wvWin: "win",
+    bwNext: "next",
+    bwEvery5: "every5",
+    bwTimesup: "timesup",
+    bwWin: "win"
   };
   const kindOf = (name) => KIND[name] || (FILES[name] && FILES[name][2] ? "music" : "fx");
   let offKinds = /* @__PURE__ */ new Set(), wantReal = null;

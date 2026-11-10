@@ -1,0 +1,629 @@
+/* Blokvane party games: Boo Who?'s own looks, drawn exactly as its designs: four lobbies (Comedy club, Comic pop,
+   Election night, Sleepover) that dress the kit's own lobby (play.css), and the game's screens (boowho-tpl.js): how to
+   play (three looks), the votes coming in (seven looks) and the winners (three looks), with their moves. The lobby takes
+   turns from one game to the next, or the host picks one: body[data-bwlook] is the one on now. Made from bwlook.src.css
+   by a tool (design pixels become screen units). */
+
+/* the designs' fonts: Fredoka for titles, Nunito for the rest (each with Cairo for Arabic, in the same weights, so a
+   line mixing the two never falls back to another font), and the lobbies' and screens' display faces: Pacifico, Bangers,
+   Anton and Permanent Marker (their letters only: any other script is written in Fredoka) */
+@font-face { font-family: 'BW Fredoka'; src: url(fonts/imp-fredoka-latin.woff2) format('woff2'); font-weight: 300 700; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BW Fredoka'; src: url(fonts/imp-fredoka-latin-ext.woff2) format('woff2'); font-weight: 300 700; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BW Fredoka'; src: url(fonts/cairo-arabic.woff2) format('woff2'); font-weight: 300 700; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'BW Nunito'; src: url(fonts/imp-nunito-latin.woff2) format('woff2'); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BW Nunito'; src: url(fonts/imp-nunito-latin-ext.woff2) format('woff2'); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BW Nunito'; src: url(fonts/cairo-arabic.woff2) format('woff2'); font-weight: 200 1000; font-display: swap;
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'BW Pacifico'; src: url(fonts/bw-pacifico-latin.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BW Pacifico'; src: url(fonts/bw-pacifico-latin-ext.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BW Bangers'; src: url(fonts/bw-bangers-latin.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BW Bangers'; src: url(fonts/bw-bangers-latin-ext.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BW Anton'; src: url(fonts/bw-anton-latin.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BW Anton'; src: url(fonts/bw-anton-latin-ext.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BW Marker'; src: url(fonts/bw-permanent-marker-latin.woff2) format('woff2'); font-weight: 400; font-display: swap;
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* ==================== the four lobbies: what they share (the designs' own layout) ==================== */
+body[data-game="boowho"][data-bwlook] .stage { padding: calc(4.8149 * var(--u)) calc(7.4075 * var(--u)) calc(3.5186 * var(--u)); grid-gap: calc(2.7778 * var(--u)); gap: calc(2.7778 * var(--u)); overflow: hidden; font-family: var(--bn); line-height: var(--lh);
+  --bf: 'BW Fredoka', 'BV Fun', 'BV Script', sans-serif; --bn: 'BW Nunito', 'BV Script', sans-serif; --lh: normal; }
+html[dir="rtl"] body[data-game="boowho"][data-bwlook] .stage { --lh: 1.3; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .stage > * + * { margin-top: calc(2.7778 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stage > .lob-top, body[data-game="boowho"][data-bwlook] .stage > .body.lob, body[data-game="boowho"][data-bwlook] .stage > .lob-foot { position: relative; z-index: 2; }
+/* (the decorations: everything the designs have around the lobby, behind it and in front of it, at the designs' own size) */
+body[data-game="boowho"][data-bwlook] .bw-deco { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+body[data-game="boowho"][data-bwlook] .bw-deco.front { z-index: 3; }
+body[data-game="boowho"][data-bwlook] .bw-deco > .bw-dcv { position: absolute; left: 50%; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; font-family: 'BW Nunito', 'BV Script', sans-serif; line-height: normal; letter-spacing: normal; direction: ltr; text-align: left;
+  --bf: 'BW Fredoka', 'BV Fun', 'BV Script', sans-serif; --bn: 'BW Nunito', 'BV Script', sans-serif; }
+/* the top: the icon, the name and its line, the four round signs on the right */
+body[data-game="boowho"][data-bwlook] .lob-top { min-height: 0; grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-top > * + * { margin-left: calc(2.4075 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob-top > * + * { margin-left: 0; margin-right: calc(2.4075 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob-top .logo { flex: none; padding: 0; }
+body[data-game="boowho"][data-bwlook] .lob-top .logo img { display: none; }
+body[data-game="boowho"][data-bwlook] .lob-top .logo svg { display: block; overflow: visible; }
+body[data-game="boowho"][data-bwlook] .lob-top .grow { display: flex; flex-direction: column; grid-gap: calc(0.5556 * var(--u)); gap: calc(0.5556 * var(--u)); flex: 0 1 auto; min-width: 0; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-top .grow > * + * { margin-top: calc(0.5556 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob-top h1 { margin: 0; font: 700 calc(7.963 * var(--u))/1 var(--bf); letter-spacing: normal; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook] .lob-top .sub { margin: 0; font-size: calc(2.5926 * var(--u)); font-weight: 700; line-height: var(--lh); }
+html[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob-top h1 { line-height: 1.3 !important; font-family: var(--bf) !important; }
+body[data-game="boowho"][data-bwlook] .lob-top .deco { flex: none; margin-inline-start: auto; grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+@supports not (margin-inline-start: 0) {
+  body[data-game="boowho"][data-bwlook] .lob-top .deco { margin-left: auto; }
+  html[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob-top .deco { margin-right: auto; }
+}
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-top .deco > * + * { margin-left: calc(1.6667 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob-top .deco > * + * { margin-left: 0; margin-right: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .tile-e { box-sizing: border-box; display: grid; align-items: center; justify-items: center; place-items: center; border-radius: 50%; line-height: 1; box-shadow: none; animation: none; }
+/* the two columns */
+body[data-game="boowho"][data-bwlook] .body.lob { display: grid; grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.5556 * var(--u)); gap: calc(5.5556 * var(--u)); flex: 1 1 0; min-height: 0; }
+body[data-game="boowho"][data-bwlook] .lob-l { width: auto; grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-l > * + * { margin-top: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob-r { grid-gap: calc(2.0371 * var(--u)); gap: calc(2.0371 * var(--u)); min-width: 0; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-r > * + * { margin-top: calc(2.0371 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob .card { box-shadow: none; }
+/* how to join: the QR code, the steps and the code, as tiles */
+body[data-game="boowho"][data-bwlook] .lob .join { position: relative; display: flex; align-items: center; grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob .qr { flex: none; box-sizing: border-box; width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); background: #fff; border-radius: calc(2.0371 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob .qr svg { display: block; width: 100%; height: 100%; }
+body[data-game="boowho"][data-bwlook] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .jt > * + * { margin-top: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .stp > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook] .stp > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stp .n { width: calc(5 * var(--u)); height: calc(5 * var(--u)); font: 700 calc(2.5926 * var(--u))/1 var(--bf); color: #fff; }
+body[data-game="boowho"][data-bwlook] .jt .stp b { font: 700 calc(3.3334 * var(--u))/var(--lh) var(--bf); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook] .jt .or { margin: 0; font-size: calc(2.2223 * var(--u)); line-height: var(--lh); }
+body[data-game="boowho"][data-bwlook] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); flex-wrap: nowrap; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .codetiles > * { margin: 0 calc(0.926 * var(--u)) 0 0; }
+body[data-game="boowho"][data-bwlook] .codetiles span { position: relative; flex: none; box-sizing: border-box; width: calc(6.4815 * var(--u)); height: calc(8.3334 * var(--u)); padding: 0; border: 0; border-radius: calc(0.926 * var(--u)); font: 700 calc(5 * var(--u))/1 var(--bf); }
+body[data-game="boowho"][data-bwlook] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stp-c { display: flex; flex-direction: column; grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); padding: calc(2.4075 * var(--u)); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .stp-c > * + * { margin-top: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stp-c .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .stp-c .stp b { font: 700 calc(2.963 * var(--u))/var(--lh) var(--bf); }
+body[data-game="boowho"][data-bwlook] .stp-c p { margin: 0; font-size: calc(2.1297 * var(--u)); line-height: 1.45; }
+/* who's in: each player's seat is the designs' seat, with their face and name; the first empty seats invite in (the
+   design's Boo and "join"), the rest show the look's own sign */
+body[data-game="boowho"][data-bwlook] .ph { min-height: 0; }
+body[data-game="boowho"][data-bwlook] .ph h2 { font: 700 calc(4.0741 * var(--u))/var(--lh) var(--bf); }
+body[data-game="boowho"][data-bwlook] .ph .pill { font: 700 calc(2.0371 * var(--u))/1 var(--bf); padding: calc(0.926 * var(--u)) calc(1.8519 * var(--u)); }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit { overflow: visible; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; box-shadow: none; animation: none; justify-content: center; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat:not(.still):not(.empty) { animation: popIn .5s cubic-bezier(.2, 1.4, .4, 1) both; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.empty { padding: 0; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat .av { box-shadow: 0 0 0 calc(var(--ss, 100px) * .025) var(--pc, #fff); box-shadow: 0 0 0 max(2px, calc(var(--ss, 100px) * .025)) var(--pc, #fff); background: rgba(255, 255, 255, .14); }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat b { max-width: 92%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.open { display: flex; flex-direction: column; align-items: center; justify-content: center; grid-gap: calc(var(--ss, 100px) * .04); gap: calc(var(--ss, 100px) * .04); }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.open > * + * { margin-top: calc(var(--ss, 100px) * .04); }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.open > span:not(.bw-j) { display: none; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.open svg { display: block; flex: none; width: calc(var(--ss, 100px) * .3); height: auto; overflow: visible; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat.empty:not(.open) > span:not(.bw-ic) { display: none; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat .bw-ic { display: block; line-height: 1; }
+body[data-game="boowho"][data-bwlook] .lob .slots.fit .seat .bw-j { display: block; }
+/* (a full room: the seats are chips, a face and a name) */
+body[data-game="boowho"][data-bwlook] .lob .slots.fit.chips .seat .bw-ic, body[data-game="boowho"][data-bwlook] .lob .slots.fit.chips .seat.open svg { display: none; }
+/* how to play: the label (with the game mode), and its three lines, numbered */
+body[data-game="boowho"][data-bwlook] .lob-x { margin-top: auto; min-height: 0; }
+body[data-game="boowho"][data-bwlook] .lob-x .lbl { text-transform: uppercase; }
+body[data-game="boowho"][data-bwlook] .lob-x .bw-hr { box-sizing: border-box; min-height: 0; }
+body[data-game="boowho"][data-bwlook] .lob-x .bw-hr .t { flex: 1 1 auto; min-width: 0; }
+body[data-game="boowho"][data-bwlook] .lob-x ol.howto2 { display: none; }
+body[data-game="boowho"][data-bwlook] .body.lob.crowd .lob-x .bw-hr { padding-top: calc(0.5556 * var(--u)) !important; padding-bottom: calc(0.5556 * var(--u)) !important; }
+body[data-game="boowho"][data-bwlook] .body.lob.crowd .lob-x .bw-hr .t { font-size: calc(1.8519 * var(--u)) !important; }
+/* the bottom line */
+body[data-game="boowho"][data-bwlook] .lob-foot { align-items: center; }
+body[data-game="boowho"][data-bwlook] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); flex-wrap: nowrap; }
+html.no-flexgap body[data-game="boowho"][data-bwlook] .lob-foot .lf > * { margin: 0 calc(1.4815 * var(--u)) 0 0; }
+body[data-game="boowho"][data-bwlook] .lob-foot b { font: 700 calc(2.4075 * var(--u))/var(--lh) var(--bf); }
+body[data-game="boowho"][data-bwlook] .lob-foot .snd, body[data-game="boowho"][data-bwlook] .lob-foot .fs, body[data-game="boowho"][data-bwlook] .lob-foot .zm {
+  padding: calc(0.926 * var(--u)) calc(2.0371 * var(--u)); border-radius: 999px; border-width: calc(0.1389 * var(--u)); border-style: solid; font: 600 calc(2.0371 * var(--u))/var(--lh) var(--bf); white-space: nowrap; opacity: 1; }
+body[data-game="boowho"][data-bwlook] .lob-foot .zm { padding: calc(0.6482 * var(--u)) calc(1.1112 * var(--u)); grid-gap: 0; gap: 0; }
+body[data-game="boowho"][data-bwlook] .lob-foot .zm button { padding: 0; font: 600 calc(2.0371 * var(--u))/var(--lh) var(--bf); color: inherit; }
+body[data-game="boowho"][data-bwlook] .lob-foot .zm .zv { min-width: 0; padding: 0; opacity: .6; color: inherit; font: 600 calc(2.0371 * var(--u))/var(--lh) var(--bf); }
+body[data-game="boowho"][data-bwlook] .lob-foot small { font-size: calc(1.4815 * var(--u)); max-width: none; }
+body[data-game="boowho"][data-bwlook] .boo { display: none; }
+
+/* ==================== each lobby's own seats (the parts the designs show only empty) ==================== */
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat b { color: #ffd27a; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat .av { box-shadow: 0 0 0 calc(var(--ss, 100px) * .025) #14101f; box-shadow: 0 0 0 max(2px, calc(var(--ss, 100px) * .025)) #14101f; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat.empty:not(.open) .bw-ic { font-family: 'BW Bangers', var(--bf); }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat b { color: #ffc93c; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat b { color: #ffb3d1; }
+
+/* ==================== generated by css/gen_lobby.py from the four lobby designs ==================== */
+/* ---------- comedy ---------- */
+body[data-game="boowho"][data-bwlook="comedy"] { background: #000; }
+body[data-game="boowho"][data-bwlook="comedy"] .stage { color: rgb(255, 244, 234); background: radial-gradient(30% 50% at 82% 40%, rgba(255, 220, 150, 0.22), transparent 70%), repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0, rgba(0, 0, 0, 0.35) calc(0.3704 * var(--u)), transparent calc(0.3704 * var(--u)), transparent calc(5.5556 * var(--u))), repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.3) 0, rgba(0, 0, 0, 0.3) calc(0.3704 * var(--u)), transparent calc(0.3704 * var(--u)), transparent calc(11.1112 * var(--u))), linear-gradient(rgb(106, 42, 30), rgb(58, 20, 14)); padding: calc(4.6297 * var(--u)) calc(7.4075 * var(--u)) calc(3.7038 * var(--u)); grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .body.lob { grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.926 * var(--u)); gap: calc(5.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top { grid-gap: calc(2.5926 * var(--u)); gap: calc(2.5926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .logo { width: calc(10.1852 * var(--u)); height: calc(10.1852 * var(--u)); border-radius: 50%; background: linear-gradient(160deg, rgb(167, 123, 255), rgb(106, 58, 212)); box-shadow: rgb(26, 10, 8) 0 0 0 calc(0.463 * var(--u)), rgb(79, 240, 255) 0 0 0 calc(0.8334 * var(--u)), rgba(79, 240, 255, 0.533) 0 0 calc(3.7038 * var(--u)); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; overflow: visible; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top h1 { font-weight: 400; letter-spacing: normal; font-family: 'BW Pacifico', var(--bf); font-size: calc(9.2593 * var(--u)); line-height: 1.1; color: rgb(255, 255, 255); text-shadow: rgb(255, 255, 255) 0 0 calc(0.5556 * var(--u)), rgb(79, 240, 255) 0 0 calc(1.8519 * var(--u)), rgb(79, 240, 255) 0 0 calc(4.6297 * var(--u)); animation: 7s ease 1s infinite normal none running bwk-neonF; margin: 0; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .sub { letter-spacing: normal; font-size: calc(2.7778 * var(--u)); font-weight: 700; color: rgb(245, 208, 191); margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .grow { grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .deco { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .deco .tile-e:nth-child(1) { border: 0; width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(26, 10, 8); box-shadow: rgb(255, 79, 163) 0 0 0 calc(0.2778 * var(--u)), rgba(255, 79, 163, 0.6) 0 0 calc(2.0371 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .deco .tile-e:nth-child(2) { border: 0; width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(26, 10, 8); box-shadow: rgb(79, 240, 255) 0 0 0 calc(0.2778 * var(--u)), rgba(79, 240, 255, 0.6) 0 0 calc(2.0371 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .deco .tile-e:nth-child(3) { border: 0; width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(26, 10, 8); box-shadow: rgb(255, 210, 122) 0 0 0 calc(0.2778 * var(--u)), rgba(255, 210, 122, 0.6) 0 0 calc(2.0371 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-top .deco .tile-e:nth-child(4) { border: 0; width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(26, 10, 8); box-shadow: rgb(255, 79, 163) 0 0 0 calc(0.2778 * var(--u)), rgba(255, 79, 163, 0.6) 0 0 calc(2.0371 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-l { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .join { grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(20, 8, 6, 0.78); border: calc(0.1389 * var(--u)) solid rgba(255, 210, 122, 0.3); box-shadow: rgba(0, 0, 0, 0.5) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comedy"] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comedy"] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .qr { width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); box-sizing: border-box; background: rgb(255, 255, 255); border-radius: calc(1.8519 * var(--u)); box-shadow: rgb(255, 79, 163) 0 0 0 calc(0.463 * var(--u)), rgba(255, 79, 163, 0.467) 0 0 calc(3.7038 * var(--u)); flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .jt .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .jt .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 79, 163); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(255, 255, 255); box-shadow: currentcolor 0 0 calc(1.4815 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .jt .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(3.3334 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comedy"] .jt .or { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); color: rgb(245, 208, 191); margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .codetiles span { width: calc(6.4815 * var(--u)); height: calc(8.1482 * var(--u)); border-radius: calc(1.2963 * var(--u)); background: rgb(26, 10, 8); border: calc(0.1852 * var(--u)) solid rgb(79, 240, 255); box-shadow: rgba(79, 240, 255, 0.467) 0 0 calc(1.2963 * var(--u)), rgba(79, 240, 255, 0.267) 0 0 calc(0.926 * var(--u)) inset; font-family: var(--bf); font-weight: 700; font-size: calc(4.6297 * var(--u)); color: rgb(255, 255, 255); text-shadow: rgb(79, 240, 255) 0 0 calc(0.926 * var(--u)); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; padding: 0; box-sizing: content-box; }
+body[data-game="boowho"][data-bwlook="comedy"] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(1) { padding: calc(2.4075 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(20, 8, 6, 0.78); border: calc(0.1389 * var(--u)) solid rgba(255, 210, 122, 0.3); box-shadow: rgba(0, 0, 0, 0.5) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(1) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(1) .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(79, 240, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(10, 42, 46); box-shadow: currentcolor 0 0 calc(1.4815 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(1) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(1) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(251, 230, 220); margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(2) { padding: calc(2.4075 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(20, 8, 6, 0.78); border: calc(0.1389 * var(--u)) solid rgba(255, 210, 122, 0.3); box-shadow: rgba(0, 0, 0, 0.5) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(2) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(2) .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 210, 122); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(58, 36, 0); box-shadow: currentcolor 0 0 calc(1.4815 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(2) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comedy"] .stp-c:nth-child(2) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(251, 230, 220); margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-r { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .ph h2 { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(4.2593 * var(--u)); white-space: nowrap; margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; animation: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat:not(.empty), body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat.open { border-radius: calc(2.0371 * var(--u)); background: radial-gradient(circle at 50% 30%, rgba(255, 230, 170, 0.22), rgba(20, 8, 6, 0.6)); border: calc(0.2778 * var(--u)) solid rgba(255, 210, 122, 0.55); height: auto; grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat.empty:not(.open) { border-radius: calc(2.0371 * var(--u)); border: calc(0.2778 * var(--u)) dashed rgba(255, 255, 255, 0.12); background: rgba(20, 8, 6, 0.45); height: auto; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat b, body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat.open .bw-j { letter-spacing: normal; font-family: var(--bf); font-weight: 600; color: rgb(255, 210, 122); font-size: calc(calc(var(--ss, 100px) * .16)); font-size: min(calc(2.5926 * var(--u)), max(calc(1.2038 * var(--u)), calc(var(--ss, 100px) * .16))); line-height: 1.15; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob .slots.fit .seat .bw-ic { font-weight: 400; letter-spacing: normal; color: inherit; opacity: 0.25; font-size: calc(var(--ss, 100px) * 0.1818); font-size: min(calc(3.1482 * var(--u)), calc(var(--ss, 100px) * 0.1818)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); display: flex; flex-direction: column; margin-top: auto; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comedy"] .lob-x > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .lbl { font-size: calc(1.8519 * var(--u)); font-weight: 900; letter-spacing: 0.25em; color: rgb(255, 210, 122); margin: 0; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(2) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(20, 8, 6, 0.7); border: calc(0.0926 * var(--u)) solid rgba(255, 210, 122, 0.2); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(2) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 79, 163); color: rgb(255, 255, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(2) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(251, 230, 220); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(3) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(20, 8, 6, 0.7); border: calc(0.0926 * var(--u)) solid rgba(255, 210, 122, 0.2); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(3) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(79, 240, 255); color: rgb(10, 42, 46); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(3) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(251, 230, 220); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(4) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(20, 8, 6, 0.7); border: calc(0.0926 * var(--u)) solid rgba(255, 210, 122, 0.2); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(4) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 210, 122); color: rgb(58, 36, 0); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-x .bw-hr:nth-child(4) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(251, 230, 220); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-foot b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comedy"] .lob-foot .snd, body[data-game="boowho"][data-bwlook="comedy"] .lob-foot .fs, body[data-game="boowho"][data-bwlook="comedy"] .lob-foot .zm, body[data-game="boowho"][data-bwlook="comedy"] .ph .pill { letter-spacing: normal; color: inherit; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); padding: calc(0.926 * var(--u)) calc(2.2223 * var(--u)); border-radius: calc(92.5 * var(--u)); background: rgba(20, 8, 6, 0.85); border: calc(0.1389 * var(--u)) solid rgba(255, 210, 122, 0.35); font-family: var(--bf); font-weight: 600; font-size: calc(2.0371 * var(--u)); opacity: 1; white-space: nowrap; }
+/* ---------- comic ---------- */
+body[data-game="boowho"][data-bwlook="comic"] { background: #000; }
+body[data-game="boowho"][data-bwlook="comic"] .stage { color: rgb(20, 16, 31); background: radial-gradient(circle, rgba(20, 16, 31, 0.14) calc(0.2315 * var(--u)), transparent calc(0.2778 * var(--u))) 0 0 / calc(2.0371 * var(--u)) calc(2.0371 * var(--u)), linear-gradient(135deg, rgb(255, 208, 224), rgb(255, 231, 168) 50%, rgb(200, 228, 255)); padding: calc(4.6297 * var(--u)) calc(7.4075 * var(--u)) calc(3.7038 * var(--u)); grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .body.lob { grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.926 * var(--u)); gap: calc(5.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top { grid-gap: calc(2.5926 * var(--u)); gap: calc(2.5926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .logo { width: calc(10.1852 * var(--u)); height: calc(10.1852 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: linear-gradient(160deg, rgb(167, 123, 255), rgb(106, 58, 212)); border: calc(0.463 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.7408 * var(--u)) calc(0.7408 * var(--u)) 0; transform: rotate(-6deg); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; overflow: visible; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top h1 { font-weight: 400; font-family: 'BW Bangers', var(--bf); font-size: calc(11.4815 * var(--u)); line-height: 0.9; letter-spacing: 0.04em; color: rgb(255, 225, 74); -webkit-text-stroke: calc(0.463 * var(--u)) rgb(20, 16, 31); paint-order: stroke; text-shadow: rgb(20, 16, 31) calc(0.7408 * var(--u)) calc(0.7408 * var(--u)) 0; transform: rotate(-2deg); margin: 0; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top h1 .q { color: rgb(255, 59, 92); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .sub { letter-spacing: normal; font-size: calc(2.7778 * var(--u)); font-weight: 700; color: rgb(58, 42, 80); margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .grow { grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .deco { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .deco .tile-e:nth-child(1) { width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.8889 * var(--u)); background: rgb(255, 225, 74); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.463 * var(--u)) calc(0.463 * var(--u)) 0; transform: rotate(-8deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .deco .tile-e:nth-child(2) { width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.8889 * var(--u)); background: rgb(255, 255, 255); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.463 * var(--u)) calc(0.463 * var(--u)) 0; transform: rotate(6deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .deco .tile-e:nth-child(3) { width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.8889 * var(--u)); background: rgb(255, 59, 92); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.463 * var(--u)) calc(0.463 * var(--u)) 0; transform: rotate(-4deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-top .deco .tile-e:nth-child(4) { width: calc(7.7778 * var(--u)); height: calc(7.7778 * var(--u)); border-radius: 50%; font-size: calc(3.8889 * var(--u)); background: rgb(42, 123, 255); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.463 * var(--u)) calc(0.463 * var(--u)) 0; transform: rotate(8deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-l { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob .join { grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); border-radius: calc(1.8519 * var(--u)); background: rgb(255, 255, 255); border: calc(0.463 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.926 * var(--u)) calc(0.926 * var(--u)) 0; display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comic"] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comic"] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob .qr { width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); box-sizing: border-box; background: rgb(255, 255, 255); border-radius: calc(1.2963 * var(--u)); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .jt .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .jt .stp .n { box-shadow: none; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 59, 92); font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.963 * var(--u)); color: rgb(255, 255, 255); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-sizing: border-box; display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .jt .stp b { color: inherit; font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(3.3334 * var(--u)); letter-spacing: 0.03em; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comic"] .jt .or { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); color: rgb(58, 42, 80); margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .codetiles span { width: calc(6.4815 * var(--u)); height: calc(8.1482 * var(--u)); border-radius: calc(1.1112 * var(--u)); background: rgb(255, 225, 74); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.463 * var(--u)) calc(0.463 * var(--u)) 0; font-family: 'BW Bangers', var(--bf); font-size: calc(5.3704 * var(--u)); color: rgb(20, 16, 31); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; padding: 0; box-sizing: content-box; }
+body[data-game="boowho"][data-bwlook="comic"] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(1) { padding: calc(2.4075 * var(--u)); border-radius: calc(1.8519 * var(--u)); background: rgb(255, 255, 255); border: calc(0.463 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.926 * var(--u)) calc(0.926 * var(--u)) 0; grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(1) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(1) .stp .n { box-shadow: none; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(42, 123, 255); font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.963 * var(--u)); color: rgb(255, 255, 255); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-sizing: border-box; display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(1) .stp b { color: inherit; font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.963 * var(--u)); letter-spacing: 0.03em; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(1) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(42, 32, 64); margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(2) { padding: calc(2.4075 * var(--u)); border-radius: calc(1.8519 * var(--u)); background: rgb(255, 255, 255); border: calc(0.463 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.926 * var(--u)) calc(0.926 * var(--u)) 0; grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(2) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(2) .stp .n { box-shadow: none; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 225, 74); font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.963 * var(--u)); color: rgb(20, 16, 31); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-sizing: border-box; display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(2) .stp b { color: inherit; font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.963 * var(--u)); letter-spacing: 0.03em; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comic"] .stp-c:nth-child(2) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(42, 32, 64); margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-r { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .ph h2 { color: inherit; font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(4.2593 * var(--u)); letter-spacing: 0.03em; white-space: nowrap; margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; animation: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat:not(.empty), body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat.open { border-radius: calc(1.8519 * var(--u)); background: rgb(255, 255, 255); border: calc(0.3704 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.5556 * var(--u)) calc(0.5556 * var(--u)) 0; height: auto; grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat.empty:not(.open) { border-radius: calc(1.8519 * var(--u)); border: calc(0.3704 * var(--u)) dashed rgba(20, 16, 31, 0.3); background: rgba(255, 255, 255, 0.35); height: auto; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat b, body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat.open .bw-j { letter-spacing: normal; font-family: 'BW Bangers', var(--bf); font-weight: 600; color: rgb(255, 59, 92); font-size: calc(calc(var(--ss, 100px) * .16)); font-size: min(calc(3.1482 * var(--u)), max(calc(1.2038 * var(--u)), calc(var(--ss, 100px) * .16))); line-height: 1.15; }
+body[data-game="boowho"][data-bwlook="comic"] .lob .slots.fit .seat .bw-ic { font-weight: 400; letter-spacing: normal; font-family: 'BW Bangers', var(--bf); color: rgba(20, 16, 31, 0.2); font-size: calc(var(--ss, 100px) * 0.3235); font-size: min(calc(5.5556 * var(--u)), calc(var(--ss, 100px) * 0.3235)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x { grid-gap: calc(1.1112 * var(--u)); gap: calc(1.1112 * var(--u)); display: flex; flex-direction: column; margin-top: auto; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comic"] .lob-x > * + * { margin-top: calc(1.1112 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .lbl { font-size: calc(1.8519 * var(--u)); font-weight: 900; letter-spacing: 0.25em; color: rgb(255, 59, 92); margin: 0; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(2) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.2963 * var(--u)); background: rgb(255, 255, 255); border: calc(0.2778 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.3704 * var(--u)) calc(0.3704 * var(--u)) 0; display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(2) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 59, 92); color: rgb(255, 255, 255); font-family: 'BW Bangers', var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(2) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(42, 32, 64); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(3) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.2963 * var(--u)); background: rgb(255, 255, 255); border: calc(0.2778 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.3704 * var(--u)) calc(0.3704 * var(--u)) 0; display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(3) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(42, 123, 255); color: rgb(255, 255, 255); font-family: 'BW Bangers', var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(3) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(42, 32, 64); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(4) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.2963 * var(--u)); background: rgb(255, 255, 255); border: calc(0.2778 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.3704 * var(--u)) calc(0.3704 * var(--u)) 0; display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(4) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 225, 74); color: rgb(20, 16, 31); font-family: 'BW Bangers', var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-x .bw-hr:nth-child(4) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(42, 32, 64); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="comic"] .lob-foot b { color: inherit; font-family: 'BW Bangers', var(--bf); font-weight: 400; font-size: calc(2.5926 * var(--u)); letter-spacing: 0.03em; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="comic"] .lob-foot .snd, body[data-game="boowho"][data-bwlook="comic"] .lob-foot .fs, body[data-game="boowho"][data-bwlook="comic"] .lob-foot .zm, body[data-game="boowho"][data-bwlook="comic"] .ph .pill { letter-spacing: normal; color: inherit; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); padding: calc(0.926 * var(--u)) calc(2.2223 * var(--u)); border-radius: calc(92.5 * var(--u)); background: rgb(255, 255, 255); border: calc(0.2778 * var(--u)) solid rgb(20, 16, 31); box-shadow: rgb(20, 16, 31) calc(0.3704 * var(--u)) calc(0.3704 * var(--u)) 0; font-family: var(--bf); font-weight: 600; font-size: calc(2.0371 * var(--u)); opacity: 1; white-space: nowrap; }
+/* ---------- election ---------- */
+body[data-game="boowho"][data-bwlook="election"] { background: #000; }
+body[data-game="boowho"][data-bwlook="election"] .stage { color: rgb(255, 255, 255); background: radial-gradient(50% 50% at 50% 0%, rgba(255, 59, 92, 0.22), transparent 70%), radial-gradient(50% 50% at 100% 100%, rgba(42, 123, 255, 0.25), transparent 70%), linear-gradient(rgb(20, 29, 90), rgb(13, 20, 64) 60%, rgb(7, 11, 38)); padding: calc(4.6297 * var(--u)) calc(7.4075 * var(--u)) calc(3.7038 * var(--u)); grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .body.lob { grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.926 * var(--u)); gap: calc(5.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-top { grid-gap: calc(2.5926 * var(--u)); gap: calc(2.5926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .logo { width: calc(10.926 * var(--u)); height: calc(10.926 * var(--u)); border-radius: 50%; background: linear-gradient(160deg, rgb(167, 123, 255), rgb(106, 58, 212)); box-shadow: rgb(255, 255, 255) 0 0 0 calc(0.5556 * var(--u)), rgb(255, 59, 92) 0 0 0 calc(1.1112 * var(--u)), rgba(0, 0, 0, 0.4) 0 calc(1.2963 * var(--u)) calc(2.7778 * var(--u)); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; overflow: visible; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top h1 { letter-spacing: normal; font-family: var(--bf); font-weight: 700; font-size: calc(9.2593 * var(--u)); line-height: 1; color: rgb(255, 255, 255); text-shadow: rgb(255, 59, 92) 0 calc(0.463 * var(--u)) 0, rgb(42, 123, 255) 0 calc(0.926 * var(--u)) 0, rgba(255, 255, 255, 0.25) 0 0 calc(3.7038 * var(--u)); margin: 0; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .sub { letter-spacing: normal; font-size: calc(2.7778 * var(--u)); font-weight: 700; color: rgb(200, 212, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .grow { grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .deco { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .deco .tile-e:nth-child(1) { border: 0; width: calc(8.3334 * var(--u)); height: calc(8.3334 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(255, 59, 92) 0 0 0 calc(0.463 * var(--u)), rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .deco .tile-e:nth-child(2) { border: 0; width: calc(8.3334 * var(--u)); height: calc(8.3334 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(42, 123, 255) 0 0 0 calc(0.463 * var(--u)), rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .deco .tile-e:nth-child(3) { border: 0; width: calc(8.3334 * var(--u)); height: calc(8.3334 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(255, 201, 60) 0 0 0 calc(0.463 * var(--u)), rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-top .deco .tile-e:nth-child(4) { border: 0; width: calc(8.3334 * var(--u)); height: calc(8.3334 * var(--u)); border-radius: 50%; font-size: calc(3.7038 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(255, 59, 92) 0 0 0 calc(0.463 * var(--u)), rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-l { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob .join { grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(255, 255, 255, 0.07); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.18); box-shadow: rgba(0, 0, 0, 0.4) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="election"] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="election"] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob .qr { width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); box-sizing: border-box; background: rgb(255, 255, 255); border-radius: calc(1.8519 * var(--u)); box-shadow: rgb(255, 59, 92) 0 0 0 calc(0.5556 * var(--u)), rgb(255, 255, 255) 0 0 0 calc(1.1112 * var(--u)); flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .jt .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .jt .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 59, 92); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(255, 255, 255); box-shadow: rgba(255, 255, 255, 0.25) 0 0 0 calc(0.3704 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .jt .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(3.3334 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="election"] .jt .or { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); color: rgb(200, 212, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .codetiles span { width: calc(6.4815 * var(--u)); height: calc(8.1482 * var(--u)); border-radius: calc(1.1112 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(200, 208, 232) 0 calc(0.5556 * var(--u)) 0; font-family: var(--bf); font-weight: 700; font-size: calc(4.8149 * var(--u)); color: rgb(13, 20, 64); border-top: calc(0.7408 * var(--u)) solid rgb(255, 59, 92); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; padding: 0; box-sizing: content-box; }
+body[data-game="boowho"][data-bwlook="election"] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(1) { padding: calc(2.4075 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(255, 255, 255, 0.07); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.18); box-shadow: rgba(0, 0, 0, 0.4) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(1) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(1) .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 255, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(13, 20, 64); box-shadow: rgba(255, 255, 255, 0.25) 0 0 0 calc(0.3704 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(1) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(1) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(224, 232, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(2) { padding: calc(2.4075 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgba(255, 255, 255, 0.07); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.18); box-shadow: rgba(0, 0, 0, 0.4) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(2) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(2) .stp .n { border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(42, 123, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(255, 255, 255); box-shadow: rgba(255, 255, 255, 0.25) 0 0 0 calc(0.3704 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(2) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="election"] .stp-c:nth-child(2) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(224, 232, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .lob-r { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .ph h2 { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(4.2593 * var(--u)); white-space: nowrap; margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; animation: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat:not(.empty), body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat.open { border-radius: calc(2.0371 * var(--u)); background: linear-gradient(rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04)); border: calc(0.2778 * var(--u)) solid rgba(255, 201, 60, 0.6); box-shadow: rgba(255, 201, 60, 0.2) 0 0 calc(2.2223 * var(--u)); height: auto; grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat.empty:not(.open) { border-radius: calc(2.0371 * var(--u)); border: calc(0.2778 * var(--u)) dashed rgba(255, 255, 255, 0.18); background: rgba(255, 255, 255, 0.03); height: auto; }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat b, body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat.open .bw-j { letter-spacing: normal; font-family: var(--bf); font-weight: 600; color: rgb(255, 201, 60); font-size: calc(calc(var(--ss, 100px) * .16)); font-size: min(calc(2.5926 * var(--u)), max(calc(1.2038 * var(--u)), calc(var(--ss, 100px) * .16))); line-height: 1.15; }
+body[data-game="boowho"][data-bwlook="election"] .lob .slots.fit .seat .bw-ic { font-weight: 400; letter-spacing: normal; color: inherit; opacity: 0.2; font-size: calc(var(--ss, 100px) * 0.2156); font-size: min(calc(3.7038 * var(--u)), calc(var(--ss, 100px) * 0.2156)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x { grid-gap: calc(1.1112 * var(--u)); gap: calc(1.1112 * var(--u)); display: flex; flex-direction: column; margin-top: auto; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="election"] .lob-x > * + * { margin-top: calc(1.1112 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .lbl { font-size: calc(1.8519 * var(--u)); font-weight: 900; letter-spacing: 0.25em; color: rgb(255, 201, 60); margin: 0; }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(2) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.12); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(2) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 59, 92); color: rgb(255, 255, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(2) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(224, 232, 255); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(3) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.12); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(3) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 255, 255); color: rgb(13, 20, 64); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(3) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(224, 232, 255); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(4) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(1.4815 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.12); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(4) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(42, 123, 255); color: rgb(255, 255, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="election"] .lob-x .bw-hr:nth-child(4) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.35; color: rgb(224, 232, 255); }
+body[data-game="boowho"][data-bwlook="election"] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="election"] .lob-foot b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="election"] .lob-foot .snd, body[data-game="boowho"][data-bwlook="election"] .lob-foot .fs, body[data-game="boowho"][data-bwlook="election"] .lob-foot .zm, body[data-game="boowho"][data-bwlook="election"] .ph .pill { letter-spacing: normal; color: inherit; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); padding: calc(0.926 * var(--u)) calc(2.2223 * var(--u)); border-radius: calc(92.5 * var(--u)); background: rgba(255, 255, 255, 0.08); border: calc(0.1389 * var(--u)) solid rgba(255, 255, 255, 0.22); font-family: var(--bf); font-weight: 600; font-size: calc(2.0371 * var(--u)); opacity: 1; white-space: nowrap; }
+/* ---------- sleepover ---------- */
+body[data-game="boowho"][data-bwlook="sleepover"] { background: #000; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stage { color: rgb(244, 240, 255); background: radial-gradient(50% 50% at 85% 10%, rgba(255, 233, 163, 0.18), transparent 70%), radial-gradient(60% 50% at 10% 90%, rgba(255, 179, 209, 0.15), transparent 70%), linear-gradient(rgb(28, 26, 74), rgb(16, 14, 46)); padding: calc(4.6297 * var(--u)) calc(7.4075 * var(--u)) calc(3.7038 * var(--u)); grid-gap: calc(2.4075 * var(--u)); gap: calc(2.4075 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .body.lob { grid-template-columns: calc(83.3334 * var(--u)) minmax(0, 1fr); grid-gap: calc(5.926 * var(--u)); gap: calc(5.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top { grid-gap: calc(2.5926 * var(--u)); gap: calc(2.5926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .logo { width: calc(10.7408 * var(--u)); height: calc(10.1852 * var(--u)); border-radius: calc(3.7038 * var(--u)); background: linear-gradient(160deg, rgb(255, 179, 209), rgb(196, 138, 255)); box-shadow: rgba(255, 255, 255, 0.12) 0 0 0 calc(0.463 * var(--u)), rgba(0, 0, 0, 0.08) 0 calc(-0.926 * var(--u)) 0 inset, rgba(0, 0, 0, 0.4) 0 calc(1.2963 * var(--u)) calc(2.7778 * var(--u)); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; overflow: visible; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top h1 { font-weight: 400; letter-spacing: normal; font-family: 'BW Pacifico', var(--bf); font-size: calc(8.8889 * var(--u)); line-height: 1.05; color: rgb(255, 255, 255); text-shadow: rgba(255, 179, 209, 0.6) 0 0 calc(1.8519 * var(--u)), rgb(106, 74, 160) 0 calc(0.5556 * var(--u)) 0; margin: 0; white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .sub { letter-spacing: normal; font-size: calc(2.7778 * var(--u)); font-weight: 700; color: rgb(201, 198, 240); margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .grow { grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .deco { grid-gap: calc(1.6667 * var(--u)); gap: calc(1.6667 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .deco .tile-e:nth-child(1) { border: 0; width: calc(8.3334 * var(--u)); height: calc(7.2223 * var(--u)); border-radius: calc(3.5186 * var(--u)); font-size: calc(3.7038 * var(--u)); background: rgb(255, 214, 230); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.7408 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); transform: rotate(-6deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .deco .tile-e:nth-child(2) { border: 0; width: calc(8.3334 * var(--u)); height: calc(7.2223 * var(--u)); border-radius: calc(3.5186 * var(--u)); font-size: calc(3.7038 * var(--u)); background: rgb(214, 228, 255); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.7408 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); transform: rotate(5deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .deco .tile-e:nth-child(3) { border: 0; width: calc(8.3334 * var(--u)); height: calc(7.2223 * var(--u)); border-radius: calc(3.5186 * var(--u)); font-size: calc(3.7038 * var(--u)); background: rgb(255, 241, 200); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.7408 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); transform: rotate(-4deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-top .deco .tile-e:nth-child(4) { border: 0; width: calc(8.3334 * var(--u)); height: calc(7.2223 * var(--u)); border-radius: calc(3.5186 * var(--u)); font-size: calc(3.7038 * var(--u)); background: rgb(214, 255, 232); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.7408 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(0.926 * var(--u)) calc(1.8519 * var(--u)); transform: rotate(7deg); box-sizing: content-box; line-height: 1; animation: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-l { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .join { grid-gap: calc(3.3334 * var(--u)); gap: calc(3.3334 * var(--u)); padding: calc(2.7778 * var(--u)); border-radius: calc(3.7038 * var(--u)); background: rgba(255, 255, 255, 0.08); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.14); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.926 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="sleepover"] .lob .join > * + * { margin-left: calc(3.3334 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="sleepover"] .lob .join > * + * { margin-left: 0; margin-right: calc(3.3334 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .qr { width: calc(25 * var(--u)); height: calc(25 * var(--u)); padding: calc(1.2963 * var(--u)); box-sizing: border-box; background: rgb(255, 255, 255); border-radius: calc(2.7778 * var(--u)); box-shadow: rgba(255, 179, 209, 0.35) 0 0 0 calc(0.7408 * var(--u)); flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .jt { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .jt .stp { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .jt .stp .n { box-shadow: none; border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 179, 209); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(74, 26, 58); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .jt .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(3.3334 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="sleepover"] .jt .or { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); color: rgb(201, 198, 240); margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .codetiles { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .codetiles span { border: 0; width: calc(6.4815 * var(--u)); height: calc(7.963 * var(--u)); border-radius: calc(2.4075 * var(--u)); background: rgb(255, 255, 255); box-shadow: rgb(224, 220, 244) 0 calc(-0.7408 * var(--u)) 0 inset, rgba(0, 0, 0, 0.3) 0 calc(0.5556 * var(--u)) calc(1.2963 * var(--u)); font-family: var(--bf); font-weight: 700; font-size: calc(4.6297 * var(--u)); color: rgb(58, 42, 106); flex: none; display: grid; align-items: center; justify-items: center; place-items: center; padding: 0; box-sizing: content-box; }
+body[data-game="boowho"][data-bwlook="sleepover"] .steps2 { grid-gap: calc(2.2223 * var(--u)); gap: calc(2.2223 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(1) { padding: calc(2.4075 * var(--u)); border-radius: calc(3.7038 * var(--u)); background: rgba(255, 255, 255, 0.08); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.14); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.926 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(1) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(1) .stp .n { box-shadow: none; border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(138, 180, 255); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(20, 32, 74); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(1) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(1) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(226, 222, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(2) { padding: calc(2.4075 * var(--u)); border-radius: calc(3.7038 * var(--u)); background: rgba(255, 255, 255, 0.08); border: calc(0.1852 * var(--u)) solid rgba(255, 255, 255, 0.14); box-shadow: rgba(0, 0, 0, 0.08) 0 calc(-0.926 * var(--u)) 0 inset, rgba(0, 0, 0, 0.35) 0 calc(1.8519 * var(--u)) calc(4.6297 * var(--u)); grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(2) .stp { grid-gap: calc(1.2963 * var(--u)); gap: calc(1.2963 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(2) .stp .n { box-shadow: none; border: 0; width: calc(5.1852 * var(--u)); height: calc(5.1852 * var(--u)); border-radius: 50%; background: rgb(255, 233, 163); font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); color: rgb(74, 58, 16); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(2) .stp b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.963 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="sleepover"] .stp-c:nth-child(2) p { font-weight: 400; letter-spacing: normal; font-size: calc(2.2223 * var(--u)); line-height: 1.45; color: rgb(226, 222, 255); margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-r { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .ph h2 { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(4.2593 * var(--u)); white-space: nowrap; margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat { box-sizing: border-box; overflow: visible; animation: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat:not(.empty), body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat.open { border-radius: calc(3.7038 * var(--u)); background: linear-gradient(rgba(255, 179, 209, 0.2), rgba(138, 180, 255, 0.12)); border: calc(0.2778 * var(--u)) dashed rgba(255, 179, 209, 0.6); height: auto; grid-gap: calc(0.7408 * var(--u)); gap: calc(0.7408 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat.empty:not(.open) { border-radius: calc(3.7038 * var(--u)); border: calc(0.2778 * var(--u)) dashed rgba(255, 255, 255, 0.14); background: rgba(255, 255, 255, 0.03); height: auto; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat b, body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat.open .bw-j { letter-spacing: normal; font-family: var(--bf); font-weight: 600; color: rgb(255, 179, 209); font-size: calc(calc(var(--ss, 100px) * .16)); font-size: min(calc(2.5926 * var(--u)), max(calc(1.2038 * var(--u)), calc(var(--ss, 100px) * .16))); line-height: 1.15; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob .slots.fit .seat .bw-ic { font-weight: 400; letter-spacing: normal; color: inherit; opacity: 0.25; font-size: calc(var(--ss, 100px) * 0.1818); font-size: min(calc(3.1482 * var(--u)), calc(var(--ss, 100px) * 0.1818)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x { grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); display: flex; flex-direction: column; margin-top: auto; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="sleepover"] .lob-x > * + * { margin-top: calc(0.926 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .lbl { font-size: calc(1.8519 * var(--u)); font-weight: 900; letter-spacing: 0.25em; color: rgb(255, 179, 209); margin: 0; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(2) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(2.0371 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(2) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(2) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 179, 209); color: rgb(74, 26, 58); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(2) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(226, 222, 255); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(3) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(2.0371 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(3) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(3) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(138, 180, 255); color: rgb(20, 32, 74); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(3) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(226, 222, 255); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(4) { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); padding: calc(0.926 * var(--u)) calc(1.6667 * var(--u)); border-radius: calc(2.0371 * var(--u)); background: rgba(255, 255, 255, 0.06); border: calc(0.0926 * var(--u)) solid rgba(255, 255, 255, 0.1); display: flex; align-items: center; }
+html.no-flexgap body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: calc(1.4815 * var(--u)); }
+html.no-flexgap[dir="rtl"] body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(4) > * + * { margin-left: 0; margin-right: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(4) .n { box-shadow: none; border: 0; width: calc(3.7038 * var(--u)); height: calc(3.7038 * var(--u)); border-radius: 50%; background: rgb(255, 233, 163); color: rgb(74, 58, 16); font-family: var(--bf); font-weight: 700; font-size: calc(2.0371 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-x .bw-hr:nth-child(4) .t { font-weight: 400; letter-spacing: normal; font-size: calc(2.0371 * var(--u)); line-height: 1.35; color: rgb(226, 222, 255); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-foot .lf { grid-gap: calc(1.4815 * var(--u)); gap: calc(1.4815 * var(--u)); }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-foot b { letter-spacing: normal; color: inherit; font-family: var(--bf); font-weight: 700; font-size: calc(2.5926 * var(--u)); white-space: nowrap; }
+body[data-game="boowho"][data-bwlook="sleepover"] .lob-foot .snd, body[data-game="boowho"][data-bwlook="sleepover"] .lob-foot .fs, body[data-game="boowho"][data-bwlook="sleepover"] .lob-foot .zm, body[data-game="boowho"][data-bwlook="sleepover"] .ph .pill { letter-spacing: normal; color: inherit; grid-gap: calc(0.926 * var(--u)); gap: calc(0.926 * var(--u)); padding: calc(0.926 * var(--u)) calc(2.2223 * var(--u)); border-radius: calc(92.5 * var(--u)); background: rgba(255, 255, 255, 0.08); border: calc(0.1389 * var(--u)) solid rgba(255, 255, 255, 0.18); font-family: var(--bf); font-weight: 600; font-size: calc(2.0371 * var(--u)); opacity: 1; white-space: nowrap; }
+
+
+/* ==================== the game's screens: each design is its 1920 x 1080 canvas, scaled to fit the TV ==================== */
+/* (the designs have their own Boo: the kit's corner Boo stays away) */
+body[data-game="boowho"] > .boo { display: none !important; }
+.bw-host { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; overflow: hidden; z-index: 4; background: #0e0822; }
+.bw-cv { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; color: #fff; line-height: normal; letter-spacing: normal; text-align: left; direction: ltr;
+  font-family: 'BW Nunito', 'BV Script', sans-serif; --bf: 'BW Fredoka', 'BV Fun', 'BV Script', sans-serif; --bn: 'BW Nunito', 'BV Script', sans-serif; }
+.bw-cv [hidden] { display: none !important; }
+.bw-cv * { box-sizing: content-box; }
+.bw-cv [dir="auto"] { unicode-bidi: plaintext; }
+/* (a player's face where the design has its Boo: their Boo, or their photo in a circle) */
+.bw-cv img.bw-face { display: block; flex: none; width: var(--b, 60px); height: var(--b, 60px); object-fit: contain; }
+.bw-cv img.bw-face[data-ph="1"] { width: var(--p, 60px); height: var(--p, 60px); border-radius: 50%; object-fit: cover; }
+.bw-cv img.bw-ov { display: none; }
+.bw-cv img.bw-ov[data-ph="1"] { display: block; position: absolute; left: 14px; top: 17px; width: 56px; height: 56px; border-radius: 50%; object-fit: cover; z-index: 1; box-shadow: 0 0 0 3px #fff; }
+/* (the players' part of a live screen: drawn bigger and made smaller to fit, for a big room) */
+.bw-cv [data-k="lanes"] { transform-origin: 0 0; }
+.bw-cv .bw-more { flex: none; order: -1; padding: 6px 16px; border-radius: 999px; background: rgba(10, 6, 24, .72); color: #fff; font: 700 22px/1.2 var(--bf); white-space: nowrap; }
+.bw-cv .bw-dock.light .bw-more { background: rgba(26, 16, 51, .7); }
+
+/* the clock: a pill like the design's round pill, after it; red and beating in the last seconds */
+.bw-cv .bw-tm { display: flex; align-items: center; grid-gap: 10px; gap: 10px; font-variant-numeric: tabular-nums; }
+html.no-flexgap .bw-cv .bw-tm > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .bw-cv .bw-tm > * + * { margin-left: 0; margin-right: 10px; }
+.bw-cv .bw-tm b { display: inline-block; min-width: 1.2em; text-align: center; font: inherit; }
+.bw-cv .bw-tm.low { color: #ff5a8a; animation: bwk-tmLow .5s ease-in-out infinite alternate; }
+.bw-cv .bw-tm.off { opacity: 0; transition: opacity .4s; }
+/* the golden question: a gold sign by the round, and the round itself in gold */
+.bw-cv .bw-gold { display: flex; align-items: center; grid-gap: 8px; gap: 8px; padding: 8px 22px; border-radius: 999px; background: linear-gradient(180deg, #ffe58a, #ffb020); color: #4a2a00;
+  font: 700 34px/1.2 var(--bf); white-space: nowrap; box-shadow: 0 0 0 3px rgba(255, 255, 255, .5), 0 0 30px rgba(255, 201, 60, .7); animation: bwk-gold 1.6s ease-in-out infinite; }
+html.no-flexgap .bw-cv .bw-gold > * + * { margin-left: 8px; }
+html.no-flexgap[dir="rtl"] .bw-cv .bw-gold > * + * { margin-left: 0; margin-right: 8px; }
+/* who has voted: a face for each one who can, lit up (with a check) when they vote */
+.bw-cv .bw-dock { display: flex; align-items: center; justify-content: flex-end; grid-gap: 8px; gap: 8px; flex-wrap: wrap; max-width: 760px; }
+html.no-flexgap .bw-cv .bw-dock > * { margin: 0 8px 8px 0; }
+.bw-cv .bw-dock.top { position: absolute; right: 70px; top: 140px; z-index: 6; }
+.bw-cv .bw-dock i { position: relative; flex: none; width: 40px; height: 40px; border-radius: 50%; background: #2a1d5a center / cover no-repeat; opacity: .38; filter: grayscale(1);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, .28); transition: opacity .3s, filter .3s, box-shadow .3s; }
+.bw-cv .bw-dock i.boo { background-size: 82%; }
+.bw-cv .bw-dock i.on { opacity: 1; filter: none; box-shadow: 0 0 0 3px var(--c, #34d399), 0 0 14px var(--c, #34d399); animation: bwk-dockIn .5s cubic-bezier(.2, 1.6, .4, 1) both; }
+.bw-cv .bw-dock i.on::after { content: '\2713'; position: absolute; right: -5px; bottom: -5px; width: 20px; height: 20px; border-radius: 50%; background: #34d399; color: #fff;
+  font: 900 13px/20px 'BW Nunito', sans-serif; text-align: center; font-style: normal; box-shadow: 0 0 0 2px #1a1033; }
+.bw-cv .bw-dock.light i { background-color: #fff; box-shadow: 0 0 0 3px rgba(26, 16, 51, .2); }
+.bw-cv .bw-dock.dense i { width: 30px; height: 30px; }
+.bw-cv .bw-dock.dense i.on::after { width: 16px; height: 16px; font-size: 10px; line-height: 16px; right: -4px; bottom: -4px; }
+/* Boo's line: Boo pops in with a speech bubble */
+.bw-cv .bw-bub { position: absolute; z-index: 30; display: flex; align-items: center; grid-gap: 20px; gap: 20px; pointer-events: none; }
+html.no-flexgap .bw-cv .bw-bub > * + * { margin-left: 20px; }
+html.no-flexgap[dir="rtl"] .bw-cv .bw-bub > * + * { margin-left: 0; margin-right: 20px; }
+.bw-cv .bw-bub img { flex: none; width: 128px; height: 128px; filter: drop-shadow(0 12px 18px rgba(0, 0, 0, .4)); animation: bwk-bob 2.6s ease-in-out infinite; }
+.bw-cv .bw-bub .t { position: relative; max-width: 1220px; padding: 22px 36px; border-radius: 36px; background: #fff; color: #1a1033; font: 700 42px/1.22 var(--bf);
+  box-shadow: 0 0 0 5px var(--bc, #ff5a8a), 0 18px 44px rgba(0, 0, 0, .38); text-wrap: balance; }
+.bw-cv .bw-bub .t::before { content: ''; position: absolute; left: -24px; top: 50%; margin-top: -16px; border: 16px solid transparent; border-right: 26px solid var(--bc, #ff5a8a); border-left: 0; }
+.bw-cv .bw-bub .t::after { content: ''; position: absolute; left: -15px; top: 50%; margin-top: -11px; border: 11px solid transparent; border-right: 18px solid #fff; border-left: 0; }
+.bw-cv .bw-bub.in { animation: bwk-bubIn .6s cubic-bezier(.2, 1.5, .4, 1) both; }
+.bw-cv .bw-bub.out { animation: bwk-bubOut .35s ease-in both; }
+.bw-cv .bw-bub.small .t { font-size: 34px; padding: 18px 30px; }
+.bw-cv .bw-bub.up .t { max-width: 560px; }
+.bw-cv .bw-bub.up .t::before { left: auto; right: 72px; top: 100%; margin-top: 0; border: 16px solid transparent; border-top: 26px solid var(--bc, #ff5a8a); border-bottom: 0; }
+.bw-cv .bw-bub.up .t::after { left: auto; right: 77px; top: 100%; margin-top: -1px; border: 11px solid transparent; border-top: 18px solid #fff; border-bottom: 0; }
+.bw-cv .bw-bub.kids .t { background: linear-gradient(180deg, #fff, #fff4fb); }
+.bw-cv [data-k="q"].bw-hide { opacity: 0; transition: opacity .25s; }
+.bw-cv [data-k="q"] { transition: opacity .35s; }
+/* the scores, every five questions: the bar race design, with everyone's points */
+.bw-cv.bw-scores [data-k="q"] { color: #ffc93c; }
+/* how to play: the extra rules under the cards, and the bar running for as long as it shows */
+.bw-cv [data-k="more"]:empty { display: none; }
+.bw-cv [data-k="bar"] { animation-iteration-count: 1 !important; animation-fill-mode: forwards !important; }
+/* the winners: the players' faces where the designs have their Boos */
+.bw-cv .bw-wface { display: block; flex: none; object-fit: contain; }
+.bw-cv .bw-wface.ph { border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 5px #fff, 0 8px 18px rgba(0, 0, 0, .35); }
+.bw-cv .bw-wface.sq { border-radius: 6px; box-shadow: none; }
+.bw-cv [data-k^="nm"], .bw-cv [data-k="wname"] { text-overflow: ellipsis; }
+/* Kids: a star for every vote */
+.bw-cv .bw-star { position: absolute; z-index: 40; font-size: 64px; pointer-events: none; animation: bwk-starUp 1.6s cubic-bezier(.2, .9, .3, 1) both; }
+/* (the designs' wide-spaced labels: no spaces between the letters of a script that joins them, or doesn't space them) */
+html:lang(zh) .bw-cv *, html:lang(ja) .bw-cv *, html:lang(ko) .bw-cv *, html:lang(hi) .bw-cv *, html:lang(bn) .bw-cv *, html:lang(th) .bw-cv *, html[dir="rtl"] .bw-cv *,
+html:lang(zh) body[data-game="boowho"][data-bwlook] .lob *, html:lang(ja) body[data-game="boowho"][data-bwlook] .lob *, html:lang(ko) body[data-game="boowho"][data-bwlook] .lob *,
+html:lang(hi) body[data-game="boowho"][data-bwlook] .lob *, html:lang(bn) body[data-game="boowho"][data-bwlook] .lob *, html:lang(th) body[data-game="boowho"][data-bwlook] .lob *,
+html[dir="rtl"] body[data-game="boowho"][data-bwlook] .lob *,
+html:lang(zh) .bw-deco *, html:lang(ja) .bw-deco *, html:lang(ko) .bw-deco *, html:lang(hi) .bw-deco *, html:lang(bn) .bw-deco *, html:lang(th) .bw-deco *, html[dir="rtl"] .bw-deco * { letter-spacing: 0 !important; }
+@media (prefers-reduced-motion: reduce) { .bw-cv *, .bw-deco * { animation: none !important; transition: none !important; } }
+
+/* the game's own moves */
+@keyframes bwk-flipIn { 0% { transform: rotateY(90deg) scale(.9); } 100% { transform: none; } }
+@keyframes bwk-tmLow { from { transform: scale(1); } to { transform: scale(1.08); } }
+@keyframes bwk-gold { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.18); } }
+@keyframes bwk-dockIn { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } 100% { transform: none; } }
+@keyframes bwk-bubIn { 0% { opacity: 0; transform: translateY(26px) scale(.7); } 100% { opacity: 1; transform: none; } }
+@keyframes bwk-bubOut { to { opacity: 0; transform: translateY(-14px) scale(.9); } }
+@keyframes bwk-starUp { 0% { opacity: 0; transform: translateY(40px) scale(.4) rotate(-20deg); } 25% { opacity: 1; transform: translateY(0) scale(1.2) rotate(8deg); } 100% { opacity: 0; transform: translateY(-220px) scale(.9) rotate(0); } }
+
+/* the designs' own moves (gen/build.py) */
+@keyframes bwk-bob { 
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes bwk-bulb { 
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+@keyframes bwk-chipIn { 
+  0% { transform: translateY(-40px) scale(0.6); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes bwk-cloudM { 
+  0% { transform: translateX(0px); }
+  100% { transform: translateX(-50%); }
+}
+@keyframes bwk-doodle { 
+  0%, 100% { transform: rotate(var(--r)) scale(1); }
+  50% { transform: rotate(var(--r)) scale(1.06); }
+}
+@keyframes bwk-dropIn { 
+  0% { transform: translateY(-500px); }
+  70% { transform: translateY(6px); }
+  100% { transform: translateY(0px); }
+}
+@keyframes bwk-dropV { 
+  0% { transform: translateY(-120px) rotate(-8deg); opacity: 0; }
+  20% { opacity: 1; }
+  60% { transform: translateY(0px) rotate(0deg); }
+  100% { transform: translateY(0px); opacity: 0; }
+}
+@keyframes bwk-dust { 
+  0% { transform: translateX(0px) scale(0.6); opacity: 0.8; }
+  100% { transform: translateX(-60px) scale(1.4); opacity: 0; }
+}
+@keyframes bwk-fallC { 
+  0% { transform: translateY(-80px) rotate(0deg); }
+  100% { transform: translateY(1200px) rotate(540deg); }
+}
+@keyframes bwk-fillB { 
+  0% { width: 0px; }
+  100% { width: 100%; }
+}
+@keyframes bwk-flame { 
+  0%, 100% { transform: scaleY(1); }
+  50% { transform: scaleY(1.35); }
+}
+@keyframes bwk-floatQ { 
+  0%, 100% { transform: translateY(0) rotate(var(--r)); }
+  50% { transform: translateY(-18px) rotate(var(--r)); }
+}
+@keyframes bwk-glowR { 
+  0%, 100% { box-shadow: rgb(255, 201, 60) 0px 0px 0px 7px, rgba(255, 201, 60, 0.6) 0px 0px 40px; }
+  50% { box-shadow: rgb(255, 201, 60) 0px 0px 0px 7px, rgba(255, 201, 60, 0.95) 0px 0px 90px; }
+}
+@keyframes bwk-lightB { 
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+@keyframes bwk-liveB { 
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.3; }
+}
+@keyframes bwk-neonF { 
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.4; }
+  95% { opacity: 1; }
+  97% { opacity: 0.5; }
+}
+@keyframes bwk-orbitM { 
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes bwk-orbitQ { 
+  100% { transform: rotate(360deg); }
+}
+@keyframes bwk-popB { 
+  0%, 100% { transform: scale(1) rotate(var(--r)); }
+  50% { transform: scale(1.08) rotate(var(--r)); }
+}
+@keyframes bwk-popIn { 
+  0% { transform: translateY(30px) scale(0.9); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+@keyframes bwk-runB { 
+  0%, 100% { transform: translateY(0px) rotate(-4deg); }
+  50% { transform: translateY(-10px) rotate(4deg); }
+}
+@keyframes bwk-spinD { 
+  100% { transform: rotate(360deg); }
+}
+@keyframes bwk-starS { 
+  0% { background-position: 0px 0px; }
+  100% { background-position: 0px 400px; }
+}
+@keyframes bwk-swayB { 
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+@keyframes bwk-sweepA { 
+  0%, 100% { transform: rotate(-14deg); }
+  50% { transform: rotate(12deg); }
+}
+@keyframes bwk-swing { 
+  0%, 100% { transform: rotate(var(--r)); }
+  50% { transform: rotate(calc(var(--r) + 3deg)); }
+}
+@keyframes bwk-tapR { 
+  0% { transform: scale(0.4); opacity: 0.9; }
+  100% { transform: scale(1.8); opacity: 0; }
+}
+@keyframes bwk-twk { 
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+@keyframes bwk-unorbit { 
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(-360deg); }
+}
+@keyframes bwk-wheel { 
+  100% { transform: rotate(360deg); }
+}
+@keyframes bwk-zz { 
+  0% { transform: translate(0px, 0px); opacity: 0; }
+  30% { opacity: 1; }
+  100% { transform: translate(40px, -80px); opacity: 0; }
+}

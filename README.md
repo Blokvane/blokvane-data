@@ -166,11 +166,11 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   async functions. `play/index.html` loads them only there. Make them again after changing one of
   those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
   (`node tools/old-js.js --check` says if one is out of date).
-- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/wlook.css play/trivia.css play/emoji.css go/go.css`
+- `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/wlook.css play/bwlook.css play/trivia.css play/emoji.css go/go.css`
   adds the older way of writing newer CSS just before it, after a stylesheet changes. The phone
   page's own styles (in `go/m/party.js`) get the same. For the designed screens of Who's the
-  Imposter?, Emoji Riddles and Where in the World?, after they are made again:
-  `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js play/emoji-tpl.js play/world-tpl.js`.
+  Imposter?, Emoji Riddles, Where in the World? and Boo Who?, after they are made again:
+  `python3 tools/old-css.py --inline play/imp-tpl.js play/imp-ph.js play/emoji-tpl.js play/world-tpl.js play/boowho-tpl.js`.
 - Emoji Riddles is its own game: `play/emoji-game.js` (the TV), `play/emoji-tpl.js` (its designed
   screens: three question looks and three winner screens, made from the designs in
   `Games/Emoji Riddles`), `play/emoji.css` (its fonts, the lobby's Cinema Marquee, the green and
@@ -183,10 +183,19 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   `play/world-tpl.js` (its four winner screens), `play/icons/wmap.svg` (the designs' world map) and
   `play/sounds/wv-*.mp3` (its music). The phones' pin screen fits one screen on any phone, and only
   the map zooms (`go/m/party.js`).
+- Boo Who? is `play/boowho-game.js` (the TV: five modes, Classic, Superstar, Face-off, Lightning and
+  Kids; Boo's funny line after every question; the scores every five questions), `play/boowho-tpl.js`
+  (its designed screens, made from the designs in `Games/Boo Who`: three how-to-play looks, seven
+  live-vote looks that draw the votes as they come in, and three winner screens), `play/bwlook.css`
+  (its four lobby looks, Comedy club, Comic pop, Election night and Sleepover, and the screens' fonts
+  and moves), `play/bw/<lang>.json` (800 questions in 13 categories and Boo's lines, ten for each
+  moment, written for each of the seven languages, in the same order everywhere) and
+  `play/sounds/bw-*.mp3` (its music). Each look takes turns from one game to the next, or the host
+  picks one. The phones' vote screen, results and winners' picture are in `go/m/party.js`.
 - Trivia's questions (`play/q/`) are made by the question bank's `build_q.js`. The Trick questions
   (category 33) have an eighth part: the line that explains the trick, shown on the TV and on every
   phone once the answer is out.
-- The last screen of Where in the World?, Trivia and Guess It Right! has a picture of the winners
+- The last screen of Where in the World?, Trivia, Guess It Right! and Boo Who? has a picture of the winners
   to share (a tall story picture, drawn on the phone in the game's own look).
 - TVs near you: a phone on the same Wi-Fi as a TV finds it in a list and joins with one tap
   (`BVLIVE.nearby` in `go/live-kit.js`). Both ask the free STUN servers for the network's public

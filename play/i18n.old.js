@@ -22,7 +22,7 @@ var __async = (__this, __arguments, generator) => {
 };
 var BVI18N = (() => {
   "use strict";
-  const V = "17";
+  const V = "18";
   const LANGS = [["en", "English"], ["zh", "中文（普通话）"], ["hi", "हिन्दी"], ["es", "Español"], ["ar", "العربية"], ["fr", "Français"], ["bn", "বাংলা"]];
   const FULL = new Set(LANGS.map((l) => l[0]));
   const MORE = [
