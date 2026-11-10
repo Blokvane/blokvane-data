@@ -1,6 +1,6 @@
 // Blokvane on your phone: party games. Join the game on the TV (scan its QR code, or type the 6 letters under it),
 // pick a name and a Boo (or take a selfie: it only ever goes to that TV, which never saves it), and play. Each
-// question shows here the way its game needs it: big colored buttons, typing, a map to drop a pin on, a bingo card,
+// question shows here the way its game needs it: big colored buttons, typing, a map to drop a pin on,
 // shaking or tilting the phone. The first phone in is the host: it picks the game, its settings and the language.
 // Everything goes sealed and signed through the same free public relays as the rest of Blokvane; there is no server.
 (() => {
@@ -25,11 +25,11 @@
     join: 'Join the game', name: 'Your name', pickBoo: 'Pick your Boo', selfie: 'Take a selfie', ready: 'I\'m ready!', notReady: 'Not ready yet', host: 'You\'re the host', hostWait: 'Waiting for the host to start',
     start: 'Start the game', settings: 'Game settings', look: 'Look at the TV!', answered: 'Got it! Waiting for the others...', right: 'Right!', wrong: 'Not this time', out: 'You\'re out, but you can still help!',
     again: 'Play again', otherGame: 'Pick another game', you: 'You', points: 'points', place: 'place', send: 'Send', typeHere: 'Type here', skip: 'Skip', done: 'Done',
-    helpers: 'Helpers', fifty: 'Remove two', hint: 'Hint', auto: 'Answer it for me', ask: 'Ask everyone', peek: 'Hold to peek', imposter: 'You\'re the imposter!', vote: 'Vote', bingo: 'BINGO!',
+    helpers: 'Helpers', fifty: 'Remove two', hint: 'Hint', auto: 'Answer it for me', ask: 'Ask everyone', peek: 'Hold to peek', imposter: 'You\'re the imposter!', vote: 'Vote',
     yourTurn: 'Your turn!', team: 'Team', guess: 'Your guess', dropPin: 'Drop your pin', zoom: 'Pinch to zoom, tap to drop the pin',
-    lockPin: 'Lock in my pin', giveFake: 'Give me a fake', yourEmoji: 'Your emoji', theAnswer: 'The answer', print: 'Print the paper cards', checkPaper: 'Check a paper card', cardNo: 'Card number', check: 'Check',
+    lockPin: 'Lock in my pin', yourEmoji: 'Your emoji', theAnswer: 'The answer',
     holdTip: 'Hold it down to see your word. Let go to hide it.', category: 'Category', word: 'Your secret word', noWord: 'You get no word. Listen, and blend in!',
-    marks: 'The numbers mark themselves', tapNums: 'Tap the numbers the TV calls', lang: 'Language', players: 'Players', pickGame: 'Pick a game',
+    lang: 'Language', players: 'Players', pickGame: 'Pick a game',
     picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', of: 'of', first: 'You were the fastest!', youPicked: 'You picked',
     red: 'Red', blue: 'Blue', green: 'Green', gold: 'Gold', changeName: 'Change my name or Boo',
     needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', imposterSays: 'Category:', helpers1: 'Each helper works once.',
@@ -52,7 +52,7 @@
   const langsMore = () => (I() ? I().MORE : []);
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
   // each game's own icon (the TV's pictures, in ../play/icons: the same ones as on the TV and in Blokvane)
-  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'fakeout', 'emoji', 'higher', 'bingo', 'imposter']);
+  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'emoji', 'imposter']);
   function gameIcon(id, e) {
     if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
     return el('span', 'e', null, e || '🎲');
@@ -263,15 +263,6 @@ html.no-flexgap .pt-share > * + * { margin-top: 10px; }
 .pt-peek b{display:block;font:900 36px/1.15 var(--round);margin:6px 0}
 .pt-peek .pic{font-size:90px;line-height:1}
 .pt-peek small{color:var(--dim);font-size:15px}
-.pt-bingo{display:grid;grid-gap: 5px;gap:5px;direction:ltr}
-.pt-bingo button{aspect-ratio:1;border:0;border-radius:11px;background:var(--raise2);color:var(--text);font:800 18px var(--sans);padding:0;min-width:0}
-.pt-bingo.n90 button{font-size:14px;border-radius:8px}
-.pt-bingo button.hd{background:transparent;color:var(--sun);font:900 22px var(--round)}
-.pt-bingo button.on{background:var(--coral);color:#fff;box-shadow:inset 0 0 0 3px rgba(255,255,255,.45)}
-.pt-bingo button.called:not(.on){box-shadow:inset 0 0 0 2px var(--sun)}
-.pt-bingo button.blank{background:transparent}
-.pt-bingo.big button{font-size:24px}
-.pt-bingo.big.n90 button{font-size:18px}
 .pt-call{font:900 64px/1 var(--round);text-align:center;color:var(--sun);margin:4px 0 6px}
 .pt-games{display:grid;grid-gap: 10px;gap:10px}
 .pt-game{display:flex;grid-gap: 14px;gap:14px;align-items:center;text-align:start;border:1px solid var(--line);background:var(--raise);border-radius:20px;padding:14px 16px;color:var(--text);width:100%}
@@ -305,11 +296,6 @@ html.no-flexgap[dir="rtl"] .pt-list .r > * + * { margin-left: 0; margin-right: 1
 .pt-list .r b{flex:1}
 .pt-list .r .n{font:900 18px var(--round);color:var(--sun)}
 .pt-list .r.me{outline:2px solid var(--tint)}
-.pt-print{display:none}
-@media print{body>*:not(.pt-print){display:none!important}.pt-print{display:block!important;color:#000;background:#fff;font-family:system-ui,sans-serif}
-.pt-print .c{display:inline-block;margin:8px;page-break-inside:avoid;vertical-align:top}.pt-print table{border-collapse:collapse}
-.pt-print td{width:46px;height:46px;border:2px solid #222;text-align:center;font:700 19px system-ui}.pt-print th{font:900 22px system-ui;height:34px}.pt-print small{display:block;margin-top:4px;font-size:12px}}
-@keyframes pt-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
 @media (prefers-reduced-motion:reduce){.pt-res,.pt-wait .boo{animation:none}}
 /* ---------- the party games' night look (the same as the TV's): deep indigo, one warm yellow for what you pick ---------- */
 @font-face{font-family:'BV Fun';font-style:normal;font-weight:300 700;font-display:swap;src:url(../play/fonts/fredoka.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
@@ -774,7 +760,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
 
   // ---------- the game, as this phone sees it ----------
   const G = { R: null, s: '', tv: '', me: null, id: '', name: '', av: 'boo:hi', photo: '', joined: false, host: false, color: '', team: '', ready: false, lobby: null, phase: 'join',
-    q: null, qAt: 0, answered: false, locked: false, res: null, endRes: null, ranking: null, score: 0, lives: null, out: false, used: new Set(), secret: null, bingo: null, paper: null,
+    q: null, qAt: 0, answered: false, locked: false, res: null, endRes: null, ranking: null, score: 0, lives: null, out: false, used: new Set(), secret: null,
     S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null,
     wiz: 0, wizGame: '', plang: '', plangSent: '', kicked: false, key: '', again: false, closed: false };
   const S = () => G.S;
@@ -1223,23 +1209,6 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'helped': return onHelped(m);
       case 'gclue': return onClue(m);
       case 'secret': if (m.boxed) { G.secret = m; if (isImpGame()) { if (G.imp && ['peek', 'clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; } if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
-      case 'bingo-cards':
-        if (m.boxed && Array.isArray(m.cards)) {
-          G.bingo = { style: m.style === '90' ? '90' : '75', cards: m.cards.slice(0, 3).filter(c => c && Number.isInteger(c.no) && Array.isArray(c.cells)), auto: !!m.auto, big: !!m.big, pattern: String(m.pattern || 'line'), called: new Set(), marks: new Set(), last: 0, wait: 0 };
-          G.phase = 'play'; showBingo();
-        }
-        return;
-      case 'bingo-call':
-        if (G.bingo && Number.isInteger(m.n)) {
-          for (const n of (Array.isArray(m.called) ? m.called : [m.n])) if (Number.isInteger(n)) G.bingo.called.add(n);
-          G.bingo.last = m.n;
-          if (G.bingo.auto) for (const n of G.bingo.called) G.bingo.marks.add(n);
-          paintBingo(true);
-          // (a TV that can't speak: the host's phone reads the numbers out instead)
-          if (G.host && m.spoke === false && I()) I().speak((G.bingo.style === '75' && ['en', 'es', 'fr'].includes(G.lang) ? 'BINGO'[Math.min(4, Math.floor((m.n - 1) / 15))] + ' ' : '') + m.n, G.lang);
-        }
-        return;
-      case 'bingo-paper': if (m.boxed && Array.isArray(m.cards)) { G.paper = m; if (G.bingo) showBingo(); } return;
       default:
     }
   }
@@ -1282,7 +1251,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.host && m.phase === 'lobby' && G.wizTo != null) { G.wiz = G.wizTo; G.wizTo = null; }
     else if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if (was !== 'play' || fresh) { G.phase = 'play'; G.used.clear(); G.secret = null; G.bingo = null; G.paper = null; G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
+      if (was !== 'play' || fresh) { G.phase = 'play'; G.used.clear(); G.secret = null; G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1323,7 +1292,6 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     hideNext();
     const inIt = m.who.includes(G.id);
     if (m.extra && m.extra.helpOnly && !inIt) return;
-    if (G.bingo && m.kind === 'wait') return;
     G.phase = 'play';
     G.q = m; G.qAt = pnow(); G.answered = false; G.locked = false; G.res = null;
     showQ();
@@ -1335,7 +1303,6 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (m.out) G.out = true;
     // (a quick word in the middle of a turn, like "try another one" or "not yet")
     if (m.ok === false && m.pts == null && m.right == null && !m.out && m.note) { toast(L.clean(m.note, 140), 'bad'); buzz('bad'); return; }
-    if (G.bingo) { updMe(); return; }
     // (the answer is out: no more "Show the answer")
     G.revealQ = null;
     if (G.ui.next && String(G.ui.next._key).startsWith('reveal:')) hideNext();
@@ -1659,7 +1626,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       el('b', '', c, p.id === G.id ? S().you : L.clean(p.name, 16));
       if (p.lg && l.mlang) el('small', 'lg', c, String(p.lg).toUpperCase().slice(0, 2));
     }
-    const min = { imposter: 3, boowho: 2, fakeout: 2 }[l.game] || 1;
+    const min = { imposter: 3, boowho: 2 }[l.game] || 1;
     if (admin && ps.length < min) el('p', 'pt-note', box, S().needMore + ` (${ps.length}/${min})`);
   }
   // how to play: a game's own rules for the settings the host picked (Guess It Right!), in this phone's language
@@ -1981,7 +1948,6 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     stopQ();
     const q = G.q;
     if (!q) return showWait();
-    if (G.bingo) return showBingo();
     if (isImpGame()) { if (q.kind !== 'wait' && Array.isArray(q.who) && q.who.includes(G.id)) G.impQ = q; return impDraw(); }
     if (isEmo() && ((q.extra && q.extra.emo) || q.kind === 'emojimake')) return emoQ(q);
     const ex = q.extra || {};
@@ -2339,10 +2305,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     i.autocapitalize = 'sentences';
     b.appendChild(i);
     const row = el('div', 'grid2', b); row.style.marginTop = '12px';
-    const sug = Array.isArray(ex.suggest) ? ex.suggest.map(x => L.clean(x, max)).filter(Boolean) : [];
-    if (sug.length) btn(S().giveFake, { kind: 'ghost', icon: 'sparkle' }, row, () => { i.value = sug[Math.floor(Math.random() * sug.length)]; i.focus(); buzz('tap'); });
     const go = btn(S().send, { kind: 'go', icon: 'send' }, row, () => { const t = L.clean(i.value, max); if (!t) { toast(S().typeHere, 'bad'); i.focus(); return; } answer(t, t); });
-    if (!sug.length) go.style.gridColumn = '1 / -1';
+    go.style.gridColumn = '1 / -1';
     i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     setTimeout(() => { try { i.focus(); } catch (e) {} }, 250);
   }
@@ -3861,107 +3825,6 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     } else { el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]); }
   }
 
-  // Bingo Night: this phone's card(s)
-  function showBingo() {
-    stopQ();
-    const b = G.bingo;
-    if (!b) return;
-    const v = gameView();
-    G.ui.call = el('div', 'pt-call', v.body, '...');
-    el('p', 'muted small center', v.body, b.auto ? S().marks : S().tapNums).style.margin = '0 0 10px';
-    G.ui.cells = [];
-    const cols = b.style === '90' ? 9 : 5;
-    for (const c of b.cards) {
-      const card = el('div', 'card', v.body);
-      const grid = el('div', 'pt-bingo' + (b.big ? ' big' : '') + (b.style === '90' ? ' n90' : ''), card);
-      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-      if (b.style === '75') for (const ch of 'BINGO') { const h = el('button', 'hd', grid, ch); h.type = 'button'; h.tabIndex = -1; h.setAttribute('aria-hidden', 'true'); }
-      for (const n of c.cells.slice(0, cols === 5 ? 25 : 27)) {
-        const x = el('button', n < 0 ? 'blank' : '', grid, n === 0 ? '★' : n < 0 ? '' : String(n));
-        x.type = 'button';
-        if (n < 0) { x.tabIndex = -1; x.setAttribute('aria-hidden', 'true'); continue; }
-        if (n > 0) x.onclick = () => {
-          if (b.auto) return;
-          if (!b.called.has(n)) { buzz('bad'); x.animate([{ transform: 'translateX(-4px)' }, { transform: 'translateX(4px)' }, { transform: 'none' }], { duration: 220 }); return; }
-          if (b.marks.has(n)) b.marks.delete(n); else b.marks.add(n);
-          buzz('tap'); paintBingo();
-        };
-        G.ui.cells.push([n, x]);
-      }
-      el('small', 'muted', card, T('Card {no}', { no: c.no })).style.cssText = 'display:block;margin-top:8px;text-align:center';
-    }
-    const bb = btn(S().bingo, { kind: 'go', huge: true, full: true }, v.body, () => {
-      if (b.wait > Date.now()) return;
-      b.wait = Date.now() + 3000;
-      const have = new Set([0, ...(b.auto ? b.called : b.marks)]);
-      const best = b.cards.find(c => wins(c.cells, have, b.pattern, b.style)) || b.cards[0];
-      if (best) send({ k: 'bingo', no: best.no });
-      buzz('long');
-    });
-    bb.style.cssText += ';margin-top:14px;min-height:96px;font-size:28px';
-    G.ui.bingoBtn = bb;
-    if (G.host && G.paper) paperCard(v.body);
-    paintBingo();
-  }
-  function paintBingo(fresh) {
-    const b = G.bingo;
-    if (!b || !G.ui.cells) return;
-    if (G.ui.call && G.ui.call.isConnected) {
-      G.ui.call.textContent = b.last ? (b.style === '75' ? 'BINGO'[Math.min(4, Math.floor((b.last - 1) / 15))] + ' ' + b.last : String(b.last)) : '...';
-      if (fresh) try { G.ui.call.animate([{ transform: 'scale(.6)', opacity: .3 }, { transform: 'scale(1.08)' }, { transform: 'none', opacity: 1 }], { duration: 450 }); } catch (e) {}
-    }
-    let hit = false;
-    for (const [n, x] of G.ui.cells) {
-      const on = n === 0 || b.marks.has(n);
-      x.classList.toggle('on', on);
-      x.classList.toggle('called', b.called.has(n));
-      if (fresh && n === b.last) hit = true;
-    }
-    if (hit) buzz('ok');
-    const have = new Set([0, ...(b.auto ? b.called : b.marks)]);
-    const ready = b.cards.some(c => wins(c.cells, have, b.pattern, b.style));
-    if (G.ui.bingoBtn && !matchMedia('(prefers-reduced-motion: reduce)').matches) G.ui.bingoBtn.style.animation = ready ? 'pt-pulse 1s ease-in-out infinite' : '';
-  }
-  function wins(card, have, pattern, style) {
-    const h = n => n === 0 || have.has(n);
-    if (style === '90') { const rows = [0, 1, 2].map(r => card.slice(r * 9, r * 9 + 9).filter(n => n > 0)); const full = rows.map(rw => rw.length > 0 && rw.every(h)); return pattern === 'full' ? full.every(Boolean) : full.some(Boolean); }
-    const at = (r, c) => card[r * 5 + c], I = [0, 1, 2, 3, 4];
-    if (pattern === 'corners') return [at(0, 0), at(0, 4), at(4, 0), at(4, 4)].every(h);
-    if (pattern === 'x') return I.every(i => h(at(i, i)) && h(at(i, 4 - i)));
-    if (pattern === 'full') return card.every(h);
-    return I.some(r => I.every(c => h(at(r, c)))) || I.some(c => I.every(r => h(at(r, c)))) || I.every(i => h(at(i, i))) || I.every(i => h(at(i, 4 - i)));
-  }
-  // paper cards (the host's phone prints them, and checks a card by its number)
-  function paperCard(parent) {
-    const p = G.paper;
-    const box = el('div', 'card', parent);
-    box.style.marginTop = '14px';
-    el('h2', '', box, `${S().print} (${p.cards.length})`);
-    btn(S().print, { kind: 'tint', full: true, icon: 'file' }, box, () => printPaper());
-    const row = el('div', 'grid2', box); row.style.marginTop = '12px';
-    const i = input({ placeholder: S().cardNo, max: 4, mode: 'numeric' });
-    row.appendChild(i);
-    btn(S().check, { kind: 'go' }, row, () => { const no = parseInt(i.value, 10); if (no > 0) { send({ k: 'paper', no }); buzz('tap'); } });
-  }
-  function printPaper() {
-    const p = G.paper;
-    let area = document.getElementById('pt-print');
-    if (area) area.remove();
-    area = el('div', 'pt-print', document.body);
-    area.id = 'pt-print';
-    const style = p.style === '90' ? '90' : '75', cols = style === '90' ? 9 : 5;
-    for (const c of p.cards) {
-      if (!c || !Array.isArray(c.cells)) continue;
-      const box = el('div', 'c', area);
-      const t = el('table', '', box); t.dir = 'ltr';
-      if (style === '75') { const hr = el('tr', '', t); for (const ch of 'BINGO') el('th', '', hr, ch); }
-      for (let r = 0; r < c.cells.length / cols; r++) { const tr = el('tr', '', t); for (let k = 0; k < cols; k++) { const n = c.cells[r * cols + k]; el('td', '', tr, n === 0 ? T('FREE') : n < 0 ? '' : String(n)); } }
-      el('small', '', box, T('Card {no} · Blokvane Bingo Night', { no: c.no }));
-    }
-    addEventListener('afterprint', () => { const a = document.getElementById('pt-print'); if (a) a.remove(); }, { once: true });
-    setTimeout(() => { try { window.print(); } catch (e) {} }, 60);
-  }
-
   // ---------- starting a game from this phone (your computer's page here: Party games) ----------
   // Pick a game, its language and where it shows: on the computer, or on one of its TV screens. The computer opens it
   // there with a join code this phone made, and this phone joins it by itself, as the host. Everyone else scans the
@@ -3971,10 +3834,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ['gir', '❓', 'Guess It Right!', 'Four clues from the Stories of the Prophets, in English and Arabic. Guess on your phone.'],
     ['boowho', '👻', 'Boo Who?', '"Who is most likely to..." Vote for each other. No right answers, just laughs.'],
     ['world', '🌍', 'Where in the World?', 'Drop a pin on the map. The closest pin wins.'],
-    ['fakeout', '🎭', 'Fake Out', 'Make up a fake answer, then spot the real one.'],
     ['emoji', '🦁', 'Emoji Riddles', 'Guess the movie, food or saying from a row of emoji.'],
-    ['higher', '⚖️', 'Higher or Lower', 'Which one is bigger? Two cards, one tap.'],
-    ['bingo', '🎱', 'Bingo Night', 'The TV calls the numbers; every phone is a bingo card.'],
     ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.']
   ];
   const GAME_LANGS = { gir: ['en', 'ar'] };

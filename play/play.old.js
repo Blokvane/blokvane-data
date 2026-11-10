@@ -63,7 +63,7 @@ var BVPLAY = (() => {
     };
   }
   const psleep = (ms) => new Promise((r) => pafter(r, ms));
-  const ICONS = /* @__PURE__ */ new Set(["trivia", "boowho", "world", "fakeout", "emoji", "higher", "bingo", "imposter", "gir"]);
+  const ICONS = /* @__PURE__ */ new Set(["trivia", "boowho", "world", "emoji", "imposter", "gir"]);
   const iconOf = (id) => "icons/" + id + ".webp";
   const list = () => [...players.values()].filter((p) => !p.away);
   const alive = () => list().filter((p) => !p.out);
@@ -1140,7 +1140,6 @@ var BVPLAY = (() => {
       if (dk === "letters") LET.slice(0, 4).forEach((x, i) => {
         const d = el("span", "tile-l " + "ABCD"[i], deco, x);
       });
-      else if (dk === "bingo") for (const x of "BINGO") el("span", "tile-b", deco, x);
       else for (const x of (dk.match(BVRX.pictoSeq("g")) || []).slice(0, 4)) el("span", "tile-e", deco, x);
       if (g && g.lobbyTop) {
         try {
@@ -1457,8 +1456,6 @@ var BVPLAY = (() => {
     if (m) return P.tr("{n} s", { n: m[1] });
     m = /^(\d+(?:\.\d+)?) min$/.exec(x);
     if (m) return P.tr("{n} min", { n: m[1] });
-    m = /^(\d+) balls$/.exec(x);
-    if (m) return P.tr("{n} balls", { n: m[1] });
     m = /^(\S+) (.+)$/.exec(x);
     if (m && !/[A-Za-z0-9]/.test(m[1]) && /[\u2190-\u2bff\ud83c-\ud83e]/.test(m[1])) return P.tr(m[2]).then((t2) => m[1] + " " + t2);
     return P.tr(x);

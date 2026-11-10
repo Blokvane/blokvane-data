@@ -6,7 +6,7 @@
 // when the game runs in Chrome on a computer.
 var BVI18N = (() => {
   'use strict';
-  const V = '18';
+  const V = '19';
   // (in the order people see them, each in its own language)
   const LANGS = [['en', 'English'], ['zh', '中文（普通话）'], ['hi', 'हिन्दी'], ['es', 'Español'], ['ar', 'العربية'], ['fr', 'Français'], ['bn', 'বাংলা']];
   const FULL = new Set(LANGS.map(l => l[0]));
@@ -57,7 +57,7 @@ var BVI18N = (() => {
   }
   const ok = c => typeof c === 'string' && /^[a-z]{2}$/.test(c) && (FULL.has(c) || MORE.some(m => m[0] === c));
 
-  // ---------- speaking out loud (questions in Family mode, bingo numbers, Boo's commands) ----------
+  // ---------- speaking out loud (Trivia's questions in Family mode) ----------
   const SPEECH = { en: 'en-US', zh: 'zh-CN', hi: 'hi-IN', es: 'es-ES', ar: 'ar-SA', fr: 'fr-FR', bn: 'bn-IN' };
   let voices = [];
   function readVoices() { try { voices = speechSynthesis.getVoices() || []; } catch (e) { voices = []; } }

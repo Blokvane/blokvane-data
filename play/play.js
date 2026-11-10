@@ -35,7 +35,7 @@ var BVPLAY = (() => {
   }
   const psleep = ms => new Promise(r => pafter(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'fakeout', 'emoji', 'higher', 'bingo', 'imposter', 'gir']);
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'emoji', 'imposter', 'gir']);
   const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
@@ -649,7 +649,6 @@ var BVPLAY = (() => {
     const deco = el('div', 'deco', t);
     const dk = g && g.deco ? g.deco : 'letters';
     if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
-    else if (dk === 'bingo') for (const x of 'BINGO') el('span', 'tile-b', deco, x);
     else for (const x of (dk.match(BVRX.pictoSeq('g')) || []).slice(0, 4)) el('span', 'tile-e', deco, x);
     // (a game can dress the top in its own design: Who's the Imposter?'s signs and its title's neon word)
     if (g && g.lobbyTop) { try { g.lobbyTop(t, el); } catch (e) {} }
@@ -889,12 +888,11 @@ var BVPLAY = (() => {
   }
   const optLabel2 = (t, v) => (v ? P.tr(t, v) : optLabel(t));
   function credit(g) { const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit); if (c) el('div', 'credit', stage, P.f(c)); }
-  // a setting's choice in the game's language ("15 s", "2.5 min" and "75 balls" keep their number)
+  // a setting's choice in the game's language ("15 s" and "2.5 min" keep their number)
   function optLabel(t) {
     const x = String(t);
     let m = /^(\d+(?:\.\d+)?) s$/.exec(x); if (m) return P.tr('{n} s', { n: m[1] });
     m = /^(\d+(?:\.\d+)?) min$/.exec(x); if (m) return P.tr('{n} min', { n: m[1] });
-    m = /^(\d+) balls$/.exec(x); if (m) return P.tr('{n} balls', { n: m[1] });
     // (an emoji before the words, like Boo Who?'s categories: the words in the game's language)
     m = /^(\S+) (.+)$/.exec(x); if (m && !/[A-Za-z0-9]/.test(m[1]) && /[\u2190-\u2bff\ud83c-\ud83e]/.test(m[1])) return P.tr(m[2]).then(t2 => m[1] + ' ' + t2);
     return P.tr(x);
