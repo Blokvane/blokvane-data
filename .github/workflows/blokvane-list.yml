@@ -1,0 +1,67 @@
+# Blokvane's list robot: every 3 hours it downloads the public block lists, checks them, puts them together into
+# Blokvane's own list and publishes it on the "lists" branch, where the extension reads it. No one has to do anything.
+# If a list fails its checks, the part published last time is kept and this run ends with an error (GitHub emails you).
+name: Blokvane list
+
+on:
+  schedule:
+    - cron: '17 */3 * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ['tools/build-lists.js', 'tools/lists/**', '.github/workflows/blokvane-list.yml']
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: blokvane-list
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get the list published last time
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev" "$RUNNER_TEMP/out"
+          if git ls-remote --exit-code --heads origin lists >/dev/null 2>&1; then
+            git fetch --depth 1 origin lists
+            git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/prev"
+          fi
+
+      - name: Check the robot itself (made-up lists, nothing downloaded)
+        run: node --test tools/test-lists.js
+
+      - name: Build Blokvane's list
+        run: node tools/build-lists.js --prev "$RUNNER_TEMP/prev" --out "$RUNNER_TEMP/out" --flag "$RUNNER_TEMP/changed"
+
+      # (one commit that replaces the last one, so the repository does not grow with every update)
+      - name: Publish it on the lists branch
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f "$RUNNER_TEMP/changed" ]; then echo "Nothing new to publish."; exit 0; fi
+          cd "$RUNNER_TEMP/out"
+          git init -q -b lists
+          git config user.name "Blokvane list robot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Blokvane's list, $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" lists
+
+      # (GitHub switches a schedule off after 60 days without changes to the repository; this keeps it on)
+      - name: Keep the schedule on
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/blokvane-list.yml/enable" >/dev/null 2>&1 || true

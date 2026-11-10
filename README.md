@@ -224,3 +224,16 @@ messages signed by the computer's own key are believed.
 
 `wt-core.js` and `wt-net.js` are copies of `blokvane/lib/wt-core.js` and `blokvane/lib/wt-net.js`
 in the extension (and of `go/wt-core.js` and `go/wt-net.js`). Copy them again when those change.
+
+## Blokvane's list (the `lists` branch)
+
+A robot (`.github/workflows/blokvane-list.yml`, every 3 hours) runs `tools/build-lists.js`. It downloads the public block
+lists Blokvane uses, checks them, puts them together into Blokvane's own list and publishes it on the `lists` branch.
+The extension reads it from there (`blokvane/filters.js`), so each computer downloads one list, and for malware and
+phishing only what changed.
+
+- `tools/lists/sources.json`: the lists it is made from and their licenses. Only lists that allow use in a paid product.
+- `tools/lists/filters.js`: a copy of the extension's `blokvane/filters.js` (the compiler). Copy it again when that file changes.
+- `tools/lists/never-block.json`: sites the security list never blocks (the same as in the extension's `background2.js`).
+- `node --test tools/test-lists.js`: checks with made-up lists. Nothing is downloaded.
+- If a list breaks, the part published last time stays and the run fails, so GitHub sends an email.
