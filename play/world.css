@@ -129,16 +129,33 @@ html.no-flexgap .wq-p .nm > * + * { margin-top: calc(.3 * var(--u)); }
 .wq-rows.two .wq-p b { font-size: calc(1.8 * var(--u)); }
 .wq-note { font: 600 calc(1.7 * var(--u))/1.3 var(--round); color: var(--dim); }
 
-/* the flight to the next round: Boo's little plane crosses the screen */
-.wq-plane { position: fixed; z-index: 30; top: 38%; left: 0; width: calc(22 * var(--u)); pointer-events: none; animation: wFly 1.7s cubic-bezier(.45, .05, .55, .95) both; }
-.wq-plane svg { width: 100%; overflow: visible; }
-.wq-trail { position: fixed; z-index: 29; top: calc(38% + 6 * var(--u)); left: 0; right: 0; height: calc(1 * var(--u)); pointer-events: none;
-  background: repeating-linear-gradient(90deg, rgba(255, 255, 255, .55) 0 calc(2 * var(--u)), transparent calc(2 * var(--u)) calc(3.6 * var(--u))); animation: wTrail 1.7s ease both; transform-origin: left; }
-@keyframes wFly { from { transform: translate(-30vw, 8vh) rotate(-8deg); } 50% { transform: translate(45vw, -4vh) rotate(-3deg); } to { transform: translate(120vw, -10vh) rotate(-10deg); } }
-@keyframes wTrail { 0% { transform: scaleX(0); opacity: 1; } 55% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
-body.rtl .wq-plane { animation-name: wFlyR; }
-body.rtl .wq-trail { transform-origin: right; }
-@keyframes wFlyR { from { transform: translate(120vw, 8vh) scaleX(-1) rotate(-8deg); } 50% { transform: translate(45vw, -4vh) scaleX(-1) rotate(-3deg); } to { transform: translate(-30vw, -10vh) scaleX(-1) rotate(-10deg); } }
+/* the flight to the next round: four looks, one at a time (PLANES in world-game.js); right to left, they fly the other way */
+.wpl { position: fixed; z-index: 30; left: 0; top: 0; pointer-events: none; }
+.wpl svg { display: block; overflow: visible; }
+/* 1. the airliner: climbs gently across, contrails behind */
+.wpl-jet { top: 24%; animation: wplJet 2.7s cubic-bezier(.4, .05, .5, .95) both; }
+.wpl-jet svg { width: calc(42 * var(--u)); }
+.wpl-jet .wpl-trail { animation: wplTrail 2.7s ease both; }
+.wpl-jet.rtl { animation-name: wplJetR; }
+@keyframes wplJet { from { transform: translate(-48vw, 9vh) rotate(-4deg); } 55% { transform: translate(44vw, 0) rotate(-2.5deg); } to { transform: translate(112vw, -7vh) rotate(-4deg); } }
+@keyframes wplJetR { from { transform: translate(124vw, 9vh) scaleX(-1) rotate(-4deg); } 55% { transform: translate(32vw, 0) scaleX(-1) rotate(-2.5deg); } to { transform: translate(-36vw, -7vh) scaleX(-1) rotate(-4deg); } }
+@keyframes wplTrail { 0%, 70% { opacity: 1; } 100% { opacity: .2; } }
+/* 2. the banner plane: steady and slow, bobbing a little, the propeller spinning */
+.wpl-banner { top: 20%; animation: wplBan 3.3s cubic-bezier(.3, .05, .6, .95) both; }
+.wpl-banner.rtl { animation-name: wplBanR; }
+.wpl-banner svg { width: calc(92 * var(--u)); animation: wplBob 1.1s ease-in-out infinite alternate; }
+.wpl-banner .wpl-prop { transform-origin: 286px 86px; animation: wplProp .08s linear infinite; }
+@keyframes wplBan { from { transform: translateX(-56vw); } to { transform: translateX(104vw); } }
+@keyframes wplBanR { from { transform: translateX(104vw); } to { transform: translateX(-56vw); } }
+@keyframes wplBob { from { transform: translateY(0) rotate(-1deg); } to { transform: translateY(calc(1.8 * var(--u))) rotate(.8deg); } }
+@keyframes wplProp { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.12); } }
+/* 3 and 4: drawn across the whole screen */
+.wpl-paper, .wpl-route { right: 0; bottom: 0; }
+.wpl-full { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+.wpl-paper.rtl .wpl-full, .wpl-route.rtl .wpl-full { transform: scaleX(-1); }
+.wpl-paper .wpl-fade { animation: wplFade 3.4s linear both; }
+.wpl-route .wpl-fade { animation: wplFade 3.6s linear both; }
+@keyframes wplFade { 0%, 82% { opacity: 1; } 100% { opacity: 0; } }
 
 /* ---------- the pictures of a round ---------- */
 .sc .boo-f { display: block; width: var(--bw, calc(6 * var(--u))); filter: drop-shadow(0 calc(.5 * var(--u)) calc(.8 * var(--u)) rgba(0, 0, 0, .35)); }
@@ -469,8 +486,8 @@ html.no-flexgap[dir="rtl"] .wq-legend span > * + * { margin-left: 0; margin-righ
 .wq-next { position: absolute; right: calc(2 * var(--u)); bottom: calc(2 * var(--u)); z-index: 6; padding: calc(.8 * var(--u)) calc(1.8 * var(--u)); border-radius: 999px; background: rgba(12, 8, 32, .85); font: 600 calc(1.9 * var(--u))/1 var(--round); border: calc(.15 * var(--u)) solid rgba(255, 255, 255, .16); animation: wRise .5s ease both; }
 .wq-map .bvm-svg line { stroke-linecap: round; }
 @media (prefers-reduced-motion: reduce) {
-  .wq *, .wq-plane, .wq-trail { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition: none !important; }
-  .wq-plane, .wq-trail { display: none; }
+  .wq * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; animation-delay: 0s !important; transition: none !important; }
+  .wpl { display: none; }
 }
 
 /* ---------- right and wrong, clearly: ✓ and ✗ on the pins, their name tags and the scoreboard ---------- */

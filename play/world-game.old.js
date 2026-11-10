@@ -946,13 +946,213 @@ var __async = (__this, __arguments, generator) => {
       };
     });
   }
-  const PLANE = '<svg viewBox="0 0 220 110"><path d="M18 58c0-12 22-20 60-20h70c26 0 44 9 50 20-6 11-24 20-50 20H78c-38 0-60-8-60-20z" fill="#fff"/><path d="M96 58l-26 42h22l40-42z" fill="#ff5a6e"/><path d="M96 54l-22-40h20l38 40z" fill="#ff8a8a"/><path d="M26 56L8 30h16l20 22z" fill="#ff5a6e"/><circle cx="168" cy="54" r="14" fill="#cfe6ff" stroke="#9cc8ff" stroke-width="3"/><path d="M162 50a2.4 3.2 0 1 0 .1 0M174 50a2.4 3.2 0 1 0 .1 0" fill="#24164a"/><rect x="198" y="38" width="5" height="34" rx="2.5" fill="#ffc83d"/><g fill="#9cc8ff"><circle cx="118" cy="54" r="5"/><circle cx="136" cy="54" r="5"/><circle cx="100" cy="54" r="5"/></g></svg>';
-  function plane() {
-    const tr = div("wq-trail", document.body), pl = div("wq-plane", document.body, PLANE);
-    setTimeout(() => {
-      tr.remove();
-      pl.remove();
-    }, 1900);
+  const PLANE_KINDS = ["jet", "banner", "paper", "route"];
+  const PLANE_T = { jet: [2700, 1500], banner: [3300, 2e3], paper: [3400, 2100], route: [3600, 2600] };
+  const PLANES = /* @__PURE__ */ (() => {
+    let uid = 0;
+    const esc = (s) => String(s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const BOO = (x, y, s, eye, extra) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-10 8V-2C-10-9-5.5-13 0-13S10-9 10-2V8C8 10 7 7 5 9S2 8 0 10-3 11-5 9-8 10-10 8Z" fill="#fff"/><ellipse cx="-3.6" cy="-3" rx="1.7" ry="2.3" fill="${eye}"/><ellipse cx="3.6" cy="-3" rx="1.7" ry="2.3" fill="${eye}"/>${extra || ""}</g>`;
+    const FONT = `font-family="'BV Fun', ui-rounded, 'Segoe UI Rounded', sans-serif" font-weight="700"`;
+    const lens = {};
+    function lenOf(d) {
+      if (lens[d]) return lens[d];
+      let L = 0;
+      try {
+        const NS = "http://www.w3.org/2000/svg", s = document.createElementNS(NS, "svg"), p = document.createElementNS(NS, "path");
+        s.setAttribute("width", "0");
+        s.setAttribute("height", "0");
+        s.style.position = "absolute";
+        p.setAttribute("d", d);
+        s.appendChild(p);
+        document.body.appendChild(s);
+        L = p.getTotalLength();
+        s.remove();
+      } catch (e) {
+      }
+      return lens[d] = L > 0 ? Math.ceil(L) : 4e3;
+    }
+    function jet() {
+      const k = "wj" + ++uid;
+      let win = "";
+      for (let i = 0; i < 14; i++) {
+        const x = 156 + i * 12.6;
+        win += `<rect x="${(x - 2.6).toFixed(1)}" y="65.5" width="5.2" height="7.4" rx="2.6" fill="#1f2b52"/><rect x="${(x - 1.4).toFixed(1)}" y="66.4" width="1.5" height="2.6" rx=".75" fill="#9db4e6"/>`;
+      }
+      return `<svg viewBox="0 0 420 150" overflow="visible" xmlns="http://www.w3.org/2000/svg"><defs>
+<linearGradient id="${k}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".45" stop-color="#f3f5fa"/><stop offset="1" stop-color="#c2cadd"/></linearGradient>
+<linearGradient id="${k}v" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8b6bff"/><stop offset="1" stop-color="#4f31d8"/></linearGradient>
+<linearGradient id="${k}t" x1="1" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#7a59ff"/><stop offset="1" stop-color="#4a2bd0"/></linearGradient>
+<linearGradient id="${k}w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6f8fc"/><stop offset="1" stop-color="#a9b3cb"/></linearGradient>
+<linearGradient id="${k}e" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fdfdff"/><stop offset=".55" stop-color="#d6dbe8"/><stop offset="1" stop-color="#8c97b3"/></linearGradient>
+<linearGradient id="${k}c" x1="1" y1="0" x2="0" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".3" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<linearGradient id="${k}n" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient>
+</defs>
+<g class="wpl-trail"><rect x="-820" y="116.5" width="1022" height="4.4" rx="2.2" fill="url(#${k}c)"/><rect x="-760" y="108.5" width="952" height="3.2" rx="1.6" fill="url(#${k}c)" opacity=".6"/></g>
+<path d="M136 59C112 44 90 26 70 11c-6-4-14-5-20-4l-6 1c-3 1-4 4-3 7l7 47z" fill="url(#${k}t)"/>
+<path d="M136 59C112 44 90 26 70 11c-4-3-9-4-13-4 14 12 40 34 66 52z" fill="#fff" opacity=".13"/>
+${BOO(78, 38, 1.05, "#4f31d8")}
+<path d="M120 58h225c27 0 47 8 56 22-7 12-29 18-56 18H150c-40 0-78-10-108-26l-6-3 6-3c20-4 50-8 78-8z" fill="url(#${k}b)"/>
+<path d="M398 86c-28 5-58 5-98 4l-60-1c-35-1-60-5-80-12-12-5-20-12-24-18h-16c-28 0-58 4-78 8l-6 3 6 3c30 16 68 26 108 26h195c23 0 41-4 53-12z" fill="url(#${k}v)"/>
+<path d="M398 85c-28 5-58 5-98 4l-60-1c-35-1-60-5-80-12-12-5-20-12-24-18" fill="none" stroke="#ffc83d" stroke-width="1.8"/>
+<path d="M150 98h195c24 0 42-4 54-12-10 10-30 13-54 13H150c-36 0-72-9-102-24 30 14 66 23 102 23z" fill="#1e1442" opacity=".25"/>
+<path d="M152 59.6h190" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>
+${win}
+<rect x="337" y="62" width="9" height="21" rx="2.6" fill="none" stroke="#c4cbdc" stroke-width="1.2"/>
+<path d="M367 66l18 4c3 1 5 3 4 5l-20-1z" fill="#18213f"/><path d="M370 67.6l12 2.6" stroke="#8aa6e0" stroke-width="1.2" stroke-linecap="round"/>
+<path d="M98 76 58 78 22 92c-4 2-2 5 2 5h12z" fill="url(#${k}w)" stroke="#8f9ab6" stroke-width=".8"/>
+<path d="M262 94 186 138c-4 3-10 4-14 2l-4-2 34-42z" fill="url(#${k}w)" stroke="#8f9ab6" stroke-width=".8"/>
+<path d="M262 94 186 138" stroke="#fff" stroke-width="1.4" opacity=".8"/>
+<path d="M170 139l-10-12c-1-2 1-3 3-2l13 12z" fill="#ffc83d"/>
+<path d="M238 110l6-7h18l-6 7z" fill="#bcc4d7"/>
+<path d="M222 108h46c9 0 15 4 15 10s-6 10-15 10h-46c-6 0-10-4-10-10s4-10 10-10z" fill="url(#${k}e)" stroke="#8c97b3" stroke-width=".8"/>
+<rect x="246" y="108.4" width="7" height="19.2" fill="#6b4cff" opacity=".9"/>
+<path d="M212 111l-12 3v8l12 3z" fill="#69738f"/>
+<ellipse cx="282.4" cy="118" rx="3" ry="9.6" fill="#1b2442"/><path d="M272 111.5h8" stroke="#fff" stroke-width="1.6" stroke-linecap="round" opacity=".85"/>
+<path d="M345 58c27 0 47 8 56 22-4-6-16-14-40-17z" fill="url(#${k}n)"/>
+</svg>`;
+    }
+    function banner(label, rtl) {
+      const k = "wb" + ++uid;
+      const cloth = (a, b) => `M-40 ${64 + a}C-120 ${56 - a} -200 ${72 + a} -280 ${64 - a}C-340 ${58 + a} -392 ${68 - a} -420 ${64 + b}L-429 ${73 + b}-420 ${82 + b}-429 ${91 + b}-420 ${100 + b}-429 ${109 + b}-420 ${118 + b}-428 ${124 + b}C-392 ${128 - a} -340 ${118 + a} -280 ${124 - a}C-200 ${132 + a} -120 ${118 - a} -40 ${124 + a}Z`;
+      const mid = (a) => rtl ? `M50 ${101 + a * 0.3}C90 ${106 - a * 0.4} 150 ${97 + a * 0.4} 205 ${102 - a * 0.4}C270 ${108 + a * 0.5} 340 ${97 - a * 0.5} 404 ${103 + a * 0.4}` : `M-404 ${103 + a * 0.4}C-340 ${97 - a * 0.5} -270 ${108 + a * 0.5} -205 ${102 - a * 0.4}C-150 ${97 + a * 0.4} -90 ${106 - a * 0.4} -50 ${101 + a * 0.3}`;
+      const W2 = (a, b) => `${cloth(0, 0)};${cloth(a, b)};${cloth(-a * 0.8, -b * 0.7)};${cloth(0, 0)}`;
+      const anim = `<animate attributeName="d" values="${W2(5, 3)}" dur="1.3s" repeatCount="indefinite"/>`;
+      const scarf = ["M116 60c-12-1-22-8-36-7-9 1-16-4-23-3l2 6c9-1 15 4 24 3 12-1 22 6 33 6z", "M116 60c-12-3-22-4-36-7-9-2-16 1-23-2l2 6c9 2 15 0 24 3 12 3 22 3 33 5z", "M116 60c-12 0-22-10-36-9-9 0-16-2-23-1l2 6c9 0 15 2 24 1 12 0 22 8 33 8z"];
+      return `<svg viewBox="${rtl ? "-300" : "-440"} 0 740 170" overflow="visible" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>
+<linearGradient id="${k}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf7"/><stop offset=".55" stop-color="#f6e6c4"/><stop offset="1" stop-color="#e0bf88"/></linearGradient>
+<linearGradient id="${k}r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7684"/><stop offset="1" stop-color="#cc2a40"/></linearGradient>
+<linearGradient id="${k}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#d9dde6"/><stop offset="1" stop-color="#8f96a8"/></linearGradient>
+<linearGradient id="${k}f" x1="0" y1="0" x2="1" y2="0" spreadMethod="repeat"><stop offset="0" stop-color="#4a2a10" stop-opacity=".1"/><stop offset=".25" stop-color="#4a2a10" stop-opacity="0"/><stop offset=".55" stop-color="#4a2a10" stop-opacity=".08"/><stop offset=".8" stop-color="#4a2a10" stop-opacity="0"/><stop offset="1" stop-color="#4a2a10" stop-opacity=".1"/>
+<animateTransform attributeName="gradientTransform" type="translate" values="0 0;.3 0;0 0" dur="1.3s" repeatCount="indefinite"/></linearGradient>
+<path id="${k}m" d="${mid(0)}"><animate attributeName="d" values="${mid(0)};${mid(5)};${mid(-4)};${mid(0)}" dur="1.3s" repeatCount="indefinite"/></path>
+</defs><g${rtl ? ' transform="scale(-1 1)"' : ""}>
+<path d="M38 92c-28 12-52 12-70 4" fill="none" stroke="#f3e6cf" stroke-width="1.8"/>
+<path d="M-32 96-36 64M-32 96l-4 26" stroke="#f3e6cf" stroke-width="1.2"/>
+<path d="${cloth(0, 0)}" fill="#fffaf0">${anim}</path>
+<path d="${cloth(0, 0)}" fill="url(#${k}f)">${anim}</path>
+<path d="${cloth(0, 0)}" fill="none" stroke="#e8434f" stroke-width="5">${anim}</path>
+<path d="M-36 60v66" stroke="#6b4a2b" stroke-width="5" stroke-linecap="round"/>
+<path d="M54 84 38 46c-1-5 4-8 9-6l43 34z" fill="url(#${k}r)"/><path d="M44 50l32 24" stroke="#fff" stroke-width="3.4" opacity=".9"/>
+<path d="M228 58c12 0 18 10 18 28s-6 28-18 28l-88-2c-40-2-74-12-100-20l-4-10c26-8 64-18 104-20z" fill="url(#${k}c)"/>
+<path d="M246 92c-16 3-76 6-106 6-36 0-70-6-102-12v4c32 6 66 12 102 12 30 0 90-3 105-6z" fill="#e8434f"/>
+<path d="M200 66v44M160 64v46M118 68v38M84 74v26" stroke="#d6b984" stroke-width="1"/>
+<g fill="#c4a06a"><circle cx="196" cy="70" r="1.2"/><circle cx="196" cy="106" r="1.2"/><circle cx="156" cy="69" r="1.2"/><circle cx="156" cy="106" r="1.2"/><circle cx="114" cy="72" r="1.2"/><circle cx="114" cy="103" r="1.2"/></g>
+<circle cx="178" cy="81" r="11.5" fill="#6b4cff" stroke="#fff" stroke-width="2.6"/>${BOO(178, 82, 0.62, "#6b4cff")}
+<path d="M52 92 20 103c-4 2-2 6 3 5l65-10z" fill="url(#${k}r)"/>
+<ellipse cx="129" cy="62" rx="19" ry="4.2" fill="#4a2e1a"/>
+<path d="${scarf[0]}" fill="#ffc83d"><animate attributeName="d" values="${scarf[0]};${scarf[1]};${scarf[2]};${scarf[0]}" dur=".7s" repeatCount="indefinite"/></path>
+<path d="M113 64c0-18 7-28 16-28s16 10 16 28z" fill="#fff"/>
+<path d="M139 40c4 5 6 13 6 24h-6c0-10-1-18 0-24z" fill="#e6e1f5" opacity=".7"/>
+<ellipse cx="113.5" cy="51" rx="3.2" ry="5.5" fill="#7a4c28"/><ellipse cx="144.5" cy="51" rx="3.2" ry="5.5" fill="#7a4c28"/>
+<path d="M112 50c1-12 8-19 17-19s16 7 17 18c-6-5-28-5-34 1z" fill="#8a5a33"/>
+<path d="M114 44c6-3 24-3 30 0" stroke="#5a3a24" stroke-width="2.2" fill="none"/>
+<circle cx="123" cy="42.5" r="4.8" fill="#a9e6ff" stroke="#5a3a24" stroke-width="2.2"/><circle cx="135" cy="42.5" r="4.8" fill="#a9e6ff" stroke="#5a3a24" stroke-width="2.2"/>
+<circle cx="121.8" cy="41.2" r="1.4" fill="#fff"/><circle cx="133.8" cy="41.2" r="1.4" fill="#fff"/>
+<ellipse cx="124" cy="52.5" rx="2" ry="2.6" fill="#2a1d55"/><ellipse cx="134" cy="52.5" rx="2" ry="2.6" fill="#2a1d55"/>
+<ellipse cx="119" cy="57.5" rx="2.8" ry="1.6" fill="#ff9fb8" opacity=".75"/><ellipse cx="139" cy="57.5" rx="2.8" ry="1.6" fill="#ff9fb8" opacity=".75"/>
+<path d="M126 57.5c1.6 1.8 4.4 1.8 6 0" fill="none" stroke="#2a1d55" stroke-width="1.6" stroke-linecap="round"/>
+<path d="M146 63l8-12c1-2 4-2 4 1l-2 11z" fill="#d6f0ff" stroke="#fff" stroke-width="1" opacity=".9"/>
+<path d="M172 50l8 14M236 50l-10 12M172 50l54 12" stroke="#9c2a38" stroke-width="2.4" stroke-linecap="round"/>
+<path d="M150 44c25-10 86-10 106 0-2 6-78 8-106 6z" fill="url(#${k}r)"/>
+<path d="M156 41.5c28-6 76-6 96 0" stroke="#fff" stroke-width="1.6" opacity=".65" fill="none"/>
+<path d="M228 58c24 0 38 12 38 28s-14 28-38 28c-6-12-8-20-8-28s2-16 8-28z" fill="url(#${k}r)"/>
+<path d="M232 60c18 2 30 12 32 24" stroke="#fff" stroke-width="2" opacity=".35" fill="none"/>
+<path d="M226 104h13M225 99h12" stroke="#5c1b25" stroke-width="2.2" stroke-linecap="round"/>
+<path d="M266 77c14 2 20 7 20 9s-6 7-20 9z" fill="url(#${k}s)"/>
+<g class="wpl-prop"><ellipse cx="286" cy="86" rx="5.5" ry="46" fill="#fff" opacity=".14"/><rect x="283.4" y="40" width="5.2" height="92" rx="2.6" fill="#2f3140"/></g>
+<path d="M206 112l6 14M218 112l-6 14" stroke="#7f8494" stroke-width="2.4" stroke-linecap="round"/>
+<circle cx="212" cy="131" r="11" fill="#2b2c36"/><circle cx="212" cy="131" r="4" fill="#c9ccd6"/>
+<path d="M198 128c0-9 10-12 20-10 9 2 10 11 4 15h-20c-3-1-4-3-4-5z" fill="url(#${k}c)" stroke="#e8434f" stroke-width="1.6"/>
+<circle cx="46" cy="97" r="4" fill="#2b2c36"/>
+</g>
+<text ${FONT} font-size="34" fill="#2a1d55" text-anchor="middle"><textPath href="#${k}m" xlink:href="#${k}m" startOffset="50%">${esc(label)}</textPath></text>
+</svg>`;
+    }
+    const R3 = "M-180 790C140 720 400 560 640 540C830 524 960 450 930 340C902 240 770 222 720 296C670 370 750 470 920 470C1170 470 1520 330 2120 230";
+    function paper() {
+      const k = "wp" + ++uid, L = lenOf(R3);
+      const dur = "3s", kt = "0;.12;.3;.667;.85;1", kp = "0;.08;.3;.6;.82;1", off = [1, 0.92, 0.7, 0.4, 0.18, 0].map((f) => Math.round(f * L)).join(";");
+      let grid = "";
+      for (let x = -72; x <= 92; x += 13) grid += `<path d="M${x} -42V42"/>`;
+      for (let y = -36; y <= 36; y += 10) grid += `<path d="M-80 ${y}H96"/>`;
+      const spark = (x, y, t, s) => `<g transform="translate(${x} ${y}) scale(${s})" opacity="0"><path d="M0-12C1-3 3-1 12 0 3 1 1 3 0 12-1 3-3 1-12 0-3-1-1-3 0-12z" fill="#ffe08a"/><animate attributeName="opacity" values="0;1;0" begin="${t}s" dur=".7s" fill="freeze"/><animateTransform attributeName="transform" type="scale" additive="sum" values=".3;1.2;.5" begin="${t}s" dur=".7s" fill="freeze"/></g>`;
+      return `<svg class="wpl-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
+<mask id="${k}m" maskUnits="userSpaceOnUse" x="-300" y="-100" width="2600" height="1300"><path d="${R3}" fill="none" stroke="#fff" stroke-width="44" stroke-dasharray="${L} ${L}" stroke-dashoffset="${L}">
+<animate attributeName="stroke-dashoffset" values="${off}" keyTimes="${kt}" dur="${dur}" fill="freeze" calcMode="linear"/></path></mask>
+<clipPath id="${k}w"><path d="M92 0-70-38-48-6zM92 0-78 36-44 8z"/></clipPath>
+<filter id="${k}d" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="12"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g class="wpl-fade"><path d="${R3}" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray=".1 19" opacity=".85" mask="url(#${k}m)"/>
+${spark(990, 300, 1, 1)}${spark(800, 196, 1.35, 1.25)}${spark(680, 330, 1.7, 0.9)}</g>
+<g filter="url(#${k}d)"><g><animateMotion dur="${dur}" path="${R3}" rotate="auto" fill="freeze" keyPoints="${kp}" keyTimes="${kt}" calcMode="linear"/>
+<g transform="scale(1.9)">
+<path d="M92 0-70-38-48-6z" fill="#ece3cb"/>
+<path d="M92 0-46 8-58 24z" fill="#c9b78f"/>
+<path d="M92 0-78 36-44 8z" fill="#fffaf0"/>
+<g clip-path="url(#${k}w)"><g stroke="#5f93d0" stroke-width=".8" opacity=".5" fill="none">${grid}</g>
+<path d="M-40-26c9-7 25-5 30 3s-5 14-16 13-21-9-14-16zM2 12c11-3 27 2 29 10s-11 9-20 6-16-14-9-16zM38-8c7-3 16-1 17 4s-7 7-12 5-8-6-5-9zM-58 22c6-3 14 0 14 5s-8 5-12 3-5-6-2-8z" fill="#86c79b" stroke="#5aa477" stroke-width=".7" opacity=".85"/>
+<path d="M-50 28C-20 14 14 12 48 5" fill="none" stroke="#e8434f" stroke-width="1.8" stroke-dasharray="3.5 3"/><circle cx="50" cy="4.6" r="2.6" fill="#e8434f" stroke="#fff" stroke-width="1"/></g>
+<path d="M92 0H-48" stroke="#b8a57c" stroke-width="1.3"/>
+<path d="M92 0-78 36M92 0-70-38" stroke="#fff" stroke-width="1.3" opacity=".85"/>
+<g transform="translate(-16 -15) rotate(6)">${BOO(0, 0, 1.15, "#2a1d55", '<ellipse cx="-6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/><ellipse cx="6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/>')}<path d="M9-3c4-6 9-9 13-8" stroke="#fff" stroke-width="3.6" stroke-linecap="round" fill="none"/></g>
+</g></g></g>
+</svg>`;
+    }
+    const R4 = "M240 840C540 380 920 230 1180 330";
+    function route(label, rtl) {
+      const k = "wr" + ++uid, t = esc(label), L = lenOf(R4);
+      const fly = 2.3, ease = 'keyTimes="0;1" keySplines=".45 .05 .35 1" calcMode="spline"';
+      const pin = "M0-48c-16 0-28 12-28 27 0 19 28 43 28 43s28-24 28-43c0-15-12-27-28-27z";
+      const draw = `stroke-dasharray="${L} ${L}" stroke-dashoffset="${L}"><animate attributeName="stroke-dashoffset" from="${L}" to="0" dur="${fly}s" fill="freeze" ${ease}/>`;
+      return `<svg class="wpl-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
+<linearGradient id="${k}g" gradientUnits="userSpaceOnUse" x1="240" y1="840" x2="1180" y2="330"><stop offset="0" stop-color="#9b7bff"/><stop offset=".55" stop-color="#ff7ab6"/><stop offset="1" stop-color="#ffc83d"/></linearGradient>
+<filter id="${k}b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+<filter id="${k}p" x="-80%" y="-80%" width="260%" height="260%"><feFlood flood-color="#ffc83d" flood-opacity=".8"/><feComposite operator="in" in2="SourceAlpha"/><feGaussianBlur stdDeviation="6"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="${k}s" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".4"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<g class="wpl-fade">
+<path d="${R4}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 14" opacity=".22"/>
+<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="18" stroke-linecap="round" opacity=".5" filter="url(#${k}b)" ${draw}</path>
+<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="6" stroke-linecap="round" ${draw}</path>
+<g transform="translate(240 840)"><circle r="12" fill="none" stroke="#9b7bff" stroke-width="3"><animate attributeName="r" values="12;48" dur="1.3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="1.3s" repeatCount="indefinite"/></circle><circle r="11" fill="#9b7bff" stroke="#fff" stroke-width="4"/></g>
+<g transform="translate(1180 330)"><g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="${(fly - 0.2).toFixed(2)}s" dur=".2s" fill="freeze"/>
+<ellipse cx="0" cy="24" rx="22" ry="7" fill="#000" opacity=".3"/>
+<circle cy="24" r="10" fill="none" stroke="#ffc83d" stroke-width="3" opacity="0"><animate attributeName="r" values="10;64" begin="${(fly + 0.25).toFixed(2)}s" dur="1.1s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" begin="${(fly + 0.25).toFixed(2)}s" dur="1.1s" repeatCount="indefinite"/></circle>
+<g filter="url(#${k}s)"><animateTransform attributeName="transform" type="translate" values="0 -70;0 0;0 -10;0 0" keyTimes="0;.55;.8;1" begin="${(fly - 0.2).toFixed(2)}s" dur=".6s" fill="freeze"/>
+<path d="${pin}" fill="#ffc83d" stroke="#fff" stroke-width="4"/><circle cy="-21" r="10" fill="#fff"/>
+${t ? `<g class="wpl-label" transform="translate(0 -100)${rtl ? " scale(-1 1)" : ""}"><rect x="-75" y="-28" width="150" height="56" rx="28" fill="#fff"/><text y="10" text-anchor="middle" ${FONT} font-size="30" fill="#2a1d55">${t}</text></g>` : ""}
+</g></g></g>
+</g>
+<g filter="url(#${k}p)"><g><animateMotion dur="${fly}s" path="${R4}" rotate="auto" fill="freeze" keyPoints="0;1" ${ease}/>
+<animate attributeName="opacity" values="1;0" begin="${(fly - 0.25).toFixed(2)}s" dur=".3s" fill="freeze"/>
+<g><animateTransform attributeName="transform" type="scale" values=".9;1.35;.7" keyTimes="0;.5;1" dur="${fly}s" fill="freeze"/>
+<path d="M50 0c0-4-4-7-11-7L-36-6c-8 0-14 3-14 6s6 6 14 6l75 1c7 0 11-3 11-7z" fill="#fff"/>
+<path d="M14-5-12-50c-1-2-4-3-6-3h-6l10 48zM14 5-12 50c-1 2-4 3-6 3h-6l10-48z" fill="#fff"/>
+<path d="M-30-4-42-22c-1-1-2-2-4-2h-4l6 20zM-30 4-42 22c-1 1-2 2-4 2h-4l6-20z" fill="#fff"/>
+<rect x="-6" y="-27" width="15" height="6" rx="3" fill="#ffc83d"/><rect x="-6" y="21" width="15" height="6" rx="3" fill="#ffc83d"/>
+<path d="M38-3.5h6" stroke="#5a3ce6" stroke-width="2.4" stroke-linecap="round"/>
+</g></g></g>
+</svg>`;
+    }
+    return { jet, banner, paper, route };
+  })();
+  const PLANE_FX = { jet: [["plane", 0]], banner: [["plane", 0], ["flutter", 700]], paper: [["whoosh", 0], ["sparkle", 1150]], route: [["whoosh", 0], ["ping", 2150]] };
+  function plane(ctx, kind, label) {
+    for (const [nm, d] of PLANE_FX[kind]) ctx.fx(nm, d);
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return 700;
+    const rtl = document.body.classList.contains("rtl");
+    const wrap = div("wpl wpl-" + kind + (rtl ? " rtl" : ""), document.body, PLANES[kind](label, rtl));
+    const lab = wrap.querySelector(".wpl-label");
+    if (lab) {
+      try {
+        const w = Math.max(150, Math.ceil(lab.querySelector("text").getComputedTextLength()) + 60), r = lab.querySelector("rect");
+        r.setAttribute("x", String(-w / 2));
+        r.setAttribute("width", String(w));
+      } catch (e) {
+      }
+    }
+    setTimeout(() => wrap.remove(), PLANE_T[kind][0]);
+    return PLANE_T[kind][1];
   }
   function screen(K, ctx, it, i, n, ph, decks, o) {
     return __async(this, null, function* () {
@@ -2060,18 +2260,21 @@ var __async = (__this, __arguments, generator) => {
           return end();
         }
         K.snd.music(kids ? "wvPlayB" : mode === "lightning" ? "wvPlayC" : W.pick(["wvPlayA", "wvPlayB", "wvPlayC"]), { fadeOut: 1.4, fadeIn: 1.6 });
-        const decks = { flag: SC.deck(Object.keys(SC.FLAG)), photo: SC.deck(Object.keys(SC.PHOTO)), place: SC.deck(Object.keys(SC.PLACE)), drawnSight: SC.deck(["pin", "radar", "postcard", "globe", "spot", "neon", "path"]) };
+        const decks = {
+          flag: SC.deck(Object.keys(SC.FLAG)),
+          photo: SC.deck(Object.keys(SC.PHOTO)),
+          place: SC.deck(Object.keys(SC.PLACE)),
+          drawnSight: SC.deck(["pin", "radar", "postcard", "globe", "spot", "neon", "path"]),
+          // (the flight between rounds: one of the four planes, in turns; ?wplane=paper in the address for checking one)
+          plane: urlPick("wplane", PLANE_KINDS) ? () => urlPick("wplane", PLANE_KINDS) : SC.deck(PLANE_KINDS)
+        };
         for (let i = 0; i < rounds.length; i++) {
           if (K.over()) break;
           if (ko && K.players().length > 1 && K.alive().length <= 1) break;
           const it = rounds[i];
           const last = i >= rounds.length - 1;
           const dbl = s.double !== false && last && rounds.length > 2 && ["classic", "bullseye", "lightning", "zoom"].includes(mode);
-          if (i > 0) {
-            plane();
-            ctx.fx("plane");
-            yield K.sleep(1100);
-          }
+          if (i > 0) yield K.sleep(plane(ctx, decks.plane(), yield K.tr("Round {n} / {total}", { n: K.num(i + 1), total: K.num(rounds.length) })));
           K.wait();
           const photos = (yield Promise.race([photoP, W.sleepRaw(1500).then(() => null)])) || /* @__PURE__ */ new Map();
           ahead(photos, i + 1);
