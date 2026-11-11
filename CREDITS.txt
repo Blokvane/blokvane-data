@@ -1,0 +1,10 @@
+Blokvane's country table (geo.bin) says which country a server's address is in. Blokvane's Country blocking uses it.
+
+It is made once a week by tools/build-geo.js in https://github.com/Blokvane/blokvane-data from the "server-country"
+tables of ip-location-db: https://github.com/sapics/ip-location-db
+License: Public Domain Dedication and License (PDDL) 1.0, https://opendatacommons.org/licenses/pddl/1-0/
+Those tables are put together from the public statistics of the five regional internet registries (AFRINIC, APNIC,
+ARIN, LACNIC, RIPE NCC) and the NRO, the Route Views and RIPE RIS routing archives, and the geofeeds that network
+operators publish.
+
+geo.json is the note the extension checks the table against: the day it was made, its size and its fingerprint.
