@@ -227,13 +227,43 @@ in the extension (and of `go/wt-core.js` and `go/wt-net.js`). Copy them again wh
 
 ## Blokvane's list (the `lists` branch)
 
-A robot (`.github/workflows/blokvane-list.yml`, every 3 hours) runs `tools/build-lists.js`. It downloads the public block
+A robot (`.github/workflows/blokvane-list.yml`, every hour) runs `tools/build-lists.js`. It downloads the public block
 lists Blokvane uses, checks them, puts them together into Blokvane's own list and publishes it on the `lists` branch.
 The extension reads it from there (`blokvane/filters.js`), so each computer downloads one list, and for malware and
 phishing only what changed.
 
+The list also teaches. `meta.json` carries the addresses that scam pages crowd under (`hints`): a free page service, a
+web host's temporary address or a scam site's own name with at least 300 listed scam sites under it and not one site
+from this month's million most-visited sites. The extension treats a page under one of them as a warning sign, never
+as a block, so the scam page put there tomorrow is noticed before any list has it. Nobody has to keep that list by hand.
+
 - `tools/lists/sources.json`: the lists it is made from and their licenses. Only lists that allow use in a paid product.
+  Malware and phishing sites come from Phishing.Database, uBlock's badware list, MetaMask's and polkadot{.js}'s lists of
+  fake crypto sites, and TweetFeed (whole scam sites that security researchers reported in the last 30 days).
 - `tools/lists/filters.js`: a copy of the extension's `blokvane/filters.js` (the compiler). Copy it again when that file changes.
-- `tools/lists/never-block.json`: sites the security list never blocks (the same as in the extension's `background2.js`).
+- `tools/lists/never-block.json`: sites the security list never blocks: shared platforms, companies' own sites, big real
+  sites that a list named by mistake, and shared storage addresses (the extension's `background2.js` has the short lists too).
+- `tools/lists/popular-sites.txt.gz`: a copy of the established popular sites: the ones among the 500,000 most-visited
+  sites now that were already on the most-visited list a year ago. The newer scam lists never add one of them. (Being
+  popular this month is not enough: a fake sale shop or a look-alike of a game's site can be very popular for a few
+  weeks.) The robot downloads both lists each time and uses this copy only when that fails. Renew it now and then with
+  `node tools/build-lists.js --save-popular`.
+- `tools/lists/licenses/`: the full text of the licenses that ask to be passed on. They are published with the list.
 - `node --test tools/test-lists.js`: checks with made-up lists. Nothing is downloaded.
-- If a list breaks, the part published last time stays and the run fails, so GitHub sends an email.
+- If a list breaks, the part published last time stays and the run fails, so GitHub sends an email. (TweetFeed is small
+  and optional: when it can't be read, the list is made without it.)
+
+## Blokvane's country table (the `geo` branch)
+
+A second robot (`.github/workflows/blokvane-geo.yml`, once a week) runs `tools/build-geo.js`. It downloads the public
+"server-country" tables of ip-location-db (public domain, PDDL 1.0), checks them, packs them into the small table that
+Country blocking uses to tell which country a server is in, and publishes `geo.bin` with its note `geo.json` (the day it
+was made, its size and its fingerprint) on the `geo` branch. The extension fetches it from there about once a week
+while Country blocking is on (`blokvane/bg-country.js`), and only takes a table that matches its note, was made later
+than the one it has and is not much smaller. So the table stays fresh without a new release.
+
+- `tools/build-geo.js`: the same file as `tools/build-geo.js` in the app repo, where it makes the copy that comes inside
+  the extension. `tools/geo/geo.js`: a copy of the extension's `blokvane/lib/geo.js`. Copy them again when those change.
+- `node --test tools/test-geo.js`: checks with made-up tables. Nothing is downloaded.
+- If the tables come back broken or much smaller than last time, the table published last time stays and the run fails,
+  so GitHub sends an email.

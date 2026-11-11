@@ -1,11 +1,11 @@
-# Blokvane's list robot: every 3 hours it downloads the public block lists, checks them, puts them together into
+# Blokvane's list robot: every hour it downloads the public block lists, checks them, puts them together into
 # Blokvane's own list and publishes it on the "lists" branch, where the extension reads it. No one has to do anything.
 # If a list fails its checks, the part published last time is kept and this run ends with an error (GitHub emails you).
 name: Blokvane list
 
 on:
   schedule:
-    - cron: '17 */3 * * *'
+    - cron: '17 * * * *'
   workflow_dispatch: {}
   push:
     branches: [main]

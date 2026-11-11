@@ -1,13 +1,28 @@
 // Checks of the list robot (tools/build-lists.js) and of the extension's side of it (tools/lists/filters.js), with
 // made-up lists in a temporary folder. Nothing is downloaded and nothing is published.   node --test tools/test-lists.js
 'use strict';
-const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path');
-const { build } = require('./build-lists.js');
+const test = require('node:test'), assert = require('node:assert'), fs = require('fs'), os = require('os'), path = require('path'), zlib = require('zlib');
+const { build, readReported } = require('./build-lists.js');
 const F = require('./lists/filters.js');
 
 const AD_FILES = ['easylist.txt', 'filters.txt', 'filters-2020.txt', 'filters-2021.txt', 'filters-2022.txt', 'filters-2023.txt', 'filters-2024.txt', 'filters-2025.txt', 'filters-2026.txt',
   'quick-fixes.txt', 'unbreak.txt', 'resource-abuse.txt', 'filter.txt', 'easyprivacy.txt', 'privacy.txt', 'annoyances-cookies.txt'];
-const FLOORS = { phishing: 5, malware: 2, adRules: 5, listBytes: 5 };
+// (scale: each security list's least number of sites, from sources.json, made small enough for made-up lists: 100,000 becomes 5)
+const FLOORS = { adRules: 5, listBytes: 5, scale: 0.00005 };
+// the most-visited sites, made up: a shop, a page on a big platform (so the platform itself is above a popular site), one far down the list, and a
+// sale shop that is very popular this month but was not on the list a year ago (202510.csv.gz, for the builds below, which run "in November 2026")
+const TOPS = Array.from({ length: 12 }, (_, i) => 'https://top' + i + '.example,5000').join('\n') + '\n';
+const popular = extra => zlib.gzipSync('origin,rank\nhttps://www.popular-shop.example,1000\nhttps://pages.big-platform.example,50000\nhttps://far-down.example,1000000\n' +
+  'https://big-sale-this-month.example,1000\n' + TOPS + (extra || ''));
+const popularThen = () => zlib.gzipSync('origin,rank\nhttps://popular-shop.example,5000\nhttps://pages.big-platform.example,1000000\nhttps://far-down.example,500000\n' + TOPS);
+const REPORTED = ['2026-10-30 10:00:00,someone,domain,whole-site.example,#phishing #scam,https://x.com/someone/status/1',
+  '2026-10-30 10:00:00,someone,url,http://whole-site.example/,#phishing #scam,https://x.com/someone/status/1',
+  '2026-10-30 11:00:00,other,domain,hacked-shop.example,#phishing,https://x.com/other/status/2',
+  '2026-10-30 11:00:00,other,url,https://hacked-shop.example/wp-content/x/login.php,#phishing,https://x.com/other/status/2',
+  '2026-10-30 12:00:00,other,domain,control-server.example,#c2 #malware,https://x.com/other/status/3',
+  '2026-10-30 12:00:00,other,url,http://203.0.113.9/login,#phishing,https://x.com/other/status/4',
+  '2026-10-30 13:00:00,other,domain,Scam-Only.example,#Scam,https://x.com/other/status/5',
+  '2026-10-30 13:00:00,other,sha256,780fa4d52e121810b8a350fe52ba14495ea830ff71cf24d3a08f8027c3403d7e,#phishing,https://x.com/other/status/6', 'not a line', ''].join('\n');
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'bvlist-'));
 const phish = n => Array.from({ length: n }, (_, i) => 'phish' + i + '.example').join('\n') + '\n';
 function lists(dir, over) {
@@ -20,7 +35,13 @@ function lists(dir, over) {
     'annoyances-cookies.txt': '||cookiewall.example^\ncookies.example##.cookie-bar\n',
     'filter.txt': '||dnsads.example^\n||dnsads2.example^\n',
     'phishing-domains-ACTIVE.txt': phish(40) + 'google.com\nvideo.nflxvideo.net\nbad-both.example\nwww.with-www.example\nNOT A DOMAIN\n',
-    'badware.txt': '! made up\n||malware1.example^\n||malware2.example^$doc\n||bad-both.example^\n||skipme.example^$script\n/path-only/*\n'
+    'badware.txt': '! made up\n||malware1.example^\n||malware2.example^$doc\n||bad-both.example^\n||skipme.example^$script\n/path-only/*\n',
+    // the newer scam lists: MetaMask's (config.json), polkadot{.js}'s (all.json), the sites reported this month (month.csv)
+    'config.json': JSON.stringify({ version: 2, tolerance: 2, fuzzylist: [], whitelist: ['metamask.io'], blacklist: ['fake-wallet1.example', 'fake-wallet2.example', 'www.fake-wallet3.example'] }),
+    'all.json': JSON.stringify({ allow: ['polkadot.network'], deny: ['fake-dot1.example', 'fake-wallet1.example'] }),
+    'month.csv': REPORTED,
+    'current.csv.gz': popular(),
+    '202510.csv.gz': popularThen()
   };
   for (const f of AD_FILES) if (!files[f]) files[f] = '! made up\n||' + f.replace(/[^a-z0-9]/g, '') + '.example^\n';
   Object.assign(files, over || {});
@@ -63,10 +84,95 @@ test('the first build makes a whole list the extension accepts', async () => {
   assert.deepStrictEqual(await F.asBuildFromBlokvane(meta.ads.v), { same: true, v: meta.ads.v });
   const sec = await F.bvSecurityFromBlokvane('', memStore());
   assert.deepStrictEqual(sec.malware.sort(), ['bad-both.example', 'malware1.example', 'malware2.example']);
-  assert.strictEqual(sec.phishing.length, 41);                       // 40 + with-www.example (www. taken off)
+  // 40 + with-www.example (www. taken off) + 3 fake wallets + 1 more fake crypto site + 2 sites reported this month
+  assert.strictEqual(sec.phishing.length, 47);
   assert.ok(sec.phishing.includes('with-www.example'));
   for (const d of ['google.com', 'video.nflxvideo.net', 'bad-both.example', 'skipme.example']) assert.ok(!sec.phishing.includes(d), d + ' must not be a phishing site');
-  assert.match(fs.readFileSync(path.join(out, 'CREDITS.txt'), 'utf8'), /EasyList[\s\S]*Phishing\.Database[\s\S]*MIT/);
+  assert.match(fs.readFileSync(path.join(out, 'CREDITS.txt'), 'utf8'), /EasyList[\s\S]*Phishing\.Database[\s\S]*MIT[\s\S]*MetaMask[\s\S]*polkadot[\s\S]*Apache[\s\S]*TweetFeed/);
+  // the licenses that ask to be passed on go with the list
+  for (const f of ['Phishing.Database-LICENSE.txt', 'MetaMask-eth-phishing-detect-LICENSE.txt', 'polkadot-js-phishing-LICENSE.txt']) assert.ok(fs.statSync(path.join(out, 'licenses', f)).size > 500, f);
+});
+
+test('the newer scam lists are read: fake crypto sites, and whole scam sites reported this month', async () => {
+  const from = lists(tmp()), out = tmp();
+  const r = await build({ from, out, prev: '', floors: FLOORS, now: T0 });
+  assert.deepStrictEqual(r.errors, []);
+  const base = JSON.parse(fs.readFileSync(path.join(out, 'security-base.json'), 'utf8'));
+  for (const d of ['fake-wallet1.example', 'fake-wallet2.example', 'fake-wallet3.example', 'fake-dot1.example', 'whole-site.example', 'scam-only.example']) assert.ok(base.phishing.includes(d), d);
+  // a real site that was broken into is reported with a page inside it: the whole site is not blocked. Nor is a
+  // bare number address, something that is not a scam page, or a name from the lists' own "these are fine" parts.
+  for (const d of ['hacked-shop.example', 'control-server.example', '203.0.113.9', 'metamask.io', 'polkadot.network']) assert.ok(!base.phishing.includes(d) && !base.malware.includes(d), d);
+  assert.deepStrictEqual(readReported(REPORTED).sort(), ['scam-only.example', 'whole-site.example']);
+  // how many sites each list gave is written down
+  const m = JSON.parse(fs.readFileSync(path.join(out, 'meta.json'), 'utf8'));
+  assert.deepStrictEqual(m.security.from.map(x => x.sites), [42, 3, 3, 2, 2]);
+  assert.strictEqual(m.security.count, base.phishing.length + base.malware.length);
+});
+
+test('a popular real site, a company\'s own site and shared storage are never blocked', async () => {
+  const from = lists(tmp(), {
+    // the newer lists name a popular shop, a platform that has a popular page on it, a page under that platform, and a site far down the list
+    // (and a sale shop that is very popular this month but was not on the most-visited list a year ago)
+    'config.json': JSON.stringify({ blacklist: ['popular-shop.example', 'www.popular-shop.example', 'big-platform.example', 'scam.pages.big-platform.example', 'far-down.example', 'big-sale-this-month.example',
+      'fake-wallet1.example', 'fake-wallet2.example'] }),
+    'all.json': JSON.stringify({ deny: ['top3.example', 'fake-dot1.example'] }),
+    'month.csv': '2026-10-30 10:00:00,someone,domain,top4.example,#phishing,https://x.com/someone/status/1\n2026-10-30 10:00:00,someone,domain,whole-site.example,#phishing,https://x.com/someone/status/1\n',
+    // the older list names companies' own sites (and parts of them), a storage address that holds everyone's files, a shared platform and one page on it
+    'phishing-domains-ACTIVE.txt': phish(40) + 'paypal.com\nwww.paypal.com\namazon.ie\nl.instagram.com\nmercadolibre.com.ar\nlistado.mercadolibre.com.mx\ns3.us-east-1.amazonaws.com\ns3-eu-west-1.amazonaws.com\n' +
+      'my-bucket.s3.us-east-1.amazonaws.com\npastebin.com\ngithub.io\nscam-page.github.io\nabc.host.secureserver.net\nevil.cloudapp.azure.com\ndev-123.okta.com\ntop5.example\n'
+  }), out = tmp();
+  const r = await build({ from, out, prev: '', floors: FLOORS, now: T0 });
+  assert.deepStrictEqual(r.errors, []);
+  const base = JSON.parse(fs.readFileSync(path.join(out, 'security-base.json'), 'utf8')), listed = new Set(base.phishing);
+  for (const d of ['popular-shop.example', 'big-platform.example', 'top3.example', 'top4.example', 'paypal.com', 'amazon.ie', 'l.instagram.com', 'mercadolibre.com.ar', 'listado.mercadolibre.com.mx',
+    's3.us-east-1.amazonaws.com', 's3-eu-west-1.amazonaws.com', 'pastebin.com', 'github.io']) assert.ok(!listed.has(d), d + ' must never be blocked');
+  // still blocked: one page on a platform or in one bucket, a site far down the list, a customer's own name at a host or
+  // a sign-in service, and (from the older list, which was always used as it is) a popular name
+  // (and a site that only became popular this month: a scam site can be popular for a few weeks)
+  for (const d of ['scam.pages.big-platform.example', 'far-down.example', 'big-sale-this-month.example', 'fake-wallet1.example', 'fake-dot1.example', 'whole-site.example', 'my-bucket.s3.us-east-1.amazonaws.com', 'scam-page.github.io',
+    'abc.host.secureserver.net', 'evil.cloudapp.azure.com', 'dev-123.okta.com', 'top5.example']) assert.ok(listed.has(d), d + ' must be blocked');
+  assert.strictEqual(r.security.spared, 5);
+});
+
+test('a small extra list that is missing does not stop the list; a big one that breaks does', async () => {
+  const from = lists(tmp()), out1 = tmp(), out2 = tmp(), out3 = tmp(), out4 = tmp(), out5 = tmp();
+  await build({ from, out: out1, prev: '', floors: FLOORS, now: T0 });
+  // the list of sites reported this month is gone: the rest is still made, with a note
+  fs.unlinkSync(path.join(from, 'month.csv'));
+  let r = await build({ from, out: out2, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
+  assert.ok(r.ok && r.changed);
+  assert.match(r.warnings.join(' '), /TweetFeed could not be used/);
+  let base = JSON.parse(fs.readFileSync(path.join(out2, 'security-delta.json'), 'utf8'));
+  assert.deepStrictEqual(base.del.sort(), ['scam-only.example', 'whole-site.example']);
+  // MetaMask's list comes back as something else, or nearly empty: the list published last time stays
+  lists(from, { 'month.csv': REPORTED, 'config.json': '{"blacklist":"none"}' });
+  r = await build({ from, out: out3, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
+  assert.ok(!r.ok && !r.changed);
+  assert.match(r.errors.join(' '), /MetaMask[^:]*: has no "blacklist" list/);
+  lists(from, { 'config.json': JSON.stringify({ blacklist: ['fake-wallet1.example'] }) });
+  r = await build({ from, out: out4, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
+  assert.match(r.errors.join(' '), /MetaMask[^:]*: only 1 sites, fewer than the 3/);
+  for (const f of ['security-base.json', 'security-delta.json', 'meta.json']) assert.strictEqual(fs.readFileSync(path.join(out4, f), 'utf8'), fs.readFileSync(path.join(out1, f), 'utf8'), f);
+  // the list of most-visited sites can't be downloaded: the copy kept with the robot is used (wikipedia.org is on it)
+  lists(from, { 'config.json': JSON.stringify({ blacklist: ['wikipedia.org', 'en.wikipedia.org', 'fake-wallet1.example', 'fake-wallet2.example', 'fake-wallet3.example'] }) });
+  fs.unlinkSync(path.join(from, 'current.csv.gz'));
+  r = await build({ from, out: out5, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
+  assert.deepStrictEqual(r.errors, []);
+  assert.match(r.warnings.join(' '), /most-visited sites[^.]*could not be downloaded/);
+  base = JSON.parse(fs.readFileSync(path.join(out5, 'security-base.json'), 'utf8'));
+  assert.ok(!base.phishing.includes('wikipedia.org') && !base.phishing.includes('en.wikipedia.org') && base.phishing.includes('fake-wallet2.example'));
+  // the same when only the list of a year ago is missing (without it nobody can tell an established site from a new one)
+  lists(from);
+  lists(from, { 'config.json': JSON.stringify({ blacklist: ['wikipedia.org', 'popular-shop.example', 'fake-wallet1.example', 'fake-wallet2.example', 'fake-wallet3.example'] }) });
+  fs.unlinkSync(path.join(from, '202510.csv.gz'));
+  const out6 = tmp();
+  r = await build({ from, out: out6, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
+  assert.deepStrictEqual(r.errors, []);
+  assert.match(r.warnings.join(' '), /most-visited sites[^.]*could not be downloaded \(the list of a year ago/);
+  // (what the extension ends up with: the big part and the changes since)
+  const b6 = JSON.parse(fs.readFileSync(path.join(out6, 'security-base.json'), 'utf8')), d6 = JSON.parse(fs.readFileSync(path.join(out6, 'security-delta.json'), 'utf8'));
+  const now6 = new Set([...b6.phishing, ...d6.add.phishing].filter(x => !d6.del.includes(x)));
+  assert.ok(!now6.has('wikipedia.org') && now6.has('popular-shop.example'), 'the kept copy decides: a made-up shop is not on it');
 });
 
 test('the next build publishes only what changed, and the extension ends up with exactly the new list', async () => {
@@ -102,6 +208,7 @@ test('the next build publishes only what changed, and the extension ends up with
   assert.deepStrictEqual(seen, ['meta.json', 'security-delta.json']);
   assert.deepStrictEqual(sec.malware.sort(), ['malware1.example', 'malware2.example', 'phish3.example']);
   const want = new Set(phish(400).trim().split('\n')); want.delete('phish7.example'); want.delete('phish3.example'); ['new-a.example', 'new-b.example', 'malware-now.example'].forEach(d => want.add(d));
+  ['fake-wallet1.example', 'fake-wallet2.example', 'fake-wallet3.example', 'fake-dot1.example', 'whole-site.example', 'scam-only.example'].forEach(d => want.add(d));    // (the newer lists, unchanged)
   assert.deepStrictEqual(sec.phishing.sort(), [...want].sort());
   // and one that never had it gets the same list
   const fresh = await F.bvSecurityFromBlokvane('', memStore());
@@ -120,7 +227,7 @@ test('the big part is replaced after a week, or when too much of it changed', as
   const churn = await build({ from, out: out3, prev: out1, floors: FLOORS, now: T0 + 3600e3 });
   assert.notStrictEqual(churn.meta.security.base, m1.security.base);
   serve(out3);
-  assert.strictEqual((await F.bvSecurityFromBlokvane('', memStore())).phishing.length, 60);
+  assert.strictEqual((await F.bvSecurityFromBlokvane('', memStore())).phishing.length, 66);         // 60 + the 6 from the newer lists
 });
 
 test('a list that breaks is not used: the part published last time stays', async () => {
@@ -175,6 +282,36 @@ test('the extension refuses anything in the list that is not a plain block or al
   const c = F.bvListCleanCosmetic(JSON.parse('{"generic":[".a",5,null],"specific":{"__proto__":[".x"],"a.example":[".b",{}]},"exceptions":"no"}'));
   assert.deepStrictEqual(c, { generic: ['.a'], specific: { 'a.example': ['.b'] }, exceptions: {}, cookieSpecific: {}, generichide: [] });
   assert.strictEqual(Object.getPrototypeOf(c.specific), Object.prototype);
+});
+
+test('the list teaches the addresses that scam pages crowd under, and the extension gets them with the list', async () => {
+  // free-pages.example: 7 listed scam sites under it and no popular site. pages.big-platform.example: 6, but a popular
+  // site sits there. small.example: too few. nflxvideo.net: a company's own address (and its sites are never listed).
+  const under = (n, where) => Array.from({ length: n }, (_, i) => 'scam' + i + '.' + where).join('\n') + '\n';
+  const extra = under(5, 'free-pages.example') + under(2, 'eu.free-pages.example') + under(6, 'pages.big-platform.example') + under(3, 'small.example') + under(6, 'nflxvideo.net');
+  const src = lists(tmp(), { 'phishing-domains-ACTIVE.txt': phish(40) + extra }), out = tmp();
+  const r = await build({ from: src, out, floors: FLOORS, now: T0, hintsMin: 5 });
+  assert.ok(r.ok, r.errors.join(' | '));
+  assert.deepStrictEqual(r.meta.hints.crowded, ['free-pages.example']);
+  assert.match(r.meta.hints.v, /^[0-9a-f]{16}$/);
+  serve(out);
+  const got = await F.bvSecurityFromBlokvane('', memStore());
+  assert.deepStrictEqual(got.hints, { crowded: ['free-pages.example'] });
+  assert.ok(got.phishing.includes('scam0.free-pages.example'), 'the listed sites themselves are still blocked');
+  // (the same list again: nothing to download, the hints still come along)
+  assert.deepStrictEqual(await F.bvSecurityFromBlokvane(got.v, memStore()), { same: true, v: got.v, hints: { crowded: ['free-pages.example'] } });
+  // with the usual threshold of 300 there is nothing to teach in a list this small
+  const big = await build({ from: src, out: tmp(), floors: FLOORS, now: T0 });
+  assert.deepStrictEqual(big.meta.hints.crowded, []);
+  // this month's most-visited list can't be downloaded: what was taught last time is kept, nothing new is worked out
+  const src2 = lists(tmp(), { 'phishing-domains-ACTIVE.txt': phish(40) + extra + under(9, 'other-pages.example') });
+  fs.rmSync(path.join(src2, 'current.csv.gz'));
+  const next = await build({ from: src2, prev: out, out: tmp(), floors: FLOORS, now: T0 + 3600e3, hintsMin: 5 });
+  assert.ok(next.ok, next.errors.join(' | '));
+  assert.deepStrictEqual(next.meta.hints, r.meta.hints);
+  // the extension keeps plain names only, whatever the file says
+  const clean = F.bvListCheckMeta({ format: 1, hints: { crowded: ['ok-pages.example', 'UPPER.example', 'no-dot', 'a b.example', 42, 'x'.repeat(90) + '.example'] } });
+  assert.deepStrictEqual(clean.hints, { crowded: ['ok-pages.example'] });
 });
 
 test('a list that was changed on the way is not used', async () => {

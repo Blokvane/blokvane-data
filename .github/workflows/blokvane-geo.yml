@@ -1,0 +1,68 @@
+# Blokvane's country table robot: once a week it downloads the public "server-country" tables, checks them, packs them
+# into the small table that Country blocking uses and publishes it on the "geo" branch, where the extension reads it.
+# No one has to do anything. If the tables fail their checks, the table published last time stays and this run ends
+# with an error (GitHub emails you).
+name: Blokvane country table
+
+on:
+  schedule:
+    - cron: '37 5 * * 0'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths: ['tools/build-geo.js', 'tools/geo/**', 'tools/test-geo.js', '.github/workflows/blokvane-geo.yml']
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: blokvane-geo
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Get the table published last time
+        run: |
+          mkdir -p "$RUNNER_TEMP/prev" "$RUNNER_TEMP/out"
+          if git ls-remote --exit-code --heads origin geo >/dev/null 2>&1; then
+            git fetch --depth 1 origin geo
+            git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/prev"
+          fi
+
+      - name: Check the robot itself (made-up tables, nothing downloaded)
+        run: node --test tools/test-geo.js
+
+      - name: Build the country table
+        run: node tools/build-geo.js --out "$RUNNER_TEMP/out/geo.bin" --note "$RUNNER_TEMP/out/geo.json" --prev "$RUNNER_TEMP/prev" --flag "$RUNNER_TEMP/changed"
+
+      # (one commit that replaces the last one, so the repository does not grow with every update; only reached when
+      # the table passed its checks)
+      - name: Publish it on the geo branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f "$RUNNER_TEMP/changed" ]; then echo "Nothing new to publish."; exit 0; fi
+          cd "$RUNNER_TEMP/out"
+          git init -q -b geo
+          git config user.name "Blokvane list robot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Blokvane's country table, $(date -u '+%Y-%m-%d')"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" geo
+
+      # (GitHub switches a schedule off after 60 days without changes to the repository; this keeps it on)
+      - name: Keep the schedule on
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/blokvane-geo.yml/enable" >/dev/null 2>&1 || true

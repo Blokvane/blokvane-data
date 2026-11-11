@@ -308,6 +308,10 @@ function bvListCheckMeta(m) {
   const a = m.ads, s = m.security;
   if (a && typeof a === 'object' && ver(a.v) && hex(a.sha256)) out.ads = { v: a.v, sha256: a.sha256 };
   if (s && typeof s === 'object' && ver(s.v) && ver(s.base) && hex(s.baseSha256) && hex(s.deltaSha256)) out.security = { v: s.v, base: s.base, baseSha256: s.baseSha256, deltaSha256: s.deltaSha256 };
+  // what the list teaches: addresses that scam pages crowd under (plain names only; lib/scamrules.js checks them again
+  // and uses them as a warning sign, never as a block)
+  const h = m.hints;
+  if (h && typeof h === 'object' && Array.isArray(h.crowded)) out.hints = { crowded: h.crowded.filter(x => typeof x === 'string' && x.length <= 80 && /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(x)).slice(0, 400) };
   return out;
 }
 async function bvListGet(url, max) {
@@ -364,15 +368,16 @@ function bvSecurityApply(base, delta) {
   }
   return out;
 }
-// Returns { same: true, v } or { malware: [...], phishing: [...], v }. Throws when the list can't be used.
+// Returns { same: true, v, hints } or { malware: [...], phishing: [...], v, hints }. Throws when the list can't be used.
 async function bvSecurityFromBlokvane(have, store) {
   store = store || bvListBaseStore;
   let lastErr = null;
   for (const root of BV_LIST_ROOTS) {
     try {
-      const s = bvListCheckMeta(JSON.parse(await bvListGet(root + 'meta.json', BV_LIST_MAX.meta))).security;
+      const meta = bvListCheckMeta(JSON.parse(await bvListGet(root + 'meta.json', BV_LIST_MAX.meta)));
+      const s = meta.security, hints = meta.hints || null;
       if (!s) throw new Error('The list has no security part yet.');
-      if (have && s.v === have) return { same: true, v: have };
+      if (have && s.v === have) return { same: true, v: have, hints };
       let baseText = null;
       try { baseText = await store.get(s.base); } catch (e) {}
       if (baseText && await bvListSha(baseText) !== s.baseSha256) baseText = null;
@@ -386,7 +391,7 @@ async function bvSecurityFromBlokvane(have, store) {
       const base = JSON.parse(baseText), delta = JSON.parse(deltaText);
       if (!base || base.id !== s.base || !delta || delta.base !== s.base) throw new Error('The two parts of the security list do not belong together.');
       const out = bvSecurityApply(base, delta);
-      return { malware: out.malware, phishing: out.phishing, v: s.v };
+      return { malware: out.malware, phishing: out.phishing, v: s.v, hints };
     } catch (e) { lastErr = e; }
   }
   throw lastErr || new Error('The list could not be reached.');
