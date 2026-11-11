@@ -80,26 +80,8 @@ function slides(pc, back) {
   el('p', 'muted small center', v.body, 'Tip: the volume buttons don\'t work from a web page, so tap the big buttons. Keep this page open while you present.').style.marginTop = '14px';
 }
 function gameday(pc, back) {
-  const { el, view, btn, toast, buzz, input } = GO;
-  const v = view('Game day and fun', { back, tint: 'pink', live: true });
-  const fx = (kind, extra) => pc.ask('fx', Object.assign({ kind, from: GO.deviceName() }, extra || {})).then(r => { buzz('ok'); toast(r.tvs ? `On ${r.tvs} screen${r.tvs > 1 ? 's' : ''}!` : 'Sent to the screens.', 'ok'); }).catch(e => toast(e.message, 'bad'));
-  // fun on every screen
-  const c1 = el('div', 'card', v.body);
-  el('h2', '', c1, 'On every screen');
-  const fun = el('div', 'fun', c1);
-  for (const [kind, e, name] of [['fireworks', '🎆', 'Fireworks'], ['confetti', '🎊', 'Confetti'], ['hearts', '💖', 'Hearts'], ['balloons', '🎈', 'Balloons'], ['stars', '⭐', 'Stars'], ['boo', '👻', 'Boo!'], ['cheer', '📣', 'Cheer']]) {
-    const b = el('button', '', fun); b.type = 'button'; b.append(e); el('small', '', b, name);
-    b.onclick = () => fx(kind);
-  }
-  const em = el('div', 'chips', c1); em.style.marginTop = '12px';
-  for (const e of ['🎉', '🔥', '😂', '👏', '🏈', '🏆', '❤️', '🥳', '😱', '🙌']) { const b = el('button', 'chip', em, e); b.type = 'button'; b.style.fontSize = '22px'; b.onclick = () => fx('emoji', { e }); }
-  const say = el('div', 'card', v.body);
-  el('h2', '', say, 'A message on the screens');
-  const i = input({ placeholder: 'Pizza is here!', max: 80 });
-  say.appendChild(i);
-  const quick = el('div', 'chips', say); quick.style.margin = '10px 0';
-  for (const q of ['Food is ready!', 'Halftime!', 'Kickoff in 5 minutes', 'Happy birthday!', 'Last call']) { const b = el('button', 'chip', quick, q); b.type = 'button'; b.onclick = () => { i.value = q; }; }
-  btn('Show it on every screen', { kind: 'go', full: true }, say, () => { const text = i.value.trim(); if (!text) { i.focus(); return; } return fx('msg', { text, sec: 20 }).then(() => { i.value = ''; }); });
+  const { el, view, btn, toast, buzz } = GO;
+  const v = view('Game day', { back, tint: 'pink', live: true });
   // the game
   const g = el('div', 'card', v.body);
   el('h2', '', g, 'Celebrate now');

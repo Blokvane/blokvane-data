@@ -17,7 +17,7 @@
     if (on && !noZoom.ios) { noZoom.ios = true; document.addEventListener('gesturestart', e => { if (r.classList.contains('pt-noz')) e.preventDefault(); }); }
   }
   const L = BVLIVE, C = BVWT_CORE;
-  GO.def('party', async (kind, parts, o) => (kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : start(parts)));
+  GO.def('party', async (kind, parts, o) => (kind === 'css' ? css() : kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : start(parts)));
 
   // The words. The seven game languages have their own (../play/i18n.js and ../play/lang/*.js, the same words the TV
   // uses); for any other language the TV sends these translated by Chrome on a computer.
@@ -796,7 +796,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   const effLang = l => ownLang(l) || tvLangOf(l);
   const langName = c => ([...langsFull(), ...langsMore()].find(x => x[0] === c) || [c, c])[1];
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
-  const send = m => (G.R ? G.R.send(m).catch(() => {}) : Promise.resolve());
+  // ("join" carries this phone's host pass, when it has one: each game needs one Blokvane member as its host)
+  const send = m => { if (m && m.k === 'join' && G.pass) m.pass = G.pass; return G.R ? G.R.send(m).catch(() => {}) : Promise.resolve(); };
   // (a player who picked their own language sees the game's name in it too, not in the TV's)
   const gameName = () => { const l = G.lobby || {}; return (ownLang(l) && typeof l.gen === 'string' && l.gen ? T(L.clean(l.gen, 60)) : l.gname) || T('Party games'); };
   // (the game's clock on this phone: it stands still while the host has the game paused, so a question's time left, its
@@ -921,6 +922,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     }
     await GO.script('watch-boo.js').catch(() => {});
     G.s = s; G.tv = tv;
+    G.pass = GO.pass ? GO.pass.get() : null;
+    G.needHost = false;
     G.name = store.get('party:name', '');
     G.av = AVATARS.includes(store.get('party:av', '')) ? store.get('party:av', '') : 'boo:hi';
     // (back in the same game after a reload or a dead battery: straight in, as yourself. A game this phone just started
@@ -1005,8 +1008,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, onMsg: m => { if (m.f === G.tv) take(m); } });
     G.phase = 'join'; G.joined = false; G.tries = 0;
     G.waitNext = false;
+    G.needHost = false;
+    G.pass = GO.pass ? GO.pass.get() : null;
     const hi = () => {
-      if (G.joined || !G.R) return;
+      if (G.joined || !G.R || G.needHost) return;
       // (waiting for the next game: still here, now and then, without ever giving up)
       if (G.waitNext) { send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '' }); setTimeout(hi, 10000); return; }
       if (++G.tries > 30) { notFound(); return; }
@@ -1195,6 +1200,15 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'kicked': return kickedScreen();
       case 'closed': return closedScreen();
       case 'waitnext': G.waitNext = true; return waitNextScreen();
+      // nobody is hosting yet: the first one in has to be a Blokvane member (signed in), then everyone else just joins
+      case 'needhost': {
+        if (G.joined || G.needHost) return;
+        G.needHost = true;
+        if (GO.signInScreen) GO.signInScreen({ why: 'host', after: () => connect(), again: () => connect(), back: () => { G.needHost = false; quitParty(true); history.replaceState(null, '', location.pathname); GO.route(); } });
+        return;
+      }
+      // (the host tried to hand the game to someone who isn't a Blokvane member)
+      case 'needpass': toast(T('{name} can\'t host: the host has to be a Blokvane member.', { name: L.clean(m.name, 20) || T('That player') }), 'bad'); return;
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
@@ -3822,7 +3836,11 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       btn(on ? S().hideCode : T('Add more players'), { kind: on ? 'ghost' : 'tint', full: true, icon: 'phone' }, pc, () => { send({ k: 'showjoin', on: !on }); if (!on) toast(S().codeOn, 'ok'); buzz('tap'); });
       el('p', 'muted small', pc, T('New players scan the code on the TV and join the next game. You can also make someone else the host, or take someone out.'));
       playersAdmin(pc, l, null);
-    } else { el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]); }
+    } else {
+      el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]);
+      // (liked it? hosting your own needs Blokvane: where it is, and sharing it)
+      if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('With Blokvane on your computer, you can host games for friends and family. Everyone who joins plays for free.') });
+    }
   }
 
   // ---------- starting a game from this phone (your computer's page here: Party games) ----------

@@ -1,0 +1,17 @@
+{
+  "id": "games.html",
+  "name": "Blokvane Games",
+  "short_name": "BV Games",
+  "description": "Blokvane's party games on your phone: join the game on the TV with its QR code or its code, and play.",
+  "start_url": "games.html",
+  "scope": "games.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b1a14",
+  "theme_color": "#0b1a14",
+  "icons": [
+    { "src": "games-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "games-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "games-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

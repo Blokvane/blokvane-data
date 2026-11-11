@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#0b1a14">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BV Games">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Blokvane Games</title>
+<link rel="icon" href="games-192.png">
+<link rel="apple-touch-icon" href="games-apple-touch.png">
+<link rel="manifest" href="games.webmanifest">
+<link rel="stylesheet" href="go.css?v=16">
+<!-- Blokvane Games: the party games' own small app (the same page as Blokvane on your phone, for games only). A
+     game's QR code on the TV opens it; the first time, it asks: play here in the browser, or add the Games app to the
+     home screen (and remembers). In the app: scan the QR code, type the code, or go back into the game you were in.
+     Each game needs one Blokvane member as its host (pass.js); everyone else plays without signing in.
+     Blokvane on your phone. What to do is after the # in the address (browsers never send that part anywhere). There
+     is no Blokvane server behind this page: it talks to your devices through free public relays, sealed and signed
+     (live-kit.js), and big things go straight between the two devices. -->
+</head>
+<body>
+<div id="app" class="app"></div>
+<script>window.BV_GAMES = 1;</script>
+<script src="compat.js?v=15"></script>
+<script src="wt-core.js?v=15"></script>
+<script src="wt-net.js?v=17"></script>
+<script src="live-kit.js?v=17"></script>
+<script src="qrcode.js?v=11"></script>
+<script src="pass.js?v=1"></script>
+<script src="go.js?v=22"></script>
+</body>
+</html>

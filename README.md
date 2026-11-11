@@ -201,6 +201,11 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   (`BVLIVE.nearby` in `go/live-kit.js`). Both ask the free STUN servers for the network's public
   address and meet in a room made from a hash of it; the address itself never leaves the device. The
   host can turn it off (Phones nearby can find this TV).
+- The Games app's camera (`go/go.js`, "Scan the QR code") reads a game's QR code on the TV with the
+  phone's own reader where there is one (Android's Chrome) and with jsQR everywhere else (iPhones):
+  `go/vendor/jsQR.min.js`, jsQR 1.4.0 from https://github.com/cozmo/jsQR (Apache License 2.0, its
+  text in `go/vendor/jsQR-LICENSE.txt`), made smaller with esbuild 0.24.0 and otherwise unchanged.
+  It loads only on a phone that needs it.
 - `tools/short-address/index.html` is the page for a short TV address: copied to a repository named
   `blokvane.github.io` (the Blokvane account's own Pages site), `blokvane.github.io` opens the party
   games on a TV and Blokvane on a phone.

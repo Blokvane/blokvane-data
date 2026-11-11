@@ -72,7 +72,8 @@ var BVPLAY = (() => {
     else if (near) { const i2 = nearInfo(), sg2 = JSON.stringify(i2); if (sg2 !== nearSig) { nearSig = sg2; near.setInfo(i2); } }
   }
   // what the phones scan: the game's room, and the language the game is in (so a phone shows it from the first screen)
-  const linkNow = () => GO + '#game.' + secret + '.' + R.id + (lang !== 'en' ? '.' + lang : '');
+  // (the QR code opens Blokvane Games: the party games' own page, that a phone can keep as an app)
+  const linkNow = () => GO + 'games.html#game.' + secret + '.' + R.id + (lang !== 'en' ? '.' + lang : '');
   // the game's language, everywhere on this screen
   async function setLang(v) {
     lang = v;
@@ -119,16 +120,19 @@ var BVPLAY = (() => {
   // closed): only after a minute and a half (15 seconds when the game waits for their Next) does the next player take
   // over, and the host gets it back as soon as their phone is here again. Leaving the game, or handing it over from
   // the host's phone, passes it at once.
+  // Only a Blokvane member can host (signed in on their phone: pass.js); everyone else joins once one is here.
   let trueHost = '', hostT = 0;
+  const hostHere = () => [...players.values()].some(x => x.paid && !x.away && !x.left);
+  const passed = new WeakSet();   // "join" messages whose host pass was checked here
   function pickHost() {
     const was = host;
     const th = players.get(trueHost);
-    if (th && !th.away && host !== trueHost) host = trueHost;
+    if (th && th.paid && !th.away && host !== trueHost) host = trueHost;
     const h = players.get(host);
     const grace = waitHost ? 15000 : 90000;
     clearTimeout(hostT);
-    if (!h || (h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace)))) {
-      const next = list()[0];
+    if (!h || !h.paid || (h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace)))) {
+      const next = list().find(x => x.paid);
       host = next ? next.id : '';
       if (!th || th.left) trueHost = host;
     } else if (h.away) hostT = setTimeout(() => { pickHost(); if (phase === 'lobby') lobby(); sayLobby(); }, grace + 500 - (Date.now() - (h.awayAt || 0)));
@@ -216,11 +220,18 @@ var BVPLAY = (() => {
     if (p) { p.heard = Date.now(); if (p.gone) { p.gone = false; setTimeout(sweep, 0); } }
     switch (m.k) {
       case 'join': {
+        // (a phone with a host pass: the pass is checked first. A "paid" that comes in a message counts for nothing:
+        // only a pass checked here does)
+        const paid = passed.has(m);
+        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== 'undefined') { const ps = m.pass; delete m.pass; BVPASS.ok(ps).then(ok => { if (ok) passed.add(m); take(m, peer); }, () => take(m, peer)); return; }
         if (kicked.has(m.f)) { if (!m.again) { sayTo(m.f, { k: 'kicked' }); return; } kicked.delete(m.f); }
+        // nobody comes in before the host: a Blokvane member, signed in on their phone (their phone asks them)
+        if (!p && !paid && !hostHere()) { sayTo(m.f, { k: 'needhost' }); return; }
         if (!p && players.size >= 40) { R.send({ k: 'full' }, m.f).catch(() => {}); return; }
         // (someone new in the middle of a game the host keeps closed: they're in from the next game, and their phone says so)
         if (!p && phase === 'play' && settings.k_late === false) { if (waitNext.size < 40) waitNext.set(m.f, m); sayTo(m.f, { k: 'waitnext' }); return; }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: '' };
+        if (paid) pl.paid = true;
         pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.left = false; pl.at = Date.now(); pl.heard = Date.now();
         // (a new Boo picked in the middle of a game, instead of a selfie: the selfie goes)
         if (m.nophoto) pl.photo = '';
@@ -262,6 +273,7 @@ var BVPLAY = (() => {
       case 'makehost': {
         const to = players.get(m.id);
         if (!p || m.f !== host || !to || to.away || to.id === host) return;
+        if (!to.paid) { sayTo(m.f, { k: 'needpass', name: to.name }); return; }
         host = to.id; trueHost = to.id;
         for (const x of [p, to]) sayTo(x.id, { k: 'you', id: x.id, host: host === x.id, color: x.color });
         if (phase === 'lobby') lobby();
@@ -681,7 +693,8 @@ var BVPLAY = (() => {
     const head = el('div', 'ph', right);
     el('h2', '', head, ps.length ? await T(ps.length === 1 ? '1 player' : '{n} players', { n: ps.length }) : await T('Waiting for players...'));
     const hp = players.get(host);
-    if (hp) el('div', 'pill', head, await T('Host: {name}', { name: hp.name }));
+    if (hp) el('div', 'pill', head, '⭐ ' + await T('Host: {name}', { name: hp.name }));
+    else el('div', 'pill wait-host', head, await T('The host signs in with Blokvane on their phone. Everyone else just joins.'));
     // (the seats get their size once the screen is drawn: fitLobby)
     const grid = el('div', 'slots fit', right);
     for (const p of ps) {

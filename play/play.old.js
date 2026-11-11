@@ -128,7 +128,7 @@ var BVPLAY = (() => {
       }
     });
   }
-  const linkNow = () => GO + "#game." + secret + "." + R.id + (lang !== "en" ? "." + lang : "");
+  const linkNow = () => GO + "games.html#game." + secret + "." + R.id + (lang !== "en" ? "." + lang : "");
   function setLang(v) {
     return __async(this, null, function* () {
       lang = v;
@@ -180,15 +180,17 @@ var BVPLAY = (() => {
     if (w.got.size >= w.who.size) w.finish();
   }
   let trueHost = "", hostT = 0;
+  const hostHere = () => [...players.values()].some((x) => x.paid && !x.away && !x.left);
+  const passed = /* @__PURE__ */ new WeakSet();
   function pickHost() {
     const was = host;
     const th = players.get(trueHost);
-    if (th && !th.away && host !== trueHost) host = trueHost;
+    if (th && th.paid && !th.away && host !== trueHost) host = trueHost;
     const h = players.get(host);
     const grace = waitHost ? 15e3 : 9e4;
     clearTimeout(hostT);
-    if (!h || h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace))) {
-      const next = list()[0];
+    if (!h || !h.paid || h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace))) {
+      const next = list().find((x) => x.paid);
       host = next ? next.id : "";
       if (!th || th.left) trueHost = host;
     } else if (h.away) hostT = setTimeout(() => {
@@ -320,12 +322,26 @@ var BVPLAY = (() => {
     }
     switch (m.k) {
       case "join": {
+        const paid = passed.has(m);
+        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== "undefined") {
+          const ps = m.pass;
+          delete m.pass;
+          BVPASS.ok(ps).then((ok) => {
+            if (ok) passed.add(m);
+            take(m, peer);
+          }, () => take(m, peer));
+          return;
+        }
         if (kicked.has(m.f)) {
           if (!m.again) {
             sayTo(m.f, { k: "kicked" });
             return;
           }
           kicked.delete(m.f);
+        }
+        if (!p && !paid && !hostHere()) {
+          sayTo(m.f, { k: "needhost" });
+          return;
         }
         if (!p && players.size >= 40) {
           R.send({ k: "full" }, m.f).catch(() => {
@@ -338,6 +354,7 @@ var BVPLAY = (() => {
           return;
         }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: "" };
+        if (paid) pl.paid = true;
         pl.name = P.name(m.name);
         pl.av = P.AVATARS.includes(m.av) ? m.av : "boo:hi";
         pl.gone = false;
@@ -452,6 +469,10 @@ var BVPLAY = (() => {
       case "makehost": {
         const to = players.get(m.id);
         if (!p || m.f !== host || !to || to.away || to.id === host) return;
+        if (!to.paid) {
+          sayTo(m.f, { k: "needpass", name: to.name });
+          return;
+        }
         host = to.id;
         trueHost = to.id;
         for (const x of [p, to]) sayTo(x.id, { k: "you", id: x.id, host: host === x.id, color: x.color });
@@ -1182,7 +1203,8 @@ var BVPLAY = (() => {
       const head = el("div", "ph", right);
       el("h2", "", head, ps.length ? yield T(ps.length === 1 ? "1 player" : "{n} players", { n: ps.length }) : yield T("Waiting for players..."));
       const hp = players.get(host);
-      if (hp) el("div", "pill", head, yield T("Host: {name}", { name: hp.name }));
+      if (hp) el("div", "pill", head, "⭐ " + (yield T("Host: {name}", { name: hp.name })));
+      else el("div", "pill wait-host", head, yield T("The host signs in with Blokvane on their phone. Everyone else just joins."));
       const grid = el("div", "slots fit", right);
       for (const p of ps) {
         const c2 = el("div", "seat" + (seen.has(p.id) ? " still" : ""), grid);

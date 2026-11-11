@@ -19,8 +19,12 @@
     const ni = input({ value: GO.store.get('fanName', ''), placeholder: 'Your first name', max: 16 });
     name.appendChild(ni);
     ni.onchange = () => GO.store.set('fanName', L.clean(ni.value, 16));
-    const R = await L.room({ secret: s, label: 'bvfan', me: await GO.member('fan:' + s.slice(0, 10)), name: '', role: 'fan', owner: host || '', open: true, onMsg: m => { if (m.k === 'fan-cfg') cfg = m; if (m.k === 'fan-slow') toast('Easy! The screen takes a few at a time.'); } });
-    let cfg = { words: true }, last = 0;
+    // (the screen says whether it shows cheers in words: when it doesn't, only the emoji are here)
+    let cfg = { words: true }, last = 0, say = null;
+    const R = await L.room({ secret: s, label: 'bvfan', me: await GO.member('fan:' + s.slice(0, 10)), name: '', role: 'fan', owner: host || '', open: true, onMsg: m => {
+      if (m.k === 'fan-cfg') { cfg = m; if (say) say.hidden = m.words === false; }
+      if (m.k === 'fan-slow') toast('Easy! The screen takes a few at a time.');
+    } });
     const send = async (e, text) => {
       const t = Date.now();
       if (t - last < 1500) { toast('One moment...'); return; }
@@ -30,7 +34,8 @@
     };
     const fun = el('div', 'fun', v.body); fun.style.marginTop = '6px';
     for (const e of ['🎉', '🔥', '👏', '😂', '😱', '❤️', '🏈', '🏆', '🙌', '💪', '👻', '🥳']) { const b = el('button', '', fun, e); b.type = 'button'; b.onclick = () => send(e); }
-    const say = el('div', 'card', v.body); say.style.marginTop = '12px';
+    say = el('div', 'card', v.body); say.style.marginTop = '12px';
+    say.hidden = cfg.words === false;
     el('h2', '', say, 'A cheer');
     const chips = el('div', 'chips', say);
     for (const w of ['Let\'s go!', 'Defense!', 'What a play!', 'Touchdown!', 'We love you!']) { const b = el('button', 'chip', chips, w); b.type = 'button'; b.onclick = () => send('📣', w); }

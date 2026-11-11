@@ -773,3 +773,5 @@ html[dir="rtl"] .howto-bar i { transform-origin: 100% 50%; }
 @keyframes howtoBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
 /* a calm screen (the host's setting): the lights and moving parts go round once, then stand still; nothing keeps flashing */
 body.calm *, body.calm *::before, body.calm *::after { animation-iteration-count: 1 !important; }
+/* (no host yet: the game waits for a Blokvane member to sign in on their phone) */
+.ph .pill.wait-host { white-space: normal; background: rgba(255, 196, 81, .16); border: calc(.2 * var(--u)) solid rgba(255, 196, 81, .45); color: #ffe3a0; max-width: 60%; text-align: center; font-weight: 700; }
