@@ -1,0 +1,61 @@
+# Blokvane's watch robot: every 15 minutes it opens the website, the server's health check, the phone, game and TV
+# pages and the two short addresses, from outside, the way a visitor would. If one of them does not answer as it
+# should after 3 tries, this run ends with an error and GitHub emails you (Settings, Notifications, Actions: failed
+# workflows only). Render sends its own email when a deploy or the server itself fails; this one also catches what
+# Render cannot see: the domain, the security certificates and the pages on GitHub.
+# Nothing is changed by it and it needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
+name: Blokvane watch
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  group: blokvane-watch
+  cancel-in-progress: true
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Everything answers
+        run: |
+          fail=0
+          # check <address> <words that must be in the answer>
+          check() {
+            for try in 1 2 3; do
+              if body=$(curl -sS -L --max-time 20 "$1" 2>&1) && printf '%s' "$body" | grep -q -F -- "$2"; then
+                echo "ok    $1"
+                return 0
+              fi
+              [ "$try" = 3 ] || sleep 20
+            done
+            echo "::error::$1 did not answer as it should (3 tries)"
+            fail=1
+          }
+          # door <short address> <where it must lead>
+          door() {
+            for try in 1 2 3; do
+              to=$(curl -sS --max-time 20 -o /dev/null -w '%{redirect_url}' "$1" 2>/dev/null || true)
+              if [ "$to" = "$2" ]; then
+                echo "ok    $1 opens $to"
+                return 0
+              fi
+              [ "$try" = 3 ] || sleep 20
+            done
+            echo "::error::$1 should open $2, but it leads to '$to' (3 tries)"
+            fail=1
+          }
+          check https://blokvane.com/v1/health '"ok":true'
+          check https://blokvane.com/ 'browse without ads'
+          check https://www.blokvane.com/v1/health '"ok":true'
+          check https://app.blokvane.com/play/ 'Blokvane party games'
+          check https://app.blokvane.com/go/games.html 'Blokvane Games'
+          check https://app.blokvane.com/tv/ 'Blokvane Screens'
+          door https://blokvane.com/tv https://app.blokvane.com/tv/
+          door https://blokvane.com/play https://app.blokvane.com/play/
+          exit $fail
