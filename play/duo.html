@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob: mediastream:; font-src 'self' data:; connect-src 'self' data: blob: https://blokvane.com wss:; worker-src 'self' blob:; frame-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex">
+<title>Blokvane party games</title>
+<link rel="icon" href="../tv/icon.png">
+<!-- Blokvane party games, "Play here too": the game (the same page a TV shows, index.html) and one player's own panel
+     (the same page a phone shows, ../go/games.html) side by side on this one screen. For a laptop on the table, a
+     computer shown on a TV with a cable, or a phone that mirrors its screen to the TV: the host sees the game and
+     plays at the same time. Everyone else still joins from their own phone, with the QR code on the game.
+     The panel joins the game by itself: this page makes the game's 6 letters and gives them to both (duo.js). -->
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #120d2b; }
+  body { display: flex; }
+  iframe { display: block; border: 0; background: #120d2b; }
+  #tv { flex: 1 1 auto; min-width: 0; height: 100%; }
+  #side { flex: none; display: flex; flex-direction: column; width: 380px; max-width: 38vw; height: 100%; border-left: 1px solid rgba(255, 255, 255, .14); }
+  html[dir="rtl"] #side { border-left: 0; border-right: 1px solid rgba(255, 255, 255, .14); }
+  #me { flex: 1 1 auto; min-height: 0; width: 100%; }
+  /* (a strip of its own under the panel: the round button sits on it, so it never covers a button of the panel) */
+  #bar { flex: none; height: 52px; background: #1a1340; border-top: 1px solid rgba(255, 255, 255, .14); }
+  body.wide #side { display: none; }
+  #tog { position: fixed; right: 8px; bottom: 4px; z-index: 5; width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .28); background: rgba(29, 21, 70, .92); color: #fff; font: 22px/1 system-ui, sans-serif; cursor: pointer; }
+  html[dir="rtl"] #tog { right: auto; left: 8px; }
+  body.wide #tog { bottom: 8px; }
+  #tog:focus-visible { outline: 3px solid #ffd166; outline-offset: 2px; }
+  /* a tall or narrow screen (a phone held upright): the game on top, the panel under it */
+  @media (max-aspect-ratio: 1/1), (max-width: 760px) {
+    body { flex-direction: column; }
+    #tv { flex: none; width: 100%; height: 56.25vw; max-height: 50vh; }
+    #side { flex: 1 1 auto; width: 100%; max-width: none; height: auto; min-height: 0; border-left: 0; border-top: 1px solid rgba(255, 255, 255, .14); }
+    body.wide #tv { flex: 1 1 auto; height: 100%; max-height: none; }
+  }
+</style>
+</head>
+<body>
+<iframe id="tv" title="The game" allow="autoplay; fullscreen; screen-wake-lock; clipboard-write"></iframe>
+<aside id="side"><iframe id="me" title="Your answers" allow="camera; clipboard-write; web-share; screen-wake-lock"></iframe><div id="bar"></div></aside>
+<button id="tog" type="button" aria-label="Show or hide your own panel" aria-pressed="true" title="Show or hide your own panel">&#127918;</button>
+<script src="duo.js?v=1"></script>
+</body>
+</html>

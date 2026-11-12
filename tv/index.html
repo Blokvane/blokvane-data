@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="color-scheme" content="dark">
 <meta name="referrer" content="no-referrer">
+<!-- What this page may load and talk to (a second lock, in case a mistake in the page ever let someone's text through
+     as code): scripts only from Blokvane's own pages, never written into the page or made from text; connections only
+     to Blokvane and to relays; nothing embedded from anywhere else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob: mediastream:; font-src 'self' data:; connect-src 'self' data: blob: https://blokvane.com wss:; worker-src 'self' blob:; frame-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
 <title>Blokvane Screens</title>
 <link rel="icon" href="icon.png">
@@ -26,8 +30,8 @@
 </main>
 <div id="chip" class="chip" hidden><i></i><span id="chipT"></span></div>
 <script src="wt-core.js?v=15"></script>
-<script src="wt-net.js?v=15"></script>
-<script src="../go/live-kit.js?v=15"></script>
+<script src="wt-net.js?v=16"></script>
+<script src="../go/live-kit.js?v=16"></script>
 <script src="tv.js"></script>
 </body>
 </html>

@@ -1,6 +1,6 @@
 // Blokvane party games, the TV: the party game kit. It runs the room everyone joins (a QR code and a short code), the
-// lobby (players pop in with their photo or Boo, a check mark once they're ready), the host's phone (the first one in)
-// that picks the game and its settings, and everything games share: asking every phone at once, the live scoreboard,
+// lobby (players pop in with their photo or Boo, a check mark once they're ready), the host's phone (the first one in,
+// a Blokvane member signed in on that phone) that picks the game and its settings, and everything games share: asking every phone at once, the live scoreboard,
 // the countdown, the winner with confetti, and "Play again" with everyone still connected. Each game (games.js) only
 // says what happens in its rounds. Players' photos only ever go to this screen and are never saved.
 var BVPLAY = (() => {
@@ -21,6 +21,24 @@ var BVPLAY = (() => {
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
+  // (shown inside another page: Blokvane's own window on a computer, or beside a player's panel in duo.html)
+  const EMBEDDED = (() => { try { return window.parent !== window; } catch (e) { return true; } })();
+  // (inside Blokvane's own game window on a computer: party.html in the extension, with nothing else around it)
+  const IN_EXT = EMBEDDED && (() => { try { const a = location.ancestorOrigins; return !!(a && a.length === 1 && /^(chrome|moz|safari-web)-extension:\/\//.test(a[0])); } catch (e) { return false; } })();
+  // Is this a TV (when its browser says so)? And is it a screen that draws slowly: a TV, an old browser, or a small
+  // computer? A slow screen starts with the calm screen on (see the kit's settings below): lights that never stop
+  // moving cost a TV's small processor so much that everything else waits, and the phones wait with it.
+  const IS_TV = /SMART-TV|SmartTV|Tizen|Web0S|webOS|NetCast|BRAVIA|AFT[A-Z]|Android TV|GoogleTV|CrKey|HbbTV|VIDAA|PhilipsTV|Roku|Viera|TV Safari|PlayStation|Xbox|Nintendo/i.test(navigator.userAgent || '');
+  const SLOW_SCREEN = (() => {
+    try {
+      if (IS_TV) return true;
+      // (a browser that needs the copies made for old TVs: see async.js)
+      if (!window.BV_ASYNC) return true;
+      if (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2) return true;
+      if (navigator.deviceMemory > 0 && navigator.deviceMemory <= 1) return true;
+    } catch (e) {}
+    return false;
+  })();
   // ---------- pause: the host stops the game for a moment, and it goes on from the very same second ----------
   // The game's own clock stands still while it's paused, and everything that waits on it (a game's pauses, a question's
   // time) waits with it. pafter(fn, ms) runs fn after ms of the game's time, and gives back a function that cancels it.
@@ -48,19 +66,46 @@ var BVPLAY = (() => {
   async function open(given) {
     const me = await C.newMember();
     const s = secret = L.newSecret();
-    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, home: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
     // a short code for phones that can't scan: a room of its own that only hands out the link. (A phone that started
     // this game from Blokvane made the code itself, so it joins by itself as the host.)
     code = given || L.shortCode(6);
-    CR = await L.room({ secret: await L.codeSecret(code, 'play'), label: 'bvplaycode', me, name: 'TV', role: 'tv', open: true, onMsg: m => { if (m.k === 'link?') CR.send({ k: 'link', s, tv: R.id, lang }, m.f).catch(() => {}); } });
-    setInterval(() => { if (phase !== 'end') sayLobby(); }, 12000);
+    CR = await L.room({ secret: await L.codeSecret(code, 'play'), label: 'bvplaycode', me, name: 'TV', role: 'tv', open: true, home: true, onMsg: m => { if (m.k === 'link?') CR.send({ k: 'link', s, tv: R.id, lang }, m.f).catch(() => {}); } });
+    // (a phone made before the heartbeat below still gets the whole lobby now and then, the way it expects)
+    setInterval(() => { if (phase !== 'end' && !allLean()) sayLobby(null, true); }, 12000);
+    setInterval(beat, 2500);
     nearOn();
   }
-  // Phones on the same Wi-Fi find this TV in their list, with its game and its code (BVLIVE.nearby), and join with one
-  // tap. The host can turn it off (Screen and players).
+  // ---------- the heartbeat: a few numbers every 2.5 seconds (5 while nothing is going on), so every phone knows at
+  // once when it missed something and asks for just that: the lobby as it is now (lv), the words and settings the
+  // lobby uses (sv), the question that is on (qn), or its own result (rn: the question the results went out for). A
+  // relay can drop a message now and then; this is what makes a phone catch up in a blink instead of sitting there. ----------
+  let beatN = 0;
+  function beat() {
+    if (!R || phase === 'closed') return;
+    beatN++;
+    if (phase !== 'play' && beatN % 2) return;
+    say({ k: 'hb', ph: phase, lv: lobbyV, sv: setupV, qn: phase === 'play' && cur.q ? cur.q.n : 0, rn: phase === 'play' ? resN : 0, gr: run, pa: phase === 'play' && paused ? 1 : 0 });
+  }
+  // Phones on the same Wi-Fi find this TV in their list, with its game (BVLIVE.nearby), and a Blokvane member starts or
+  // joins a game on it with one tap. The host can turn it off (Screen and players). The TV never says its join code
+  // there: on a network shared with strangers (a hotel, a dorm) they would read it too. A phone knocks instead, with its
+  // host's pass, and only a pass Blokvane's server signed for that very phone opens the door: the game's link comes
+  // back sealed for that phone alone. Everyone else joins with the QR code or the 6 letters on this screen.
   let near = null, nearBusy = false, nearSig = '';
-  // (h: it has a host, so a phone that starts a game looks for another TV)
-  const nearInfo = () => ({ c: code, g: game ? game.id : '', p: list().length, ph: phase === 'lobby' ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  // (h: it has a host, so a phone that starts a game looks for another TV; v: this TV knows how to answer a knock)
+  const nearInfo = () => ({ v: 2, g: game ? game.id : '', p: list().length, ph: phase === 'lobby' ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  const knocks = new Map();   // phone -> when it last knocked (so nobody can keep this TV busy checking passes)
+  function nearMsg(m) {
+    if (!near || !m || m.k !== 'knock' || !m.boxed || !L.okId(m.f) || phase === 'closed' || settings.k_near === false) return;
+    const t = Date.now(), last = knocks.get(m.f) || 0;
+    if (t - last < 700) return;
+    if (knocks.size > 200) knocks.clear();
+    knocks.set(m.f, t);
+    const answer = x => { if (near) near.box(m.f, Object.assign({ k: 'door', i: typeof m.i === 'string' ? m.i.slice(0, 16) : '' }, x)).catch(() => {}); };
+    if (typeof m.pass !== 'string' || typeof BVPASS === 'undefined') { answer({ no: 'pass' }); return; }
+    BVPASS.ok(m.pass, m.f).then(ok => { if (ok && R && phase !== 'closed') answer({ s: secret, tv: R.id, lang }); else answer({ no: 'pass' }); }, () => answer({ no: 'pass' }));
+  }
   // the name phones see in their list of TVs nearby: what kind of screen this is
   const screenName = (() => {
     const ua = navigator.userAgent || '';
@@ -86,7 +131,7 @@ var BVPLAY = (() => {
     if (near) { const i = nearInfo(), sg = JSON.stringify(i); if (sg !== nearSig) { nearSig = sg; near.setInfo(i); } return; }
     if (nearBusy) return;
     nearBusy = true;
-    try { const i = nearInfo(); near = await L.nearby({ role: 'tv', name: screenName, info: i }); nearSig = JSON.stringify(i); } catch (e) { near = null; }
+    try { const i = nearInfo(); near = await L.nearby({ role: 'tv', name: screenName, info: i, onMsg: nearMsg }); nearSig = JSON.stringify(i); } catch (e) { near = null; }
     nearBusy = false;
     if (near && (settings.k_near === false || phase === 'closed')) { near.close(); near = null; }
     // (the game was picked meanwhile, say: the phones hear the news at once)
@@ -214,20 +259,21 @@ var BVPLAY = (() => {
     }
     if (gone) sweep();
   }, 2000);
-  // An open question goes out again every 3 seconds while some phones haven't answered it: a relay can drop a message
-  // now and then, and that phone would stay on "Look at the TV" while everyone else answers. A phone that already shows
-  // it just keeps it (it goes by the question's number).
+  // An open question goes out again while some phones haven't said they have it (a phone says "got" when the question
+  // reaches it): a relay can drop a message now and then, and that phone would stay on "Look at the TV" while everyone
+  // else answers. The first time after a second and a half, then every 3 seconds. A phone that already shows it just
+  // keeps it (it goes by the question's number).
   setInterval(() => {
     if (phase !== 'play' || !R || paused) return;
     const t = Date.now();
     for (const w of pending.values()) {
-      if (w.done || !w.q || t - (w.sent || w.at) < 3000) continue;
-      const left = [...w.all].filter(id => !w.got.has(id) && players.has(id) && !players.get(id).away);
+      if (w.done || !w.q || t - (w.sent || w.at) < (w.sent ? 3000 : 1500)) continue;
+      const left = [...w.all].filter(id => !w.got.has(id) && !(w.ack && w.ack.has(id)) && players.has(id) && !players.get(id).away);
       if (!left.length) continue;
       w.sent = t;
-      if (w.q.extra && w.q.extra.helpOnly || left.length <= 2) { for (const id of left) sayTo(id, w.q); } else if (cur.q === w.q) say(w.q);
+      if (w.q.extra && w.q.extra.helpOnly || left.length <= 3) { for (const id of left) sayTo(id, w.q); } else if (cur.q === w.q) say(w.q);
     }
-  }, 1000);
+  }, 500);
   // the join code again, on top of the game, for people who come later (the host shows and hides it from their phone)
   let joinEl = null, joinT = 0;
   async function showJoin(on, keep) {
@@ -272,7 +318,7 @@ var BVPLAY = (() => {
         // (a phone with a host pass: the pass is checked first. A "paid" that comes in a message counts for nothing:
         // only a pass checked here does)
         const paid = passed.has(m);
-        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== 'undefined') { const ps = m.pass; delete m.pass; BVPASS.ok(ps).then(ok => { if (ok) passed.add(m); take(m, peer); }, () => take(m, peer)); return; }
+        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== 'undefined') { const ps = m.pass; delete m.pass; BVPASS.ok(ps, m.f).then(ok => { if (ok) passed.add(m); take(m, peer); }, () => take(m, peer)); return; }
         if (kicked.has(m.f)) { if (!m.again) { sayTo(m.f, { k: 'kicked' }); return; } kicked.delete(m.f); }
         // nobody comes in before the host: a Blokvane member, signed in on their phone (their phone asks them)
         if (!p && !paid && !hostHere()) { sayTo(m.f, { k: 'needhost' }); return; }
@@ -287,6 +333,8 @@ var BVPLAY = (() => {
         if (!p) pl.away = false;
         // (a phone that answers "still there?" says so when it joins)
         pl.cap = +m.cap || 0;
+        // (the words and settings this phone already has: only what's new is sent to it)
+        pl.sv = typeof m.sv === 'string' ? m.sv.slice(0, 24) : '';
         if ('lg' in m) setPlayerLang(pl, m.lg);
         if (teamsOn() && !pl.team) pl.team = P.TEAMS[players.size % Math.min(4, +settings.teamN || 2)][0];
         const isNew = !p;
@@ -299,9 +347,12 @@ var BVPLAY = (() => {
         if (isNew) { for (const w of pending.values()) fixWho(w); for (const f of playerSubs) { try { f(); } catch (e) {} } }
         else sweep();
         if (phase === 'lobby') lobby();
+        // (the phone that just came in hears it for itself first, with the words and settings it needs: the others may
+        // have nothing new to hear)
+        if (leanPhone(pl)) sayLobby(m.f);
         sayLobby();
-        // (someone back in the middle of a game: what's on now)
-        if (phase === 'play' && cur.q) R.send(cur.q, m.f).catch(() => {});
+        // (someone back in the middle of a game: what's on now, and how they did on it)
+        if (phase === 'play') sayNow(m.f);
         return;
       }
       case 'photo': if (p && m.boxed && L.okPicture(m.d) && m.d.length < 60000) { p.photo = m.d; if (phase === 'lobby') lobby(); } return;
@@ -336,10 +387,18 @@ var BVPLAY = (() => {
       case 'ping': return;
       case 'pong': return;
       case 'bye': if (p) { p.gone = true; if (m.left) p.left = true; sweep(); } return;
-      case 'sync': if (p) { R.send({ k: 'you', id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {}); sayLobby(m.f); if (phase === 'play' && cur.q) R.send(cur.q, m.f).catch(() => {}); }
+      // a phone asks what's on: everything (who it is, the lobby, the question), or only the question and its own result
+      // (only: 'q') when that is all it missed
+      case 'sync': if (p) {
+          if (typeof m.sv === 'string') p.sv = m.sv.slice(0, 24);
+          if (m.only !== 'q') { R.send({ k: 'you', id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {}); sayLobby(m.f); }
+          if (phase === 'play') sayNow(m.f);
+        }
         else if (kicked.has(m.f)) sayTo(m.f, { k: 'kicked' });
         else if (ended.has(m.f)) sayTo(m.f, { k: 'hostgone' });
         return;
+      // (a phone has the question: no need to send it again)
+      case 'got': { const w = pending.get(+m.n); if (w && p && !w.done) (w.ack || (w.ack = new Set())).add(m.f); return; }
       case 'ans': {
         const w = pending.get(+m.n);
         if (!w || !p || w.done || w.got.has(m.f)) return;
@@ -356,6 +415,8 @@ var BVPLAY = (() => {
   const say = m => R.send(m).catch(() => {});
   const sayTo = (id, m) => R.send(m, id).catch(() => {});
   async function box(id, m) {
+    // (which game it belongs to: a phone that hears the game start a moment later keeps it)
+    if (m && m.gr == null) m.gr = run;
     for (let i = 0; i < 6; i++) {
       try { await R.box(id, m); return true; } catch (e) { await sleep(800); }
     }
@@ -377,24 +438,71 @@ var BVPLAY = (() => {
   // (the games in the order the phones list them: Guess It Right! right after Trivia, the others as they were added)
   const ORDER = ['trivia', 'gir'];
   const gameList = () => [...games.values()].map((g, i) => [g, ORDER.includes(g.id) ? ORDER.indexOf(g.id) - 99 : i]).sort((a, b) => a[1] - b[1]).map(x => x[0]);
-  // what the phones show in the lobby (the game, its settings, the players, the host)
-  function sayLobby(to) {
-    if (phase === 'closed') { nearOn(); return; }
-    if (!to) nearOn();
-    const tt =tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
-    const m = { k: 'lobby', phase, game: game ? game.id : '', gname: game ? (tt ? tt.name : P.f(game.name)) : '', gen: game ? game.name : '', games: (tx.lang === lang && tx.games && tx.games.length && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
-      players: list().map(pub), host, settings, schema: game ? (tt ? tt.schema : fieldsOf(game)) : [], lang, rtl: P.RTL.has(lang), strings,
+  // What the phones show in the lobby (the game, its settings, the players, the host). It goes out in two parts:
+  // - the setup: the words, the list of games and the settings' names and choices. It is big (10,000 letters or so) and
+  //   only changes when the host picks another game or language, so it is sent when it changes, to a phone that says it
+  //   doesn't have it (sv is its fingerprint), and never otherwise.
+  // - the lobby itself: who is here, the host, what each setting is set to, the question that's on. It is small, so it
+  //   goes in one piece and is there at once. Sending the two as one, with every little change, is what made phones
+  //   slow to follow: three long pieces through the relays for each player who came in.
+  // A phone made before this (cap under 3) still gets the two as one, the way it expects.
+  let setupSig = '', setupV = '', setupSent = '', lobbyV = 0, lobbySig = '', lobbySent = -1;
+  const fnv = t => { let h = 0x811c9dc5; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); } return (h >>> 0).toString(36); };
+  const leanPhone = p => !!p && p.cap >= 3;
+  const allLean = () => { for (const p of players.values()) if (!leanPhone(p)) return false; return true; };
+  function lobbyParts() {
+    const tt = tx.key === (game ? game.id : '') + '|' + lang ? tx : null;
+    const setup = {
+      gname: game ? (tt ? tt.name : P.f(game.name)) : '', gen: game ? game.name : '',
+      games: (tx.lang === lang && tx.games && tx.games.length && tx.games) || gameList().map(g => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
+      schema: game ? (tt ? tt.schema : fieldsOf(game)) : [], strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
-      steps: game ? (tt && tt.steps) || stepsOf(game) : null, mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
+      steps: game ? (tt && tt.steps) || stepsOf(game) : null,
       // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
       langs: game && game.langs ? game.langs : null,
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null,
+      howto: game && game.howto ? game.howto(settings) : null
+    };
+    const sj = JSON.stringify(setup);
+    if (sj !== setupSig) { setupSig = sj; setupV = fnv(sj) + '.' + sj.length.toString(36); }
+    const dyn = { k: 'lobby', phase, game: game ? game.id : '', players: list().map(pub), host, settings, lang, rtl: P.RTL.has(lang),
+      mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
       // (the question that's on: a phone that doesn't have it asks for it again)
       qn: phase === 'play' && cur.q ? cur.q.n : 0, paused: phase === 'play' && paused, gr: run,
       // (the join code: the host's phone sends it with "Invite players")
-      code };
-    if (to) sayTo(to, m); else say(m);
+      code, sv: setupV };
+    return { setup, dyn };
+  }
+  // to: one phone (it asked, or just came in); again: say it even if nothing changed
+  function sayLobby(to, again) {
+    if (phase === 'closed') { nearOn(); return; }
+    if (!to) nearOn();
+    const { setup, dyn } = lobbyParts();
+    const dj = JSON.stringify(dyn);
+    if (dj !== lobbySig) { lobbySig = dj; lobbyV++; }
+    dyn.lv = lobbyV;
+    if (to) {
+      const p = players.get(to);
+      if (!leanPhone(p)) { sayTo(to, Object.assign({}, setup, dyn)); return; }
+      if (p.sv !== setupV) { p.sv = setupV; sayTo(to, { k: 'setup', sv: setupV, d: setup }); }
+      sayTo(to, dyn);
+      return;
+    }
+    if (!allLean()) { setupSent = setupV; lobbySent = lobbyV; for (const p of players.values()) p.sv = setupV; say(Object.assign({}, setup, dyn)); return; }
+    if (setupSent !== setupV) { setupSent = setupV; for (const p of players.values()) p.sv = setupV; say({ k: 'setup', sv: setupV, d: setup }); }
+    // (nothing new since it was last said: the heartbeat already tells every phone it is up to date)
+    if (lobbySent === lobbyV && !again) return;
+    lobbySent = lobbyV;
+    say(dyn);
+  }
+  // what's on right now, for one phone: the question, and how that phone did on it if the results are already out
+  const lastRes = new Map();
+  let resN = 0;
+  function sayNow(id) {
+    if (phase !== 'play') return;
+    if (cur.q) R.send(cur.q, id).catch(() => {});
+    const lr = lastRes.get(id);
+    if (lr && cur.q && lr.n === cur.q.n) sayTo(id, lr);
   }
   // ---------- the sounds, in every game: the host can turn the music or any one kind of moment off (like "next
   // question"), on the last step of the setup or from the ⋯ in the middle of a game. This screen keeps them for the
@@ -413,8 +521,18 @@ var BVPLAY = (() => {
   }
   // ---------- settings every game has: how to play first (for a game that has no rules screen of its own), people who
   // come in late, the join code on the TV during the game, and a calm screen. This screen keeps them for next time. ----------
-  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: false };
-  const kitSaved = () => { try { const v = JSON.parse(localStorage.getItem('bvplay:kit') || 'null'); return v && typeof v === 'object' ? v : {}; } catch (e) { return {}; } };
+  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: SLOW_SCREEN };
+  // (the calm screen is only kept the way it was when the host set it by hand: otherwise it follows the screen, on for
+  // a slow one. calmBy says who set it: 'host', or 'auto' when this screen turned it on because it couldn't keep up.)
+  const kitSaved = () => {
+    try {
+      const v = JSON.parse(localStorage.getItem('bvplay:kit') || 'null');
+      if (!v || typeof v !== 'object') return {};
+      if (v.calmBy !== 'host' && v.calmBy !== 'auto') delete v.k_calm;
+      return v;
+    } catch (e) { return {}; }
+  };
+  let calmBy = (() => { try { const v = JSON.parse(localStorage.getItem('bvplay:kit') || 'null'); return v && (v.calmBy === 'host' || v.calmBy === 'auto') ? v.calmBy : ''; } catch (e) { return ''; } })();
   function kitFields(g) {
     if (!g) return [];
     const rl0 = typeof g.rules === 'function' ? g.rules(settings || {}) : g.rules;
@@ -425,15 +543,36 @@ var BVPLAY = (() => {
       { key: 'k_late', label: 'Late players can join', type: 'toggle', default: true, kit: 1, desc: 'Someone who comes in after the start plays from the next question. Off: they play the next game.' },
       { key: 'k_code', label: 'Show the join code during the game', type: 'toggle', default: false, kit: 1, desc: 'The QR code and the code stay in a corner of the TV the whole game.' },
       { key: 'k_near', label: 'Phones nearby can find this TV', type: 'toggle', default: true, kit: 1, desc: 'Phones on the same Wi-Fi see this TV in their list and join with one tap, without typing the code.' },
-      { key: 'k_calm', label: 'Calm screen', type: 'toggle', default: false, kit: 1, desc: 'Fewer flashing and moving lights on the TV. Easier on the eyes.' }]);
+      { key: 'k_calm', label: 'Calm screen', type: 'toggle', default: KIT0.k_calm, kit: 1, desc: 'Fewer flashing and moving lights on the TV. Easier on the eyes.' }]);
   }
   function applyKit() {
-    document.body.classList.toggle('calm', !!settings.k_calm);
+    const calm = !!settings.k_calm;
+    if (document.body.classList.contains('calm') !== calm) { document.body.classList.toggle('calm', calm); document.documentElement.classList.toggle('calm', calm); P.still(calm); }
     nearOn();
-    try { const o = {}; for (const k of Object.keys(KIT0)) if (k in settings) o[k] = settings[k]; localStorage.setItem('bvplay:kit', JSON.stringify(Object.assign(kitSaved(), o))); } catch (e) {}
+    try { const o = {}; for (const k of Object.keys(KIT0)) if (k in settings) o[k] = settings[k]; if (calmBy) o.calmBy = calmBy; localStorage.setItem('bvplay:kit', JSON.stringify(Object.assign(kitSaved(), o))); } catch (e) {}
     if (phase === 'play') { if (settings.k_code) showJoin(true, true); else if (joinEl && joinEl.dataset.keep) showJoin(false); }
   }
   const fieldsOf = g => (g ? g.settings.concat(kitFields(g), sndFields(g)) : []);
+  // A screen that can't keep up turns the calm screen on by itself: in the lobby it counts how long each frame takes
+  // for a few seconds, and when most take too long (under about 24 a second), the moving lights go, once. Not when the
+  // host set the calm screen by hand: then it stays as the host wants it.
+  function watchSpeed() {
+    if (calmBy || settings.k_calm || !window.requestAnimationFrame || document.hidden) return;
+    const times = [];
+    let last = 0, n = 0;
+    const frame = t => {
+      if (calmBy || settings.k_calm || phase !== 'lobby' || document.hidden) return;
+      if (last) times.push(t - last);
+      last = t;
+      if (++n < 150 && t < start + 6000) { requestAnimationFrame(frame); return; }
+      if (times.length < 20) return;
+      const slow = times.filter(x => x > 42).length;
+      if (slow / times.length > 0.5) { calmBy = 'auto'; settings.k_calm = true; applyKit(); if (phase === 'lobby') lobby(); sayLobby(); }
+    };
+    let start = 0;
+    // (once the lobby has settled: its first second is busy with loading)
+    setTimeout(() => { if (phase !== 'lobby') return; requestAnimationFrame(t => { start = t; last = 0; requestAnimationFrame(frame); }); }, 2500);
+  }
   // (the steps the host's phone goes through, with the sounds as the last one; a game without steps of its own gets its
   // settings about three to a page, the way the phone would make them)
   function stepsOf(g) {
@@ -482,7 +621,7 @@ var BVPLAY = (() => {
     if (f.snd) { settings[key] = !!v; applySounds(); sayLobby(); return; }
     // (how loud: right away too; and the settings every game has, kept on this screen)
     if (f.vol) { const o = f.options.find(x => String(x[0]) === String(v)); if (!o) return; settings[key] = o[0]; if (SND.setVol) SND.setVol(f.vol, o[0]); sayLobby(); return; }
-    if (f.kit) { settings[key] = f.type === 'toggle' ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default)); applyKit(); if (phase === 'lobby') lobby(); sayLobby(); return; }
+    if (f.kit) { settings[key] = f.type === 'toggle' ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default)); if (key === 'k_calm') calmBy = 'host'; applyKit(); if (phase === 'lobby') lobby(); sayLobby(); return; }
     if (f.type === 'toggle') settings[key] = !!v;
     // (a choice of several, like Boo Who?'s categories: at least one stays picked)
     else if (f.type === 'multi') { const want = (Array.isArray(v) ? v : [v]).map(String); const ok = (f.options || []).filter(o => want.includes(String(o[0]))).map(o => o[0]); if (!ok.length) return; settings[key] = ok; }
@@ -569,7 +708,6 @@ var BVPLAY = (() => {
   // ---------- full screen: the button in the lobby, or a double click or F anywhere. A TV (when its browser says it is
   // one) goes full screen by itself at the first press of a button on its remote, the same press that turns the sound
   // on: a browser only lets a page go full screen after someone presses something. ----------
-  const IS_TV = /SMART-TV|SmartTV|Tizen|Web0S|webOS|NetCast|BRAVIA|AFT[A-Z]|Android TV|GoogleTV|CrKey|HbbTV|VIDAA|PhilipsTV|Roku|Viera|TV Safari/i.test(navigator.userAgent || '');
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const canFs = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   let fsPaint = null;
@@ -651,6 +789,32 @@ var BVPLAY = (() => {
     try { history.back(); } catch (e) {}
     setTimeout(() => { if (location.href === here && document.visibilityState !== 'hidden') closedScreen(); }, 700);
   }
+  // Cast to a TV, from this window on a computer: a new game opens on the TV the person picks in the browser's own
+  // Cast window (the same game and language, with a join code made here), this window's own game closes, and the
+  // host's panel takes its place: it joins the game on the TV by itself. Stopping the cast brings the game back here.
+  async function castFromHere(gid) {
+    const c = L.shortCode(6);
+    const url = L.PLAY + '#' + (gid || 'trivia') + '.' + lang + '.' + c;
+    let conn = null;
+    try { conn = await L.cast(url); }
+    catch (e) { const t = el('div', 'zm-tip on', document.body, '📡 ' + await P.tr(e && e.message ? e.message : 'Casting didn\'t start. Try again.')); setTimeout(() => t.remove(), 5000); return; }
+    if (!conn) return;
+    back.going = true;
+    if (R && !back.said) { back.said = true; try { R.send({ k: 'closed' }).catch(() => {}); } catch (e) {} }
+    await closedScreen();
+    const ov = el('div', 'cast-ov', document.body);
+    const bar = el('div', 'cast-bar', ov);
+    el('b', '', bar, '📡 ' + await P.tr('The game is on your TV. Play here:'));
+    const stop = el('button', 'leave-btn', bar, await P.tr('Stop casting')); stop.type = 'button';
+    const f = el('iframe', 'cast-phone', ov);
+    f.title = 'Blokvane Games';
+    f.allow = 'camera; clipboard-write; screen-wake-lock; web-share';
+    f.src = GO + 'games.html#join.' + c;
+    const end = () => { try { conn.terminate(); } catch (e) {} location.reload(); };
+    stop.onclick = end;
+    // (the TV was turned off, or the cast was stopped from the browser's own menu: the game comes back here)
+    try { conn.onterminate = () => location.reload(); } catch (e) {}
+  }
   // the game is closed: it stops, the phones were told, and a new game can start from here
   async function closedScreen() {
     run++; lobbyRun++;
@@ -710,7 +874,7 @@ var BVPLAY = (() => {
     const T = (t, v) => P.tr(t, v);
     const LET = I18N.letters(lang);
     // the top: Boo, the game, and the game's own little sign on the right
-    const t = top(page, await T(g ? g.name : 'Party games'), await T(g ? g.sub : 'Scan the code to join. The first phone in picks the game.'));
+    const t = top(page, await T(g ? g.name : 'Party games'), await T(g ? g.sub : 'Scan the code to join. The host scans first and picks the game.'));
     t.classList.add('lob-top');
     const deco = el('div', 'deco', t);
     const dk = g && g.deco ? g.deco : 'letters';
@@ -738,7 +902,7 @@ var BVPLAY = (() => {
     const s2 = el('div', 'stp', st2); el('span', 'n', s2, '2'); el('b', '', s2, await T('Name + selfie'));
     el('p', '', st2, await T('Take a photo or pick a Boo, then tap Ready.'));
     const st3 = el('div', 'card stp-c', two);
-    const step = g && g.step ? g.step : ['Pick a game', 'The first phone in is the host and picks the game.'];
+    const step = g && g.step ? g.step : ['Pick a game', 'A Blokvane member scans first: they host and pick the game.'];
     const s3 = el('div', 'stp', st3); el('span', 'n', s3, '3'); el('b', '', s3, await T(step[0], { letters: LET.slice(0, 4).join(' ') }));
     el('p', '', st3, await T(step[1]));
     // right: who's in
@@ -786,7 +950,7 @@ var BVPLAY = (() => {
     // the bottom: what happens next, and the credit
     const ft = el('div', 'lob-foot', page);
     const fl = el('div', 'lf', ft);
-    el('b', '', fl, g ? await T(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await T('Made by Blokvane. No app, no account: your phone and this screen talk straight to each other.'));
+    el('b', '', fl, g ? await T(hp ? 'The host starts the game from their phone.' : 'Waiting for the host.') : await T('Made by Blokvane. Nothing to install: everyone plays from their own phone.'));
     // the sound button: "Click for sound" until the browser lets this page play sound, then on or off
     const sw = { locked: '🔈 ' + await T('Click for sound'), on: '🔊 ' + await T('Sound on'), off: '🔇 ' + await T('Sound off') };
     const sb = el('button', 'snd', fl);
@@ -812,6 +976,25 @@ var BVPLAY = (() => {
     const fpaint = () => { if (!fsb.isConnected && fsb.parentNode !== fl) return; fsb.hidden = !canFs(); fsb.textContent = fsEl() ? fsT.on : fsT.off; };
     fpaint();
     fsPaint = fpaint;
+    // On a computer, before anyone is in, two more ways to set the evening up:
+    // - Cast to a TV: the browser's own Cast window puts the game on a Chromecast, a Google TV or a second screen (an
+    //   HDMI cable), and this window turns into the host's own, to play on.
+    // - Play here too: the game and a player's panel side by side on this one screen, for a laptop on the table, a
+    //   screen shown on a TV with a cable, or a phone that mirrors its screen to the TV.
+    // (Blokvane's own game window on a computer offers "Play here too" as well; its Cast button is in Blokvane itself)
+    if (!IS_TV && (!EMBEDDED || IN_EXT) && !list().length) {
+      const gid = g ? g.id : '';
+      const here = gid + '.' + lang;
+      if (!EMBEDDED && L.canCast && L.canCast()) {
+        const cb = el('button', 'fs cast', fl, '📡 ' + await T('Cast to a TV'));
+        cb.type = 'button';
+        cb.onclick = () => castFromHere(gid);
+      }
+      const db = el('button', 'fs duo', fl, '🎮 ' + await T('Play here too'));
+      db.type = 'button';
+      db.title = await T('The game and your own answers, side by side on this screen.');
+      db.onclick = () => { back.going = true; back.said = true; try { R.send({ k: 'closed' }).catch(() => {}); } catch (e) {} location.href = 'duo.html#' + here; };
+    }
     const c = g && (typeof g.credit === 'function' ? g.credit(lang) : g.credit);
     if (c) el('small', '', ft, P.f(c));
     if (my !== lobbyRun || phase === 'play') return;
@@ -831,7 +1014,10 @@ var BVPLAY = (() => {
     fitLobby();
     requestAnimationFrame(fitLobby);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLobby).catch(() => {});
+    // (the first lobby: is this screen quick enough for the moving lights?)
+    if (!speedSeen) { speedSeen = true; watchSpeed(); }
   }
+  let speedSeen = false;
   // Everyone who joins fits on the screen, up to 40: the seats get smaller as the room fills, and the card under them
   // (the game mode, or the helpers) always stays whole. When the room is full the card gets more compact first (its
   // rules go side by side, then its settings go, then its rules, then the medal gets smaller), so the seats keep a
@@ -1031,7 +1217,7 @@ var BVPLAY = (() => {
     // back. Only the phones that are here hold the question up.)
     const all = new Set((o.who || [...players.values()].filter(p => !p.out).map(p => p.id)).filter(id => players.has(id)));
     const who = new Set([...all].filter(id => !players.get(id).away));
-    const q = { k: 'q', n, kind: o.kind || 'choice', prompt: o.prompt || '', opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
+    const q = { k: 'q', n, gr: run, kind: o.kind || 'choice', prompt: o.prompt || '', opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
     if (o.extra && o.extra.helpOnly) { for (const id of who) sayTo(id, q); }
     else { cur.q = q; say(q); }
     return new Promise(res => {
@@ -1046,14 +1232,17 @@ var BVPLAY = (() => {
       if (!who.size) w.finish();
     });
   }
-  function wait(text, extra) { const m = { k: 'q', n: ++round, kind: 'wait', prompt: text || strings.look, extra: extra || null, who: [] }; cur.q = m; say(m); }
-  function result(id, r) { sayTo(id, Object.assign({ k: 'res' }, r)); }
+  function wait(text, extra) { const m = { k: 'q', n: ++round, gr: run, kind: 'wait', prompt: text || strings.look, extra: extra || null, who: [] }; cur.q = m; say(m); }
+  // (n: the question a result is for. A phone never shows a result that comes in late, behind the next question; and
+  // one that missed its result asks for it again: the heartbeat's rn says the results are out.)
+  function result(id, r) { const m = Object.assign({ k: 'res', n: round }, r); if (!r.end) { lastRes.set(id, m); resN = round; } sayTo(id, m); }
   const on = (k, fn) => { handlers.set(k, fn); return () => handlers.delete(k); };
 
   // ---------- a game, from start to the winner ----------
   let run = 0;
   async function start() {
     const my = ++run;
+    lastRes.clear(); resN = 0;
     P.mute(false);
     phase = 'play';
     played = true;
@@ -1118,7 +1307,7 @@ var BVPLAY = (() => {
     const bar = el('div', 'howto-bar', box); const fill = el('i', '', bar); fill.style.animationDuration = secs + 's';
     boo('mind');
     // (the phones: the same, as the English lines; each phone shows them in its own language)
-    const m = { k: 'q', n: ++round, kind: 'wait', prompt: P.f('How to play'), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map(b => b[0] + ' ' + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
+    const m = { k: 'q', n: ++round, gr: run, kind: 'wait', prompt: P.f('How to play'), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map(b => b[0] + ' ' + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
     cur.q = m; say(m);
     await psleep(secs * 1000);
   }
@@ -1341,6 +1530,9 @@ var BVPLAY = (() => {
     // (a made-up player answers the question that's on: fake player i, 1 to 16)
     answer(i, v, ms) { const f = ('aaaaaaaaaaaaaaaa' + i.toString(16)).slice(-16); if (cur.q) take({ k: 'ans', f, n: cur.q.n, v, ms: ms || 1500 }); },
     get q() { return cur.q; },
+    // (a message of the test's own making, to everyone or to one phone: a late result, say)
+    say(m, to) { return to ? sayTo(to, m) : say(m); },
+    get calm() { return !!settings.k_calm; },
     // (the host's settings, set from here)
     set(o) { Object.assign(settings, o); } };
   return { game: game0, get games() { return games; } };

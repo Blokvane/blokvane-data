@@ -338,6 +338,10 @@ html.no-flexgap .gm-tile > * + * { margin-top: 4px; }
 .si-eye { position: absolute; right: 10px; bottom: 9px; background: none; border: 0; color: var(--mint); font: 700 14px var(--round); padding: 8px; cursor: pointer; }
 [dir="rtl"] .si-eye { right: auto; left: 10px; }
 .si-err { color: var(--bad); font-weight: 700; margin: 4px 0 0; }
+/* the code step of signing in: who it went to, and the 8 numbers, big enough to read off an email */
+.si-sent { margin: 0 0 10px; font-weight: 700; overflow-wrap: anywhere; }
+.si-code { font: 800 30px/1.1 var(--round); letter-spacing: .14em; text-align: center; }
+.si-code::placeholder { letter-spacing: .14em; opacity: .35; }
 @media (prefers-reduced-motion: reduce) { .gm-aim, .si-ticket, .gm-open img, .si-art .boo { animation: none !important; } }
 
 /* =====================================================================

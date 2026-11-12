@@ -1,8 +1,10 @@
 // Blokvane on your phone: party games. Join the game on the TV (scan its QR code, or type the 6 letters under it),
 // pick a name and a Boo (or take a selfie: it only ever goes to that TV, which never saves it), and play. Each
-// question shows here the way its game needs it: big colored buttons, typing, a map to drop a pin on,
-// shaking or tilting the phone. The first phone in is the host: it picks the game, its settings and the language.
-// Everything goes sealed and signed through the same free public relays as the rest of Blokvane; there is no server.
+// question shows here the way its game needs it: big colored buttons, typing, players to vote for, a map to drop a
+// pin on. The first phone in is the host (a Blokvane member, signed in on that phone: ../pass.js): it picks the
+// game, its settings and the language.
+// Everything goes sealed and signed through Blokvane's own relay first (it is quick, and can't read a word), with the
+// free public relays as its backup (live-kit.js). Only a party game's rooms use Blokvane's relay.
 (() => {
   'use strict';
   const { el, view: goView, btn, toast, buzz, hero, input, store, seg, toggle, sheet, confetti } = GO;
@@ -23,22 +25,22 @@
     if (on && !noZoom.ios) { noZoom.ios = true; document.addEventListener('gesturestart', e => { if (r.classList.contains('pt-noz')) e.preventDefault(); }); }
   }
   const L = BVLIVE, C = BVWT_CORE;
-  GO.def('party', async (kind, parts, o) => (kind === 'css' ? css() : kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : start(parts)));
+  GO.def('party', async (kind, parts, o) => (kind === 'css' ? css() : kind === 'code' ? codeScreen() : kind === 'start' ? startScreen(o || {}) : kind === 'join' ? joinByCode(parts || []) : start(parts)));
 
   // The words. The seven game languages have their own (../play/i18n.js and ../play/lang/*.js, the same words the TV
   // uses); for any other language the TV sends these translated by Chrome on a computer.
   const STR0 = {
     join: 'Join the game', name: 'Your name', pickBoo: 'Pick your Boo', selfie: 'Take a selfie', ready: 'I\'m ready!', notReady: 'Not ready yet', host: 'You\'re the host', hostWait: 'Waiting for the host to start',
     start: 'Start the game', settings: 'Game settings', look: 'Look at the TV!', answered: 'Got it! Waiting for the others...', right: 'Right!', wrong: 'Not this time', out: 'You\'re out, but you can still help!',
-    again: 'Play again', otherGame: 'Pick another game', you: 'You', points: 'points', place: 'place', send: 'Send', typeHere: 'Type here', skip: 'Skip', done: 'Done',
+    again: 'Play again', otherGame: 'Pick another game', you: 'You', points: 'points', send: 'Send', typeHere: 'Type here', skip: 'Skip', done: 'Done',
     helpers: 'Helpers', fifty: 'Remove two', hint: 'Hint', auto: 'Answer it for me', ask: 'Ask everyone', peek: 'Hold to peek', imposter: 'You\'re the imposter!', vote: 'Vote',
     yourTurn: 'Your turn!', team: 'Team', guess: 'Your guess', dropPin: 'Drop your pin', zoom: 'Pinch to zoom, tap to drop the pin',
     lockPin: 'Lock in my pin', yourEmoji: 'Your emoji', theAnswer: 'The answer',
     holdTip: 'Hold it down to see your word. Let go to hide it.', category: 'Category', word: 'Your secret word', noWord: 'You get no word. Listen, and blend in!',
     lang: 'Language', players: 'Players', pickGame: 'Pick a game',
-    picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', of: 'of', first: 'You were the fastest!', youPicked: 'You picked',
+    picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', first: 'You were the fastest!',
     red: 'Red', blue: 'Blue', green: 'Green', gold: 'Gold', changeName: 'Change my name or Boo',
-    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', imposterSays: 'Category:', helpers1: 'Each helper works once.',
+    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', helpers1: 'Each helper works once.',
     next: 'Next', back: 'Back', stepOf: '{n} of {total}', allSet: 'All set', readyQ: 'Ready to play?', editSet: 'Edit settings', none: 'None', hostBadge: 'Host', readyN: '{n} / {total} ready',
     myLang: 'Your language', sameTv: 'Same as the TV: {lang}', langFollow: 'The questions and answers show on the TV in {lang}. Pick another language to see them on your phone too.',
     langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
@@ -238,7 +240,9 @@ html[dir="rtl"] .pt-map>.pt-note.pt-tu{left:50%;right:auto}
 .pt-near h2{margin:0 0 4px}
 .pt-tvst{margin:8px 2px 0}
 .pt-tvhow{margin-top:8px}
-.pt-where+.pt-lbl,.pt-tvhow+.pt-lbl{margin-top:20px}
+.pt-tvrow{display:flex;flex-wrap:wrap;grid-gap:2px 18px;gap:2px 18px;margin-top:6px}
+html.no-flexgap .pt-tvrow > * + *{margin-left:18px}
+.pt-where+.pt-lbl,.pt-tvhow+.pt-lbl,.pt-tvrow+.pt-lbl{margin-top:20px}
 .pt-signin{border-color:var(--tint)}
 .pt-signin b{display:block;font:800 17px var(--round)}
 .pt-url{padding:12px 14px;border-radius:14px;background:var(--sw-field,rgba(0,0,0,.25));border:1px solid var(--line);font:700 14px/1.45 var(--round);word-break:break-all;-webkit-user-select:all;user-select:all;color:var(--text)}
@@ -824,6 +828,9 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   // ("join" carries this phone's host pass, when it has one: each game needs one Blokvane member as its host)
   const send = m => { if (m && m.k === 'join' && G.pass) m.pass = G.pass; return G.R ? G.R.send(m).catch(() => {}) : Promise.resolve(); };
+  // "it's me": the name and the Boo, what this phone understands (cap 3: the lobby in two parts, the heartbeat, results
+  // with their question's number), and the words and settings it already has (sv), so the TV only sends what's new
+  const joinMsg = more => Object.assign({ k: 'join', name: G.name, av: G.av, cap: 3, sv: G.sv || '', lg: G.plang || '' }, more || {});
   // (a player who picked their own language sees the game's name in it too, not in the TV's)
   const gameName = () => { const l = G.lobby || {}; return (ownLang(l) && typeof l.gen === 'string' && l.gen ? T(L.clean(l.gen, 60)) : l.gname) || T('Party games'); };
   // (the game's clock on this phone: it stands still while the host has the game paused, so a question's time left, its
@@ -970,7 +977,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     }
     await GO.script('watch-boo.js').catch(() => {});
     G.s = s; G.tv = tv;
-    G.pass = GO.pass ? GO.pass.get() : null;
+    G.pass = null;
     G.needHost = false;
     G.name = store.get('party:name', '');
     G.av = AVATARS.includes(store.get('party:av', '')) ? store.get('party:av', '') : 'boo:hi';
@@ -1019,7 +1026,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const changed = name !== G.name || av !== G.av || photo !== G.photo;
       G.name = name; G.av = av; G.photo = photo;
       store.set('party:name', name); store.set('party:av', av);
-      if (editing) { if (changed) { send({ k: 'join', name, av, cap: 2, lg: ownLang(G.lobby) }); if (photo) sendPhoto(); } backToNow(); return; }
+      if (editing) { if (changed) { send(joinMsg({ name, av, lg: ownLang(G.lobby) })); if (photo) sendPhoto(); } backToNow(); return; }
       await connect();
     });
     go.style.marginTop = '6px';
@@ -1053,17 +1060,27 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.me = await memberFor('g:' + G.s.slice(0, 10));
     G.id = G.me.id;
     if (G.R) { try { G.R.close(); } catch (e) {} }
-    G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, onMsg: m => { if (m.f === G.tv) take(m); } });
+    G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, home: true, onMsg: m => { if (m.f === G.tv) take(m); } });
     G.phase = 'join'; G.joined = false; G.tries = 0;
     G.waitNext = false;
     G.needHost = false;
-    G.pass = GO.pass ? GO.pass.get() : null;
+    G.lv = -1; G.lobbyWait = null; G.rnSeen = 0; G.rnAt = 0; G.resAsked = 0;
+    // (a Blokvane member's phone: its host pass for this game, made by Blokvane's server for this very phone. It is asked
+    // for while the phone already says hello, so joining never waits for it: a "join" that follows carries it.)
+    G.pass = null;
+    if (GO.pass && GO.pass.get()) {
+      const room = G.R, asked = GO.pass.forGame(G.id).catch(() => null);
+      // (a moment for the pass to come, so the first "it's me" already carries it; one that comes later is sent then)
+      G.pass = await Promise.race([asked, new Promise(r => setTimeout(() => r(null), 4000))]);
+      if (G.R !== room) return;
+      if (!G.pass) asked.then(ps => { if (ps && G.R === room) { G.pass = ps; if (!G.joined) { G.needHost = false; G.tries = 0; hi(); } else if (!G.host) send(joinMsg()); } });
+    }
     const hi = () => {
       if (G.joined || !G.R || G.needHost) return;
       // (waiting for the next game: still here, now and then, without ever giving up)
-      if (G.waitNext) { send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '' }); setTimeout(hi, 10000); return; }
+      if (G.waitNext) { send(joinMsg()); setTimeout(hi, 10000); return; }
       if (++G.tries > 30) { notFound(); return; }
-      send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: G.plang || '', again: G.again || undefined });
+      send(joinMsg({ again: G.again || undefined }));
       if (G.tries === 6) { const p = h.querySelector('p'); if (p) p.textContent = T('Still looking. Is the game open on the TV?'); }
       setTimeout(hi, G.tries < 4 ? 1500 : 3000);
     };
@@ -1080,6 +1097,12 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     hero(v.body, T('Can\'t find the game'), T('Check that the game is open on the TV, and that this phone is online. Then try again.'), { sleepy: true });
     btn(T('Try again'), { kind: 'go', full: true, huge: true }, v.body, () => connect());
     btn(T('Type the code instead'), { kind: 'ghost', full: true }, v.body, () => codeScreen()).style.marginTop = '10px';
+  }
+  // the TV didn't take this phone's host pass (see "needhost" below): what to do about it
+  function tvSaysNo() {
+    const v = view(gameName(), { tint: 'sun', night: true, back: () => { quitParty(true); history.replaceState(null, '', location.pathname); GO.route(); } });
+    hero(v.body, T('The TV didn\'t take your host pass'), T('Open the game on the TV again (reload its page), then try once more. If the TV\'s clock is wrong by more than a day, set it first.'), { sleepy: true });
+    btn(T('Try again'), { kind: 'go', full: true, huge: true }, v.body, () => { G.needHost = false; connect(); });
   }
   async function sendPhoto() {
     if (!G.photo || !L.okPicture(G.photo)) return;
@@ -1108,8 +1131,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       if (i === 2) rcPill(true);
       if (i >= 16) { rcPill(false); return; }
       // ("what's on?" to the TV; a couple of times "it's me" too, in case it lost this phone)
-      if (i === 4 || i === 9) send({ k: 'join', name: G.name, av: G.av, cap: 2, lg: ownLang(G.lobby) || G.plang || '' });
-      else send({ k: 'sync' });
+      if (i === 4 || i === 9) send(joinMsg({ lg: ownLang(G.lobby) || G.plang || '' }));
+      else send({ k: 'sync', sv: G.sv || '' });
       i++;
       backT = setTimeout(step, i < 5 ? 1200 : 2500);
     };
@@ -1132,7 +1155,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) { hidAt = Date.now(); return; }
     if (!G.R || !G.joined) return;
-    if (Date.now() - hidAt > 2500) comeBack(); else { send({ k: 'sync' }); keepAwake(); claimMe(); }
+    if (Date.now() - hidAt > 2500) comeBack(); else { send({ k: 'sync', sv: G.sv || '' }); keepAwake(); claimMe(); }
   });
   addEventListener('online', () => { if (G.R && G.joined) comeBack(); });
   // (the page is closing: the TV takes this phone off a question that waits for it; if the page comes back, so does it)
@@ -1220,7 +1243,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     btn(T('Join a game'), { kind: 'go', huge: true, full: true }, v.body, () => codeScreen());
   }
   // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
-  // your own, right on this phone (a Blokvane account and the paid version)
+  // your own (Blokvane's free trial or Pro, then signing in on this phone with the same email)
   function hostGoneScreen() {
     if (G.closed) return;
     G.closed = true;
@@ -1229,7 +1252,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     dropBack();
     const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: booPic('boo:sad', 'float') });
-    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Make a Blokvane account on this phone and get the paid version. Then you can host games for friends and family, and everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
+    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Get Blokvane on your computer (it\'s at blokvane.com) and start the free trial or Blokvane Pro. Then sign in on this phone with the same email to host games for friends and family. Everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
     const j = btn(T('Join a game'), { kind: 'ghost', full: true }, v.body, () => codeScreen());
     j.style.marginTop = '12px';
     buzz('long');
@@ -1237,12 +1260,14 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   setInterval(() => {
     if (!G.R || !G.joined) return;
     const quiet = Date.now() - G.lastHeard;
-    if (quiet > 20000) send({ k: 'sync' });
+    // (the TV says a few numbers every 2.5 seconds. Nothing for 8: the connections are tried again, and this phone asks
+    // what's on)
+    if (quiet > 8000) { if (quiet < 60000 && !document.hidden) { try { const n = L.relays(); if (n && n.wake) n.wake(); } catch (e) {} } send({ k: 'sync', sv: G.sv || '' }); }
     // (still here: "Back to the game" keeps pointing at this game)
     if (Date.now() - (G.backAt || 0) > 60000) { G.backAt = Date.now(); keepBack(); }
     // (the TV went quiet for a minute: say so, once a minute, instead of a screen that just waits)
     if (quiet > 60000 && Date.now() - (G.warned || 0) > 60000) { G.warned = Date.now(); toast(T('Can\'t reach the TV. Is the game still open on it?'), 'bad'); }
-  }, 10000);
+  }, 4000);
 
   // ---------- what the TV says ----------
   function take(m) {
@@ -1252,7 +1277,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'you': {
         if (m.id !== G.id) return;
         const first = !G.joined;
-        G.joined = true; G.color = typeof m.color === 'string' ? m.color : ''; G.host = !!m.host;
+        // (only a real color: it is drawn into this phone's pin on the map)
+        G.joined = true; G.color = typeof m.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(m.color) ? m.color : ''; G.host = !!m.host;
         if (first) { tabStore.set('party:in', { s: G.s.slice(0, 10), at: Date.now() }); G.backAt = Date.now(); keepBack(); if (G.photo) sendPhoto(); buzz('ok'); armBack(); }
         if (G.phase === 'join') { G.phase = 'lobby'; if (G.lobby) onLobby(G.lobby, true); else showLobby(); }
         return;
@@ -1267,6 +1293,9 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       // nobody is hosting yet: the first one in has to be a Blokvane member (signed in), then everyone else just joins
       case 'needhost': {
         if (G.joined || G.needHost) return;
+        // (this phone showed a pass and the TV still asks for a host, more than once: the TV can't read it. Its page
+        // is an older one, or its clock is far off.)
+        if (G.pass && (G.hostAsk = (G.hostAsk || 0) + 1) > 2) { G.needHost = true; G.hostAsk = 0; return tvSaysNo(); }
         G.needHost = true;
         if (GO.signInScreen) GO.signInScreen({ why: 'host', after: () => connect(), again: () => connect(), back: () => { G.needHost = false; quitParty(true); history.replaceState(null, '', location.pathname); GO.route(); } });
         return;
@@ -1274,6 +1303,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       // (the host tried to hand the game to someone who isn't a Blokvane member)
       case 'needpass': toast(T('{name} can\'t host: the host has to be a Blokvane member.', { name: L.clean(m.name, 20) || T('That player') }), 'bad'); return;
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
+      case 'setup': return onSetup(m);
+      case 'hb': return onBeat(m);
       case 'lobby': return onLobby(m);
       case 'q': return onQ(m);
       case 'nextq': return onNextQ(m);
@@ -1286,11 +1317,68 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; G.endLook = typeof m.look === 'string' ? m.look.slice(0, 20) : ''; G.endTeam = !!m.team; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
       case 'gclue': return onClue(m);
-      case 'secret': if (m.boxed) { G.secret = m; if (isImpGame()) { if (G.imp && ['peek', 'clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; } if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
+      case 'secret': if (m.boxed) { if (m.gr != null && G.gr != null && m.gr !== G.gr && G.phase === 'play') newRun(m.gr); G.secret = m; if (isImpGame()) { if (G.imp && ['peek', 'clue', 'talk'].includes(G.imp.t) && !G.impQ) impDraw(); return; } if (G.phase === 'play' && G.q && (G.q.kind === 'wait' || !G.q.who.includes(G.id))) showQ(); } return;
       default:
     }
   }
+  // ---------- the lobby in two parts (see sayLobby in play.js) ----------
+  // The setup (the words, the games, the settings' names and choices) comes when it changes; the lobby itself (who is
+  // here, what is set) comes small and often, and says which setup it goes with (sv). A lobby whose setup isn't here
+  // yet waits for it, and this phone asks for it.
+  const setups = new Map();
+  function onSetup(m) {
+    if (typeof m.sv !== 'string' || !m.sv || m.sv.length > 24 || !m.d || typeof m.d !== 'object' || Array.isArray(m.d)) return;
+    setups.delete(m.sv);
+    setups.set(m.sv, m.d);
+    if (setups.size > 4) setups.delete(setups.keys().next().value);
+    const w = G.lobbyWait;
+    if (w && w.sv === m.sv) { G.lobbyWait = null; onLobby(w); }
+  }
+  const askSync = more => { const t = Date.now(); if (t - (G.askedAt || 0) < 1500) return; G.askedAt = t; send(Object.assign({ k: 'sync', sv: G.sv || '' }, more || {})); };
+  // The TV's heartbeat: a few numbers every 2.5 seconds. Anything this phone doesn't have yet (a newer lobby, other
+  // words, the question that's on, its own result), it asks for at once, and only for that.
+  function onBeat(m) {
+    if (!G.joined) return;
+    const t = Date.now();
+    if (typeof m.sv === 'string' && m.sv && m.sv !== G.sv && G.lean) return askSync();
+    if (Number.isInteger(m.lv) && G.lean && m.lv !== G.lv) return askSync();
+    if ((m.ph === 'play') !== (G.phase === 'play') || (m.ph === 'end') !== (G.phase === 'end')) return askSync();
+    if (m.ph !== 'play') return;
+    if (!!m.pa !== P2.on) setPausedPhone(!!m.pa);
+    const mine = G.q ? G.q.n : 0;
+    if (Number.isInteger(m.qn) && m.qn > mine) return askSync({ only: 'q' });
+    // (the results of this question are out, and this phone's own never came: asked for once, a moment later, since
+    // it may simply still be on its way)
+    if (Number.isInteger(m.rn) && m.rn > 0 && G.q && m.rn === G.q.n && !G.res && G.q.kind !== 'wait' && Array.isArray(G.q.who) && G.q.who.includes(G.id)) {
+      if (G.rnSeen !== m.rn) { G.rnSeen = m.rn; G.rnAt = t; }
+      else if (t - G.rnAt > 1500 && G.resAsked !== m.rn) { G.resAsked = m.rn; askSync({ only: 'q' }); }
+    }
+  }
+  // a new game on the TV (its run number changed): everything this phone kept about the last one goes
+  function newRun(gr) {
+    G.gr = gr;
+    G.used.clear(); G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null;
+    // (a secret word that already came in for this very game stays)
+    if (G.secret && G.secret.gr !== gr) G.secret = null;
+  }
   function onLobby(m, force) {
+    // (the small lobby: put together with its setup; kept waiting when the setup isn't here yet)
+    if (typeof m.sv === 'string' && m.sv && !('schema' in m)) {
+      // (an older lobby that comes in behind a newer one changes nothing)
+      if (Number.isInteger(m.lv) && G.lean && m.lv < G.lv && m.gr === G.gr) return;
+      const d = setups.get(m.sv);
+      // (the setup is usually right behind it, in a few pieces: asked for only if it isn't here in a moment)
+      if (!d) { G.lobbyWait = m; setTimeout(() => { if (G.lobbyWait === m && !setups.has(m.sv)) askSync(); }, 1300); return; }
+      G.lean = true; G.sv = m.sv;
+      if (Number.isInteger(m.lv)) G.lv = m.lv;
+      m = Object.assign({}, d, m);
+    } else if (typeof m.sv === 'string' && m.sv && 'schema' in m) {
+      // (the whole thing at once, from a TV that is also talking to an older phone: its setup is kept too)
+      const d = {}; for (const k of ['gname', 'gen', 'games', 'schema', 'strings', 'steps', 'langs', 'howto']) d[k] = m[k];
+      setups.delete(m.sv); setups.set(m.sv, d); if (setups.size > 4) setups.delete(setups.keys().next().value);
+      G.sv = m.sv; G.lean = false;
+      if (Number.isInteger(m.lv)) G.lv = m.lv;
+    }
     const prev = G.lobby, was = G.phase;
     G.lobby = m;
     if (m.strings && typeof m.strings === 'object') G.tvStrings = m.strings;
@@ -1316,11 +1404,13 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     // (the game paused, or going on: the same here, also on a phone that just came back)
     if (!!(m.phase === 'play' && m.paused) !== P2.on) setPausedPhone(m.phase === 'play' && !!m.paused);
     else if (P2.on && prev && prev.host !== m.host) pauseCover();
-    // (the host started the game over: everything this phone kept about the last one goes)
+    // (the host started the game over: everything this phone kept about the last one goes. Unless the game's first
+    // question got here before this did and already started it over: then that question stays.)
     const fresh = m.phase === 'play' && G.phase === 'play' && m.gr != null && G.gr != null && m.gr !== G.gr;
+    const early = m.phase === 'play' && !!G.q && m.gr != null && G.q.gr === m.gr;
     G.gr = m.gr;
     // (a question is on that this phone never got, like one a relay dropped: it asks the TV for it again)
-    if (m.phase === 'play' && Number.isInteger(m.qn) && m.qn > (G.q ? G.q.n : 0) && Date.now() - (G.qAsked || 0) > 2500) { G.qAsked = Date.now(); send({ k: 'sync' }); }
+    if (m.phase === 'play' && Number.isInteger(m.qn) && m.qn > (G.q ? G.q.n : 0)) askSync({ only: 'q' });
     // (this phone's own language, the way the TV should have it: said again whenever the TV has it wrong)
     if (mine) { const want = ownLang(m), tag = want + '|' + tvLangOf(m); if ((mine.lg || '') !== want && G.plangSent !== tag) { G.plangSent = tag; send({ k: 'plang', v: want }); } }
     if (prev && prev.host !== m.host && G.host) { toast(S().youHost, 'ok'); buzz('ok'); }
@@ -1330,7 +1420,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.host && m.phase === 'lobby' && G.wizTo != null) { G.wiz = G.wizTo; G.wizTo = null; }
     else if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if (was !== 'play' || fresh) { G.phase = 'play'; G.used.clear(); G.secret = null; G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null; showWait(S().look, 'boo:hi'); }
+      if ((was !== 'play' || fresh) && !early) { G.phase = 'play'; newRun(m.gr); showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1367,10 +1457,15 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   function hideNext() { if (G.ui.next) { G.ui.next.remove(); G.ui.next = null; } }
   function onQ(m) {
     if (!m || !Number.isInteger(m.n) || !Array.isArray(m.who) || typeof m.kind !== 'string') return;
+    const inIt = m.who.includes(G.id);
+    // ("got it": the TV stops sending this question to this phone; said again when the TV sends it again)
+    if (inIt && m.kind !== 'wait' && (!G.q || m.n >= G.q.n)) send({ k: 'got', n: m.n });
     if (G.q && m.n <= G.q.n) return;
     hideNext();
-    const inIt = m.who.includes(G.id);
     if (m.extra && m.extra.helpOnly && !inIt) return;
+    // (the first question of a new game, here before the lobby said so: the last game's things go now)
+    if (m.gr != null && G.gr != null && m.gr !== G.gr) newRun(m.gr);
+    else if (m.gr != null && G.gr == null) G.gr = m.gr;
     G.phase = 'play';
     G.q = m; G.qAt = pnow(); G.answered = false; G.locked = false; G.res = null;
     showQ();
@@ -1382,6 +1477,13 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (m.out) G.out = true;
     // (a quick word in the middle of a turn, like "try another one" or "not yet")
     if (m.ok === false && m.pts == null && m.right == null && !m.out && m.note) { toast(L.clean(m.note, 140), 'bad'); buzz('bad'); return; }
+    // (a result that comes in late, behind the next question: the score above counts, but it never covers a question
+    // this phone can still answer. That is what left a phone on "Right!" while the TV was already asking the next one.)
+    if (Number.isInteger(m.n) && G.q && m.n < G.q.n && G.q.kind !== 'wait' && Array.isArray(G.q.who) && G.q.who.includes(G.id)) { updMe(); return; }
+    // (the same result twice, like one this phone asked for again: once is enough)
+    const sig = JSON.stringify([m.n, m.ok, m.pts, m.score, m.right, m.note, m.title, m.out, m.lives, m.first, m.vd]);
+    if (G.res && G.resSig === sig && Number.isInteger(m.n) && G.q && m.n === G.q.n) return;
+    G.resSig = sig;
     // (the answer is out: no more "Show the answer")
     G.revealQ = null;
     if (G.ui.next && String(G.ui.next._key).startsWith('reveal:')) hideNext();
@@ -1558,7 +1660,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.av = av; G.photo = photo;
     store.set('party:av', av);
     // (the TV hears it the way it hears a name change; a Boo instead of a selfie drops the selfie there too)
-    send({ k: 'join', name: G.name, av, cap: 2, lg: ownLang(G.lobby), nophoto: photo ? undefined : 1 });
+    send(joinMsg({ av, lg: ownLang(G.lobby), nophoto: photo ? undefined : 1 }));
     if (photo) sendPhoto();
     const u = G.ui.me;
     if (u && u.im && u.im.isConnected) u.im.src = myPic();
@@ -1715,7 +1817,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       if (p.id === l.host) el('span', 'cr', c, '👑');
       if (p.ready) el('span', 'ok', c, '✓');
       const im = el('img', '', c); im.src = booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); im.alt = '';
-      if (p.color) im.style.boxShadow = '0 0 0 3px ' + p.color;
+      if (typeof p.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(p.color)) im.style.boxShadow = '0 0 0 3px ' + p.color;
       el('b', '', c, p.id === G.id ? S().you : L.clean(p.name, 16));
       if (p.lg && l.mlang) el('small', 'lg', c, String(p.lg).toUpperCase().slice(0, 2));
     }
@@ -3952,54 +4054,94 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // on a TV or a computer, and the phone's side of the games on a phone.
   const TV_ADDR = 'blokvane.com/play';
   const tvAddress = async () => TV_ADDR;
-  // TVs near you: the ones on this Wi-Fi with the party games open (BVLIVE.nearby), each with its name, its game, its
-  // code (the same one the TV shows) and whether it has a host. onList(tvs, looking) runs as they come and go, while
-  // node is on the screen.
+  // TVs near you: the ones on this Wi-Fi with the party games open (BVLIVE.nearby), each with its name, its game and
+  // whether it has a host. onList(tvs, looking) runs as they come and go, while node is on the screen. A TV never says
+  // its join code there (a network can be shared with strangers): this phone knocks with its host pass, and the TV
+  // answers with the game's link, sealed for this phone alone. What comes back is the function that stops looking;
+  // .knock(tv) knocks on one, and .again() looks afresh (the "Search again" button).
   function watchNear(node, onList) {
-    if (!L.nearby) { onList([], false); return () => {}; }
-    let nr = null, stopped = false, last = '';
-    const t0 = Date.now();
+    const none = Object.assign(() => {}, { knock: async () => { throw new Error(T('That didn\'t work. Try again.')); }, again() {} });
+    if (!L.nearby) { onList([], false); return none; }
+    let nr = null, stopped = false, last = '', t0 = Date.now();
+    const doors = new Map();
     const tell = ps => {
       if (stopped) return;
       if (!node.isConnected) { stop(); return; }
-      const tvs = (ps || []).filter(p => p.role === 'tv' && p.info && typeof p.info.c === 'string' && /^[A-Z]{6}$/.test(p.info.c)).slice(0, 8)
-        .map(p => ({ id: p.id, code: p.info.c, game: typeof p.info.g === 'string' ? p.info.g : '', players: Math.max(0, +p.info.p || 0), playing: !!p.info.ph, hosted: !!p.info.h, name: L.clean(p.name, 30) }));
+      const tvs = (ps || []).filter(p => p.role === 'tv' && p.info && typeof p.info === 'object' && !Array.isArray(p.info)).slice(0, 8)
+        // (code: only a TV whose page is an older one still says it; a newer one answers a knock instead)
+        .map(p => ({ id: p.id, code: typeof p.info.c === 'string' && /^[A-Z]{6}$/.test(p.info.c) ? p.info.c : '', game: typeof p.info.g === 'string' ? p.info.g : '', players: Math.max(0, +p.info.p || 0), playing: !!p.info.ph, hosted: !!p.info.h, name: L.clean(p.name, 30) }));
       const looking = !tvs.length && Date.now() - t0 < 7000;
       const sig = JSON.stringify(tvs) + looking;
       if (sig !== last) { last = sig; onList(tvs, looking); }
     };
     const stop = () => { stopped = true; clearInterval(watch); if (nr) nr.close(); };
     const watch = setInterval(() => { if (!node.isConnected) stop(); }, 1500);
-    L.nearby({ role: 'phone', onPeers: tell }).then(r => {
+    const onMsg = m => { if (m && m.k === 'door' && m.boxed && typeof m.i === 'string') { const d = doors.get(m.i); if (d) { doors.delete(m.i); d(m); } } };
+    L.nearby({ role: 'phone', onPeers: tell, onMsg }).then(r => {
       nr = r;
       if (stopped) { if (r) r.close(); return; }
       if (!r) { stopped = true; clearInterval(watch); onList([], false); return; }
       setTimeout(() => tell(r.list()), 7200);
     }).catch(() => { onList([], false); });
     tell([]);
+    stop.again = () => { if (stopped) return; t0 = Date.now(); last = ''; if (nr) { nr.hello(); tell(nr.list()); setTimeout(() => { if (!stopped) tell(nr.list()); }, 7200); } else tell([]); };
+    // this phone's host pass, shown to one TV: the game's link ({ s, tv, lang }), or an error in plain words
+    stop.knock = async tv => {
+      if (tv.code) return byCode(tv.code, 9);
+      if (!nr) throw new Error(T('That didn\'t work. Try again.'));
+      const ps = GO.pass ? await GO.pass.forGame(nr.id) : null;
+      if (!ps) throw new Error(GO.pass && GO.pass.why === 'no_plan' ? T('Hosting needs Blokvane Pro or a free trial for your email.') : GO.pass && GO.pass.why === 'offline' ? T('Can\'t reach Blokvane right now. Check the internet and try again.') : T('Sign in to host first.'));
+      const i = C.hex(C.rand(6));
+      const got = new Promise(res => doors.set(i, res));
+      let n = 0, timer = 0;
+      const say1 = () => { nr.box(tv.id, { k: 'knock', i, n, pass: ps }).catch(() => {}); if (++n < 6) timer = setTimeout(say1, 1300); };
+      say1();
+      const m = await Promise.race([got, new Promise(r => setTimeout(() => r(null), 9000))]);
+      clearTimeout(timer); doors.delete(i);
+      if (!m) throw new Error(T('The TV didn\'t answer. Check that the games are still open on it, then try again.'));
+      if (m.no || typeof m.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(m.s) || !L.okId(m.tv)) throw new Error(T('The TV didn\'t let this phone in. Scan its QR code or type its 6 letters instead.'));
+      return { s: m.s, tv: m.tv, lang: typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) && m.lang !== 'en' ? m.lang : '' };
+    };
     return stop;
   }
-  // a TV in a list: its name, its code, and what it's doing
+  // a TV in a list: its name (the kind of screen it is) and what it's doing
   function tvButton(parent, tv, sub) {
-    const b = el('button', 'pt-game pt-tv', parent);
+    // (its own name, pt-tvpick: "pt-tv" is the TV size row of the host's tools, with its own look)
+    const b = el('button', 'pt-game pt-tvpick', parent);
     b.type = 'button';
     const g = GAME_LIST.find(x => x[0] === tv.game);
     b.appendChild(g ? gameIcon(g[0], g[1]) : el('span', 'e', null, '📺'));
     const t = el('span', '', b);
     el('b', '', t, tv.name && tv.name !== 'TV' ? T(tv.name) : g ? T(g[2]) : T('Party games'));
-    el('small', '', t, tv.code.slice(0, 3) + ' ' + tv.code.slice(3) + ' · ' + sub);
+    el('small', '', t, (tv.code ? tv.code.slice(0, 3) + ' ' + tv.code.slice(3) + ' · ' : g && tv.name && tv.name !== 'TV' ? T(g[2]) + ' · ' : '') + sub);
     return b;
   }
-  // how to open the games on a TV, so it shows up in TVs near you
+  // "Search again": looks for TVs afresh, and says so
+  function searchBtn(parent, near) {
+    const b = el('button', 'linkish pt-tvhow', parent, '🔍 ' + T('Search again'));
+    b.type = 'button';
+    b.onclick = () => { buzz('tap'); near().again(); };
+    return b;
+  }
+  // every way to get the game on a TV, in one sheet: the TV's own browser, casting from a computer, a cable, or showing
+  // this phone on the TV
   async function tvHowSheet() {
     const addr = await tvAddress();
-    sheet(T('Open the games on a TV'), (sh) => {
+    sheet(T('Ways to get the game on a TV'), (sh) => {
+      const ways = [
+        ['📺', T('A TV with a web browser'), T('Samsung, LG, Fire TV and most smart TVs have one. Open it and go to this address. The TV then shows up here, under TVs near you.'), true],
+        ['💻', T('A computer and a TV'), T('Open the same address in Chrome or Edge on the computer and press "Cast to a TV" there. Or plug the computer into the TV with an HDMI cable.')],
+        ['📱', T('This phone on the TV'), T('Turn on Screen Mirroring (iPhone) or Cast / Smart View (Android) so the TV shows this phone. Then tap the button: the game and your own answers show together.'), false, true],
+        ['🔗', T('Any other screen'), T('A tablet or a laptop works just as well: "Send a link to the screen" above gives you a link to open there.')]
+      ];
       const ol = el('ol', 'pt-how', sh);
-      for (const [t, s] of [[T('Open the TV\'s web browser'), T('Or a laptop, a tablet, anything with a big screen.')], [T('Go to this address'), ''], [T('It shows up here'), T('Under TVs near you, when the TV is on the same Wi-Fi as this phone. Or type the 6 letters it shows.')]]) {
-        const li = el('li', '', ol); el('b', '', li, t);
-        if (s) el('small', '', li, s);
-        if (!s) {
-          const a = el('div', 'pt-addr', li, addr); a.dir = 'ltr';
+      for (const [ic, t, text, withAddr, here] of ways) {
+        const li = el('li', '', ol); el('b', '', li, ic + ' ' + t);
+        el('small', '', li, text);
+        // (the game and a player's own panel together on this phone: play/duo.html, in the Games page's language)
+        if (here) btn(T('Show the game on this phone'), { kind: 'ghost', icon: 'play' }, li, () => { location.href = L.PLAY + 'duo.html#.' + (G.lang && G.lang !== 'en' ? G.lang : ''); }).style.marginTop = '8px';
+        if (withAddr) {
+          const a2 = el('div', 'pt-addr', li, addr); a2.dir = 'ltr';
           btn(T('Copy the address'), { kind: 'ghost', icon: 'copy' }, li, async () => { try { await navigator.clipboard.writeText('https://' + addr); toast(T('Address copied.'), 'ok'); } catch (e) { toast(addr); } }).style.marginTop = '8px';
         }
       }
@@ -4021,7 +4163,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const v = view(T('Start a game'), { tint: 'sun', night: true, back });
     if (GO.backCard) GO.backCard(v.body);
     hero(v.body, T('Start a game'), T('Pick a game, then the screen everyone will watch. Everyone else joins from their own phone: no app, no account.'), { node: booPic('boo:party', 'float') });
-    if (!(GO.pass && GO.pass.get())) {
+    const mayHost = () => !!(GO.pass && (GO.pass.host ? GO.pass.host() : GO.pass.get()));
+    if (!mayHost()) {
       const sc = el('div', 'card pt-signin', v.body);
       el('b', '', sc, T('Hosting needs a Blokvane member'));
       el('p', 'muted small', sc, T('Sign in on this phone to start a game. Everyone who joins your game plays for free.'));
@@ -4063,14 +4206,17 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     el('label', 'pt-lbl', c3, '📺 ' + T('TVs near you'));
     const tvl = el('div', 'pt-where', c3);
     const tvst = el('p', 'muted small pt-tvst', c3, T('Looking for TVs on this Wi-Fi...'));
-    const how = el('button', 'linkish pt-tvhow', c3, T('How do I open the games on a TV?'));
+    let near = null;
+    const tvr = el('div', 'pt-tvrow', c3);
+    searchBtn(tvr, () => near);
+    const how = el('button', 'linkish pt-tvhow', tvr, T('Ways to get the game on a TV'));
     how.type = 'button';
     how.onclick = () => tvHowSheet();
     el('label', 'pt-lbl', c3, '🔗 ' + T('Any other screen'));
     const other = el('div', 'pt-where', c3);
     let paintGo = () => {};
     const pressed = () => { for (const b of c3.querySelectorAll('.pt-game')) b.setAttribute('aria-pressed', String(!!where && b.dataset.w === key(where))); paintGo(); };
-    const key = w => (w.k === 'tv' ? 'tv:' + w.tv.code : w.k === 'pc' ? 'pc:' + w.id : 'link');
+    const key = w => (w.k === 'tv' ? 'tv:' + w.tv.id : w.k === 'pc' ? 'pc:' + w.id : w.k);
     const choose = (w, b) => { if (b && b.disabled) return; where = w; chose = true; pressed(); buzz('tap'); };
     // (the link: always there)
     const lb = el('button', 'pt-game', other);
@@ -4078,6 +4224,15 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     el('span', 'e', lb, '🔗');
     const lt = el('span', '', lb); el('b', '', lt, T('Send a link to the screen')); el('small', '', lt, T('A laptop, a tablet or a TV\'s web browser. Share or copy the link, open it there, and this phone joins as the host.'));
     lb.onclick = () => choose({ k: 'link' }, lb);
+    // (on a computer, in Chrome or Edge: the browser's own Cast window puts the game on a Chromecast, a Google TV or a
+    // second screen, and this page stays here for the host to play on)
+    if (L.canCast && L.canCast()) {
+      const cb = el('button', 'pt-game', other);
+      cb.type = 'button'; cb.dataset.w = 'cast';
+      el('span', 'e', cb, '📡');
+      const ct = el('span', '', cb); el('b', '', ct, T('Cast to a TV')); el('small', '', ct, T('A Chromecast, a Google TV or a second screen. The game shows there, and you play right here.'));
+      cb.onclick = () => choose({ k: 'cast' }, cb);
+    }
     // (your computer, and its TV screens that are on)
     if (pc) {
       const pb = el('button', 'pt-game', other);
@@ -4102,36 +4257,37 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     // start (its words say where: "Start on Living room TV", "Get the link")
     const go = btn(T('Start the game'), { kind: 'go', huge: true, full: true, icon: 'play' }, v.body, () => start());
     go.style.marginTop = '6px';
+    let starting2 = false;
     paintGo = () => {
       const s = go.querySelector('span');
-      if (!s) return;
-      s.textContent = !where ? T('Pick where everyone watches') : where.k === 'tv' ? T('Start on {name}', { name: where.tv.name && where.tv.name !== 'TV' ? T(where.tv.name) : T('this TV') }) : where.k === 'link' ? T('Get the link') : T('Start on {name}', { name: where.name });
+      if (!s || starting2) return;
+      s.textContent = !where ? T('Pick where everyone watches') : where.k === 'tv' ? T('Start on {name}', { name: where.tv.name && where.tv.name !== 'TV' ? T(where.tv.name) : T('this TV') }) : where.k === 'link' ? T('Get the link') : where.k === 'cast' ? T('Pick the TV to cast to') : T('Start on {name}', { name: where.name });
       go.disabled = !where;
     };
     paintGo();
     // (the TVs on this Wi-Fi, as they come and go: the first free one is picked by itself, until you pick)
-    watchNear(c3, (tvs, looking) => {
+    near = watchNear(c3, (tvs, looking) => {
       tvl.textContent = '';
       for (const tv of tvs) {
         const busy = tv.playing || tv.hosted;
         const b = tvButton(tvl, tv, tv.playing ? T('In a game') : tv.hosted ? T('It has a host already') : T('Ready for a host'));
-        b.dataset.w = 'tv:' + tv.code;
+        b.dataset.w = 'tv:' + tv.id;
         b.disabled = busy;
         b.onclick = () => choose({ k: 'tv', tv }, b);
       }
-      if (where && where.k === 'tv') { const now = tvs.find(x => x.code === where.tv.code); if (now) where.tv = now; }
+      if (where && where.k === 'tv') { const now = tvs.find(x => x.id === where.tv.id); if (now) where.tv = now; else if (!looking) { where = null; chose = false; } }
       if (!chose && !where) { const free = tvs.find(x => !x.playing && !x.hosted); if (free) where = { k: 'tv', tv: free }; }
-      tvst.textContent = tvs.length ? T('Tap the TV that shows the same 6 letters.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
-      how.hidden = tvs.some(x => !x.playing && !x.hosted);
+      tvst.textContent = tvs.length ? T('Pick your TV. The game starts on it, and this phone is its host.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
       pressed();
     });
     async function start() {
       if (!where) return;
-      if (!(GO.pass && GO.pass.get())) { GO.signInScreen({ why: 'host', after: () => start(), back: () => startScreen(o) }); return; }
+      if (!mayHost()) { GO.signInScreen({ why: 'host', after: () => startScreen(o), back: () => startScreen(o) }); return; }
       store.set('party:last', gameId); store.set('party:lang', lang);
       const w = where, g = gameId, lg = lang;
       if (w.k === 'link') return linkScreen(g, lg, () => startScreen(o));
-      if (w.k === 'tv') return startOnTv(w.tv, g, lg, () => startScreen(o));
+      if (w.k === 'cast') return castScreen(g, lg, () => startScreen(o));
+      if (w.k === 'tv') return startOnTv(w.tv, g, lg, near, (on, name) => { starting2 = on; go.disabled = on; const sp = go.querySelector('span'); if (sp && on) sp.textContent = T('Starting on {name}...', { name }); if (!on) paintGo(); });
       return startOnPc(pc, w, g, lg, () => startScreen(o));
     }
   }
@@ -4149,16 +4305,48 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     btn(T('Type the code'), { kind: 'go', full: true, huge: true }, w.body, () => codeScreen());
     btn(T('Back'), { kind: 'ghost', full: true }, w.body, () => back()).style.marginTop = '10px';
   }
-  async function startOnTv(tv, game, lang, back) {
+  // Starting on a TV near you: this phone knocks on it (near: the list the TV was picked from, still on the screen,
+  // so the knock goes out through it), and goes in as the host as soon as the TV answers. busy(on, name): the screen
+  // shows that it's working. Nothing else changes until the TV has answered, so a TV that doesn't is simply said so.
+  async function startOnTv(tv, game, lang, near, busy) {
     const name = tv.name && tv.name !== 'TV' ? T(tv.name) : T('the TV');
-    const { w } = starting(T('Starting on {name}...', { name }), T('This phone joins it as the host in a moment.'));
+    busy(true, name);
     try {
-      const link = await byCode(tv.code, 9);
+      const link = await near.knock(tv);
       setUp(link.s, game, lang);
       buzz('ok');
       G.autoJoin = link.s.slice(0, 10);
       location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
-    } catch (e) { didntStart(w, back, T('The TV didn\'t answer. Check that the games are still open on it, then try again.')); }
+    } catch (e) {
+      busy(false, name);
+      buzz('bad');
+      toast((e && e.message) || T('The TV didn\'t answer. Check that the games are still open on it, then try again.'), 'bad');
+    }
+  }
+  // casting from a computer (Chrome or Edge): the browser's own window lists the TVs and second screens it sees, the
+  // game opens on the one picked, and this page joins it as the host by itself
+  async function castScreen(game, lang, back) {
+    const code = L.shortCode(6);
+    const url = L.PLAY + '#' + game + '.' + lang + '.' + code;
+    let conn = null;
+    try { conn = await L.cast(url); }
+    catch (e) { toast(T(e && e.message ? e.message : 'Casting didn\'t start. Try again.'), 'bad'); return back(); }
+    if (!conn) return back();
+    let stop = () => {};
+    const end = () => { stop(); try { conn.terminate(); } catch (e) {} };
+    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { end(); back(); } });
+    hero(v.body, T('Casting to your TV...'), T('{game} opens on the TV in a moment, and this page joins it as the host by itself.', { game: gameNameOf(game) }), { node: booPic('boo:party', 'float') });
+    const st = el('div', 'pt-wait', v.body);
+    el('div', 'spin', st);
+    el('span', '', st, T('Waiting for the screen to open it...'));
+    btn(T('Cancel'), { kind: 'ghost', full: true }, v.body, () => { end(); back(); }).style.marginTop = '12px';
+    stop = waitCode(code, v.body, link => {
+      buzz('ok');
+      setUp(link.s, game, lang);
+      G.autoJoin = link.s.slice(0, 10);
+      try { sessionStorage.setItem('bvgo:games:here:' + link.s.slice(0, 10), '1'); } catch (e) {}
+      location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+    });
   }
   async function startOnPc(pc, where, game, lang, back) {
     const code = L.shortCode(6);
@@ -4204,16 +4392,17 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     p.append(pb2 || '');
     const tvl = el('div', 'pt-where', tc);
     const tvst = el('p', 'muted small pt-tvst', tc, T('Looking for TVs on this Wi-Fi...'));
-    watchNear(tc, (tvs, looking) => {
+    const near = watchNear(tc, (tvs, looking) => {
       tvl.textContent = '';
       for (const tv of tvs) {
         const busy = tv.playing || tv.hosted;
         const b = tvButton(tvl, tv, tv.playing ? T('In a game') : tv.hosted ? T('It has a host already') : T('Tap to start {game} here', { game: gameNameOf(game) }));
         b.disabled = busy;
-        b.onclick = () => { stop(); buzz('tap'); startOnTv(tv, game, lang, back); };
+        b.onclick = () => { buzz('tap'); startOnTv(tv, game, lang, near, (on, name) => { for (const x of tvl.querySelectorAll('button')) x.disabled = on; tvst.textContent = on ? T('Starting on {name}...', { name }) : T('Pick your TV. The game starts on it, and this phone is its host.'); }); };
       }
-      tvst.textContent = tvs.length ? T('Tap the TV that shows the same 6 letters.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
+      tvst.textContent = tvs.length ? T('Pick your TV. The game starts on it, and this phone is its host.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
     });
+    searchBtn(tc, () => near);
     btn(T('Cancel'), { kind: 'ghost', full: true }, v.body, () => { stop(); back(); }).style.marginTop = '4px';
     // (the screen opens the link: it answers in the room of the code, and this phone goes straight in as the host)
     stop = waitCode(code, v.body, link => {
@@ -4234,7 +4423,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       t = setTimeout(loop, n < 40 ? 3000 : 6000);
     };
     const stop = () => { done = true; clearTimeout(t); if (R2) { const r = R2; R2 = null; setTimeout(() => r.close(), 300); } };
-    C.newMember().then(me => L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true,
+    C.newMember().then(me => L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true, home: true,
       onMsg: m => {
         if (done || m.k !== 'link' || typeof m.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(m.s) || !L.okId(m.tv)) return;
         const link = { s: m.s, tv: m.tv, lang: typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) && m.lang !== 'en' ? m.lang : '' };
@@ -4250,6 +4439,31 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     return stop;
   }
 
+  // A link that carries a game's 6 letters (#join.ABCDEF): this page goes into that game by itself, as soon as its
+  // screen answers. That is how a computer that shows the game beside this page ("Play here too"), or just cast it to
+  // a TV, goes straight in without typing anything.
+  async function joinByCode(parts) {
+    css();
+    await loadI18n();
+    await useLang(GO.lang ? GO.lang() : I() ? I().pick() : 'en');
+    GO.say = T;
+    const c = L.normShort(parts[0], 6);
+    if (!c) return codeScreen();
+    await GO.script('watch-boo.js').catch(() => {});
+    const leave = () => { history.replaceState(null, '', location.pathname); GO.route(); };
+    const v = view(T('Join a game'), { tint: 'sun', night: true, back: leave });
+    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
+    const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
+    waitCode(c, v.body, link => {
+      buzz('ok');
+      G.autoJoin = link.s.slice(0, 10);
+      // (straight in, here: no "browser or app?" for a game this page was sent into)
+      try { sessionStorage.setItem('bvgo:games:here:' + link.s.slice(0, 10), '1'); } catch (e) {}
+      location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+    });
+    // (a screen that never answers: the code can still be typed, or scanned)
+    setTimeout(() => { if (v.body.isConnected) btn(T('Type the code instead'), { kind: 'ghost', full: true }, v.body, () => codeScreen()).style.marginTop = '14px'; }, 20000);
+  }
   // ---------- joining with the 6 letters on the TV ----------
   async function codeScreen() {
     css();
@@ -4280,32 +4494,34 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // TVs near you, to join one with a tap: the ones on this Wi-Fi, each with its game and its code. On another network
   // there are none: the code is right under it.
   function nearTvs(parent) {
-    if (!L.nearby) return;
+    // (a TV opens its door to a Blokvane member's pass only: everyone else scans its QR code or types its 6 letters)
+    if (!L.nearby || !(GO.pass && (GO.pass.host ? GO.pass.host() : GO.pass.get()))) return;
     const nc = el('div', 'card pt-near', parent);
     el('h2', '', nc, '📺 ' + T('TVs near you'));
     const st = el('p', 'muted small', nc, T('Looking for TVs on this Wi-Fi...'));
     const ls = el('div', 'pt-games', nc);
-    watchNear(nc, (tvs, looking) => {
+    const near = watchNear(nc, (tvs, looking) => {
       ls.textContent = '';
       for (const tv of tvs) {
         const b = tvButton(ls, tv, tv.playing ? T('Playing now') : T('{n} players', { n: numFmt(tv.players) }));
         b.onclick = async () => {
           b.disabled = true; buzz('tap');
-          try { const link = await byCode(tv.code); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
+          try { const link = await near.knock(tv); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
           catch (e) { toast(e && e.message ? e.message : T('That didn\'t work. Try again.'), 'bad'); }
           finally { b.disabled = false; }
         };
       }
-      st.textContent = tvs.length ? T('Tap your TV to join. Its code is the one on the TV.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV found on this Wi-Fi. Type the code instead.');
+      st.textContent = tvs.length ? T('Tap your TV to join it.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV found on this Wi-Fi. Type the code instead.');
       nc.classList.toggle('none', !tvs.length && !looking);
     });
+    searchBtn(nc, () => near);
   }
   // the game a code belongs to (tries: how many times to ask; a game that is still opening needs a little longer)
   async function byCode(c, tries) {
     const me = await C.newMember();
     let done = false, t = 0, R2 = null;
     const found = new Promise(res => {
-      L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true, onMsg: m => {
+      L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true, home: true, onMsg: m => {
         if (done || m.k !== 'link' || typeof m.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(m.s) || !L.okId(m.tv)) return;
         done = true; res({ s: m.s, tv: m.tv, lang: typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) && m.lang !== 'en' ? m.lang : '' });
       } })).then(r => {

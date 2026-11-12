@@ -9,7 +9,7 @@ GO.def('home', (pair) => {
     { id: 'remote', perm: 'remote', icon: 'remote', tint: 'violet', name: 'Remote', hint: 'Pause, volume, next episode',
       help: 'Control whatever plays in Chrome on the computer: pause and play, the volume, skip the intro, the next episode.' },
     { id: 'party', perm: 'remote', icon: 'game', tint: 'pink', name: 'Party games', hint: 'Start a game on the TV. Everyone plays on their phone.', emoji: '🎉', row: '🧠🌍🎱',
-      help: 'Pick one of 11 games and where it shows (the computer or a TV screen). This phone joins as the host; everyone else scans the code on the screen. No app, no account, in 7 languages.' },
+      help: 'Pick one of 6 games and where it shows (the computer or a TV screen). This phone joins as the host; everyone else scans the code on the screen and plays from their own phone, with nothing to install. In 7 languages.' },
     { id: 'slides', perm: 'remote', icon: 'slides', tint: 'violet', name: 'Slides clicker', hint: 'Google Slides, PowerPoint, TV slideshows',
       help: 'Move through a presentation open on the computer, or the slideshows on your TV screens: next, back, pause.' },
     { id: 'gameday', perm: 'remote', icon: 'sparkle', tint: 'pink', name: 'Game day', hint: 'Celebrate big plays on the TVs',

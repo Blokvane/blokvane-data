@@ -44,6 +44,32 @@ var BVPLAY = (() => {
     return e;
   }
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const EMBEDDED = (() => {
+    try {
+      return window.parent !== window;
+    } catch (e) {
+      return true;
+    }
+  })();
+  const IN_EXT = EMBEDDED && (() => {
+    try {
+      const a = location.ancestorOrigins;
+      return !!(a && a.length === 1 && /^(chrome|moz|safari-web)-extension:\/\//.test(a[0]));
+    } catch (e) {
+      return false;
+    }
+  })();
+  const IS_TV = /SMART-TV|SmartTV|Tizen|Web0S|webOS|NetCast|BRAVIA|AFT[A-Z]|Android TV|GoogleTV|CrKey|HbbTV|VIDAA|PhilipsTV|Roku|Viera|TV Safari|PlayStation|Xbox|Nintendo/i.test(navigator.userAgent || "");
+  const SLOW_SCREEN = (() => {
+    try {
+      if (IS_TV) return true;
+      if (!window.BV_ASYNC) return true;
+      if (navigator.hardwareConcurrency > 0 && navigator.hardwareConcurrency <= 2) return true;
+      if (navigator.deviceMemory > 0 && navigator.deviceMemory <= 1) return true;
+    } catch (e) {
+    }
+    return false;
+  })();
   let paused = false, pausedAt = 0, pausedAll = 0, pauseEl = null;
   const gnow = () => Date.now() - pausedAll - (paused ? Date.now() - pausedAt : 0);
   const ptimers = /* @__PURE__ */ new Set(), pauseSubs = /* @__PURE__ */ new Set();
@@ -74,20 +100,48 @@ var BVPLAY = (() => {
     return __async(this, null, function* () {
       const me = yield C.newMember();
       const s = secret = L.newSecret();
-      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, home: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
       code = given || L.shortCode(6);
-      CR = yield L.room({ secret: yield L.codeSecret(code, "play"), label: "bvplaycode", me, name: "TV", role: "tv", open: true, onMsg: (m) => {
+      CR = yield L.room({ secret: yield L.codeSecret(code, "play"), label: "bvplaycode", me, name: "TV", role: "tv", open: true, home: true, onMsg: (m) => {
         if (m.k === "link?") CR.send({ k: "link", s, tv: R.id, lang }, m.f).catch(() => {
         });
       } });
       setInterval(() => {
-        if (phase !== "end") sayLobby();
+        if (phase !== "end" && !allLean()) sayLobby(null, true);
       }, 12e3);
+      setInterval(beat, 2500);
       nearOn();
     });
   }
+  let beatN = 0;
+  function beat() {
+    if (!R || phase === "closed") return;
+    beatN++;
+    if (phase !== "play" && beatN % 2) return;
+    say({ k: "hb", ph: phase, lv: lobbyV, sv: setupV, qn: phase === "play" && cur.q ? cur.q.n : 0, rn: phase === "play" ? resN : 0, gr: run, pa: phase === "play" && paused ? 1 : 0 });
+  }
   let near = null, nearBusy = false, nearSig = "";
-  const nearInfo = () => ({ c: code, g: game ? game.id : "", p: list().length, ph: phase === "lobby" ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  const nearInfo = () => ({ v: 2, g: game ? game.id : "", p: list().length, ph: phase === "lobby" ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  const knocks = /* @__PURE__ */ new Map();
+  function nearMsg(m) {
+    if (!near || !m || m.k !== "knock" || !m.boxed || !L.okId(m.f) || phase === "closed" || settings.k_near === false) return;
+    const t = Date.now(), last = knocks.get(m.f) || 0;
+    if (t - last < 700) return;
+    if (knocks.size > 200) knocks.clear();
+    knocks.set(m.f, t);
+    const answer = (x) => {
+      if (near) near.box(m.f, Object.assign({ k: "door", i: typeof m.i === "string" ? m.i.slice(0, 16) : "" }, x)).catch(() => {
+      });
+    };
+    if (typeof m.pass !== "string" || typeof BVPASS === "undefined") {
+      answer({ no: "pass" });
+      return;
+    }
+    BVPASS.ok(m.pass, m.f).then((ok) => {
+      if (ok && R && phase !== "closed") answer({ s: secret, tv: R.id, lang });
+      else answer({ no: "pass" });
+    }, () => answer({ no: "pass" }));
+  }
   const screenName = (() => {
     const ua = navigator.userAgent || "";
     if (/Tizen|SMART-TV.*Samsung/i.test(ua)) return "Samsung TV";
@@ -129,7 +183,7 @@ var BVPLAY = (() => {
       nearBusy = true;
       try {
         const i = nearInfo();
-        near = yield L.nearby({ role: "tv", name: screenName, info: i });
+        near = yield L.nearby({ role: "tv", name: screenName, info: i, onMsg: nearMsg });
         nearSig = JSON.stringify(i);
       } catch (e) {
         near = null;
@@ -308,15 +362,15 @@ var BVPLAY = (() => {
     if (phase !== "play" || !R || paused) return;
     const t = Date.now();
     for (const w of pending.values()) {
-      if (w.done || !w.q || t - (w.sent || w.at) < 3e3) continue;
-      const left = [...w.all].filter((id) => !w.got.has(id) && players.has(id) && !players.get(id).away);
+      if (w.done || !w.q || t - (w.sent || w.at) < (w.sent ? 3e3 : 1500)) continue;
+      const left = [...w.all].filter((id) => !w.got.has(id) && !(w.ack && w.ack.has(id)) && players.has(id) && !players.get(id).away);
       if (!left.length) continue;
       w.sent = t;
-      if (w.q.extra && w.q.extra.helpOnly || left.length <= 2) {
+      if (w.q.extra && w.q.extra.helpOnly || left.length <= 3) {
         for (const id of left) sayTo(id, w.q);
       } else if (cur.q === w.q) say(w.q);
     }
-  }, 1e3);
+  }, 500);
   let joinEl = null, joinT = 0;
   function showJoin(on2, keep) {
     return __async(this, null, function* () {
@@ -389,7 +443,7 @@ var BVPLAY = (() => {
         if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== "undefined") {
           const ps = m.pass;
           delete m.pass;
-          BVPASS.ok(ps).then((ok) => {
+          BVPASS.ok(ps, m.f).then((ok) => {
             if (ok) passed.add(m);
             take(m, peer);
           }, () => take(m, peer));
@@ -427,6 +481,7 @@ var BVPLAY = (() => {
         if (m.nophoto) pl.photo = "";
         if (!p) pl.away = false;
         pl.cap = +m.cap || 0;
+        pl.sv = typeof m.sv === "string" ? m.sv.slice(0, 24) : "";
         if ("lg" in m) setPlayerLang(pl, m.lg);
         if (teamsOn() && !pl.team) pl.team = P.TEAMS[players.size % Math.min(4, +settings.teamN || 2)][0];
         const isNew = !p;
@@ -446,9 +501,9 @@ var BVPLAY = (() => {
           }
         } else sweep();
         if (phase === "lobby") lobby();
+        if (leanPhone(pl)) sayLobby(m.f);
         sayLobby();
-        if (phase === "play" && cur.q) R.send(cur.q, m.f).catch(() => {
-        });
+        if (phase === "play") sayNow(m.f);
         return;
       }
       case "photo":
@@ -566,16 +621,26 @@ var BVPLAY = (() => {
           sweep();
         }
         return;
+      // a phone asks what's on: everything (who it is, the lobby, the question), or only the question and its own result
+      // (only: 'q') when that is all it missed
       case "sync":
         if (p) {
-          R.send({ k: "you", id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {
-          });
-          sayLobby(m.f);
-          if (phase === "play" && cur.q) R.send(cur.q, m.f).catch(() => {
-          });
+          if (typeof m.sv === "string") p.sv = m.sv.slice(0, 24);
+          if (m.only !== "q") {
+            R.send({ k: "you", id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {
+            });
+            sayLobby(m.f);
+          }
+          if (phase === "play") sayNow(m.f);
         } else if (kicked.has(m.f)) sayTo(m.f, { k: "kicked" });
         else if (ended.has(m.f)) sayTo(m.f, { k: "hostgone" });
         return;
+      // (a phone has the question: no need to send it again)
+      case "got": {
+        const w = pending.get(+m.n);
+        if (w && p && !w.done) (w.ack || (w.ack = /* @__PURE__ */ new Set())).add(m.f);
+        return;
+      }
       case "ans": {
         const w = pending.get(+m.n);
         if (!w || !p || w.done || w.got.has(m.f)) return;
@@ -611,6 +676,7 @@ var BVPLAY = (() => {
   });
   function box(id, m) {
     return __async(this, null, function* () {
+      if (m && m.gr == null) m.gr = run;
       for (let i = 0; i < 6; i++) {
         try {
           yield R.box(id, m);
@@ -639,46 +705,113 @@ var BVPLAY = (() => {
   }
   const ORDER = ["trivia", "gir"];
   const gameList = () => [...games.values()].map((g, i) => [g, ORDER.includes(g.id) ? ORDER.indexOf(g.id) - 99 : i]).sort((a, b) => a[1] - b[1]).map((x) => x[0]);
-  function sayLobby(to) {
-    if (phase === "closed") {
-      nearOn();
-      return;
+  let setupSig = "", setupV = "", setupSent = "", lobbyV = 0, lobbySig = "", lobbySent = -1;
+  const fnv = (t) => {
+    let h = 2166136261;
+    for (let i = 0; i < t.length; i++) {
+      h ^= t.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-    if (!to) nearOn();
+    return (h >>> 0).toString(36);
+  };
+  const leanPhone = (p) => !!p && p.cap >= 3;
+  const allLean = () => {
+    for (const p of players.values()) if (!leanPhone(p)) return false;
+    return true;
+  };
+  function lobbyParts() {
     const tt = tx.key === (game ? game.id : "") + "|" + lang ? tx : null;
-    const m = {
-      k: "lobby",
-      phase,
-      game: game ? game.id : "",
+    const setup = {
       gname: game ? tt ? tt.name : P.f(game.name) : "",
       gen: game ? game.name : "",
       games: tx.lang === lang && tx.games && tx.games.length && tx.games || gameList().map((g) => ({ id: g.id, name: P.f(g.name), e: g.emoji, sub: P.f(g.sub) })),
-      players: list().map(pub),
-      host,
-      settings,
       schema: game ? tt ? tt.schema : fieldsOf(game) : [],
-      lang,
-      rtl: P.RTL.has(lang),
       strings,
       // (the host's phone sets the game up in steps; players can pick their own language when the game has it)
       steps: game ? tt && tt.steps || stepsOf(game) : null,
+      // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
+      langs: game && game.langs ? game.langs : null,
+      // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
+      howto: game && game.howto ? game.howto(settings) : null
+    };
+    const sj = JSON.stringify(setup);
+    if (sj !== setupSig) {
+      setupSig = sj;
+      setupV = fnv(sj) + "." + sj.length.toString(36);
+    }
+    const dyn = {
+      k: "lobby",
+      phase,
+      game: game ? game.id : "",
+      players: list().map(pub),
+      host,
+      settings,
+      lang,
+      rtl: P.RTL.has(lang),
       mlang: !!(game && game.mlang),
       joinOn: !!joinEl,
       zoom: Math.round(zoom * 100),
       teams: teamsOn(),
-      // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
-      langs: game && game.langs ? game.langs : null,
-      // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null,
       // (the question that's on: a phone that doesn't have it asks for it again)
       qn: phase === "play" && cur.q ? cur.q.n : 0,
       paused: phase === "play" && paused,
       gr: run,
       // (the join code: the host's phone sends it with "Invite players")
-      code
+      code,
+      sv: setupV
     };
-    if (to) sayTo(to, m);
-    else say(m);
+    return { setup, dyn };
+  }
+  function sayLobby(to, again) {
+    if (phase === "closed") {
+      nearOn();
+      return;
+    }
+    if (!to) nearOn();
+    const { setup, dyn } = lobbyParts();
+    const dj = JSON.stringify(dyn);
+    if (dj !== lobbySig) {
+      lobbySig = dj;
+      lobbyV++;
+    }
+    dyn.lv = lobbyV;
+    if (to) {
+      const p = players.get(to);
+      if (!leanPhone(p)) {
+        sayTo(to, Object.assign({}, setup, dyn));
+        return;
+      }
+      if (p.sv !== setupV) {
+        p.sv = setupV;
+        sayTo(to, { k: "setup", sv: setupV, d: setup });
+      }
+      sayTo(to, dyn);
+      return;
+    }
+    if (!allLean()) {
+      setupSent = setupV;
+      lobbySent = lobbyV;
+      for (const p of players.values()) p.sv = setupV;
+      say(Object.assign({}, setup, dyn));
+      return;
+    }
+    if (setupSent !== setupV) {
+      setupSent = setupV;
+      for (const p of players.values()) p.sv = setupV;
+      say({ k: "setup", sv: setupV, d: setup });
+    }
+    if (lobbySent === lobbyV && !again) return;
+    lobbySent = lobbyV;
+    say(dyn);
+  }
+  const lastRes = /* @__PURE__ */ new Map();
+  let resN = 0;
+  function sayNow(id) {
+    if (phase !== "play") return;
+    if (cur.q) R.send(cur.q, id).catch(() => {
+    });
+    const lr = lastRes.get(id);
+    if (lr && cur.q && lr.n === cur.q.n) sayTo(id, lr);
   }
   const SND_KINDS = [
     ["music", "Music", "The tunes in the lobby and during the game."],
@@ -705,15 +838,25 @@ var BVPLAY = (() => {
     const vols = (have.has("music") ? [{ key: "vol_music", label: "Music volume", type: "seg", options: VOL, default: 1, vol: "music" }] : []).concat([{ key: "vol_fx", label: "Sounds volume", type: "seg", options: VOL, default: 1, vol: "fx", desc: "Everything that isn't music: right, wrong, the clock and the rest." }]);
     return vols.concat(SND_KINDS.filter((k) => have.has(k[0])).map(([k, label, desc]) => ({ key: "snd_" + k, label, type: "toggle", default: true, desc, snd: k })));
   }
-  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: false };
+  const KIT0 = { k_rules: true, k_rulesSec: 12, k_late: true, k_code: false, k_near: true, k_calm: SLOW_SCREEN };
   const kitSaved = () => {
     try {
       const v = JSON.parse(localStorage.getItem("bvplay:kit") || "null");
-      return v && typeof v === "object" ? v : {};
+      if (!v || typeof v !== "object") return {};
+      if (v.calmBy !== "host" && v.calmBy !== "auto") delete v.k_calm;
+      return v;
     } catch (e) {
       return {};
     }
   };
+  let calmBy = (() => {
+    try {
+      const v = JSON.parse(localStorage.getItem("bvplay:kit") || "null");
+      return v && (v.calmBy === "host" || v.calmBy === "auto") ? v.calmBy : "";
+    } catch (e) {
+      return "";
+    }
+  })();
   function kitFields(g) {
     if (!g) return [];
     const rl0 = typeof g.rules === "function" ? g.rules(settings || {}) : g.rules;
@@ -726,15 +869,21 @@ var BVPLAY = (() => {
       { key: "k_late", label: "Late players can join", type: "toggle", default: true, kit: 1, desc: "Someone who comes in after the start plays from the next question. Off: they play the next game." },
       { key: "k_code", label: "Show the join code during the game", type: "toggle", default: false, kit: 1, desc: "The QR code and the code stay in a corner of the TV the whole game." },
       { key: "k_near", label: "Phones nearby can find this TV", type: "toggle", default: true, kit: 1, desc: "Phones on the same Wi-Fi see this TV in their list and join with one tap, without typing the code." },
-      { key: "k_calm", label: "Calm screen", type: "toggle", default: false, kit: 1, desc: "Fewer flashing and moving lights on the TV. Easier on the eyes." }
+      { key: "k_calm", label: "Calm screen", type: "toggle", default: KIT0.k_calm, kit: 1, desc: "Fewer flashing and moving lights on the TV. Easier on the eyes." }
     ]);
   }
   function applyKit() {
-    document.body.classList.toggle("calm", !!settings.k_calm);
+    const calm = !!settings.k_calm;
+    if (document.body.classList.contains("calm") !== calm) {
+      document.body.classList.toggle("calm", calm);
+      document.documentElement.classList.toggle("calm", calm);
+      P.still(calm);
+    }
     nearOn();
     try {
       const o = {};
       for (const k of Object.keys(KIT0)) if (k in settings) o[k] = settings[k];
+      if (calmBy) o.calmBy = calmBy;
       localStorage.setItem("bvplay:kit", JSON.stringify(Object.assign(kitSaved(), o)));
     } catch (e) {
     }
@@ -744,6 +893,38 @@ var BVPLAY = (() => {
     }
   }
   const fieldsOf = (g) => g ? g.settings.concat(kitFields(g), sndFields(g)) : [];
+  function watchSpeed() {
+    if (calmBy || settings.k_calm || !window.requestAnimationFrame || document.hidden) return;
+    const times = [];
+    let last = 0, n = 0;
+    const frame = (t) => {
+      if (calmBy || settings.k_calm || phase !== "lobby" || document.hidden) return;
+      if (last) times.push(t - last);
+      last = t;
+      if (++n < 150 && t < start2 + 6e3) {
+        requestAnimationFrame(frame);
+        return;
+      }
+      if (times.length < 20) return;
+      const slow = times.filter((x) => x > 42).length;
+      if (slow / times.length > 0.5) {
+        calmBy = "auto";
+        settings.k_calm = true;
+        applyKit();
+        if (phase === "lobby") lobby();
+        sayLobby();
+      }
+    };
+    let start2 = 0;
+    setTimeout(() => {
+      if (phase !== "lobby") return;
+      requestAnimationFrame((t) => {
+        start2 = t;
+        last = 0;
+        requestAnimationFrame(frame);
+      });
+    }, 2500);
+  }
   function stepsOf(g) {
     if (!g) return null;
     let st = g.steps;
@@ -832,6 +1013,7 @@ var BVPLAY = (() => {
       }
       if (f.kit) {
         settings[key] = f.type === "toggle" ? !!v : Math.max(f.min || 0, Math.min(f.max || 999, Math.round(+v) || f.default));
+        if (key === "k_calm") calmBy = "host";
         applyKit();
         if (phase === "lobby") lobby();
         sayLobby();
@@ -961,7 +1143,6 @@ var BVPLAY = (() => {
     const m = e.data;
     if (e.source === parent && parent !== window && m && typeof m.bvZoom === "number") zoomBy(Math.sign(m.bvZoom));
   });
-  const IS_TV = /SMART-TV|SmartTV|Tizen|Web0S|webOS|NetCast|BRAVIA|AFT[A-Z]|Android TV|GoogleTV|CrKey|HbbTV|VIDAA|PhilipsTV|Roku|Viera|TV Safari/i.test(navigator.userAgent || "");
   const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const canFs = () => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
   let fsPaint = null;
@@ -1121,6 +1302,52 @@ var BVPLAY = (() => {
       }, 700);
     });
   }
+  function castFromHere(gid) {
+    return __async(this, null, function* () {
+      const c = L.shortCode(6);
+      const url = L.PLAY + "#" + (gid || "trivia") + "." + lang + "." + c;
+      let conn = null;
+      try {
+        conn = yield L.cast(url);
+      } catch (e) {
+        const t = el("div", "zm-tip on", document.body, "📡 " + (yield P.tr(e && e.message ? e.message : "Casting didn't start. Try again.")));
+        setTimeout(() => t.remove(), 5e3);
+        return;
+      }
+      if (!conn) return;
+      back.going = true;
+      if (R && !back.said) {
+        back.said = true;
+        try {
+          R.send({ k: "closed" }).catch(() => {
+          });
+        } catch (e) {
+        }
+      }
+      yield closedScreen();
+      const ov = el("div", "cast-ov", document.body);
+      const bar = el("div", "cast-bar", ov);
+      el("b", "", bar, "📡 " + (yield P.tr("The game is on your TV. Play here:")));
+      const stop = el("button", "leave-btn", bar, yield P.tr("Stop casting"));
+      stop.type = "button";
+      const f = el("iframe", "cast-phone", ov);
+      f.title = "Blokvane Games";
+      f.allow = "camera; clipboard-write; screen-wake-lock; web-share";
+      f.src = GO + "games.html#join." + c;
+      const end = () => {
+        try {
+          conn.terminate();
+        } catch (e) {
+        }
+        location.reload();
+      };
+      stop.onclick = end;
+      try {
+        conn.onterminate = () => location.reload();
+      } catch (e) {
+      }
+    });
+  }
   function closedScreen() {
     return __async(this, null, function* () {
       run++;
@@ -1221,7 +1448,7 @@ var BVPLAY = (() => {
       const g = game;
       const T = (t2, v) => P.tr(t2, v);
       const LET = I18N.letters(lang);
-      const t = top(page, yield T(g ? g.name : "Party games"), yield T(g ? g.sub : "Scan the code to join. The first phone in picks the game."));
+      const t = top(page, yield T(g ? g.name : "Party games"), yield T(g ? g.sub : "Scan the code to join. The host scans first and picks the game."));
       t.classList.add("lob-top");
       const deco = el("div", "deco", t);
       const dk = g && g.deco ? g.deco : "letters";
@@ -1260,7 +1487,7 @@ var BVPLAY = (() => {
       el("b", "", s2, yield T("Name + selfie"));
       el("p", "", st2, yield T("Take a photo or pick a Boo, then tap Ready."));
       const st3 = el("div", "card stp-c", two);
-      const step = g && g.step ? g.step : ["Pick a game", "The first phone in is the host and picks the game."];
+      const step = g && g.step ? g.step : ["Pick a game", "A Blokvane member scans first: they host and pick the game."];
       const s3 = el("div", "stp", st3);
       el("span", "n", s3, "3");
       el("b", "", s3, yield T(step[0], { letters: LET.slice(0, 4).join(" ") }));
@@ -1324,7 +1551,7 @@ var BVPLAY = (() => {
       }
       const ft = el("div", "lob-foot", page);
       const fl = el("div", "lf", ft);
-      el("b", "", fl, g ? yield T(hp ? "The host starts the game from their phone." : "Waiting for the host.") : yield T("Made by Blokvane. No app, no account: your phone and this screen talk straight to each other."));
+      el("b", "", fl, g ? yield T(hp ? "The host starts the game from their phone." : "Waiting for the host.") : yield T("Made by Blokvane. Nothing to install: everyone plays from their own phone."));
       const sw = { locked: "🔈 " + (yield T("Click for sound")), on: "🔊 " + (yield T("Sound on")), off: "🔇 " + (yield T("Sound off")) };
       const sb = el("button", "snd", fl);
       sb.type = "button";
@@ -1370,6 +1597,28 @@ var BVPLAY = (() => {
       };
       fpaint();
       fsPaint = fpaint;
+      if (!IS_TV && (!EMBEDDED || IN_EXT) && !list().length) {
+        const gid = g ? g.id : "";
+        const here = gid + "." + lang;
+        if (!EMBEDDED && L.canCast && L.canCast()) {
+          const cb = el("button", "fs cast", fl, "📡 " + (yield T("Cast to a TV")));
+          cb.type = "button";
+          cb.onclick = () => castFromHere(gid);
+        }
+        const db = el("button", "fs duo", fl, "🎮 " + (yield T("Play here too")));
+        db.type = "button";
+        db.title = yield T("The game and your own answers, side by side on this screen.");
+        db.onclick = () => {
+          back.going = true;
+          back.said = true;
+          try {
+            R.send({ k: "closed" }).catch(() => {
+            });
+          } catch (e) {
+          }
+          location.href = "duo.html#" + here;
+        };
+      }
       const c = g && (typeof g.credit === "function" ? g.credit(lang) : g.credit);
       if (c) el("small", "", ft, P.f(c));
       if (my !== lobbyRun || phase === "play") return;
@@ -1404,8 +1653,13 @@ var BVPLAY = (() => {
       requestAnimationFrame(fitLobby);
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitLobby).catch(() => {
       });
+      if (!speedSeen) {
+        speedSeen = true;
+        watchSpeed();
+      }
     });
   }
+  let speedSeen = false;
   function inner(g2) {
     const cs = getComputedStyle(g2), n = (v) => parseFloat(v) || 0;
     return [g2.clientWidth - n(cs.paddingLeft) - n(cs.paddingRight), g2.clientHeight - n(cs.paddingTop) - n(cs.paddingBottom)];
@@ -1651,7 +1905,7 @@ var BVPLAY = (() => {
     const n = ++round;
     const all = new Set((o.who || [...players.values()].filter((p) => !p.out).map((p) => p.id)).filter((id) => players.has(id)));
     const who = new Set([...all].filter((id) => !players.get(id).away));
-    const q = { k: "q", n, kind: o.kind || "choice", prompt: o.prompt || "", opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
+    const q = { k: "q", n, gr: run, kind: o.kind || "choice", prompt: o.prompt || "", opts: o.opts || [], sec: o.sec || 0, extra: o.extra || null, who: [...all] };
     if (o.extra && o.extra.helpOnly) {
       for (const id of who) sayTo(id, q);
     } else {
@@ -1676,12 +1930,17 @@ var BVPLAY = (() => {
     });
   }
   function wait(text, extra) {
-    const m = { k: "q", n: ++round, kind: "wait", prompt: text || strings.look, extra: extra || null, who: [] };
+    const m = { k: "q", n: ++round, gr: run, kind: "wait", prompt: text || strings.look, extra: extra || null, who: [] };
     cur.q = m;
     say(m);
   }
   function result(id, r) {
-    sayTo(id, Object.assign({ k: "res" }, r));
+    const m = Object.assign({ k: "res", n: round }, r);
+    if (!r.end) {
+      lastRes.set(id, m);
+      resN = round;
+    }
+    sayTo(id, m);
   }
   const on = (k, fn) => {
     handlers.set(k, fn);
@@ -1691,6 +1950,8 @@ var BVPLAY = (() => {
   function start() {
     return __async(this, null, function* () {
       const my = ++run;
+      lastRes.clear();
+      resN = 0;
       P.mute(false);
       phase = "play";
       played = true;
@@ -1790,7 +2051,7 @@ var BVPLAY = (() => {
       const fill = el("i", "", bar);
       fill.style.animationDuration = secs + "s";
       boo("mind");
-      const m = { k: "q", n: ++round, kind: "wait", prompt: P.f("How to play"), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map((b) => b[0] + " " + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
+      const m = { k: "q", n: ++round, gr: run, kind: "wait", prompt: P.f("How to play"), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map((b) => b[0] + " " + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
       cur.q = m;
       say(m);
       yield psleep(secs * 1e3);
@@ -2195,6 +2456,13 @@ var BVPLAY = (() => {
     },
     get q() {
       return cur.q;
+    },
+    // (a message of the test's own making, to everyone or to one phone: a late result, say)
+    say(m, to) {
+      return to ? sayTo(to, m) : say(m);
+    },
+    get calm() {
+      return !!settings.k_calm;
     },
     // (the host's settings, set from here)
     set(o) {

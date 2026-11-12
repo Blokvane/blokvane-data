@@ -1,14 +1,16 @@
 // Blokvane on your phone (https://app.blokvane.com/go/). One page for everything a phone does with
 // Blokvane: be the remote for your computer and TV screens, send files and links, share the clipboard, answer Kid mode
-// requests, find a lost computer, unlock KeyVane, join a party game or a poll. There is no app and no account.
+// requests, find a lost computer, unlock KeyVane, join a party game or a poll. There is no app, and no account
+// either (only the host of a party game signs in, with a code sent to their email: pass.js).
 // What to do is after the # in the address (browsers never send that part to any website): "c1" is your paired
 // computer, "p1" pairs one, and each other kind (a poll, a game, a camera for a slide...) has its own. Messages go
-// through free public relays, sealed and signed (live-kit.js); big things go straight between the two devices.
+// through free public relays, sealed and signed on the devices so nobody in between can read them (live-kit.js); big
+// things go straight between the two devices. A party game also uses Blokvane's own relay, which is quicker.
 // The parts for each kind live in m/*.js and load only when needed, so the page opens fast.
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '24';
+  const VERSION = '25';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -609,10 +611,12 @@
     try {
       if (GAMES && !h) return gamesHome();
       // (a game's QR code, opened in the browser: play here, or in the Games app? asked once, then remembered)
-      if (GAMES && h && h.kind === 'game' && !standalone()) {
+      // (not for a game this page was sent straight into, like one shown beside it with "Play here too", or just cast
+      // to a TV from this computer: that one simply opens here)
+      if (GAMES && h && h.kind === 'game' && !standalone() && !ss.get('games:here:' + String(h.parts[0] || '').slice(0, 10))) {
         const how = store.get('games:how', '');
         if (!how) return gamesChoice();
-        if (how === 'app' && !ss.get('games:here:' + String(h.parts[0] || '').slice(0, 10))) return openTheApp(h);
+        if (how === 'app') return openTheApp(h);
       }
       if (!h) return home();
       switch (h.kind) {
@@ -646,7 +650,7 @@
   }
   // which part handles each kind of link
   const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
-    wb: 'board', game: 'party' };
+    wb: 'board', game: 'party', join: 'party' };
   // no link: the computers this phone knows, or how to start
   async function home() {
     // (Blokvane as an app, opened again soon after it was in a party game it didn't leave: straight back into that game,
@@ -719,12 +723,55 @@
   // type the code, back into a game, start a game as its host), and a game's QR code opened in the browser asks once
   // how to play. It speaks the phone's language (one of the games' seven: ../play/i18n.js and its words), or the one
   // picked on its home page, right to left for Arabic. Its look is "Silk waves" (go.css), dark or light like the phone.
-  const GAMES = !!window.BV_GAMES;
-  // a sign-in that may host games (pass.js), kept on this phone
+  // (games.html says so on its <html> tag; an older copy of it still says it with window.BV_GAMES)
+  const GAMES = !!window.BV_GAMES || document.documentElement.hasAttribute('data-games');
+  // The sign-in that may host games (pass.js), kept on this phone: the email, and the session Blokvane's server gave
+  // this phone for it (plan: what the server said that email has: 'pro', 'trial', 'guest', or '' for none yet).
   const pass = {
-    get() { const p = store.get('games:pass', null); return p && typeof p === 'object' && p.exp > Date.now() ? p : null; },
-    set(p) { store.set('games:pass', p); },
-    clear() { store.del('games:pass'); }
+    why: '',
+    get() { const p = store.get('games:acct', null); return p && typeof p === 'object' && typeof p.session === 'string' && p.session && typeof p.email === 'string' ? p : null; },
+    set(p) { store.set('games:acct', p); },
+    // (may this phone host? signed in, and the server said its email has a plan)
+    host() { const p = pass.get(); return p && p.plan ? p : null; },
+    clear() { const p = pass.get(); store.del('games:acct'); store.del('games:passes'); store.del('games:pass'); if (p && typeof BVPASS !== 'undefined') BVPASS.signOut(p.session).catch(() => {}); },
+    // (this phone's own id for Blokvane's server, made here once: it only ties a sign-in to this phone)
+    device() { let d = store.get('games:dev', ''); if (!/^[0-9a-f]{32}$/.test(d)) { d = C.hex(C.rand(16)); store.set('games:dev', d); } return d; },
+    // A pass for this phone in one game (mid: its own id in that game), or null. pass.why then says why not: 'signed_out',
+    // 'no_plan' (signed in, but that email has no Blokvane Pro and no running trial) or 'offline'. A pass that still has
+    // an hour to go is used again, and when the server can't be reached, one that hasn't run out still works.
+    async forGame(mid) {
+      const a = pass.get();
+      pass.why = a ? '' : 'signed_out';
+      if (!a || typeof BVPASS === 'undefined' || !/^[0-9a-f]{16}$/.test(String(mid))) return null;
+      let kept = store.get('games:passes', null);
+      if (!kept || typeof kept !== 'object') kept = {};
+      const old = kept[mid] && typeof kept[mid].pass === 'string' && kept[mid].exp > 0 ? kept[mid] : null;
+      if (old && old.exp * 1000 > Date.now() + 3600e3) return old.pass;
+      const r = await BVPASS.forGame(a.session, mid);
+      if (r.pass) {
+        kept[mid] = { pass: r.pass, exp: r.exp };
+        const out = {};
+        for (const k of Object.keys(kept).filter(k => kept[k] && kept[k].exp * 1000 > Date.now()).sort((x, y) => kept[y].exp - kept[x].exp).slice(0, 6)) out[k] = kept[k];
+        store.set('games:passes', out);
+        if (a.plan !== r.plan) { a.plan = r.plan; pass.set(a); }
+        return r.pass;
+      }
+      pass.why = r.code || 'error';
+      if (r.code === 'signed_out') { store.del('games:acct'); store.del('games:passes'); }
+      else if (r.code === 'no_plan' && a.plan) { a.plan = ''; pass.set(a); }
+      if (r.code === 'offline' && old && old.exp * 1000 > Date.now()) return old.pass;
+      return null;
+    },
+    // (does the server say this email may host, right now? 'pro', 'trial' or 'guest'; '' when not; null when it can't be asked)
+    async check() {
+      const a = pass.get();
+      if (!a || typeof BVPASS === 'undefined') return '';
+      const r = await BVPASS.forGame(a.session, C.hex(C.rand(8)));
+      if (r.pass) { if (a.plan !== r.plan) { a.plan = r.plan; pass.set(a); } return r.plan || 'pro'; }
+      if (r.code === 'signed_out') { store.del('games:acct'); store.del('games:passes'); return ''; }
+      if (r.code === 'no_plan') { if (a.plan) { a.plan = ''; pass.set(a); } return ''; }
+      return null;
+    }
   };
   const SITE = 'https://blokvane.com/';
   // the language: gt(words, { parts }) is the words in it (words with no translation yet stay English)
@@ -766,7 +813,8 @@
     btn(gt('Share it'), { kind: 'blue', icon: 'share' }, r, () => shareGames());
     return c;
   }
-  // signing in to host: Boo with his golden host ticket
+  // signing in to host: Boo with his golden host ticket. Two steps: the email, then the code Blokvane emails to it (no
+  // password to make up or forget). A phone that is signed in but whose email has no plan yet sees how to get one.
   async function signInScreen(o = {}) {
     try { (await need('party'))('css'); } catch (e) {}
     const v = view('Blokvane Games', { tint: 'mint', night: true, app: true, back: o.back || null });
@@ -774,35 +822,113 @@
     art.appendChild(swBoo('float'));
     const tk = el('div', 'si-ticket', art);
     el('b', '', tk, gt('HOST')); el('small', '', tk, gt('Blokvane member'));
-    el('h1', 'si-h', v.body, o.why === 'host' ? gt('This game needs a host') : gt('Sign in to host games'));
-    el('p', 'si-p', v.body, o.why === 'host' ? gt('Every game needs one Blokvane member to start it. Sign in, and everyone else joins for free.') : gt('Blokvane members host the games. Everyone who joins their game plays for free, without signing in.'));
-    const card = el('div', 'card si-card', v.body);
-    const ei = input({ placeholder: 'you@example.com', max: 120 });
-    ei.type = 'email'; ei.autocomplete = 'username'; ei.inputMode = 'email'; ei.autocapitalize = 'none'; ei.spellcheck = false; ei.dir = 'ltr';
-    field(gt('Email'), ei, card);
-    const pi = input({ placeholder: gt('Your password'), max: 120 });
-    pi.type = 'password'; pi.autocomplete = 'current-password';
-    const pf = field(gt('Password'), pi, card);
-    const eye = el('button', 'si-eye', pf.parentNode, gt('Show')); eye.type = 'button';
-    eye.onclick = () => { const show = pi.type === 'password'; pi.type = show ? 'text' : 'password'; eye.textContent = show ? gt('Hide') : gt('Show'); pi.focus(); };
-    const err = el('p', 'si-err', card); err.hidden = true;
-    const go = btn(gt('Sign in'), { kind: 'go', huge: true, full: true, icon: 'key' }, v.body, async () => {
-      err.hidden = true;
-      art.classList.remove('sad');
-      const r = await BVPASS.signIn(ei.value, pi.value);
-      if (r.error) { err.textContent = gt(r.error); err.hidden = false; art.classList.add('sad'); buzz('bad'); pi.select(); return; }
-      pass.set(r.pass);
+    const h1 = el('h1', 'si-h', v.body, o.why === 'host' ? gt('This game needs a host') : gt('Sign in to host games'));
+    const lead = el('p', 'si-p', v.body, o.why === 'host' ? gt('Every game needs one Blokvane member to start it. Sign in, and everyone else joins for free.') : gt('Blokvane members host the games. Everyone who joins their game plays for free, without signing in.'));
+    const main = el('div', '', v.body);
+    const again = () => { if (o.why === 'host' && o.again) btn(gt('The host is in now: try again'), { kind: 'ghost', full: true }, main, () => o.again()).style.marginTop = '10px'; };
+    const done = () => {
       art.classList.add('yay');
       buzz('ok'); confetti();
       toast(o.why === 'host' ? gt('Signed in: you\'re the host!') : gt('Signed in. You can host games now.'), 'ok');
       setTimeout(() => { if (o.after) o.after(); }, 700);
-    });
-    go.style.marginTop = '6px';
-    pi.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
-    ei.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pi.focus(); } });
-    if (o.why === 'host' && o.again) btn(gt('The host is in now: try again'), { kind: 'ghost', full: true }, v.body, () => o.again()).style.marginTop = '10px';
-    getCard(v.body);
-    setTimeout(() => { try { ei.focus(); } catch (e) {} }, 350);
+    };
+    // signed in, but this email has no Blokvane Pro and no running trial: how to get it, and "Check again" once it has
+    function noPlan(acct) {
+      main.textContent = '';
+      art.classList.remove('yay'); art.classList.add('sad');
+      h1.textContent = gt('This email can\'t host yet');
+      lead.textContent = gt('You\'re signed in as {email}. Hosting needs Blokvane Pro or a free trial for that email. Joining a game is always free.', { email: '\u2068' + acct.email + '\u2069' });
+      getCard(main, { title: gt('Get Blokvane to host'), text: gt('Get Blokvane on your computer (it\'s at blokvane.com) and start the free trial or Blokvane Pro with this same email. Then tap "Check again" here.'), url: SITE + 'pricing' });
+      const err = el('p', 'si-err', main); err.hidden = true;
+      const chk = btn(gt('Check again'), { kind: 'go', huge: true, full: true }, main, async () => {
+        chk.disabled = true; err.hidden = true;
+        const plan = await pass.check();
+        chk.disabled = false;
+        if (plan) { art.classList.remove('sad'); return done(); }
+        if (!pass.get()) return emailStep();
+        err.textContent = plan === null ? gt('Can\'t reach Blokvane right now. Check the internet and try again.') : gt('Not yet: this email still has no Blokvane Pro and no free trial.');
+        err.hidden = false; buzz('bad');
+      });
+      chk.style.marginTop = '10px';
+      btn(gt('Use another email'), { kind: 'ghost', full: true }, main, () => { pass.clear(); emailStep(); }).style.marginTop = '10px';
+      again();
+    }
+    // 1. the email
+    function emailStep(keep) {
+      main.textContent = '';
+      art.classList.remove('sad');
+      const card = el('div', 'card si-card', main);
+      const ei = input({ placeholder: 'you@example.com', max: 120 });
+      ei.type = 'email'; ei.autocomplete = 'email'; ei.inputMode = 'email'; ei.autocapitalize = 'none'; ei.spellcheck = false; ei.dir = 'ltr';
+      if (keep) ei.value = keep;
+      field(gt('Email'), ei, card);
+      el('p', 'muted small', card, gt('We email you a code to type here. No password needed.')).style.marginTop = '8px';
+      const err = el('p', 'si-err', card); err.hidden = true;
+      const go = btn(gt('Email me a code'), { kind: 'go', huge: true, full: true, icon: 'key' }, main, async () => {
+        if (go.disabled) return;
+        err.hidden = true; art.classList.remove('sad');
+        go.disabled = true;
+        const r = await BVPASS.start(ei.value);
+        go.disabled = false;
+        if (r.error) { err.textContent = gt(r.error); err.hidden = false; art.classList.add('sad'); buzz('bad'); ei.focus(); return; }
+        buzz('tap');
+        codeStep(r);
+      });
+      go.style.marginTop = '6px';
+      ei.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
+      again();
+      getCard(main);
+      setTimeout(() => { try { ei.focus(); } catch (e) {} }, 350);
+    }
+    // 2. the code from the email
+    function codeStep(st) {
+      main.textContent = '';
+      const card = el('div', 'card si-card', main);
+      el('p', 'si-sent', card, gt('We emailed a code to {email}. Type it here:', { email: '\u2068' + st.email + '\u2069' }));
+      const ci = input({ placeholder: '1234 5678', max: 9 });
+      ci.inputMode = 'numeric'; ci.autocomplete = 'one-time-code'; ci.dir = 'ltr'; ci.classList.add('si-code');
+      ci.setAttribute('aria-label', gt('The 8 numbers from the email'));
+      ci.oninput = () => { const t = ci.value.replace(/[^0-9]/g, '').slice(0, 8); const show = t.length > 4 ? t.slice(0, 4) + ' ' + t.slice(4) : t; if (ci.value !== show) ci.value = show; if (t.length === 8) go.click(); };
+      card.appendChild(ci);
+      el('p', 'muted small', card, gt('It can take a minute to arrive. Look in Spam too. The code works for 15 minutes.')).style.marginTop = '8px';
+      const err = el('p', 'si-err', card); err.hidden = true;
+      let busy = false;
+      const go = btn(gt('Sign in'), { kind: 'go', huge: true, full: true, icon: 'key' }, main, async () => {
+        if (busy) return;
+        err.hidden = true; art.classList.remove('sad');
+        busy = true; go.disabled = true;
+        const r = await BVPASS.finish(st.id, st.poll, ci.value, pass.device());
+        if (r.error) {
+          busy = false; go.disabled = false;
+          err.textContent = gt(r.error); err.hidden = false; art.classList.add('sad'); buzz('bad');
+          // (too many wrong codes, or the code ran out: a new one is the way on)
+          if (/^(too_many_tries|expired_code|claimed|not_found)$/.test(r.code || '')) ci.disabled = true; else ci.select();
+          return;
+        }
+        const acct = { email: r.email || st.email, session: r.session, plan: '', at: Date.now() };
+        pass.set(acct);
+        const plan = await pass.check();
+        busy = false; go.disabled = false;
+        // (the server can't say right now: in, and the game asks for the pass itself)
+        if (plan || plan === null) { if (plan === null) { acct.plan = 'pro'; pass.set(acct); } return done(); }
+        noPlan(pass.get() || acct);
+      });
+      go.style.marginTop = '6px';
+      ci.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
+      const r2 = el('div', 'grid2', main); r2.style.marginTop = '10px';
+      const re = btn(gt('Send a new code'), { kind: 'ghost' }, r2, async () => {
+        re.disabled = true;
+        const r = await BVPASS.start(st.email);
+        if (r.error) { re.disabled = false; err.textContent = gt(r.error); err.hidden = false; buzz('bad'); return; }
+        toast(gt('A new code is on its way.'), 'ok');
+        codeStep(r);
+      });
+      btn(gt('Use another email'), { kind: 'ghost' }, r2, () => emailStep(st.email));
+      again();
+      setTimeout(() => { try { ci.focus(); } catch (e) {} }, 350);
+    }
+    const a0 = pass.get();
+    if (a0 && !a0.plan) noPlan(a0); else emailStep();
   }
   // the first time a game's QR code opens in the browser: here, or the Games app?
   function gamesChoice() {
@@ -980,9 +1106,15 @@
     const tile = (ic, t, sub, fn) => { const b = el('button', 'gm-tile', tiles); b.type = 'button'; const i = el('span', 'sw-ic', b); i.innerHTML = SW_ICONS[ic]; el('b', '', b, t); el('small', '', b, sub); b.onclick = () => { buzz('tap'); fn(); }; return b; };
     tile('qr', gt('Scan the QR code'), gt('Point this phone at the TV'), () => scanScreen());
     tile('keys', gt('Type the code'), gt('The 6 letters under the QR code'), async () => (await need('party'))('code', []));
-    const p = pass.get();
+    const acct = pass.get(), p = pass.host();
     const c = el('div', 'card gm-host', v.body);
-    if (p) {
+    if (acct && !p) {
+      // (signed in, but this email has no plan yet)
+      el('h2', '', c, gt('This email can\'t host yet'));
+      el('p', 'muted', c, gt('You\'re signed in as {email}. Hosting needs Blokvane Pro or a free trial for that email. Joining a game is always free.', { email: '⁨' + acct.email + '⁩' }));
+      btn(gt('How to host'), { kind: 'go', full: true, icon: 'key' }, c, () => signInScreen({ after: gamesHome, back: gamesHome })).style.marginTop = '10px';
+      btn(gt('Sign out'), { kind: 'ghost', full: true }, c, () => { pass.clear(); toast(gt('Signed out.')); gamesHome(); }).style.marginTop = '8px';
+    } else if (p) {
       el('h2', '', c, '⭐ ' + gt('You can host games'));
       const who = el('p', 'muted', c, gt('Signed in as {email}. Everyone who joins your games plays for free.', { email: '⁨' + p.email + '⁩' }));
       void who;

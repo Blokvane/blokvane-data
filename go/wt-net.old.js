@@ -64,6 +64,7 @@ var BVWT_NET = (() => {
   const RETRY = [1e3, 3e3, 8e3, 2e4, 45e3, 9e4, 18e4];
   const MAX_BAD = 6 * 36e5;
   const MAX_OWN = 8;
+  const HOME_FRESH = 6e4;
   const PER_SENDER = 20, PER_SENDER_BURST = 40;
   const CHECKS = 40, CHECKS_BURST = 80;
   const NEW = 40, NEW_BURST = 80;
@@ -103,12 +104,33 @@ var BVWT_NET = (() => {
     const WS = o.WebSocket || WebSocket;
     const nostrList = C.canSign === false ? [] : (o.relays && o.relays.nostr || NOSTR).filter(okUrl);
     const mqttList = (o.relays && o.relays.mqtt || MQTT).filter((m) => m && okUrl(m.url));
+    const homeList = [...new Set(((o.relays ? o.relays.home : o.home) || []).filter((u) => typeof u === "string" && okUrl(u)))].slice(0, 2);
     const conns = /* @__PURE__ */ new Map();
     const rooms = /* @__PURE__ */ new Map();
     const health = /* @__PURE__ */ new Map();
     const pending = /* @__PURE__ */ new Map();
     const seen = /* @__PURE__ */ new Map();
     let signer = null, timer = 0, inbox = Promise.resolve();
+    const outbox = [];
+    const OUT_KEEP = 8e3, OUT_MAX = 40;
+    let flushing = false;
+    function flush() {
+      return __async(this, null, function* () {
+        if (flushing || !outbox.length) return;
+        flushing = true;
+        try {
+          for (const m of outbox.splice(0)) {
+            if (now() - m.at > OUT_KEEP || !rooms.has(m.topic)) continue;
+            if (!(yield publish(m.topic, m.bytes, m.at))) break;
+          }
+        } catch (e) {
+        }
+        flushing = false;
+      });
+    }
+    const opened = () => {
+      if (outbox.length) setTimeout(flush, 25);
+    };
     const echoWait = o.echoWait || ECHO_WAIT, perRoom = o.perRoom || NOSTR_PER_ROOM;
     const changed = () => {
       try {
@@ -139,7 +161,7 @@ var BVWT_NET = (() => {
       h.strikes++;
       h.at = now();
       if (h.strikes >= 5) h.ok = false;
-      h.badUntil = now() + (h.ok ? Math.min(30 * 6e4, 12e4 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 6e5 * 3 ** Math.min(h.strikes - 1, 4)));
+      h.badUntil = now() + (homeList.includes(url) ? Math.min(5 * 6e4, 2e4 * 2 ** Math.min(h.strikes - 1, 4)) : h.ok ? Math.min(30 * 6e4, 12e4 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 6e5 * 3 ** Math.min(h.strikes - 1, 4)));
       h.why = why;
       health.set(url, h);
       remember();
@@ -256,6 +278,7 @@ var BVWT_NET = (() => {
           c.tries = 0;
           for (const t of c.topics) ws.send(req(t));
           changed();
+          opened();
         };
         ws.onclose = ws.onerror = () => {
           if (c.state !== "closed") c.failed();
@@ -297,6 +320,87 @@ var BVWT_NET = (() => {
           return true;
         }
         return false;
+      };
+      return c;
+    }
+    function homeConn(url) {
+      const c = base(url, "home");
+      const say = (m) => {
+        try {
+          if (c.ws && c.ws.readyState === 1) c.ws.send(JSON.stringify(m));
+        } catch (e) {
+        }
+      };
+      c.open = () => {
+        c.state = "connecting";
+        let ws;
+        try {
+          ws = c.ws = new WS(url);
+          ws.binaryType = "arraybuffer";
+        } catch (e) {
+          c.failed();
+          return;
+        }
+        c.t1 = setTimeout(() => {
+          if (c.state === "connecting") c.failed();
+        }, 1e4);
+        ws.onclose = ws.onerror = () => {
+          if (c.state !== "closed") c.failed();
+        };
+        ws.onmessage = (ev) => {
+          if (typeof ev.data === "string") {
+            let m;
+            try {
+              m = JSON.parse(ev.data);
+            } catch (e) {
+              return;
+            }
+            if (!m || typeof m !== "object") return;
+            if (m.t === "hi" && c.state === "connecting") {
+              clearTimeout(c.t1);
+              c.state = "open";
+              c.opened = now();
+              c.tries = 0;
+              c.lastPong = now();
+              if (c.topics.size) say({ t: "sub", topics: [...c.topics] });
+              c.t2 = setInterval(() => {
+                if (now() - c.lastPong > 7e4) {
+                  c.failed();
+                  return;
+                }
+                say({ t: "ping" });
+              }, 25e3);
+              changed();
+              opened();
+            } else if (m.t === "pong") c.lastPong = now();
+            else if (m.t === "slow") c.slowUntil = now() + 1500;
+            return;
+          }
+          if (!(ev.data instanceof ArrayBuffer) || c.state !== "open") return;
+          const b = new Uint8Array(ev.data);
+          if (b.length < 21 + 29 || b[0] !== 1) return;
+          const t = C.hex(b.subarray(1, 21));
+          if (c.topics.has(t)) deliver(t, b.slice(21), url);
+        };
+      };
+      c.sub = (t) => {
+        if (c.state === "open") say({ t: "sub", topics: [t] });
+      };
+      c.unsub = (t) => {
+        if (c.state === "open") say({ t: "unsub", topics: [t] });
+      };
+      c.publish = (t, bytes) => {
+        if (c.state !== "open" || c.ws.readyState !== 1 || now() < c.slowUntil) return false;
+        const f = new Uint8Array(21 + bytes.length);
+        f[0] = 1;
+        f.set(C.unhex(t), 1);
+        f.set(bytes, 21);
+        try {
+          c.ws.send(f);
+        } catch (e) {
+          return false;
+        }
+        return true;
       };
       return c;
     }
@@ -365,6 +469,7 @@ var BVWT_NET = (() => {
                 }
               }, 25e3);
               changed();
+              opened();
             } else if (p.type === 3) {
               const { topic, payload } = C.MQ.publishParts(p.flags, p.body);
               if (topic.startsWith("bvwatch/")) {
@@ -418,6 +523,9 @@ var BVWT_NET = (() => {
           (want.get(url) || want.set(url, /* @__PURE__ */ new Set()).get(url)).add(r.topic);
         }
         for (const m of mqttList) if (!isBad(m.url)) (want.get(m.url) || want.set(m.url, /* @__PURE__ */ new Set()).get(m.url)).add(r.topic);
+        if (r.home) {
+          for (const u of homeList) if (!isBad(u)) (want.get(u) || want.set(u, /* @__PURE__ */ new Set()).get(u)).add(r.topic);
+        }
       }
       return want;
     }
@@ -443,7 +551,7 @@ var BVWT_NET = (() => {
       for (const [url, ts] of want) {
         if (conns.has(url)) continue;
         const cfg = mqttList.find((m) => m.url === url);
-        const c = cfg ? mqttConn(cfg) : nostrConn(url);
+        const c = homeList.includes(url) ? homeConn(url) : cfg ? mqttConn(cfg) : nostrConn(url);
         c.topics = new Set(ts);
         conns.set(url, c);
         c.open();
@@ -484,19 +592,24 @@ var BVWT_NET = (() => {
         else break;
       }
     }
-    function publish(topic, bytes) {
+    function publish(topic, bytes, kept) {
       return __async(this, null, function* () {
         if (!rooms.has(topic)) return 0;
         const id = C.hex(yield C.sha256(bytes));
         const targets = [...conns.values()].filter((c) => c.state === "open" && c.topics.has(topic));
         const p = { at: now(), urls: /* @__PURE__ */ new Set() };
         pending.set(id, p);
-        let sent = 0;
+        let sent = 0, home = false;
+        for (const c of targets) if (c.type === "home" && c.publish(topic, bytes)) {
+          p.urls.add(c.url);
+          sent++;
+          if (!c.misses && c.lastEcho > p.at - HOME_FRESH) home = true;
+        }
         for (const c of targets) if (c.type === "mqtt" && c.publish(topic, bytes)) {
           p.urls.add(c.url);
           sent++;
         }
-        const ns = targets.filter((c) => c.type === "nostr");
+        const ns = home ? [] : targets.filter((c) => c.type === "nostr");
         if (ns.length) {
           try {
             signer = signer || C.newSigner();
@@ -508,12 +621,25 @@ var BVWT_NET = (() => {
           } catch (e) {
           }
         }
+        if (!sent) {
+          pending.delete(id);
+          outbox.push({ topic, bytes, at: kept || now() });
+          if (outbox.length > OUT_MAX) outbox.shift();
+        }
         return sent;
       });
     }
-    function join(topic) {
-      if (!/^[0-9a-f]{40}$/.test(topic) || rooms.has(topic)) return;
-      rooms.set(topic, { topic, order: shuffled(nostrList, topic) });
+    function join(topic, opt) {
+      if (!/^[0-9a-f]{40}$/.test(topic)) return;
+      const home = !!(opt && opt.home), old = rooms.get(topic);
+      if (old) {
+        if (home && !old.home) {
+          old.home = true;
+          rebalance();
+        }
+        return;
+      }
+      rooms.set(topic, { topic, order: shuffled(nostrList, topic), home });
       rebalance();
     }
     function leave(topic) {
@@ -540,6 +666,7 @@ var BVWT_NET = (() => {
       for (const c of conns.values()) c.close();
       conns.clear();
       rooms.clear();
+      outbox.length = 0;
       if (timer) clearInterval(timer);
       timer = 0;
     }

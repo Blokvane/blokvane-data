@@ -155,8 +155,15 @@ var BVPLAYC = (() => {
   const EDGE_A = "(^|" + EDGE + ")", EDGE_B = "($|" + EDGE + ")";
   const WORDS = BAD.map((w) => {
     const a = norm(w), b = once(a);
-    return { a: new RegExp(EDGE_A + esc(a) + EDGE_B, FL), b: new RegExp(EDGE_A + esc(b) + EDGE_B, FL), flat: /^[a-z ]+$/.test(b) ? b.replace(/\s+/g, "") : "" };
+    return { a, b, one: !RX_NOT_LM.test(a) && !RX_NOT_LM.test(b), flat: /^[a-z ]+$/.test(b) ? b.replace(/\s+/g, "") : "" };
   });
+  const ONE = /* @__PURE__ */ new Set();
+  for (const w of WORDS) if (w.one) {
+    ONE.add(w.a);
+    ONE.add(w.b);
+  }
+  const MANY = WORDS.filter((w) => !w.one).map((w) => ({ a: new RegExp(EDGE_A + esc(w.a) + EDGE_B, FL), b: new RegExp(EDGE_A + esc(w.b) + EDGE_B, FL) }));
+  const FLAT = WORDS.filter((w) => w.flat.length >= 5).map((w) => w.flat);
   function bad(s) {
     const t = norm(s);
     const forms = [t, once(t)];
@@ -170,7 +177,9 @@ var BVPLAYC = (() => {
     }
     const flat = once(t.replace(/[^a-z]+/g, ""));
     if (BAD_ZH.some((w) => t.replace(/\s+/g, "").includes(w))) return true;
-    return WORDS.some((w) => forms.some((f2) => w.a.test(f2) || w.b.test(f2)) || w.flat.length >= 5 && flat.includes(w.flat));
+    for (const f2 of forms) for (const k of f2.split(RX_NOT_LM)) if (k && ONE.has(k)) return true;
+    if (MANY.some((w) => forms.some((f2) => w.a.test(f2) || w.b.test(f2)))) return true;
+    return FLAT.some((w) => flat.includes(w));
   }
   const clean = (v, max) => String(v == null ? "" : v).replace(/[\u0000-\u001f\u007f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, max || 40);
   const safe = (v, max, fallback) => {
@@ -231,7 +240,18 @@ var BVPLAYC = (() => {
   const COLORS = ["#ff5f57", "#3d8bff", "#ffbf3c", "#2fd59a", "#a46bff", "#ff7ac8", "#38d3e6", "#ff9a3c", "#8bd450", "#f5f5f5", "#c084fc", "#fb7185"];
   const TEAMS = [["red", "Red", "#ff5f57"], ["blue", "Blue", "#3d8bff"], ["gold", "Gold", "#ffbf3c"], ["green", "Green", "#2fd59a"]];
   const AVATARS = ["boo:hi", "boo:laugh", "boo:cool", "boo:love", "boo:wow", "boo:party", "boo:hero", "boo:legend", "boo:peek", "boo:mind", "boo:scary", "boo:boo"];
-  const booUri = (id) => typeof BVWATCH_BOO !== "undefined" && BVWATCH_BOO.get(id) ? BVWATCH_BOO.uri(id) : "";
+  let stillOn = false;
+  const stillUris = /* @__PURE__ */ new Map();
+  const still = (on) => {
+    stillOn = !!on;
+  };
+  const booUri = (id) => {
+    const b = typeof BVWATCH_BOO !== "undefined" && BVWATCH_BOO.get(id);
+    if (!b) return "";
+    if (!stillOn) return BVWATCH_BOO.uri(id);
+    if (!stillUris.has(id)) stillUris.set(id, "data:image/svg+xml;charset=utf-8," + encodeURIComponent(String(b.svg).replace(/<\/svg>\s*$/, "<style>*{animation:none!important}</style></svg>")));
+    return stillUris.get(id);
+  };
   const STR = {
     join: "Join the game",
     name: "Your name",
@@ -252,7 +272,6 @@ var BVPLAYC = (() => {
     otherGame: "Pick another game",
     you: "You",
     points: "points",
-    place: "place",
     send: "Send",
     typeHere: "Type here",
     skip: "Skip",
@@ -284,9 +303,7 @@ var BVPLAYC = (() => {
     timeUp: "Time's up!",
     theRight: "The right answer:",
     yourPlace: "Your place",
-    of: "of",
     first: "You were the fastest!",
-    youPicked: "You picked",
     red: "Red",
     blue: "Blue",
     green: "Green",
@@ -298,7 +315,6 @@ var BVPLAYC = (() => {
     keepPlaying: "Keep playing",
     hostAgain: "The host can play again or pick another game.",
     mine: "That one is yours",
-    imposterSays: "Category:",
     helpers1: "Each helper works once."
   };
   const cache = /* @__PURE__ */ new Map();
@@ -428,7 +444,7 @@ var BVPLAYC = (() => {
       else cv.remove();
     })(t0);
   }
-  return { bad, clean, safe, name, rng, shuffle, pick, km, close, LETTERS, SHAPES, COLORS, TEAMS, AVATARS, booUri, STR, useLang, tr, f, trAll, RTL, sfx, mute, speak, confetti, norm, get lang() {
+  return { bad, clean, safe, name, rng, shuffle, pick, km, close, LETTERS, SHAPES, COLORS, TEAMS, AVATARS, booUri, still, STR, useLang, tr, f, trAll, RTL, sfx, mute, speak, confetti, norm, get lang() {
     return tLang;
   } };
 })();

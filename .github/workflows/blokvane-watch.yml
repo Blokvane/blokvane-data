@@ -1,8 +1,9 @@
 # Blokvane's watch robot: every 15 minutes it opens the website, the server's health check, the phone, game and TV
-# pages and the two short addresses, from outside, the way a visitor would. If one of them does not answer as it
-# should after 3 tries, this run ends with an error and GitHub emails you (Settings, Notifications, Actions: failed
-# workflows only). Render sends its own email when a deploy or the server itself fails; this one also catches what
-# Render cannot see: the domain, the security certificates and the pages on GitHub.
+# pages, the two short addresses and the two things party games ask the server for (the room of a network, and the
+# relay that carries a game's sealed messages), from outside, the way a visitor would. If one of them does not answer
+# as it should after 3 tries, this run ends with an error and GitHub emails you (Settings, Notifications, Actions:
+# failed workflows only). Render sends its own email when a deploy or the server itself fails; this one also catches
+# what Render cannot see: the domain, the security certificates and the pages on GitHub.
 # Nothing is changed by it and it needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
 name: Blokvane watch
 
@@ -50,7 +51,21 @@ jobs:
             echo "::error::$1 should open $2, but it leads to '$to' (3 tries)"
             fail=1
           }
+          # relay <address>: the party games' relay takes a connection from Blokvane's pages (its answer starts with 101)
+          relay() {
+            for try in 1 2 3; do
+              first=$(curl -sS --http1.1 -i -N --max-time 8 -H 'Connection: Upgrade' -H 'Upgrade: websocket' -H 'Sec-WebSocket-Version: 13' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==' -H 'Origin: https://app.blokvane.com' "$1" 2>/dev/null | head -n 1 || true)
+              case "$first" in
+                *" 101"*) echo "ok    $1 takes a connection"; return 0 ;;
+              esac
+              [ "$try" = 3 ] || sleep 20
+            done
+            echo "::error::$1 did not take a connection (3 tries)"
+            fail=1
+          }
           check https://blokvane.com/v1/health '"ok":true'
+          check https://blokvane.com/v1/near '"room"'
+          relay https://blokvane.com/relay
           check https://blokvane.com/ 'browse without ads'
           check https://www.blokvane.com/v1/health '"ok":true'
           check https://app.blokvane.com/play/ 'Blokvane party games'

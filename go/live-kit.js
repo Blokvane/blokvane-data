@@ -1,8 +1,10 @@
-// Blokvane Live: rooms on the free public relays, shared by everything that connects two or more devices (your phone
-// and your computer, your computers, friends, TV screens and party games). There is no Blokvane server in between:
+// Blokvane Live: rooms shared by everything that connects two or more devices (your phone and your computer, your
+// computers, friends, TV screens and party games). Nobody in between can read a word, Blokvane included:
 // - A room is made from a random secret (in a QR code or a link, after the # so it is never sent to any website).
 //   Every message is sealed with a key made from that secret and signed with the sender's own key (lib/wt-core.js),
-//   and goes out through several relays at once (lib/wt-net.js). The relays only ever see sealed bytes.
+//   and goes out through several free public relays at once (lib/wt-net.js). A party game also uses Blokvane's own
+//   relay, and uses it first, because it is close and quick (a room asks for it with home: true; no other room ever
+//   touches it). Any relay only ever sees sealed bytes, never the secret.
 // - Who is in the room: everyone says hello now and then (with a name and what they are), and is gone after a while
 //   without a word.
 // - Long messages are cut in parts and put back together; a message for one device only can be sealed for it alone
@@ -22,6 +24,13 @@ var BVLIVE = (() => {
   const GO = 'https://app.blokvane.com/go/';
   const PLAY = 'https://app.blokvane.com/play/';
   const TV = 'https://app.blokvane.com/tv/';
+  // Blokvane's own server: its relay for party games, and the few things a page may ask it (the room of this network
+  // for "TVs near you"; signing in to host a game is in go/pass.js). A test on this computer may point somewhere else
+  // (window.BV_TEST, believed only on this computer's own address, so no real page can ever be pointed away).
+  const LOCAL = typeof location !== 'undefined' && /^(127\.0\.0\.1|localhost)$/.test(location.hostname || '');
+  const TEST = LOCAL && typeof window !== 'undefined' && window.BV_TEST && typeof window.BV_TEST === 'object' ? window.BV_TEST : null;
+  const SITE = TEST && typeof TEST.api === 'string' ? TEST.api.replace(/\/$/, '') : 'https://blokvane.com';
+  const HOME = ['wss://blokvane.com/relay'];
   const PART = 4200;                 // bytes of a long message in each part (sealed, it stays under the 6 KB limit)
   const MAX_LONG = 96 * 1024;        // the longest message the relays carry (anything bigger goes through a pipe)
   const HELLO_EVERY = 25000, GONE_AFTER = 75000;
@@ -72,7 +81,9 @@ var BVLIVE = (() => {
     shared = NET.create({
       onMessage: (topic, bytes) => { const h = handlers.get(topic); if (h) { try { h(bytes); } catch (e) {} } },
       onChange: () => { for (const fn of watchers) { try { fn(); } catch (e) {} } },
-      memory: o.memory || localMemory('bvlive:relays'), relays: o.relays || undefined
+      // (Blokvane's own relay, for the rooms that ask for it, unless a relay list of one's own says otherwise: a
+      // test's list names none)
+      memory: o.memory || localMemory('bvlive:relays'), relays: o.relays || undefined, home: HOME
     });
     return shared;
   }
@@ -109,7 +120,8 @@ var BVLIVE = (() => {
   // o: { secret (bytes or base64url), label (keeps uses apart), me (from BVWT_CORE.newMember) or jwk, name, role,
   //      info (a small object everyone sees), owner (an id that is always let in: the host), open (true: anyone with the
   //      secret may talk; false: only the owner and the ids allow(id) says yes to), allow(id), quiet (no hellos),
-  //      onMsg(m, from), onPeers(peers), onPipe(pipe), memory }
+  //      home (true: a party game's room, which also goes through Blokvane's own relay), onMsg(m, from),
+  //      onPeers(peers), onPipe(pipe), memory }
   async function room(o) {
     const secret = typeof o.secret === 'string' ? C.unb64url(o.secret) : o.secret;
     const keys = await C.secretKeys(secret, o.label || 'bvlive');
@@ -338,7 +350,8 @@ var BVLIVE = (() => {
           if (st) {
             for (const tr of st.getTracks()) {
               const tc = pc.getTransceivers().find(t => t.receiver && t.receiver.track && t.receiver.track.kind === tr.kind && !t.sender.track);
-              if (tc) { tc.direction = 'sendonly'; await tc.sender.replaceTrack(tr); tc.sender.setStreams && tc.sender.setStreams(st); }
+              // (an offer that sends too, like a call, gets both ways; one that only receives, like a TV, gets this side's)
+              if (tc) { tc.direction = sendsToo(pc, tc) ? 'sendrecv' : 'sendonly'; await tc.sender.replaceTrack(tr); tc.sender.setStreams && tc.sender.setStreams(st); }
             }
           }
         }
@@ -349,6 +362,12 @@ var BVLIVE = (() => {
       } catch (e) { P.close(); return; }
       P.timer = setTimeout(() => { if (!P.open()) P.fail('timeout'); }, 25000);
       P.ready.then(() => { try { R.onPipe(P); } catch (e) {} }, () => {});
+    }
+    // does the other side's offer send on this line too (a=sendrecv or a=sendonly in its part of the offer)?
+    function sendsToo(pc, tc) {
+      const sdp = (pc.remoteDescription && pc.remoteDescription.sdp) || '';
+      const part = sdp.split(/\r?\nm=/).find(x => tc.mid != null && new RegExp('\\r?\\na=mid:' + String(tc.mid).replace(/[^\w-]/g, '') + '(\\r|\\n|$)').test('\n' + x));
+      return !!part && /\r?\na=(sendrecv|sendonly)/.test('\n' + part);
     }
     function makePipe(to, pc, sid) {
       let ch = null, resolve, reject;
@@ -480,6 +499,15 @@ var BVLIVE = (() => {
           return true;
         },
         del(key) { return L.set(key, null); },
+        // what this device kept from last time (entries as all() gives them), without sending anything
+        seed(list) {
+          let any = false;
+          for (const x of Array.isArray(list) ? list : []) if (Array.isArray(x) && apply(x[0], x[1], +x[2], typeof x[3] === 'string' && x[3] ? x[3] : me.id)) any = true;
+          if (any) fire();
+          return any;
+        },
+        // every entry, the removed ones too (to keep, and seed() next time)
+        all: () => [...map.entries()].map(([k, x]) => [k, x.v, x.at, x.by]),
         // everything at once (a device that just came in), in parts of 40 entries
         async push(to) {
           const all = [...map.entries()];
@@ -507,9 +535,11 @@ var BVLIVE = (() => {
       return L;
     }
 
-    net.join(topic);
+    net.join(topic, { home: o.home === true });
     openRooms.add(R);
-    // (the relays need a moment to connect: hello right after, then now and then)
+    // (hello at once: it waits in the kit until the first relay is connected and goes out that very moment; then again
+    // a little later for the relays that take longer, and now and then)
+    hello(true);
     setTimeout(() => hello(true), 1000);
     setTimeout(() => hello(true), 4000);
     helloT = setInterval(() => hello(false), HELLO_EVERY);
@@ -538,11 +568,15 @@ var BVLIVE = (() => {
   }
 
   // ---------- TVs nearby: a phone on the same Wi-Fi as a TV finds it without typing a code ----------
-  // The devices on one home network go out to the internet with the same public address (IPv4). Each one asks the free
-  // STUN servers what it is (the same question WebRTC asks to connect two devices) and makes a room from it: the address
-  // itself never leaves the device, only a hash of it does (the room's sealed topic). A TV tells that room what it
-  // shows (the game and its code); a phone lists the TVs it hears. On another network (mobile data, say) a phone simply
-  // finds none, and types the code.
+  // The devices on one home network go out to the internet with the same public address. Two ways lead every one of
+  // them to the same room, and a device uses both, so they meet when either works:
+  // - Blokvane's server answers with the room of the network a request comes from (/v1/near). The room is made from the
+  //   address with a secret only the server has, so it says nothing about the address, and the server keeps nothing.
+  // - Each device asks the free STUN servers what its public address (IPv4) is, the same question WebRTC asks to connect
+  //   two devices, and makes a room from it: the address itself never leaves the device, only a hash of it does.
+  // A TV says in those rooms what it shows (its name, its game, whether it has a host), never its join code: on a
+  // network shared with strangers (a hotel, a dorm, some phone companies) they would read it too. A phone that wants in
+  // knocks (knock below), and the TV decides who gets the link.
   function publicIp(ms) {
     return new Promise(res => {
       let pc = null, done = false;
@@ -561,12 +595,64 @@ var BVLIVE = (() => {
       } catch (e) { fin(''); }
     });
   }
-  // o: { role ('tv' or 'phone'), name, info, onPeers(peers) }: the room, or null when this network has no address to share
+  // the room of this network, from Blokvane's server: 16 bytes, or null
+  async function serverNear(ms) {
+    if (typeof fetch !== 'function') return null;
+    try {
+      const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+      const t = setTimeout(() => { if (ctl) ctl.abort(); }, ms || 4000);
+      const r = await fetch(SITE + '/v1/near', { cache: 'no-store', credentials: 'omit', signal: ctl ? ctl.signal : undefined });
+      clearTimeout(t);
+      if (!r.ok) return null;
+      const j = await r.json();
+      if (!j || typeof j.room !== 'string' || !/^[A-Za-z0-9_-]{22}$/.test(j.room)) return null;
+      return C.unb64url(j.room);
+    } catch (e) { return null; }
+  }
+  // o: { role ('tv' or 'phone'), name, info, onPeers(peers), onMsg(m, peer) }: the rooms of this network as one (the
+  // same device in both counts once), or null when this network has no address to share. send, box and setInfo go to
+  // every room; a message is handed over once.
   async function nearby(o = {}) {
-    const ip = await publicIp(o.wait || 4500);
-    if (!ip) return null;
-    const secret = new Uint8Array(await subtle.digest('SHA-256', te.encode('blokvane-nearby-v1|' + ip))).slice(0, 16);
-    return room({ secret, label: 'bvnear', name: o.name || '', role: o.role || 'phone', info: o.info || null, open: true, memory: o.memory, onPeers: o.onPeers || null });
+    const me = await C.newMember();
+    const made = [];
+    let closed = false, t = 0;
+    const seenMsg = new Map();
+    const merged = () => { const by = new Map(); for (const r of made) for (const p of r.list()) { const old = by.get(p.id); if (!old || p.at > old.at) by.set(p.id, p); } return [...by.values()]; };
+    const tell = () => { clearTimeout(t); t = setTimeout(() => { if (!closed && o.onPeers) { try { o.onPeers(merged()); } catch (e) {} } }, 80); };
+    const onMsg = (m, p) => {
+      if (!o.onMsg || closed) return;
+      // (the same message through both rooms: once. i: the sender's own name for it, n: which try it is)
+      const key = typeof m.i === 'string' && m.i ? m.f + '|' + m.k + '|' + m.i + '|' + (m.n || 0) : m.f + '|' + m.k + '|' + m.at;
+      if (seenMsg.has(key)) return;
+      seenMsg.set(key, 1);
+      if (seenMsg.size > 400) { for (const k of [...seenMsg.keys()].slice(0, 200)) seenMsg.delete(k); }
+      try { o.onMsg(m, p); } catch (e) {}
+    };
+    const open = async secret => {
+      if (!secret || closed) return;
+      const r = await room({ secret, label: 'bvnear', me, name: o.name || '', role: o.role || 'phone', info: o.info || null, open: true, home: true, memory: o.memory, onPeers: tell, onMsg });
+      if (closed) { r.close(); return; }
+      made.push(r);
+      tell();
+    };
+    const ways = [
+      serverNear(o.wait || 4000).then(open).catch(() => {}),
+      (typeof RTCPeerConnection === 'function' ? publicIp(o.wait || 4500) : Promise.resolve('')).then(async ip => { if (ip) await open(new Uint8Array(await subtle.digest('SHA-256', te.encode('blokvane-nearby-v1|' + ip))).slice(0, 16)); }).catch(() => {})
+    ];
+    // (ready as soon as one way has a room; the other joins in when it comes)
+    await Promise.race([Promise.all(ways), new Promise(res => { const iv = setInterval(() => { if (made.length || closed) { clearInterval(iv); res(); } }, 60); setTimeout(() => { clearInterval(iv); res(); }, (o.wait || 4500) + 600); })]);
+    if (!made.length) { await Promise.all(ways); if (!made.length) { closed = true; return null; } }
+    const each = fn => { let any = false; for (const r of made) { try { fn(r); any = true; } catch (e) {} } return any; };
+    return {
+      id: me.id, me,
+      list: merged,
+      setInfo(info) { o.info = info; each(r => r.setInfo(info)); },
+      // (to one device: through every room it is in; boxed, so only that device can open it)
+      async box(to, m) { let sent = 0, err = null; for (const r of made) { if (!r.peer(to)) continue; try { await r.box(to, m); sent++; } catch (e) { err = e; } } if (!sent) throw err || new Error('not here'); return sent; },
+      send(m, to) { return Promise.all(made.map(r => (to && !r.peer(to) ? 0 : r.send(Object.assign({}, m), to).catch(() => 0)))); },
+      hello() { each(r => r.hello(true)); },
+      close() { closed = true; clearTimeout(t); each(r => r.close()); }
+    };
   }
 
   // ---------- small things many features need ----------
@@ -596,7 +682,39 @@ var BVLIVE = (() => {
   const okPicture = s => typeof s === 'string' && s.length < 90000 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
   const sizeText = n => n < 1024 ? n + ' bytes' : n < 1048576 ? Math.round(n / 1024) + ' KB' : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + ' MB';
 
-  return { ICE, GO, PLAY, TV, newSecret, shortCode, normShort, codeSecret, link, parse, relays, room, nearby, publicIp, shrink, fit, okPicture, okId, clean, sizeText,
+  // ---------- a page on a TV, from a computer's Chrome or Edge: the browser's own "Cast" window ----------
+  // The browser lists the Chromecasts, Google TVs and second screens (a TV on an HDMI cable, say) it can see, and shows
+  // the page on the one the person picks, while this page stays free for something else, like playing. Only the
+  // browser knows those screens: this page never sees their names or addresses, just whether there are any.
+  // (Phones can't do this for an ordinary page: there the browser only casts apps made for it.)
+  const canCast = () => { try { return typeof PresentationRequest === 'function' && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || ''); } catch (e) { return false; } };
+  function castReq(url) { try { return canCast() && /^https:\/\//.test(String(url)) ? new PresentationRequest([String(url)]) : null; } catch (e) { return null; } }
+  // is a screen around right now? fn(true or false) now and whenever that changes; gives back a function that stops it.
+  // (A browser that can't say counts as "maybe": true, so the button still shows.)
+  function castWatch(url, fn) {
+    let off = false, av = null;
+    const tell = v => { if (!off) { try { fn(!!v); } catch (e) {} } };
+    const r = castReq(url);
+    if (!r) { tell(false); return () => { off = true; }; }
+    try {
+      r.getAvailability().then(a => { if (off) return; av = a; tell(a.value); a.onchange = () => tell(a.value); }, () => tell(true));
+    } catch (e) { tell(true); }
+    return () => { off = true; if (av) av.onchange = null; };
+  }
+  // shows url on the screen the person picks (call it from a click): the connection, or null when they closed the
+  // window without picking. Throws when no screen was found, in plain words.
+  async function cast(url) {
+    const r = castReq(url);
+    if (!r) throw new Error('This browser can\'t cast. Try Chrome or Edge on a computer.');
+    try { return await r.start(); }
+    catch (e) {
+      if (e && (e.name === 'NotAllowedError' || e.name === 'AbortError')) return null;
+      if (e && e.name === 'NotFoundError') throw new Error('No TV or second screen found. Check that it is on, and on the same Wi-Fi as this computer.');
+      throw new Error('Casting didn\'t start. Try again.');
+    }
+  }
+
+  return { ICE, GO, PLAY, TV, SITE, HOME, newSecret, shortCode, normShort, codeSecret, link, parse, relays, room, nearby, publicIp, canCast, castWatch, cast, shrink, fit, okPicture, okId, clean, sizeText,
     onRelays: fn => { watchers.add(fn); return () => watchers.delete(fn); }, localMemory, MAX_LONG };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = BVLIVE;

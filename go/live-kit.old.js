@@ -29,6 +29,10 @@ var BVLIVE = (() => {
   const GO = "https://app.blokvane.com/go/";
   const PLAY = "https://app.blokvane.com/play/";
   const TV = "https://app.blokvane.com/tv/";
+  const LOCAL = typeof location !== "undefined" && /^(127\.0\.0\.1|localhost)$/.test(location.hostname || "");
+  const TEST = LOCAL && typeof window !== "undefined" && window.BV_TEST && typeof window.BV_TEST === "object" ? window.BV_TEST : null;
+  const SITE = TEST && typeof TEST.api === "string" ? TEST.api.replace(/\/$/, "") : "https://blokvane.com";
+  const HOME = ["wss://blokvane.com/relay"];
   const PART = 4200;
   const MAX_LONG = 96 * 1024;
   const HELLO_EVERY = 25e3, GONE_AFTER = 75e3;
@@ -105,8 +109,11 @@ var BVLIVE = (() => {
           }
         }
       },
+      // (Blokvane's own relay, for the rooms that ask for it, unless a relay list of one's own says otherwise: a
+      // test's list names none)
       memory: o.memory || localMemory("bvlive:relays"),
-      relays: o.relays || void 0
+      relays: o.relays || void 0,
+      home: HOME
     });
     return shared;
   }
@@ -498,7 +505,7 @@ var BVLIVE = (() => {
                 for (const tr of st.getTracks()) {
                   const tc = pc.getTransceivers().find((t) => t.receiver && t.receiver.track && t.receiver.track.kind === tr.kind && !t.sender.track);
                   if (tc) {
-                    tc.direction = "sendonly";
+                    tc.direction = sendsToo(pc, tc) ? "sendrecv" : "sendonly";
                     yield tc.sender.replaceTrack(tr);
                     tc.sender.setStreams && tc.sender.setStreams(st);
                   }
@@ -524,6 +531,11 @@ var BVLIVE = (() => {
           }, () => {
           });
         });
+      }
+      function sendsToo(pc, tc) {
+        const sdp = pc.remoteDescription && pc.remoteDescription.sdp || "";
+        const part2 = sdp.split(/\r?\nm=/).find((x) => tc.mid != null && new RegExp("\\r?\\na=mid:" + String(tc.mid).replace(/[^\w-]/g, "") + "(\\r|\\n|$)").test("\n" + x));
+        return !!part2 && /\r?\na=(sendrecv|sendonly)/.test("\n" + part2);
       }
       function makePipe(to, pc, sid) {
         let ch = null, resolve, reject;
@@ -761,6 +773,15 @@ var BVLIVE = (() => {
           del(key) {
             return L.set(key, null);
           },
+          // what this device kept from last time (entries as all() gives them), without sending anything
+          seed(list2) {
+            let any = false;
+            for (const x of Array.isArray(list2) ? list2 : []) if (Array.isArray(x) && apply(x[0], x[1], +x[2], typeof x[3] === "string" && x[3] ? x[3] : me.id)) any = true;
+            if (any) fire();
+            return any;
+          },
+          // every entry, the removed ones too (to keep, and seed() next time)
+          all: () => [...map.entries()].map(([k, x]) => [k, x.v, x.at, x.by]),
           // everything at once (a device that just came in), in parts of 40 entries
           push(to) {
             return __async(this, null, function* () {
@@ -792,8 +813,9 @@ var BVLIVE = (() => {
         }, 6e3);
         return L;
       }
-      net.join(topic);
+      net.join(topic, { home: o.home === true });
       openRooms.add(R);
+      hello(true);
       setTimeout(() => hello(true), 1e3);
       setTimeout(() => hello(true), 4e3);
       helloT = setInterval(() => hello(false), HELLO_EVERY);
@@ -875,12 +897,148 @@ var BVLIVE = (() => {
       }
     });
   }
+  function serverNear(ms) {
+    return __async(this, null, function* () {
+      if (typeof fetch !== "function") return null;
+      try {
+        const ctl = typeof AbortController === "function" ? new AbortController() : null;
+        const t = setTimeout(() => {
+          if (ctl) ctl.abort();
+        }, ms || 4e3);
+        const r = yield fetch(SITE + "/v1/near", { cache: "no-store", credentials: "omit", signal: ctl ? ctl.signal : void 0 });
+        clearTimeout(t);
+        if (!r.ok) return null;
+        const j = yield r.json();
+        if (!j || typeof j.room !== "string" || !/^[A-Za-z0-9_-]{22}$/.test(j.room)) return null;
+        return C.unb64url(j.room);
+      } catch (e) {
+        return null;
+      }
+    });
+  }
   function nearby() {
     return __async(this, arguments, function* (o = {}) {
-      const ip = yield publicIp(o.wait || 4500);
-      if (!ip) return null;
-      const secret = new Uint8Array(yield subtle.digest("SHA-256", te.encode("blokvane-nearby-v1|" + ip))).slice(0, 16);
-      return room({ secret, label: "bvnear", name: o.name || "", role: o.role || "phone", info: o.info || null, open: true, memory: o.memory, onPeers: o.onPeers || null });
+      const me = yield C.newMember();
+      const made = [];
+      let closed = false, t = 0;
+      const seenMsg = /* @__PURE__ */ new Map();
+      const merged = () => {
+        const by = /* @__PURE__ */ new Map();
+        for (const r of made) for (const p of r.list()) {
+          const old = by.get(p.id);
+          if (!old || p.at > old.at) by.set(p.id, p);
+        }
+        return [...by.values()];
+      };
+      const tell = () => {
+        clearTimeout(t);
+        t = setTimeout(() => {
+          if (!closed && o.onPeers) {
+            try {
+              o.onPeers(merged());
+            } catch (e) {
+            }
+          }
+        }, 80);
+      };
+      const onMsg = (m, p) => {
+        if (!o.onMsg || closed) return;
+        const key = typeof m.i === "string" && m.i ? m.f + "|" + m.k + "|" + m.i + "|" + (m.n || 0) : m.f + "|" + m.k + "|" + m.at;
+        if (seenMsg.has(key)) return;
+        seenMsg.set(key, 1);
+        if (seenMsg.size > 400) {
+          for (const k of [...seenMsg.keys()].slice(0, 200)) seenMsg.delete(k);
+        }
+        try {
+          o.onMsg(m, p);
+        } catch (e) {
+        }
+      };
+      const open = (secret) => __async(this, null, function* () {
+        if (!secret || closed) return;
+        const r = yield room({ secret, label: "bvnear", me, name: o.name || "", role: o.role || "phone", info: o.info || null, open: true, home: true, memory: o.memory, onPeers: tell, onMsg });
+        if (closed) {
+          r.close();
+          return;
+        }
+        made.push(r);
+        tell();
+      });
+      const ways = [
+        serverNear(o.wait || 4e3).then(open).catch(() => {
+        }),
+        (typeof RTCPeerConnection === "function" ? publicIp(o.wait || 4500) : Promise.resolve("")).then((ip) => __async(this, null, function* () {
+          if (ip) yield open(new Uint8Array(yield subtle.digest("SHA-256", te.encode("blokvane-nearby-v1|" + ip))).slice(0, 16));
+        })).catch(() => {
+        })
+      ];
+      yield Promise.race([Promise.all(ways), new Promise((res) => {
+        const iv = setInterval(() => {
+          if (made.length || closed) {
+            clearInterval(iv);
+            res();
+          }
+        }, 60);
+        setTimeout(() => {
+          clearInterval(iv);
+          res();
+        }, (o.wait || 4500) + 600);
+      })]);
+      if (!made.length) {
+        yield Promise.all(ways);
+        if (!made.length) {
+          closed = true;
+          return null;
+        }
+      }
+      const each = (fn) => {
+        let any = false;
+        for (const r of made) {
+          try {
+            fn(r);
+            any = true;
+          } catch (e) {
+          }
+        }
+        return any;
+      };
+      return {
+        id: me.id,
+        me,
+        list: merged,
+        setInfo(info) {
+          o.info = info;
+          each((r) => r.setInfo(info));
+        },
+        // (to one device: through every room it is in; boxed, so only that device can open it)
+        box(to, m) {
+          return __async(this, null, function* () {
+            let sent = 0, err = null;
+            for (const r of made) {
+              if (!r.peer(to)) continue;
+              try {
+                yield r.box(to, m);
+                sent++;
+              } catch (e) {
+                err = e;
+              }
+            }
+            if (!sent) throw err || new Error("not here");
+            return sent;
+          });
+        },
+        send(m, to) {
+          return Promise.all(made.map((r) => to && !r.peer(to) ? 0 : r.send(Object.assign({}, m), to).catch(() => 0)));
+        },
+        hello() {
+          each((r) => r.hello(true));
+        },
+        close() {
+          closed = true;
+          clearTimeout(t);
+          each((r) => r.close());
+        }
+      };
     });
   }
   function shrink(file, max = 512, quality = 0.82) {
@@ -919,11 +1077,72 @@ var BVLIVE = (() => {
   }
   const okPicture = (s) => typeof s === "string" && s.length < 9e4 && /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(s);
   const sizeText = (n) => n < 1024 ? n + " bytes" : n < 1048576 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(n < 10485760 ? 1 : 0) + " MB";
+  const canCast = () => {
+    try {
+      return typeof PresentationRequest === "function" && !/Android|iPhone|iPad|iPod/i.test(navigator.userAgent || "");
+    } catch (e) {
+      return false;
+    }
+  };
+  function castReq(url) {
+    try {
+      return canCast() && /^https:\/\//.test(String(url)) ? new PresentationRequest([String(url)]) : null;
+    } catch (e) {
+      return null;
+    }
+  }
+  function castWatch(url, fn) {
+    let off = false, av = null;
+    const tell = (v) => {
+      if (!off) {
+        try {
+          fn(!!v);
+        } catch (e) {
+        }
+      }
+    };
+    const r = castReq(url);
+    if (!r) {
+      tell(false);
+      return () => {
+        off = true;
+      };
+    }
+    try {
+      r.getAvailability().then((a) => {
+        if (off) return;
+        av = a;
+        tell(a.value);
+        a.onchange = () => tell(a.value);
+      }, () => tell(true));
+    } catch (e) {
+      tell(true);
+    }
+    return () => {
+      off = true;
+      if (av) av.onchange = null;
+    };
+  }
+  function cast(url) {
+    return __async(this, null, function* () {
+      const r = castReq(url);
+      if (!r) throw new Error("This browser can't cast. Try Chrome or Edge on a computer.");
+      try {
+        return yield r.start();
+      } catch (e) {
+        if (e && (e.name === "NotAllowedError" || e.name === "AbortError")) return null;
+        if (e && e.name === "NotFoundError") throw new Error("No TV or second screen found. Check that it is on, and on the same Wi-Fi as this computer.");
+        throw new Error("Casting didn't start. Try again.");
+      }
+    });
+  }
   return {
     ICE,
     GO,
     PLAY,
     TV,
+    SITE,
+    HOME,
     newSecret,
     shortCode,
     normShort,
@@ -934,6 +1153,9 @@ var BVLIVE = (() => {
     room,
     nearby,
     publicIp,
+    canCast,
+    castWatch,
+    cast,
     shrink,
     fit,
     okPicture,

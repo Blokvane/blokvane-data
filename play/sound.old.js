@@ -241,8 +241,21 @@ var BVSOUND = (() => {
     loading.set(name, p);
     return p;
   }
+  const preQ = [];
+  let preBusy = false;
+  function prePump() {
+    if (preBusy || !preQ.length) return;
+    preBusy = true;
+    const n = preQ.shift();
+    const next = () => {
+      preBusy = false;
+      setTimeout(prePump, 150);
+    };
+    Promise.resolve(bufs.has(n) || loading.has(n) ? null : load(n)).then(next, next);
+  }
   function preload(names) {
-    for (const n of [].concat(names || [])) if (FILES[n]) load(n);
+    for (const n of [].concat(names || [])) if (FILES[n] && !isStream(FILES[n]) && !bufs.has(n) && !loading.has(n) && !preQ.includes(n)) preQ.push(n);
+    setTimeout(prePump, 400);
   }
   function unlock() {
     if (pausedNow) return;

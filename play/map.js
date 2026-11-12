@@ -49,7 +49,9 @@ var BVMAP = (() => {
     const p = document.createElement('div');
     p.className = 'bvm-pin' + (o.cls ? ' ' + o.cls : '');
     if (o.size) p.style.setProperty('--pw', o.size + 'px');
-    p.innerHTML = '<svg viewBox="0 0 64 84"><path d="' + DROP + '" fill="' + (o.color || '#ff5a6e') + '" stroke="#fff" stroke-width="3.2"/></svg>';
+    // (the color goes into the picture as text, so only a real color may: one that came in a message could carry code)
+    const color = typeof o.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(o.color) ? o.color : '#ff5a6e';
+    p.innerHTML = '<svg viewBox="0 0 64 84"><path d="' + DROP + '" fill="' + color + '" stroke="#fff" stroke-width="3.2"/></svg>';
     if (o.img) { const im = document.createElement('img'); im.src = o.img; im.alt = ''; p.appendChild(im); }
     else { const f = document.createElement('span'); f.className = 'face'; f.innerHTML = BOO; p.appendChild(f); }
     return p;

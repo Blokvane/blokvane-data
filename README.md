@@ -163,8 +163,9 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   text functions, pointer events on older iPhones, gaps in flex boxes, `min()` for the TV's size)
   and only where a browser has no own version, so newer browsers run exactly as before.
 - `play/*.old.js` and `go/*.old.js` are copies of the TV's scripts for browsers that can't read
-  async functions. `play/index.html` loads them only there. Make them again after changing one of
-  those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
+  async functions. `play/async.js` finds out, and `play/boot.js` (the list of the TV's scripts and
+  their versions: bump a script's `?v=` there when it changes) loads them only there. Make them
+  again after changing one of those scripts: `npm i esbuild@0.24.0` (once), then `node tools/old-js.js`
   (`node tools/old-js.js --check` says if one is out of date).
 - `python3 tools/old-css.py play/play.css play/imp.css play/gir.css play/world.css play/wlook.css play/bwlook.css play/trivia.css play/emoji.css go/go.css`
   adds the older way of writing newer CSS just before it, after a stylesheet changes. The phone
@@ -197,10 +198,31 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   phone once the answer is out.
 - The last screen of Where in the World?, Trivia, Guess It Right! and Boo Who? has a picture of the winners
   to share (a tall story picture, drawn on the phone in the game's own look).
-- TVs near you: a phone on the same Wi-Fi as a TV finds it in a list and joins with one tap
-  (`BVLIVE.nearby` in `go/live-kit.js`). Both ask the free STUN servers for the network's public
-  address and meet in a room made from a hash of it; the address itself never leaves the device. The
-  host can turn it off (Phones nearby can find this TV).
+- TVs near you: a phone on the same Wi-Fi as a TV finds it in a list (`BVLIVE.nearby` in
+  `go/live-kit.js`). Two ways lead both to the same room, and each device uses both: Blokvane's
+  server answers with the room of the network a request comes from (`/v1/near`: made from the
+  address with a secret only the server has, and nothing is kept), and each device asks the free
+  STUN servers for its public address and makes a room from a hash of it. The TV says there what
+  it shows, never its join code: a Blokvane member's phone knocks with its host pass, and only then
+  does the TV send it the game's link, sealed for that phone alone. The host can turn it off
+  (Phones nearby can find this TV).
+- Who may host (`go/pass.js`): the host signs in on their phone with a code Blokvane's server
+  emails them, and the phone asks the server for a pass for that one game. The TV checks the
+  server's signature with the public key written in `go/pass.js`, and that the pass names the phone
+  that shows it. Everyone else joins without signing in.
+- How the messages travel: sealed and signed on the devices, through the free public relays and,
+  for a party game only, through Blokvane's own relay first (`wss://blokvane.com/relay`,
+  `server/app/relay.py` in blokvane-app: it passes the sealed bytes on and keeps nothing). The TV
+  sends the big things a phone needs once (`setup`), small changes after that (`lobby`), and a
+  short heartbeat while a game runs, so a phone that missed something asks for it within seconds.
+- More ways to a TV, all in the lobby and in Start a game: "Cast to a TV" (the browser's own Cast
+  window, in Chrome and Edge on a computer), and "Play here too" (`play/duo.html`: the game and
+  your own answers side by side on one screen, for a laptop on a cable or a mirrored phone).
+- A slow screen (a TV's own browser) gets the calm look by itself: still pictures and no moving
+  backgrounds (`k_calm` in `play/play.js`). The host can switch it in the game's settings.
+- Each page says what it may load and talk to (the `Content-Security-Policy` line at the top of
+  `go/index.html`, `go/games.html`, `play/index.html`, `play/duo.html` and `tv/index.html`), so
+  the pages carry no scripts written into them: keep it that way.
 - The Games app's camera (`go/go.js`, "Scan the QR code") reads a game's QR code on the TV with the
   phone's own reader where there is one (Android's Chrome) and with jsQR everywhere else (iPhones):
   `go/vendor/jsQR.min.js`, jsQR 1.4.0 from https://github.com/cozmo/jsQR (Apache License 2.0, its

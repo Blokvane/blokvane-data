@@ -138,7 +138,22 @@ var BVSOUND = (() => {
     loading.set(name, p);
     return p;
   }
-  function preload(names) { for (const n of [].concat(names || [])) if (FILES[n]) load(n); }
+  // The sounds a game will need, fetched ahead of time: one after the other, with a breath in between. All at once (a
+  // dozen files, each unpacked into memory) is a lot for a TV to do while it is also drawing the lobby for the first
+  // time. A sound that is needed sooner than its turn just loads right then.
+  const preQ = [];
+  let preBusy = false;
+  function prePump() {
+    if (preBusy || !preQ.length) return;
+    preBusy = true;
+    const n = preQ.shift();
+    const next = () => { preBusy = false; setTimeout(prePump, 150); };
+    Promise.resolve(bufs.has(n) || loading.has(n) ? null : load(n)).then(next, next);
+  }
+  function preload(names) {
+    for (const n of [].concat(names || [])) if (FILES[n] && !isStream(FILES[n]) && !bufs.has(n) && !loading.has(n) && !preQ.includes(n)) preQ.push(n);
+    setTimeout(prePump, 400);
+  }
   // (the first click or key press on this page lets it play sound; a TV remote's OK button counts too. The sound
   // button itself is left to do its own job, so that first click doesn't turn the sound off again.)
   function unlock() { if (pausedNow) return; const c = ctx(); if (c && c.state !== 'running') c.resume().then(changed, () => {}); prime(); }

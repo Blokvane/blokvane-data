@@ -106,7 +106,11 @@
     // answer)
     const used = new Set(), answers = new Set(), texts = new Set();
     let lastCat = 0;
-    const ok = q => !used.has(q.id) && !answers.has(P.norm(q.a)) && !texts.has(P.norm(q.q));
+    // (a question's answer and words in their plain form, worked out once and kept: working them out again for every
+    // question in the bank, before each question, made a TV think for a second or two every time)
+    const plain = new WeakMap();
+    const pl = q => { let x = plain.get(q); if (!x) { x = { a: P.norm(q.a), q: P.norm(q.q) }; plain.set(q, x); } return x; };
+    const ok = q => !used.has(q.id) && (!answers.size || !answers.has(pl(q).a)) && (!texts.size || !texts.has(pl(q).q));
     const has = (c, d) => (by.get(c + '|' + d) || []).some(ok);
     function from(c, d) {
       const list = (by.get(c + '|' + d) || []).filter(ok);
@@ -122,7 +126,8 @@
       let opts = cats.filter(c => c !== lastCat && has(c, d));
       if (!opts.length) opts = cats.filter(c => has(c, d));
       if (!opts.length) return 0;
-      const wts = opts.map(c => Math.sqrt(1 + (by.get(c + '|' + d) || []).filter(q => ok(q) && !rank.has(q.id)).length));
+      // (how many it hasn't asked yet, near enough: the handful used in this game don't change which is bigger)
+      const wts = opts.map(c => Math.sqrt(1 + (by.get(c + '|' + d) || []).filter(q => !rank.has(q.id)).length));
       let r = Math.random() * wts.reduce((a, b) => a + b, 0);
       for (let i = 0; i < opts.length; i++) { r -= wts[i]; if (r <= 0) return opts[i]; }
       return opts[opts.length - 1];

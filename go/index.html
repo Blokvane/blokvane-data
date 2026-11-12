@@ -6,6 +6,10 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#0b0f17">
 <meta name="referrer" content="no-referrer">
+<!-- What this page may load and talk to (a second lock, in case a mistake in the page ever let someone's text through
+     as code): scripts only from Blokvane's own pages, never written into the page or made from text; connections only
+     to Blokvane and to relays; nothing embedded from anywhere else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' data: blob: mediastream:; font-src 'self' data:; connect-src 'self' data: blob: https://blokvane.com wss:; worker-src 'self' blob:; frame-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="robots" content="noindex">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -15,19 +19,22 @@
 <link rel="icon" href="../tv/icon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
-<link rel="stylesheet" href="go.css?v=17">
-<!-- Blokvane on your phone. What to do is after the # in the address (browsers never send that part anywhere). There
-     is no Blokvane server behind this page: it talks to your devices through free public relays, sealed and signed
-     (live-kit.js), and big things go straight between the two devices. -->
+<link rel="stylesheet" href="go.css?v=18">
+<!-- Blokvane on your phone. What to do is after the # in the address (browsers never send that part anywhere).
+     Messages between this page and your devices are sealed and signed on the devices (live-kit.js), so nobody in
+     between can read them. They go through free public relays, and big things go straight between the two devices. A
+     party game also uses Blokvane's own relay, which is quicker and passes on the same sealed bytes; and Blokvane's
+     server is asked for two more things, both for party games: the room of your own network (TVs near you) and a
+     host's sign-in. -->
 </head>
 <body>
 <div id="app" class="app"></div>
 <script src="compat.js?v=15"></script>
 <script src="wt-core.js?v=15"></script>
-<script src="wt-net.js?v=17"></script>
-<script src="live-kit.js?v=17"></script>
+<script src="wt-net.js?v=18"></script>
+<script src="live-kit.js?v=18"></script>
 <script src="qrcode.js?v=11"></script>
-<script src="pass.js?v=1"></script>
-<script src="go.js?v=24"></script>
+<script src="pass.js?v=2"></script>
+<script src="go.js?v=25"></script>
 </body>
 </html>

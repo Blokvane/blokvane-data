@@ -2,6 +2,11 @@
 // Every message goes out through several free public relays at once (Nostr relays and MQTT brokers), and the
 // first copy to arrive wins. If one relay is down, slow or refuses us, the others carry on, and a better one is
 // picked. A relay counts as working only when our own messages come back through it, byte for byte.
+// A party game (live-kit.js) adds one more way, and uses it first: Blokvane's own relay ("home"), which is close and
+// quick. It only ever sees the same sealed bytes, and the public relays stay as its backup. Only a room that asks for
+// it uses it (join(topic, { home: true })): Watch together, your phone, your computers, your friends and your TV
+// screens never do. Their messages go through the public relays alone, as before, and this device doesn't even
+// connect to Blokvane's relay for them.
 // Copies are told apart by a hash of the whole message, so a relay that sends a changed copy first can't make the
 // real one look like a repeat. What a party does with a message is in gate(): only messages that open with the party
 // key count against any allowance (each member's own, and one that everyone the party doesn't count in yet shares),
@@ -29,6 +34,7 @@ var BVWT_NET = (() => {
   const RETRY = [1000, 3000, 8000, 20000, 45000, 90000, 180000];
   const MAX_BAD = 6 * 3600000;       // a relay that has never worked here is left alone for up to 6 hours
   const MAX_OWN = 8;                 // a relay list from settings uses at most this many of each kind
+  const HOME_FRESH = 60000;          // our own relay counts as working while a message of ours came back this recently
   // allowances, counted only for messages that open with the party key (in one burst, then each second)
   const PER_SENDER = 20, PER_SENDER_BURST = 40;    // each member the party counts in: their own, shared with nobody
   const CHECKS = 40, CHECKS_BURST = 80;            // signature checks for messages that say they're from one such member
@@ -59,7 +65,8 @@ var BVWT_NET = (() => {
   }
 
   // o: { onMessage(topic, bytes, url, at) (may return a promise: messages are handed over one at a time, in order),
-  //      onChange(), relays: { nostr: [urls], mqtt: [{ url, user, pass }] } (optional), now(), WebSocket,
+  //      onChange(), relays: { nostr: [urls], mqtt: [{ url, user, pass }], home: [urls] } (optional), now(), WebSocket,
+  //      home: [urls] (Blokvane's own relay, for the rooms that ask for it; none when not given),
   //      memory: { load(), save(obj) } (optional: what was learned about the relays, kept between restarts) }
   function create(o) {
     const now = o.now || (() => Date.now());
@@ -67,12 +74,33 @@ var BVWT_NET = (() => {
     // (a browser with no BigInt can't sign Nostr events, so it uses the MQTT brokers alone)
     const nostrList = C.canSign === false ? [] : ((o.relays && o.relays.nostr) || NOSTR).filter(okUrl);
     const mqttList = ((o.relays && o.relays.mqtt) || MQTT).filter(m => m && okUrl(m.url));
+    // (a relay list of one's own says which home relay to use, if any: a test's list names none, so it never reaches ours)
+    const homeList = [...new Set(((o.relays ? o.relays.home : o.home) || []).filter(u => typeof u === 'string' && okUrl(u)))].slice(0, 2);
     const conns = new Map();   // url -> connection
     const rooms = new Map();   // topic -> { topic, order }
     const health = new Map();  // url -> { badUntil, strikes }
     const pending = new Map(); // hash of my own message -> { at, urls }
     const seen = new Map();    // hash of a whole message -> time (the first copy wins)
     let signer = null, timer = 0, inbox = Promise.resolve();
+    // What was said while no relay was connected yet (a page that just opened says "it's me" before its connections are
+    // up): kept for a few seconds and sent the moment the first relay is there, instead of being lost and said again
+    // a second and a half later.
+    const outbox = [];
+    const OUT_KEEP = 8000, OUT_MAX = 40;
+    let flushing = false;
+    async function flush() {
+      if (flushing || !outbox.length) return;
+      flushing = true;
+      try {
+        for (const m of outbox.splice(0)) {
+          if (now() - m.at > OUT_KEEP || !rooms.has(m.topic)) continue;
+          if (!(await publish(m.topic, m.bytes, m.at))) break;
+        }
+      } catch (e) {}
+      flushing = false;
+    }
+    // (a relay just connected: a breath first, so it has taken in what this connection listens to)
+    const opened = () => { if (outbox.length) setTimeout(flush, 25); };
     const echoWait = o.echoWait || ECHO_WAIT, perRoom = o.perRoom || NOSTR_PER_ROOM;
     const changed = () => { try { o.onChange && o.onChange(); } catch (e) {} };
     const isBad = url => { const h = health.get(url); return !!(h && h.badUntil > now()); };
@@ -96,7 +124,9 @@ var BVWT_NET = (() => {
       h.strikes++;
       h.at = now();
       if (h.strikes >= 5) h.ok = false;
-      h.badUntil = now() + (h.ok ? Math.min(30 * 60000, 120000 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 600000 * 3 ** Math.min(h.strikes - 1, 4)));
+      // (our own relay is only ever away for a moment, like while the server starts again: it is tried again soon)
+      h.badUntil = now() + (homeList.includes(url) ? Math.min(5 * 60000, 20000 * 2 ** Math.min(h.strikes - 1, 4))
+        : h.ok ? Math.min(30 * 60000, 120000 * 2 ** Math.min(h.strikes - 1, 4)) : Math.min(MAX_BAD, 600000 * 3 ** Math.min(h.strikes - 1, 4)));
       h.why = why;
       health.set(url, h);
       remember();
@@ -156,7 +186,7 @@ var BVWT_NET = (() => {
         let ws;
         try { ws = c.ws = new WS(url); } catch (e) { c.failed(); return; }
         c.t1 = setTimeout(() => { if (c.state === 'connecting') c.failed(); }, 10000);
-        ws.onopen = () => { clearTimeout(c.t1); c.state = 'open'; c.opened = now(); c.tries = 0; for (const t of c.topics) ws.send(req(t)); changed(); };
+        ws.onopen = () => { clearTimeout(c.t1); c.state = 'open'; c.opened = now(); c.tries = 0; for (const t of c.topics) ws.send(req(t)); changed(); opened(); };
         ws.onclose = ws.onerror = () => { if (c.state !== 'closed') c.failed(); };
         ws.onmessage = ev => {
           let m;
@@ -178,6 +208,54 @@ var BVWT_NET = (() => {
       c.sub = t => { if (c.state === 'open') c.ws.send(req(t)); };
       c.unsub = t => { if (c.state === 'open') c.ws.send(JSON.stringify(['CLOSE', subId(t)])); };
       c.publish = (t, ev) => { if (c.state === 'open' && c.ws.readyState === 1 && now() >= c.slowUntil) { c.ws.send(ev); return true; } return false; };
+      return c;
+    }
+    // Blokvane's own relay: {"t":"sub","topics":[...]} to listen, and each sealed message as bytes behind its room
+    // (0x01, the room's 20 bytes). It hands the same bytes to everyone in the room, us included.
+    function homeConn(url) {
+      const c = base(url, 'home');
+      const say = m => { try { if (c.ws && c.ws.readyState === 1) c.ws.send(JSON.stringify(m)); } catch (e) {} };
+      c.open = () => {
+        c.state = 'connecting';
+        let ws;
+        try { ws = c.ws = new WS(url); ws.binaryType = 'arraybuffer'; } catch (e) { c.failed(); return; }
+        c.t1 = setTimeout(() => { if (c.state === 'connecting') c.failed(); }, 10000);
+        ws.onclose = ws.onerror = () => { if (c.state !== 'closed') c.failed(); };
+        ws.onmessage = ev => {
+          if (typeof ev.data === 'string') {
+            let m;
+            try { m = JSON.parse(ev.data); } catch (e) { return; }
+            if (!m || typeof m !== 'object') return;
+            if (m.t === 'hi' && c.state === 'connecting') {
+              clearTimeout(c.t1);
+              c.state = 'open'; c.opened = now(); c.tries = 0; c.lastPong = now();
+              if (c.topics.size) say({ t: 'sub', topics: [...c.topics] });
+              c.t2 = setInterval(() => {
+                if (now() - c.lastPong > 70000) { c.failed(); return; }
+                say({ t: 'ping' });
+              }, 25000);
+              changed();
+              opened();
+            } else if (m.t === 'pong') c.lastPong = now();
+            else if (m.t === 'slow') c.slowUntil = now() + 1500;
+            return;
+          }
+          if (!(ev.data instanceof ArrayBuffer) || c.state !== 'open') return;
+          const b = new Uint8Array(ev.data);
+          if (b.length < 21 + 29 || b[0] !== 1) return;
+          const t = C.hex(b.subarray(1, 21));
+          if (c.topics.has(t)) deliver(t, b.slice(21), url);
+        };
+      };
+      c.sub = t => { if (c.state === 'open') say({ t: 'sub', topics: [t] }); };
+      c.unsub = t => { if (c.state === 'open') say({ t: 'unsub', topics: [t] }); };
+      c.publish = (t, bytes) => {
+        if (c.state !== 'open' || c.ws.readyState !== 1 || now() < c.slowUntil) return false;
+        const f = new Uint8Array(21 + bytes.length);
+        f[0] = 1; f.set(C.unhex(t), 1); f.set(bytes, 21);
+        try { c.ws.send(f); } catch (e) { return false; }
+        return true;
+      };
       return c;
     }
     function mqttConn(cfg) {
@@ -210,6 +288,7 @@ var BVWT_NET = (() => {
                 try { if (ws.readyState === 1) ws.send(C.MQ.ping()); } catch (e) {}
               }, 25000);
               changed();
+              opened();
             } else if (p.type === 3) {                            // PUBLISH
               const { topic, payload } = C.MQ.publishParts(p.flags, p.body);
               if (topic.startsWith('bvwatch/')) { const t = topic.slice(8); if (c.topics.has(t)) deliver(t, payload.slice(), cfg.url); }
@@ -234,6 +313,8 @@ var BVWT_NET = (() => {
         let n = 0;
         for (const url of r.order) { if (n >= perRoom) break; if (isBad(url)) continue; n++; (want.get(url) || want.set(url, new Set()).get(url)).add(r.topic); }
         for (const m of mqttList) if (!isBad(m.url)) (want.get(m.url) || want.set(m.url, new Set()).get(m.url)).add(r.topic);
+        // (our own relay: only for a room that asked for it, so nothing else ever goes near it)
+        if (r.home) for (const u of homeList) if (!isBad(u)) (want.get(u) || want.set(u, new Set()).get(u)).add(r.topic);
       }
       return want;
     }
@@ -248,7 +329,7 @@ var BVWT_NET = (() => {
       for (const [url, ts] of want) {
         if (conns.has(url)) continue;
         const cfg = mqttList.find(m => m.url === url);
-        const c = cfg ? mqttConn(cfg) : nostrConn(url);
+        const c = homeList.includes(url) ? homeConn(url) : cfg ? mqttConn(cfg) : nostrConn(url);
         c.topics = new Set(ts);
         conns.set(url, c);
         c.open();
@@ -281,15 +362,21 @@ var BVWT_NET = (() => {
       for (const [k, at] of seen) { if (t - at > 120000) seen.delete(k); else break; }
     }
 
-    async function publish(topic, bytes) {
+    // (kept: when a message that waited for a relay is sent at last, the time it was first said)
+    async function publish(topic, bytes, kept) {
       if (!rooms.has(topic)) return 0;
       const id = C.hex(await C.sha256(bytes));
       const targets = [...conns.values()].filter(c => c.state === 'open' && c.topics.has(topic));
       const p = { at: now(), urls: new Set() };
       pending.set(id, p);
-      let sent = 0;
+      let sent = 0, home = false;
+      // (our own relay first: nothing to sign, so the message is on its way at once)
+      for (const c of targets) if (c.type === 'home' && c.publish(topic, bytes)) { p.urls.add(c.url); sent++; if (!c.misses && c.lastEcho > p.at - HOME_FRESH) home = true; }
       for (const c of targets) if (c.type === 'mqtt' && c.publish(topic, bytes)) { p.urls.add(c.url); sent++; }
-      const ns = targets.filter(c => c.type === 'nostr');
+      // While our own relay is working (a message of ours came back through it in the last minute), the Nostr relays
+      // only listen: each message for them needs a signature that takes a slow device (a TV, say) a while to work out,
+      // and with our relay and the MQTT brokers carrying it, that wait buys nothing.
+      const ns = home ? [] : targets.filter(c => c.type === 'nostr');
       if (ns.length) {
         try {
           signer = signer || C.newSigner();
@@ -297,11 +384,16 @@ var BVWT_NET = (() => {
           for (const c of ns) if (c.publish(topic, ev)) { p.urls.add(c.url); sent++; }
         } catch (e) {}
       }
+      // (nowhere to go yet: it waits for the first relay)
+      if (!sent) { pending.delete(id); outbox.push({ topic, bytes, at: kept || now() }); if (outbox.length > OUT_MAX) outbox.shift(); }
       return sent;
     }
-    function join(topic) {
-      if (!/^[0-9a-f]{40}$/.test(topic) || rooms.has(topic)) return;
-      rooms.set(topic, { topic, order: shuffled(nostrList, topic) });
+    // opt: { home: true } for a room that also goes through Blokvane's own relay (a party game)
+    function join(topic, opt) {
+      if (!/^[0-9a-f]{40}$/.test(topic)) return;
+      const home = !!(opt && opt.home), old = rooms.get(topic);
+      if (old) { if (home && !old.home) { old.home = true; rebalance(); } return; }
+      rooms.set(topic, { topic, order: shuffled(nostrList, topic), home });
       rebalance();
     }
     function leave(topic) { if (rooms.delete(topic)) rebalance(); }
@@ -312,7 +404,7 @@ var BVWT_NET = (() => {
       return { open: list.filter(c => c.state === 'open').length, good: good.length, total: list.length,
         relays: list.map(c => ({ host: (() => { try { return new URL(c.url).host; } catch (e) { return c.url; } })(), type: c.type, state: c.state, ok: good.includes(c) })) };
     }
-    function close() { for (const c of conns.values()) c.close(); conns.clear(); rooms.clear(); if (timer) clearInterval(timer); timer = 0; }
+    function close() { for (const c of conns.values()) c.close(); conns.clear(); rooms.clear(); outbox.length = 0; if (timer) clearInterval(timer); timer = 0; }
     // Back from the background, or back online: every relay that couldn't be reached a little while ago gets another go
     // right away, the ones waiting to try again try now, and one that has been quiet all that time is opened again (its
     // connection can be gone without a word, like after the phone moved from Wi-Fi to mobile data).

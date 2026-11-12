@@ -33,7 +33,16 @@ var BVPLAYC = (() => {
   // (a word ends where letters of any alphabet end: "كس" is caught, the word "كسل" is not)
   const EDGE = HAS_P ? '[^\\p{L}\\p{M}]' : NOT_LM1, FL = HAS_P ? 'u' : '';
   const EDGE_A = '(^|' + EDGE + ')', EDGE_B = '($|' + EDGE + ')';
-  const WORDS = BAD.map(w => { const a = norm(w), b = once(a); return { a: new RegExp(EDGE_A + esc(a) + EDGE_B, FL), b: new RegExp(EDGE_A + esc(b) + EDGE_B, FL), flat: /^[a-z ]+$/.test(b) ? b.replace(/\s+/g, '') : '' }; });
+  // A bad word counts when it stands as a whole word. Almost every one is a single word, so what was typed is cut into
+  // its words once and each is looked up in a set: that takes no time at all. (It used to be one search pattern for
+  // every bad word, built with every alphabet's letters in it: hundreds of patterns that a browser had to prepare the
+  // first time a name came in, which froze a TV for a second or more just as the first player joined.) The few that
+  // are several words, like "kill yourself", still use a pattern each.
+  const WORDS = BAD.map(w => { const a = norm(w), b = once(a); return { a, b, one: !RX_NOT_LM.test(a) && !RX_NOT_LM.test(b), flat: /^[a-z ]+$/.test(b) ? b.replace(/\s+/g, '') : '' }; });
+  const ONE = new Set();
+  for (const w of WORDS) if (w.one) { ONE.add(w.a); ONE.add(w.b); }
+  const MANY = WORDS.filter(w => !w.one).map(w => ({ a: new RegExp(EDGE_A + esc(w.a) + EDGE_B, FL), b: new RegExp(EDGE_A + esc(w.b) + EDGE_B, FL) }));
+  const FLAT = WORDS.filter(w => w.flat.length >= 5).map(w => w.flat);
   function bad(s) {
     const t = norm(s);
     const forms = [t, once(t)];
@@ -41,7 +50,9 @@ var BVPLAYC = (() => {
     for (const k of t.split(RX_NOT_LM).filter(Boolean).concat([''])) { if ([...k].length === 1) run += k; else { if ([...run].length > 2) forms.push(run, once(run)); run = ''; } }
     const flat = once(t.replace(/[^a-z]+/g, ''));
     if (BAD_ZH.some(w => t.replace(/\s+/g, '').includes(w))) return true;
-    return WORDS.some(w => forms.some(f => w.a.test(f) || w.b.test(f)) || (w.flat.length >= 5 && flat.includes(w.flat)));
+    for (const f of forms) for (const k of f.split(RX_NOT_LM)) if (k && ONE.has(k)) return true;
+    if (MANY.some(w => forms.some(f => w.a.test(f) || w.b.test(f)))) return true;
+    return FLAT.some(w => flat.includes(w));
   }
   const clean = (v, max) => String(v == null ? '' : v).replace(/[\u0000-\u001f\u007f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max || 40);
   const safe = (v, max, fallback) => { const c = clean(v, max); return c && !bad(c) ? c : (fallback || ''); };
@@ -83,21 +94,32 @@ var BVPLAYC = (() => {
   const COLORS = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8', '#38d3e6', '#ff9a3c', '#8bd450', '#f5f5f5', '#c084fc', '#fb7185'];
   const TEAMS = [['red', 'Red', '#ff5f57'], ['blue', 'Blue', '#3d8bff'], ['gold', 'Gold', '#ffbf3c'], ['green', 'Green', '#2fd59a']];
   const AVATARS = ['boo:hi', 'boo:laugh', 'boo:cool', 'boo:love', 'boo:wow', 'boo:party', 'boo:hero', 'boo:legend', 'boo:peek', 'boo:mind', 'boo:scary', 'boo:boo'];
-  const booUri = id => (typeof BVWATCH_BOO !== 'undefined' && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
+  // Boo's pictures move by themselves (a tear falls, a star twinkles), each one a small film the browser draws again on
+  // every frame. On a calm screen (still(true): the host's setting, on by itself on a TV) they stand still.
+  let stillOn = false;
+  const stillUris = new Map();
+  const still = on => { stillOn = !!on; };
+  const booUri = id => {
+    const b = typeof BVWATCH_BOO !== 'undefined' && BVWATCH_BOO.get(id);
+    if (!b) return '';
+    if (!stillOn) return BVWATCH_BOO.uri(id);
+    if (!stillUris.has(id)) stillUris.set(id, 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(String(b.svg).replace(/<\/svg>\s*$/, '<style>*{animation:none!important}</style></svg>')));
+    return stillUris.get(id);
+  };
 
   // ---------- the words on the phones (the TV translates them for everyone) ----------
   const STR = {
     join: 'Join the game', name: 'Your name', pickBoo: 'Pick your Boo', selfie: 'Take a selfie', ready: 'I\'m ready!', notReady: 'Not ready yet', host: 'You\'re the host', hostWait: 'Waiting for the host to start',
     start: 'Start the game', settings: 'Game settings', look: 'Look at the TV!', answered: 'Got it! Waiting for the others...', right: 'Right!', wrong: 'Not this time', out: 'You\'re out, but you can still help!',
-    again: 'Play again', otherGame: 'Pick another game', you: 'You', points: 'points', place: 'place', send: 'Send', typeHere: 'Type here', skip: 'Skip', done: 'Done',
+    again: 'Play again', otherGame: 'Pick another game', you: 'You', points: 'points', send: 'Send', typeHere: 'Type here', skip: 'Skip', done: 'Done',
     helpers: 'Helpers', fifty: 'Remove two', hint: 'Hint', auto: 'Answer it for me', ask: 'Ask everyone', peek: 'Hold to peek', imposter: 'You\'re the imposter!', vote: 'Vote',
     yourTurn: 'Your turn!', team: 'Team', guess: 'Your guess', dropPin: 'Drop your pin', zoom: 'Pinch to zoom, tap to drop the pin',
     lockPin: 'Lock in my pin', yourEmoji: 'Your emoji', theAnswer: 'The answer',
     holdTip: 'Hold it down to see your word. Let go to hide it.', category: 'Category', word: 'Your secret word', noWord: 'You get no word. Listen, and blend in!',
     lang: 'Language', players: 'Players', pickGame: 'Pick a game',
-    picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', of: 'of', first: 'You were the fastest!', youPicked: 'You picked',
+    picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', first: 'You were the fastest!',
     red: 'Red', blue: 'Blue', green: 'Green', gold: 'Gold', changeName: 'Change my name or Boo',
-    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', imposterSays: 'Category:', helpers1: 'Each helper works once.'
+    needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', helpers1: 'Each helper works once.'
   };
   // The game's language. The seven full languages use their own words (i18n.js, lang/*.js); any other language uses
   // Chrome's built-in translator on a computer: one translator per language, every text once.
@@ -182,5 +204,5 @@ var BVPLAYC = (() => {
     const t0 = performance.now();
     (function f(t) { g.clearRect(0, 0, W, H); for (const b of bits) { b.vy += .03; b.x += b.vx + Math.sin(t / 300 + b.a); b.y += b.vy; b.a += b.va; g.save(); g.translate(b.x, b.y); g.rotate(b.a); g.fillStyle = b.c; g.fillRect(-b.r, -b.r / 3, b.r * 2, b.r * .66); g.restore(); } if (t - t0 < 5000) requestAnimationFrame(f); else cv.remove(); })(t0);
   }
-  return { bad, clean, safe, name, rng, shuffle, pick, km, close, LETTERS, SHAPES, COLORS, TEAMS, AVATARS, booUri, STR, useLang, tr, f, trAll, RTL, sfx, mute, speak, confetti, norm, get lang() { return tLang; } };
+  return { bad, clean, safe, name, rng, shuffle, pick, km, close, LETTERS, SHAPES, COLORS, TEAMS, AVATARS, booUri, still, STR, useLang, tr, f, trAll, RTL, sfx, mute, speak, confetti, norm, get lang() { return tLang; } };
 })();
