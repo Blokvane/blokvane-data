@@ -15,6 +15,7 @@ var BVPLAY = (() => {
   const handlers = new Map();     // message kind -> fn(m, player) (a game listens while it runs)
   const pending = new Map();      // round -> { who: Set, all: Set, got: Map, done, onAns, sec, at }
   const kicked = new Set();       // phones the host took out of this game (they can ask to join again)
+  const ended = new Set();        // phones that were in a game that ended because its host left
   const waitNext = new Map();     // phones that came in during a game the host keeps closed: they join when it's over
   const playerSubs = new Set();   // a running game hears when someone leaves, comes back or joins
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
@@ -161,6 +162,32 @@ var BVPLAY = (() => {
     if (!trueHost || !players.has(trueHost)) trueHost = host;
     // (both phones hear it straight away: the one that has the host's tools now, and the one that just lost them)
     if (was !== host) for (const id of [was, host]) { const x = players.get(id); if (x && !x.away) sayTo(id, { k: 'you', id, host: host === id, color: x.color }); }
+    // (the host is gone for good and nobody else here can host: the game is over, once whatever called this is done)
+    if (was && !host && players.size && phase !== 'closed') setTimeout(hostGone, 0);
+  }
+  // The host left (or didn't come back in time), and nobody else here is a Blokvane member who could take over: the
+  // game is over. Every phone hears it (and how to host a game of its own), everyone is out, and the TV says so for a
+  // few seconds, then shows its code again for the next host.
+  async function hostGone() {
+    if (host || hostHere() || !players.size || phase === 'closed') return;
+    abortGame();
+    say({ k: 'hostgone' });
+    for (const id of players.keys()) ended.add(id);
+    players.clear(); waitNext.clear(); seen.clear();
+    host = ''; trueHost = ''; clearTimeout(hostT);
+    phase = 'lobby';
+    const my = ++lobbyRun;
+    const t = await Promise.all(['The host left', 'This game is over. A Blokvane member can scan the code to start a new one.'].map(x => P.tr(x)));
+    if (my !== lobbyRun || phase !== 'lobby') return;
+    SND.music(null, { fadeOut: 1 });
+    if (booEl) booEl.hidden = true;
+    stage.textContent = '';
+    const cv = el('div', 'cover closed', stage);
+    const box2 = el('div', 'cl-box', cv);
+    const im = el('img', 'cl-boo', box2); im.src = P.booUri('boo:sad') || P.booUri('boo:hi'); im.alt = '';
+    el('h1', '', box2, t[0]);
+    el('p', '', box2, t[1]);
+    setTimeout(() => { if (my === lobbyRun && phase === 'lobby') { if (booEl) booEl.hidden = false; lobby(); } }, 9000);
   }
   // the host takes someone out of the game: their phone hears it, and they can ask to join again
   function removePlayer(id) {
@@ -263,6 +290,7 @@ var BVPLAY = (() => {
         if ('lg' in m) setPlayerLang(pl, m.lg);
         if (teamsOn() && !pl.team) pl.team = P.TEAMS[players.size % Math.min(4, +settings.teamN || 2)][0];
         const isNew = !p;
+        ended.delete(m.f);
         players.set(m.f, pl);
         pickHost();
         if (isNew) P.sfx('join');
@@ -310,6 +338,7 @@ var BVPLAY = (() => {
       case 'bye': if (p) { p.gone = true; if (m.left) p.left = true; sweep(); } return;
       case 'sync': if (p) { R.send({ k: 'you', id: m.f, host: host === m.f, color: p.color }, m.f).catch(() => {}); sayLobby(m.f); if (phase === 'play' && cur.q) R.send(cur.q, m.f).catch(() => {}); }
         else if (kicked.has(m.f)) sayTo(m.f, { k: 'kicked' });
+        else if (ended.has(m.f)) sayTo(m.f, { k: 'hostgone' });
         return;
       case 'ans': {
         const w = pending.get(+m.n);

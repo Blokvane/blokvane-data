@@ -32,6 +32,7 @@ var BVPLAY = (() => {
   const handlers = /* @__PURE__ */ new Map();
   const pending = /* @__PURE__ */ new Map();
   const kicked = /* @__PURE__ */ new Set();
+  const ended = /* @__PURE__ */ new Set();
   const waitNext = /* @__PURE__ */ new Map();
   const playerSubs = /* @__PURE__ */ new Set();
   let waitHost = false;
@@ -230,6 +231,41 @@ var BVPLAY = (() => {
       const x = players.get(id);
       if (x && !x.away) sayTo(id, { k: "you", id, host: host === id, color: x.color });
     }
+    if (was && !host && players.size && phase !== "closed") setTimeout(hostGone, 0);
+  }
+  function hostGone() {
+    return __async(this, null, function* () {
+      if (host || hostHere() || !players.size || phase === "closed") return;
+      abortGame();
+      say({ k: "hostgone" });
+      for (const id of players.keys()) ended.add(id);
+      players.clear();
+      waitNext.clear();
+      seen.clear();
+      host = "";
+      trueHost = "";
+      clearTimeout(hostT);
+      phase = "lobby";
+      const my = ++lobbyRun;
+      const t = yield Promise.all(["The host left", "This game is over. A Blokvane member can scan the code to start a new one."].map((x) => P.tr(x)));
+      if (my !== lobbyRun || phase !== "lobby") return;
+      SND.music(null, { fadeOut: 1 });
+      if (booEl) booEl.hidden = true;
+      stage.textContent = "";
+      const cv = el("div", "cover closed", stage);
+      const box2 = el("div", "cl-box", cv);
+      const im = el("img", "cl-boo", box2);
+      im.src = P.booUri("boo:sad") || P.booUri("boo:hi");
+      im.alt = "";
+      el("h1", "", box2, t[0]);
+      el("p", "", box2, t[1]);
+      setTimeout(() => {
+        if (my === lobbyRun && phase === "lobby") {
+          if (booEl) booEl.hidden = false;
+          lobby();
+        }
+      }, 9e3);
+    });
   }
   function removePlayer(id) {
     if (!players.has(id)) return;
@@ -394,6 +430,7 @@ var BVPLAY = (() => {
         if ("lg" in m) setPlayerLang(pl, m.lg);
         if (teamsOn() && !pl.team) pl.team = P.TEAMS[players.size % Math.min(4, +settings.teamN || 2)][0];
         const isNew = !p;
+        ended.delete(m.f);
         players.set(m.f, pl);
         pickHost();
         if (isNew) P.sfx("join");
@@ -537,6 +574,7 @@ var BVPLAY = (() => {
           if (phase === "play" && cur.q) R.send(cur.q, m.f).catch(() => {
           });
         } else if (kicked.has(m.f)) sayTo(m.f, { k: "kicked" });
+        else if (ended.has(m.f)) sayTo(m.f, { k: "hostgone" });
         return;
       case "ans": {
         const w = pending.get(+m.n);

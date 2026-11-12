@@ -44,7 +44,7 @@
     langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
     joinAgain: 'Join again', hostTools: 'Host tools', showCode: 'Show the join code on the TV', hideCode: 'Hide the join code', codeOn: 'The join code is on the TV. New players scan it to join.',
     makeHost: 'Make host', remove: 'Remove', tapAgain: 'Tap again to be sure', newHost: '{name} is the host now.', tvSize: 'TV size', autoSize: 'Auto', more: 'More', youHost: 'You\'re the host now.',
-    leaveQ: 'Leave the game?', leaveWhy: 'Your score stays, and you can come back while the game is on.', leaveHost: 'You\'re the host. If you leave, someone else becomes the host.',
+    leaveQ: 'Leave the game?', leaveWhy: 'Your score stays, and you can come back while the game is on.', leaveHost: 'You\'re the host. If you leave, another Blokvane member here takes over, or the game ends for everyone.',
     stay: 'Stay', leave: 'Leave', closedT: 'The game was closed on the TV', thanks: 'Thanks for playing!',
     menu: 'Game menu', changePic: 'Change my picture', leaveGame: 'Leave the game', picDone: 'Picture changed'
   };
@@ -506,6 +506,22 @@ html.no-flexgap[dir="rtl"] .pt-start > * + * { margin-left: 0; margin-right: 10p
 .pt-dk:active{transform:scale(.98)}
 .pt-dk.bad{color:#ff8f8a}
 /* the players' lobby: the game, your language, Ready */
+/* ready: the button turns green with its check, and the line under it says the host starts the game */
+.btn.pt-on,html.pt-night .btn.pt-on{background:linear-gradient(180deg,#5eeab0,#22c07f);color:#04261a;box-shadow:0 6px 0 #12895a,0 12px 24px rgba(47,213,154,.28);margin-bottom:6px}
+.btn.pt-on:active,html.pt-night .btn.pt-on:active{transform:translateY(4px);box-shadow:0 2px 0 #12895a,0 6px 14px rgba(47,213,154,.22);filter:none}
+.pt-rdy{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;grid-gap:8px;gap:8px;margin:4px 0 14px;color:#7ff0c0;font:800 15px/1.35 var(--round);text-align:center}
+html.no-flexgap .pt-rdy > * + * { margin-left: 8px; }
+html.no-flexgap[dir="rtl"] .pt-rdy > * + * { margin-left: 0; margin-right: 8px; }
+.pt-rdy[hidden]{display:none}
+.pt-rdy .dots{display:inline-flex;grid-gap:4px;gap:4px}
+html.no-flexgap .pt-rdy .dots > * + * { margin-left: 4px; }
+html.no-flexgap[dir="rtl"] .pt-rdy .dots > * + * { margin-left: 0; margin-right: 4px; }
+.pt-rdy .dots i{width:6px;height:6px;border-radius:50%;background:currentColor;animation:ptDot 1.2s ease-in-out infinite}
+.pt-rdy .dots i:nth-child(2){animation-delay:.2s}
+.pt-rdy .dots i:nth-child(3){animation-delay:.4s}
+@keyframes ptDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@media (prefers-reduced-motion: reduce){.pt-rdy .dots i{animation:none;opacity:.7}}
+@media (prefers-color-scheme: light){html.pt-night:not(.pt-dark) .pt-rdy{color:#0d7f50}}
 .pt-gcard{display:flex;grid-gap: 14px;gap:14px;align-items:center;padding:14px 16px;border-radius:16px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08);margin-bottom:12px}
 html.no-flexgap .pt-gcard > * + * { margin-left: 14px; }
 html.no-flexgap[dir="rtl"] .pt-gcard > * + * { margin-left: 0; margin-right: 14px; }
@@ -1203,6 +1219,21 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     hero(v.body, S().closedT, S().thanks, { node: booPic('boo:love', 'float') });
     btn(T('Join a game'), { kind: 'go', huge: true, full: true }, v.body, () => codeScreen());
   }
+  // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
+  // your own, right on this phone (a Blokvane account and the paid version)
+  function hostGoneScreen() {
+    if (G.closed) return;
+    G.closed = true;
+    disarmBack();
+    quitParty(true);
+    dropBack();
+    const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: booPic('boo:sad', 'float') });
+    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Make a Blokvane account on this phone and get the paid version. Then you can host games for friends and family, and everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
+    const j = btn(T('Join a game'), { kind: 'ghost', full: true }, v.body, () => codeScreen());
+    j.style.marginTop = '12px';
+    buzz('long');
+  }
   setInterval(() => {
     if (!G.R || !G.joined) return;
     const quiet = Date.now() - G.lastHeard;
@@ -1231,6 +1262,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'pause': if (G.phase === 'play') setPausedPhone(!!m.on); return;
       case 'kicked': return kickedScreen();
       case 'closed': return closedScreen();
+      case 'hostgone': return hostGoneScreen();
       case 'waitnext': G.waitNext = true; return waitNextScreen();
       // nobody is hosting yet: the first one in has to be a Blokvane member (signed in), then everyone else just joins
       case 'needhost': {
@@ -1633,7 +1665,14 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const n = Math.min(4, +(l.settings && l.settings.teamN) || 2);
       G.ui.team = seg(TEAMS.slice(0, n).map(t2 => [t2[0], S()[t2[1]] || t2[1]]), G.team, team => { send({ k: 'team', team }); G.team = team; buzz('tap'); }, box);
     }
-    G.ui.ready = btn(G.ready ? '✓ ' + S().ready : S().ready, { kind: G.ready ? 'tint' : 'go', huge: true, full: true }, v.body, () => { G.ready = !G.ready; send({ k: 'ready', on: G.ready }); paintReady(); buzz('tap'); });
+    G.ui.ready = btn(G.ready ? '✓ ' + S().ready : S().ready, { kind: G.ready ? 'pt-on' : 'go', huge: true, full: true }, v.body, () => { G.ready = !G.ready; send({ k: 'ready', on: G.ready }); paintReady(); buzz(G.ready ? 'ok' : 'tap'); });
+    // (ready: the button turns green, and the line under it says what comes next)
+    G.ui.rdy = el('p', 'pt-rdy', v.body);
+    G.ui.rdy.setAttribute('role', 'status');
+    el('span', '', G.ui.rdy, S().hostWait);
+    const dots = el('span', 'dots', G.ui.rdy); dots.setAttribute('aria-hidden', 'true');
+    for (let i = 0; i < 3; i++) el('i', '', dots);
+    paintReady();
     G.ui.pb = el('div', '', v.body);
     fillPlayers(G.ui.pb, l, false);
     pair(v.body, [[S().changeName, () => joinScreen(true)]]);
@@ -1641,8 +1680,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   function paintReady() {
     const b = G.ui.ready;
     if (!b || !b.isConnected) return;
-    b.className = 'btn huge full ' + (G.ready ? 'tint' : 'go');
+    b.className = 'btn huge full ' + (G.ready ? 'pt-on' : 'go');
     b.querySelector('span').textContent = G.ready ? '✓ ' + S().ready : S().ready;
+    b.setAttribute('aria-pressed', String(!!G.ready));
+    if (G.ui.rdy && G.ui.rdy.isConnected) G.ui.rdy.hidden = !G.ready;
   }
   function updLobby() {
     const l = G.lobby || {};

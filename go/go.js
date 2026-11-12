@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '23';
+  const VERSION = '24';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -762,7 +762,7 @@
     el('h2', '', c, o.title || gt('No Blokvane yet?'));
     el('p', 'muted', c, o.text || gt('Get Blokvane on your computer (it\'s at blokvane.com), then sign in here to host games. Or ask a friend who has it to host: once they\'re in, you join without signing in.'));
     const r = el('div', 'grid2', c); r.style.marginTop = '12px';
-    btn(gt('Get Blokvane'), { kind: 'orange', icon: 'globe' }, r, () => { window.open(SITE, '_blank', 'noopener'); });
+    btn(gt('Get Blokvane'), { kind: 'orange', icon: 'globe' }, r, () => { window.open(o.url || SITE, '_blank', 'noopener'); });
     btn(gt('Share it'), { kind: 'blue', icon: 'share' }, r, () => shareGames());
     return c;
   }
