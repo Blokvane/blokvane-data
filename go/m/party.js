@@ -3948,21 +3948,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   ];
   const GAME_LANGS = { gir: ['en', 'ar'] };
   const gameNameOf = id => T((GAME_LIST.find(g => g[0] === id) || [0, 0, 'Party games'])[2]);
-  // the address to type on a TV: the party games' own page (or the short one, once Blokvane's own GitHub Pages site,
-  // blokvane.github.io, is there: see tools/short-address in blokvane-data)
-  const TV_ADDR = 'blokvane.github.io/blokvane-data/play';
-  let tvAddr = '';
-  async function tvAddress() {
-    if (tvAddr) return tvAddr;
-    let short = false;
-    try {
-      if (location.hostname === 'blokvane.github.io') {
-        const r = await Promise.race([fetch('/', { cache: 'no-store', credentials: 'omit' }), new Promise(res => setTimeout(() => res(null), 3000))]);
-        short = !!(r && r.ok && /blokvane-data\/play\//.test(await r.text()));
-      }
-    } catch (e) {}
-    return (tvAddr = short ? 'blokvane.github.io' : TV_ADDR);
-  }
+  // the address to type on a TV: Blokvane's short one. blokvane.com/play opens the party games (app.blokvane.com/play/)
+  // on a TV or a computer, and the phone's side of the games on a phone.
+  const TV_ADDR = 'blokvane.com/play';
+  const tvAddress = async () => TV_ADDR;
   // TVs near you: the ones on this Wi-Fi with the party games open (BVLIVE.nearby), each with its name, its game, its
   // code (the same one the TV shows) and whether it has a host. onList(tvs, looking) runs as they come and go, while
   // node is on the screen.

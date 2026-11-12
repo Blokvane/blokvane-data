@@ -215,9 +215,10 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   the game with the join code the phone made, and the phone joins it as the host by itself), or the
   computer the phone is linked to and its TV screens. The game and language go to the TV once the
   phone is its host.
-- `tools/short-address/index.html` is the page for a short TV address: copied to a repository named
-  `blokvane.github.io` (the Blokvane account's own Pages site), `blokvane.github.io` opens the party
-  games on a TV and Blokvane on a phone.
+- The short addresses for TVs are `blokvane.com/tv` (the TV screen page) and `blokvane.com/play` (the
+  party games on a TV or a computer, the phone's side of the games on a phone). They are two doors in
+  Blokvane's server (`server/app/web.py` in blokvane-app) that open the pages here.
+  `tools/short-address/index.html` is a spare door that does the same on any plain file host.
 - `play/wheel.js` is Trivia's category wheel, made from its design by
   `python3 tools/make-wheel.py "<the design's export>/source/Spin Wheel.dc.html" > play/wheel.js`.
   The TV and the phones both draw it from there.
@@ -225,9 +226,10 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
 ## TV screens anywhere (`tv/`)
 
 `tv/` is the page a TV opens with a screen's private link from Blokvane, like
-`https://blokvane.github.io/blokvane-data/tv/#s1.<secret>.<owner>`. GitHub Pages serves it
-(Settings, Pages, Deploy from a branch, `main`, `/ (root)`). `.nojekyll` tells Pages to serve
-every file as it is.
+`https://app.blokvane.com/tv/#s1.<secret>.<owner>`. GitHub Pages serves it
+(Settings, Pages, Deploy from a branch, `main`, `/ (root)`) at Blokvane's own address,
+`app.blokvane.com`: the `CNAME` file names it, and a DNS record for `app` points to
+`blokvane.github.io`. `.nojekyll` tells Pages to serve every file as it is.
 
 There is no server behind it. The page finds the computer with the slideshows through the same
 free public relays Watch together uses, connects straight to it (WebRTC, encrypted), and copies the

@@ -6,9 +6,10 @@
 <meta name="color-scheme" content="dark">
 <meta name="referrer" content="no-referrer">
 <title>Blokvane party games</title>
-<!-- The short address for TVs: blokvane.github.io (the Blokvane account's own GitHub Pages site, the repository
-     "blokvane.github.io") opens the party games on a TV, and Blokvane on a phone. Copy this file to that repository's
-     main folder as index.html. Nothing else is needed: no server, nothing to pay. -->
+<!-- A spare door. The short addresses are blokvane.com/tv and blokvane.com/play now: two doors in Blokvane's own
+     server (server/app/web.py in blokvane-app) that open the pages at app.blokvane.com. This file does the same job
+     for any plain file host: put it there as index.html, and that address opens the party games on a TV and Blokvane
+     on a phone. -->
 <style>
   html, body { margin: 0; min-height: 100%; background: #170f33; color: #f7f4ff; }
   body { min-height: 100vh; display: grid; place-items: center; font: 600 22px/1.4 system-ui, sans-serif; text-align: center; }
@@ -17,15 +18,15 @@
 <script>
   // (a phone goes to Blokvane on the phone; anything bigger, like a TV or a computer, to the party games)
   (function () {
-    var base = 'https://blokvane.github.io/blokvane-data/';
+    var base = 'https://app.blokvane.com/';
     var phone = false;
     try { phone = Math.min(screen.width, screen.height) < 600 && (('ontouchstart' in window) || (window.matchMedia && matchMedia('(pointer: coarse)').matches)); } catch (e) {}
     location.replace(base + (phone ? 'go/' : 'play/') + (location.hash || ''));
   })();
 </script>
-<noscript><meta http-equiv="refresh" content="0; url=https://blokvane.github.io/blokvane-data/play/"></noscript>
+<noscript><meta http-equiv="refresh" content="0; url=https://app.blokvane.com/play/"></noscript>
 </head>
 <body>
-<p>Opening Blokvane party games...<br><a href="https://blokvane.github.io/blokvane-data/play/">Tap here if nothing happens</a></p>
+<p>Opening Blokvane party games...<br><a href="https://app.blokvane.com/play/">Tap here if nothing happens</a></p>
 </body>
 </html>

@@ -212,7 +212,7 @@
   async function kvSetup(pc) {
     if (!window.PublicKeyCredential || !navigator.credentials) throw new Error('This phone\'s browser can\'t make a passkey.');
     const cred = await navigator.credentials.create({ publicKey: {
-      challenge: C.rand(32), rp: { name: 'Blokvane', id: 'blokvane.github.io' },
+      challenge: C.rand(32), rp: { name: 'Blokvane', id: 'blokvane.com' },
       user: { id: C.rand(16), name: 'KeyVane on ' + pc.name, displayName: 'KeyVane on ' + pc.name },
       pubKeyCredParams: [{ type: 'public-key', alg: -7 }], timeout: 60000,
       authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' }, attestation: 'none'
@@ -263,7 +263,7 @@
       el('p', 'lead', sh, `KeyVane on ${a.computer || pc.name} asks to unlock. Only approve if you just asked for it there.`);
       const r = el('div', 'stack', sh);
       btn('Approve', { kind: 'go', huge: true, full: true, icon: 'check' }, r, async () => {
-        const assertion = await navigator.credentials.get({ publicKey: { challenge: C.unb64url(a.challenge), rpId: 'blokvane.github.io', allowCredentials: [{ type: 'public-key', id: C.unb64url(a.credId || set.cred) }], userVerification: 'required', timeout: 60000 } });
+        const assertion = await navigator.credentials.get({ publicKey: { challenge: C.unb64url(a.challenge), rpId: 'blokvane.com', allowCredentials: [{ type: 'public-key', id: C.unb64url(a.credId || set.cred) }], userVerification: 'required', timeout: 60000 } });
         const res = assertion.response;
         await pc.ask('kvAnswer', { challenge: a.challenge, w: set.w, a: { cd: C.b64url(new Uint8Array(res.clientDataJSON)), ad: C.b64url(new Uint8Array(res.authenticatorData)), sig: C.b64url(new Uint8Array(res.signature)) } }, { timeout: 20000 });
         close(); buzz('ok'); toast('KeyVane is unlocked on ' + pc.name + '.', 'ok');

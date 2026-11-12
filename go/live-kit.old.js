@@ -26,9 +26,9 @@ var BVLIVE = (() => {
   const te = new TextEncoder(), td = new TextDecoder();
   const subtle = crypto.subtle;
   const ICE = [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }, { urls: ["stun:stun.cloudflare.com:3478"] }];
-  const GO = "https://blokvane.github.io/blokvane-data/go/";
-  const PLAY = "https://blokvane.github.io/blokvane-data/play/";
-  const TV = "https://blokvane.github.io/blokvane-data/tv/";
+  const GO = "https://app.blokvane.com/go/";
+  const PLAY = "https://app.blokvane.com/play/";
+  const TV = "https://app.blokvane.com/tv/";
   const PART = 4200;
   const MAX_LONG = 96 * 1024;
   const HELLO_EVERY = 25e3, GONE_AFTER = 75e3;

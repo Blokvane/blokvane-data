@@ -1,4 +1,4 @@
-// Blokvane on your phone (https://blokvane.github.io/blokvane-data/go/). One page for everything a phone does with
+// Blokvane on your phone (https://app.blokvane.com/go/). One page for everything a phone does with
 // Blokvane: be the remote for your computer and TV screens, send files and links, share the clipboard, answer Kid mode
 // requests, find a lost computer, unlock KeyVane, join a party game or a poll. There is no app and no account.
 // What to do is after the # in the address (browsers never send that part to any website): "c1" is your paired

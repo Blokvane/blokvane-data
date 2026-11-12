@@ -1,5 +1,5 @@
 // Blokvane Screens anywhere: the page a TV (or any web browser) opens with a screen's private link from Blokvane, like
-// https://blokvane.github.io/blokvane-data/tv/#s1.<secret>.<owner>. There is no Blokvane server behind it:
+// https://app.blokvane.com/tv/#s1.<secret>.<owner>. There is no Blokvane server behind it:
 // 1. It finds the computer with your slideshows through free public relays, the same ones Watch together uses. Every
 //    message is sealed with the link's secret and signed, and only messages signed by your computer's own key (its
 //    id is the last part of the link) are believed. The secret is after the # in the address: browsers never send
