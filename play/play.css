@@ -590,6 +590,8 @@ html.no-flexgap .pc .who > * + * { margin-top: calc(1 * var(--u)); }
   border: calc(.2 * var(--u)) solid rgba(255, 209, 102, .6); background: rgba(29, 21, 70, .92); color: #fff5d6; font: 700 calc(2.2 * var(--u))/1.2 var(--round); box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .4);
   animation: hintGlow 2.4s ease-in-out infinite; }
 .snd-hint[hidden] { display: none; }
+/* (and never over the winners: every game's winner screen shows whole, the way its design has it) */
+body:has(.cover.win, .wv-host, .bw-host.bw-win, .emo-host[data-screen="win"], .imp-host[data-screen="win"], .imp-host[data-screen="final"]) .snd-hint { display: none; }
 @keyframes hintGlow { 50% { box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .4), 0 0 0 calc(.8 * var(--u)) rgba(255, 209, 102, .18); } }
 /* ---------- the lobby fits everyone (fitLobby in play.js): the seats share the room the card under them leaves ---------- */
 .lob-r > .ph, .lob-r > .spot, .lob-r > .lob-x { flex: none; }

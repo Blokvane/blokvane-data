@@ -8,7 +8,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '22';
+  const VERSION = '23';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -62,6 +62,37 @@
     '<ellipse class="eye" cx="47" cy="52" rx="6" ry="8" fill="#2b2346"/><ellipse class="eye" cx="73" cy="52" rx="6" ry="8" fill="#2b2346"/><circle cx="49" cy="49" r="2.2" fill="#fff"/><circle cx="75" cy="49" r="2.2" fill="#fff"/>' +
     '<path d="M51 68c5 5 13 5 18 0" fill="none" stroke="#2b2346" stroke-width="4.5" stroke-linecap="round"/><ellipse cx="38" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/><ellipse cx="82" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/></svg>';
   function boo(cls) { const b = el('div', 'boo' + (cls ? ' ' + cls : '')); b.innerHTML = BOO_SVG; return b; }
+  // Boo of Blokvane Games ("Silk waves"): a white ghost with rosy cheeks. face: 'smile' (the welcome), 'plain' (the
+  // app's icon) or 'sleepy' (something didn't work)
+  const SW_EYES = '<ellipse cx="23.6" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><ellipse cx="35.4" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><circle cx="24.4" cy="22.6" r="1.2" fill="#fff"/><circle cx="36.2" cy="22.6" r="1.2" fill="#fff"/>';
+  const SW_BOO = face => '<svg viewBox="10 0 40 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="sw-boo"><path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff"/>' +
+    (face === 'sleepy' ? '<path d="M21 24.5q2.6 1.6 5.2 0M32.8 24.5q2.6 1.6 5.2 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27.4 32q2.6-1.4 5.2 0" stroke="#2a0f3a" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
+      : SW_EYES + (face === 'smile' ? '<path d="M27 31q3 2.4 6 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>' : '')) +
+    '<ellipse cx="19.5" cy="29" rx="2.4" ry="1.4" fill="#ff8aa0"/><ellipse cx="40.5" cy="29" rx="2.4" ry="1.4" fill="#ff8aa0"/></svg>';
+  function swBoo(cls) { const b = el('div', 'boo sw' + (cls ? ' ' + cls : '')); b.innerHTML = SW_BOO(cls === 'sleepy' ? 'sleepy' : 'smile'); return b; }
+  // (the sky behind every Games page: drawn once, shown by go.css only with the games' look)
+  function swSky() {
+    if (document.querySelector('.sw-sky')) return;
+    const sk = el('div', 'sw-sky');
+    sk.setAttribute('aria-hidden', 'true');
+    el('div', 'sw-blob a', sk); el('div', 'sw-blob b', sk);
+    for (const w of ['w1', 'w2', 'w3', 'w4']) el('div', 'sw-wave ' + w, sk);
+    document.body.insertBefore(sk, document.body.firstChild);
+  }
+  // (the phone's status bar in the page's colors: the Games look by day or by night, and the night on a game screen;
+  // every other page keeps the color it starts with)
+  function barColor() {
+    const h = document.documentElement, night = h.classList.contains('pt-night');
+    let day = false;
+    try { day = night && !h.classList.contains('pt-dark') && matchMedia('(prefers-color-scheme: light)').matches; } catch (e) {}
+    for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
+      if (m.getAttribute('data-c0') == null) m.setAttribute('data-c0', m.content);
+      const want = !night ? m.getAttribute('data-c0') : day ? '#f3eeff' : '#1d1440';
+      if (m.content !== want) m.content = want;
+    }
+  }
+  try { new MutationObserver(barColor).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] }); } catch (e) {}
+  try { const mq = matchMedia('(prefers-color-scheme: light)'); if (mq.addEventListener) mq.addEventListener('change', barColor); else if (mq.addListener) mq.addListener(barColor); } catch (e) {}
 
   let toastT = 0;
   function toast(text, tone) {
@@ -183,18 +214,25 @@
   function view(title, o = {}) {
     app.textContent = '';
     app.className = 'app';
-    // (the party games have their own night look: on for their pages, off for every other one)
+    app.style.removeProperty('--oa'); app.style.removeProperty('height');
+    // (the party games have their own look, "Silk waves": on for their pages, off for every other one. A game screen
+    // turns pt-dark on by itself: m/party.js)
     document.documentElement.classList.toggle('pt-night', !!o.night);
-    // (the other pages are in English, left to right, also right after a game in Arabic)
+    document.documentElement.classList.remove('pt-dark');
+    if (o.night) swSky();
+    // (the other pages are in English, left to right, also right after a game in Arabic; the Games app's own pages are
+    // in its language)
     if (!o.night) { document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en'; }
+    else if (o.app) appDir();
     document.documentElement.style.setProperty('--tint', o.tint ? `var(--${o.tint})` : 'var(--coral)');
     const top = el('header', 'top', app);
     if (o.back) {
       const b = el('button', 'back', top);
-      b.type = 'button'; b.setAttribute('aria-label', say('Back'));
+      b.type = 'button'; b.setAttribute('aria-label', o.app ? gt('Back') : say('Back'));
       b.appendChild(icon('back'));
       b.onclick = () => { if (o.onBack) o.onBack(); o.back(); };
-    } else top.appendChild(boo('float'));
+    } else if (o.night) { const ic = el('span', 'sw-appic', top); ic.innerHTML = SW_BOO('plain').replace('class="sw-boo"', ''); }
+    else top.appendChild(boo('float'));
     const who = el('div', 'who', top);
     el('h1', '', who, title);
     const sub = el('p', '', who);
@@ -212,7 +250,7 @@
   }
   function hero(parent, title, text, o = {}) {
     const h = el('div', 'hero', parent);
-    if (o.node) h.appendChild(o.node); else h.appendChild(boo(o.sleepy ? 'sleepy' : 'float'));
+    if (o.node) h.appendChild(o.node); else h.appendChild(document.documentElement.classList.contains('pt-night') ? swBoo(o.sleepy ? 'sleepy' : 'float') : boo(o.sleepy ? 'sleepy' : 'float'));
     el('h1', '', h, title);
     if (text) el('p', '', h, text);
     return h;
@@ -380,7 +418,7 @@
         const shown = e.prompt();
         if (shown && shown.catch) shown.catch(() => {});
         const c = await e.userChoice;
-        if (c && c.outcome === 'accepted') { store.set(GAMES ? 'gamesAdded' : 'appAdded', 1); toast((GAMES ? 'Blokvane Games' : 'Blokvane') + ' is on your home screen now.', 'ok'); return true; }
+        if (c && c.outcome === 'accepted') { store.set(GAMES ? 'gamesAdded' : 'appAdded', 1); toast(GAMES ? gt('Blokvane Games is on your home screen now.') : 'Blokvane is on your home screen now.', 'ok'); return true; }
         return false;
       } catch (er) {}
     }
@@ -390,23 +428,24 @@
   function installSteps(o = {}) {
     const ua = navigator.userAgent, ios = plat() === 'ios';
     const nm = GAMES ? 'Blokvane Games' : 'Blokvane';
+    const w = (t, v) => (GAMES ? gt(t, v) : gfill(t, v));
     const otherIos = /CriOS|FxiOS|EdgiOS/.test(ua), samsung = /SamsungBrowser/.test(ua);
     const steps = ios
-      ? [['share', 'Tap the Share button', otherIos ? 'The square with an arrow, next to the address at the top.' : 'The square with an arrow, at the bottom of Safari.'],
-        ['addbox', 'Tap "Add to Home Screen"', 'Scroll down the list a little if you don\'t see it.'],
-        ['check', 'Tap "Add"', 'At the top right. ' + nm + ' is now on your home screen.']]
+      ? [['share', w('Tap the Share button'), otherIos ? w('The square with an arrow, next to the address at the top.') : w('The square with an arrow, at the bottom of Safari.')],
+        ['addbox', w('Tap "Add to Home Screen"'), w('Scroll down the list a little if you don\'t see it.')],
+        ['check', w('Tap "Add"'), w('At the top right. {name} is now on your home screen.', { name: nm })]]
       : plat() === 'android'
-        ? [['dots', 'Open the browser menu', samsung ? 'The three lines at the bottom right.' : 'The three dots at the top right.'],
-          ['addbox', 'Tap "Install app" or "Add to Home screen"', ''],
-          ['check', 'Tap "Install" or "Add"', nm + ' is now on your home screen.']]
-        : [['addbox', 'In Chrome or Edge: the install icon in the address bar', 'Or the browser menu, then "Install".'], ['check', 'Click "Install"', 'Blokvane gets its own window and icon.']];
-    sheet('Add ' + nm + ' to your home screen', (sh, close) => {
-      el('p', 'muted', sh, 'It opens like an app, with its own icon, in one tap. Nothing to download from a store.');
+        ? [['dots', w('Open the browser menu'), samsung ? w('The three lines at the bottom right.') : w('The three dots at the top right.')],
+          ['addbox', w('Tap "Install app" or "Add to Home screen"'), ''],
+          ['check', w('Tap "Install" or "Add"'), w('{name} is now on your home screen.', { name: nm })]]
+        : [['addbox', w('In Chrome or Edge: the install icon in the address bar'), w('Or the browser menu, then "Install".')], ['check', w('Click "Install"'), w('{name} gets its own window and icon.', { name: nm })]];
+    sheet(w('Add {name} to your home screen', { name: nm }), (sh, close) => {
+      el('p', 'muted', sh, w('It opens like an app, with its own icon, in one tap. Nothing to download from a store.'));
       const ls = el('ol', 'steps-pic', sh);
       steps.forEach(([ic, t, sub]) => { const li = el('li', '', ls); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); if (sub) el('small', '', d, sub); });
       if (o.note) el('p', 'install-note', sh, o.note);
-      if (o.instead) btn('Use it in the browser instead', { kind: 'ghost', full: true }, sh, () => { close(); o.instead(); }).style.marginTop = '12px';
-      else btn('Got it', { kind: 'go', full: true }, sh, () => close()).style.marginTop = '12px';
+      if (o.instead) btn(w('Use it in the browser instead'), { kind: 'ghost', full: true }, sh, () => { close(); o.instead(); }).style.marginTop = '12px';
+      else btn(w('Got it'), { kind: 'go', full: true }, sh, () => close()).style.marginTop = '12px';
     });
   }
   // a small card on the home page (until it's added, or "Not now" for three weeks)
@@ -606,7 +645,7 @@
     btn('No', { kind: 'ghost', full: true }, v.body, () => { history.replaceState(null, '', location.pathname); route(); }).style.marginTop = '10px';
   }
   // which part handles each kind of link
-  const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', fan: 'fun', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
+  const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
     wb: 'board', game: 'party' };
   // no link: the computers this phone knows, or how to start
   async function home() {
@@ -662,7 +701,7 @@
     if (!b || typeof b.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(b.s) || !L.okId(b.tv) || !(Date.now() - (+b.at || 0) < 3 * 3600e3)) return null;
     const c = el('div', 'card', parent);
     c.style.borderColor = 'color-mix(in srgb, var(--pink) 45%, var(--line))';
-    const sy = t => (window.GO && GO.say ? GO.say(t) : t);
+    const sy = t => (GAMES ? gt(t) : window.GO && GO.say ? GO.say(t) : t);
     el('h2', '', c, '🎉 ' + (typeof b.name === 'string' && b.name ? L.clean(b.name, 40) : sy('Party game')));
     el('p', 'muted', c, sy('You were in this game a little while ago. Go back in as yourself, with your score.'));
     btn(sy('Back to the game'), { kind: 'go', full: true, huge: true, icon: 'play' }, c, () => { location.hash = '#game.' + b.s + '.' + b.tv + (typeof b.lg === 'string' && /^[a-z]{2}$/.test(b.lg) ? '.' + b.lg : ''); });
@@ -677,7 +716,9 @@
   // Blokvane Games (games.html): the party games' own small app
   // =====================================================================
   // The same page as Blokvane on your phone, for games only: its home is the games (scan the QR code with the camera,
-  // type the code, back into a game), and a game's QR code opened in the browser asks once how to play.
+  // type the code, back into a game, start a game as its host), and a game's QR code opened in the browser asks once
+  // how to play. It speaks the phone's language (one of the games' seven: ../play/i18n.js and its words), or the one
+  // picked on its home page, right to left for Arabic. Its look is "Silk waves" (go.css), dark or light like the phone.
   const GAMES = !!window.BV_GAMES;
   // a sign-in that may host games (pass.js), kept on this phone
   const pass = {
@@ -686,96 +727,228 @@
     clear() { store.del('games:pass'); }
   };
   const SITE = 'https://blokvane.com/';
+  // the language: gt(words, { parts }) is the words in it (words with no translation yet stay English)
+  let gl = 'en';
+  const gfill = (s, v) => (v ? String(s).replace(/\{(\w+)\}/g, (m, k) => (v[k] != null ? String(v[k]) : m)) : String(s));
+  const gt = (s, v) => (gl !== 'en' && window.BVI18N ? BVI18N.t(gl, s, v) : gfill(s, v));
+  const later = (p, ms, v) => Promise.race([p, new Promise(r => setTimeout(() => r(v), ms))]);
+  async function gamesLang(code) {
+    try { await later(script('../play/i18n.js?v=' + VERSION), 4000); } catch (e) { return gl; }
+    const I = window.BVI18N;
+    if (!I) return gl;
+    const want = code || store.get('games:lang', '');
+    const c = I.FULL.has(want) ? want : I.pick();
+    if (c !== 'en' && !(await later(I.load(c, false), 6000, false))) return gl;
+    gl = c;
+    return gl;
+  }
+  // (a page of the app's own: in its language, right to left for Arabic)
+  const appDir = () => { document.documentElement.lang = gl; document.documentElement.dir = window.BVI18N && BVI18N.RTL.has(gl) ? 'rtl' : 'ltr'; };
   async function shareGames() {
-    const data = { title: 'Blokvane Games', text: 'Party games on the TV, and everyone plays on their own phone. One person with Blokvane hosts, everyone else plays free.', url: SITE };
+    const data = { title: 'Blokvane Games', text: gt('Party games on the TV, and everyone plays on their own phone. One person with Blokvane hosts, everyone else plays free.'), url: SITE };
     try { if (navigator.share) { await navigator.share(data); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
-    try { await navigator.clipboard.writeText(SITE); toast('Link copied. Send it to a friend.', 'ok'); } catch (e) { toast(SITE); }
+    try { await navigator.clipboard.writeText(SITE); toast(gt('Link copied. Send it to a friend.'), 'ok'); } catch (e) { toast(SITE); }
+  }
+  // a host invites friends to game night: the Games app, so it's ready on their phones
+  async function shareInvite() {
+    const url = L.GO + 'games.html';
+    const data = { title: 'Blokvane Games', text: gt('Game night! The game is on the TV, and everyone plays on their own phone, free. Get Blokvane Games here:'), url };
+    try { if (navigator.share) { await navigator.share(data); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(data.text + ' ' + url); toast(gt('Invite copied. Send it to your friends.'), 'ok'); } catch (e) { toast(url); }
   }
   // "Get Blokvane": where it is, and sharing it
   function getCard(parent, o = {}) {
     const c = el('div', 'card gm-get', parent);
-    el('h2', '', c, o.title || 'No Blokvane yet?');
-    el('p', 'muted', c, o.text || 'Get Blokvane on your computer (it\'s at blokvane.com), then sign in here to host games. Or ask a friend who has it to host: once they\'re in, you join without signing in.');
+    el('h2', '', c, o.title || gt('No Blokvane yet?'));
+    el('p', 'muted', c, o.text || gt('Get Blokvane on your computer (it\'s at blokvane.com), then sign in here to host games. Or ask a friend who has it to host: once they\'re in, you join without signing in.'));
     const r = el('div', 'grid2', c); r.style.marginTop = '12px';
-    btn('Get Blokvane', { kind: 'tint', icon: 'globe' }, r, () => { window.open(SITE, '_blank', 'noopener'); });
-    btn('Share it', { kind: 'ghost', icon: 'share' }, r, () => shareGames());
+    btn(gt('Get Blokvane'), { kind: 'orange', icon: 'globe' }, r, () => { window.open(SITE, '_blank', 'noopener'); });
+    btn(gt('Share it'), { kind: 'blue', icon: 'share' }, r, () => shareGames());
     return c;
   }
   // signing in to host: Boo with his golden host ticket
   async function signInScreen(o = {}) {
     try { (await need('party'))('css'); } catch (e) {}
-    const v = view('Blokvane Games', { tint: 'mint', night: true, back: o.back || null });
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true, back: o.back || null });
     const art = el('div', 'si-art', v.body);
-    art.appendChild(boo('float'));
+    art.appendChild(swBoo('float'));
     const tk = el('div', 'si-ticket', art);
-    el('b', '', tk, 'HOST'); el('small', '', tk, 'Blokvane member');
-    el('h1', 'si-h', v.body, o.why === 'host' ? 'This game needs a host' : 'Sign in to host games');
-    el('p', 'si-p', v.body, o.why === 'host' ? 'Every game needs one Blokvane member to start it. Sign in, and everyone else joins for free.' : 'Blokvane members host the games. Everyone who joins their game plays for free, without signing in.');
+    el('b', '', tk, gt('HOST')); el('small', '', tk, gt('Blokvane member'));
+    el('h1', 'si-h', v.body, o.why === 'host' ? gt('This game needs a host') : gt('Sign in to host games'));
+    el('p', 'si-p', v.body, o.why === 'host' ? gt('Every game needs one Blokvane member to start it. Sign in, and everyone else joins for free.') : gt('Blokvane members host the games. Everyone who joins their game plays for free, without signing in.'));
     const card = el('div', 'card si-card', v.body);
     const ei = input({ placeholder: 'you@example.com', max: 120 });
-    ei.type = 'email'; ei.autocomplete = 'username'; ei.inputMode = 'email'; ei.autocapitalize = 'none'; ei.spellcheck = false;
-    field('Email', ei, card);
-    const pi = input({ placeholder: 'Your password', max: 120 });
+    ei.type = 'email'; ei.autocomplete = 'username'; ei.inputMode = 'email'; ei.autocapitalize = 'none'; ei.spellcheck = false; ei.dir = 'ltr';
+    field(gt('Email'), ei, card);
+    const pi = input({ placeholder: gt('Your password'), max: 120 });
     pi.type = 'password'; pi.autocomplete = 'current-password';
-    const pf = field('Password', pi, card);
-    const eye = el('button', 'si-eye', pf.parentNode, 'Show'); eye.type = 'button';
-    eye.onclick = () => { const show = pi.type === 'password'; pi.type = show ? 'text' : 'password'; eye.textContent = show ? 'Hide' : 'Show'; pi.focus(); };
+    const pf = field(gt('Password'), pi, card);
+    const eye = el('button', 'si-eye', pf.parentNode, gt('Show')); eye.type = 'button';
+    eye.onclick = () => { const show = pi.type === 'password'; pi.type = show ? 'text' : 'password'; eye.textContent = show ? gt('Hide') : gt('Show'); pi.focus(); };
     const err = el('p', 'si-err', card); err.hidden = true;
-    const go = btn('Sign in', { kind: 'go', huge: true, full: true, icon: 'key' }, v.body, async () => {
+    const go = btn(gt('Sign in'), { kind: 'go', huge: true, full: true, icon: 'key' }, v.body, async () => {
       err.hidden = true;
       art.classList.remove('sad');
       const r = await BVPASS.signIn(ei.value, pi.value);
-      if (r.error) { err.textContent = r.error; err.hidden = false; art.classList.add('sad'); buzz('bad'); pi.select(); return; }
+      if (r.error) { err.textContent = gt(r.error); err.hidden = false; art.classList.add('sad'); buzz('bad'); pi.select(); return; }
       pass.set(r.pass);
       art.classList.add('yay');
       buzz('ok'); confetti();
-      toast(o.why === 'host' ? 'Signed in: you\'re the host!' : 'Signed in. You can host games now.', 'ok');
+      toast(o.why === 'host' ? gt('Signed in: you\'re the host!') : gt('Signed in. You can host games now.'), 'ok');
       setTimeout(() => { if (o.after) o.after(); }, 700);
     });
     go.style.marginTop = '6px';
     pi.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     ei.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pi.focus(); } });
-    if (o.why === 'host' && o.again) btn('The host is in now: try again', { kind: 'ghost', full: true }, v.body, () => o.again()).style.marginTop = '10px';
+    if (o.why === 'host' && o.again) btn(gt('The host is in now: try again'), { kind: 'ghost', full: true }, v.body, () => o.again()).style.marginTop = '10px';
     getCard(v.body);
     setTimeout(() => { try { ei.focus(); } catch (e) {} }, 350);
   }
   // the first time a game's QR code opens in the browser: here, or the Games app?
   function gamesChoice() {
-    const v = view('Blokvane Games', { tint: 'mint', night: true });
-    const h = hero(v.body, 'How do you want to play?', 'Both go straight into this game. We remember your pick for next time.');
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true });
+    const h = hero(v.body, gt('How do you want to play?'), gt('Both go straight into this game. We remember your pick for next time.'));
     h.querySelector('.boo').classList.add('wave');
     const ls = el('div', 'how', v.body);
     const app = el('button', 'how-o rec gm', ls); app.type = 'button';
     const ai = el('span', 'how-ic appic', app); const im = el('img', '', ai); im.src = 'games-192.png'; im.alt = '';
-    const at = el('span', 'how-t', app); el('b', '', at, 'Get the Blokvane Games app'); el('small', '', at, 'On your home screen, for every game night: one tap, full screen, scan the code right in it.');
-    el('span', 'how-tag', app, 'Best');
+    const at = el('span', 'how-t', app); el('b', '', at, gt('Get the Blokvane Games app')); el('small', '', at, gt('On your home screen, for every game night: one tap, full screen, scan the code right in it.'));
+    el('span', 'how-tag', app, gt('Best'));
     const web = el('button', 'how-o', ls); web.type = 'button';
     const wi = el('span', 'how-ic', web); wi.appendChild(icon('globe'));
-    const wt = el('span', 'how-t', web); el('b', '', wt, 'Play here, in the browser'); el('small', '', wt, 'Nothing to add. It starts right away.');
+    const wt = el('span', 'how-t', web); el('b', '', wt, gt('Play here, in the browser')); el('small', '', wt, gt('Nothing to add. It starts right away.'));
     web.onclick = () => { store.set('games:how', 'web'); buzz('tap'); route(); };
     app.onclick = async () => {
       store.set('games:how', 'app'); buzz('tap');
       // (Android: the app shares this phone's browser data, so it opens straight into this game)
       store.set('games:pending', { hash: location.hash, at: Date.now() });
       if (installEvt) { await installApp(); openTheApp(L.parse(location.hash)); return; }
-      installSteps({ note: plat() === 'ios' ? 'Then open Blokvane Games from your home screen, tap "Scan the QR code" and point it at the TV.' : 'Then open Blokvane Games from your home screen: it goes straight into this game.', instead: () => { const hh = L.parse(location.hash); if (hh) ss.set('games:here:' + String(hh.parts[0] || '').slice(0, 10), '1'); route(); } });
+      installSteps({ note: plat() === 'ios' ? gt('Then open Blokvane Games from your home screen, tap "Scan the QR code" and point it at the TV.') : gt('Then open Blokvane Games from your home screen: it goes straight into this game.'), instead: () => { const hh = L.parse(location.hash); if (hh) ss.set('games:here:' + String(hh.parts[0] || '').slice(0, 10), '1'); route(); } });
     };
-    el('p', 'muted small center', v.body, 'You can change this any time on the Games page.').style.marginTop = '14px';
+    el('p', 'muted small center', v.body, gt('You can change this any time on the Games page.')).style.marginTop = '14px';
   }
-  // the app was picked before, and this opened in the browser: to the app, or here just this once
+  // the app was picked before, and this opened in the browser: to the app, or here just this once. As on its design
+  // ("Open the App", label above): the Games icon over its glow, Add the app recommended, and the two other ways in.
+  // It always fits on one screen: any phone (lying down too), any tablet, any language (oaFit, just below)
+  const OA_IC = {
+    star: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.4 4.7 1.6 7.1L12 17.3 5.8 21l1.6-7.1L2 9.2l7.1-.6z" fill="currentColor"/></svg>',
+    add: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="M12 8v8M8 12h8"/></svg>',
+    play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5l12 7-12 7z"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'
+  };
   function openTheApp(h) {
     store.set('games:pending', { hash: location.hash, at: Date.now() });
     const ios = plat() === 'ios';
-    const v = view('Blokvane Games', { tint: 'mint', night: true });
-    const art = el('div', 'gm-open', v.body);
-    const im = el('img', '', art); im.src = 'games-192.png'; im.alt = '';
-    el('h1', 'center', v.body, 'Open the Blokvane Games app');
-    el('p', 'muted center', v.body, ios ? 'It\'s on your home screen. Open it, tap "Scan the QR code" and point it at the TV. Or type the 6 letters under the QR code.' : 'It\'s on your home screen. Open it: it goes straight into this game.');
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true });
+    app.classList.add('oa');
+    const mid = el('div', 'oa-mid', v.body);
+    const ic = el('div', 'oa-ic', mid);
+    el('i', 'oa-glow', ic);
+    const tile = el('div', 'oa-tile', ic);
+    tile.innerHTML = SW_BOO('smile').replace('class="sw-boo"', '');
+    el('span', 'oa-games', tile, 'GAMES');
+    el('h1', 'oa-h', mid, gt('Open the Blokvane Games app'));
+    el('p', 'oa-p', mid, ios ? gt('It\'s on your home screen. Open it, tap "Scan the QR code" and point it at the TV. Or type the 6 letters under the QR code.') : gt('It\'s on your home screen. Open it: it goes straight into this game.'));
     const here = () => { ss.set('games:here:' + String((h && h.parts[0]) || '').slice(0, 10), '1'); store.del('games:pending'); route(); };
-    btn('Play here this time', { kind: 'go', full: true, huge: true }, v.body, here).style.marginTop = '14px';
-    const r = el('div', 'grid2', v.body); r.style.marginTop = '10px';
-    btn('Add the app', { kind: 'ghost', icon: 'addbox' }, r, () => installApp());
-    btn('Always the browser', { kind: 'ghost' }, r, () => { store.set('games:how', 'web'); here(); });
+    const acts = el('div', 'oa-acts', v.body);
+    const rec = el('div', 'oa-rec', acts);
+    const lab = el('div', 'oa-lab', rec);
+    el('i', 'a', lab);
+    lab.insertAdjacentHTML('beforeend', OA_IC.star);
+    el('span', '', lab, gt('Recommended'));
+    lab.insertAdjacentHTML('beforeend', OA_IC.star);
+    el('i', 'b', lab);
+    const add = el('button', 'oa-add', rec); add.type = 'button';
+    add.innerHTML = OA_IC.add; el('span', '', add, gt('Add the app'));
+    add.onclick = () => { buzz('tap'); installApp(); };
+    const row = el('div', 'oa-row', acts);
+    const pill = (ico, text, fn) => { const b = el('button', 'oa-pill', row); b.type = 'button'; b.innerHTML = OA_IC[ico]; el('span', '', b, text); b.onclick = () => { buzz('tap'); fn(); }; return b; };
+    pill('play', gt('Play here this time'), here);
+    pill('globe', gt('Always the browser'), () => { store.set('games:how', 'web'); here(); });
+    oaFit();
+    // (again once the fonts are in: the words take their real room)
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => oaFit()); } catch (e) {}
+    setTimeout(oaFit, 400);
+  }
+  // how big the Open the app screen is (--oa: 1 is the design): as big as it is drawn on a phone, a little bigger on a
+  // tablet, and smaller until it all fits when the screen is short (a small phone, a phone lying down). The two small
+  // buttons take two lines, or go one above the other, when their words are long
+  let oaWatch = false;
+  function oaFit() {
+    const a = app;
+    if (!a || !a.classList.contains('oa')) return;
+    if (!oaWatch) {
+      oaWatch = true;
+      let t = 0;
+      const again = () => { cancelAnimationFrame(t); t = requestAnimationFrame(() => oaFit()); };
+      window.addEventListener('resize', again);
+      window.addEventListener('orientationchange', () => setTimeout(again, 250));
+      try { if (window.visualViewport) visualViewport.addEventListener('resize', again); } catch (e) {}
+    }
+    // (a browser that doesn't know the screen's own height, 100dvh, gets the height it shows)
+    let dv = false;
+    try { dv = CSS.supports('height', '100dvh'); } catch (e) {}
+    if (!dv && window.innerHeight) a.style.height = window.innerHeight + 'px';
+    const W = window.innerWidth || 390;
+    const room = Math.min(a.clientHeight || window.innerHeight, window.innerHeight || a.clientHeight);
+    const most = Math.min(1.3, Math.max(1, W / 440));
+    const row = a.querySelector('.oa-row');
+    const set = k => a.style.setProperty('--oa', String(Math.round(k * 1000) / 1000));
+    const pills = () => {
+      if (!row) return;
+      row.classList.remove('wrap', 'stack');
+      const kids = Array.prototype.slice.call(row.children);
+      if (!kids.some(b => b.scrollWidth > b.clientWidth + 1)) return;
+      row.classList.add('wrap');
+      const lines = b => { const sp = b.querySelector('span'); const lh = parseFloat(getComputedStyle(sp).lineHeight) || 16; return Math.round(sp.offsetHeight / lh); };
+      if (kids.some(b => b.scrollWidth > b.clientWidth + 1 || lines(b) > 2)) row.classList.add('stack');
+    };
+    const tall = () => { const hs = a.style.height; a.style.height = ''; a.classList.add('oa-m'); const n = a.offsetHeight; a.classList.remove('oa-m'); a.style.height = hs; return n; };
+    const fits = k => { set(k); pills(); return tall() <= room + 0.5; };
+    // (the biggest size that fits, between half the design and the most: found in a few tries)
+    let k = most;
+    if (!fits(k)) {
+      let lo = 0.5, hi = k;
+      if (fits(lo)) {
+        for (let i = 0; i < 9 && hi - lo > 0.004; i++) { const m = (lo + hi) / 2; if (fits(m)) lo = m; else hi = m; }
+      }
+      k = lo;
+      fits(k);
+    }
+    // (a screen too small even for that: it scrolls, so nothing is ever out of reach)
+    a.classList.toggle('oa-scroll', tall() > room + 0.5);
+  }
+  // the two ways in, as on the design: a QR code and a keyboard, each in a little golden box
+  const SW_ICONS = {
+    qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3z"/><path d="M15 15h2v2h-2zM19 15h2M15 19h2M19 19h2v2"/><path d="M5.5 5.5h1v1h-1zM17.5 5.5h1v1h-1zM5.5 17.5h1v1h-1z" fill="currentColor"/></svg>',
+    keys: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>',
+    globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'
+  };
+  // the language of the app, picked here (or the phone's own)
+  function langSheet() {
+    const I = window.BVI18N;
+    if (!I) { toast(gt('That didn\'t work. Try again.'), 'bad'); return; }
+    sheet(gt('Language'), (sh, close) => {
+      el('p', 'muted', sh, gt('Blokvane Games shows in this language. A game shows in the language its host picks.'));
+      const ls = el('div', 'sw-langs', sh);
+      const cur = store.get('games:lang', '');
+      const opt = (code, name, sub) => {
+        const b = el('button', 'sw-lang', ls); b.type = 'button';
+        b.setAttribute('aria-pressed', String(code === cur || (!code && !cur)));
+        if (code) b.lang = code;
+        el('b', '', b, name);
+        if (sub) el('small', '', b, sub);
+        b.onclick = async () => {
+          buzz('tap');
+          if (code) store.set('games:lang', code); else store.del('games:lang');
+          await gamesLang(code || '');
+          close();
+          gamesHome();
+        };
+      };
+      opt('', gt('Same as this phone'), (I.LANGS.find(l => l[0] === I.pick()) || ['', 'English'])[1]);
+      for (const [code, name] of I.LANGS) opt(code, name, '');
+    });
   }
   // the Games app's own home
   async function gamesHome() {
@@ -791,39 +964,52 @@
       location.hash = '#game.' + bk.s + '.' + bk.tv + (typeof bk.lg === 'string' && /^[a-z]{2}$/.test(bk.lg) ? '.' + bk.lg : '');
       return;
     }
-    // (the games' own night look, the same as in a game)
+    // (the games' own look, the same as in a game)
     try { (await need('party'))('css'); } catch (e) {}
-    const v = view('Blokvane Games', { tint: 'mint', night: true });
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true });
+    // (the language, at the top: one tap to change it)
+    const lb = el('button', 'sw-langbtn', v.top);
+    lb.type = 'button';
+    lb.setAttribute('aria-label', gt('Language'));
+    lb.innerHTML = SW_ICONS.globe;
+    el('span', '', lb, (window.BVI18N && (BVI18N.LANGS.find(l => l[0] === gl) || [])[1]) || 'English');
+    lb.onclick = () => langSheet();
     backCard(v.body);
-    hero(v.body, 'Party games', 'The game is on the TV, and you play on this phone. Join it:');
+    hero(v.body, gt('Party games'), gt('The game is on the TV, and you play on this phone. Join it:'));
     const tiles = el('div', 'gm-tiles', v.body);
-    const tile = (e, t, sub, fn) => { const b = el('button', 'gm-tile', tiles); b.type = 'button'; el('span', 'e', b, e); el('b', '', b, t); el('small', '', b, sub); b.onclick = () => { buzz('tap'); fn(); }; return b; };
-    tile('📷', 'Scan the QR code', 'Point this phone at the TV', () => scanScreen());
-    tile('⌨️', 'Type the code', 'The 6 letters under the QR code', async () => (await need('party'))('code', []));
+    const tile = (ic, t, sub, fn) => { const b = el('button', 'gm-tile', tiles); b.type = 'button'; const i = el('span', 'sw-ic', b); i.innerHTML = SW_ICONS[ic]; el('b', '', b, t); el('small', '', b, sub); b.onclick = () => { buzz('tap'); fn(); }; return b; };
+    tile('qr', gt('Scan the QR code'), gt('Point this phone at the TV'), () => scanScreen());
+    tile('keys', gt('Type the code'), gt('The 6 letters under the QR code'), async () => (await need('party'))('code', []));
     const p = pass.get();
     const c = el('div', 'card gm-host', v.body);
     if (p) {
-      el('h2', '', c, '⭐ You can host games');
-      el('p', 'muted', c, 'Signed in as ' + p.email + '. Everyone who joins your games plays for free.');
-      btn('Sign out', { kind: 'ghost', full: true }, c, () => { pass.clear(); toast('Signed out.'); gamesHome(); }).style.marginTop = '10px';
+      el('h2', '', c, '⭐ ' + gt('You can host games'));
+      const who = el('p', 'muted', c, gt('Signed in as {email}. Everyone who joins your games plays for free.', { email: '⁨' + p.email + '⁩' }));
+      void who;
+      // (start a game and put it on a TV: one near you, a link for any screen, or your computer)
+      btn(gt('Start a game'), { kind: 'go', huge: true, full: true, icon: 'play', sub: gt('On a TV near you, or any screen with a link') }, c, async () => (await need('party'))('start', [], { back: gamesHome })).style.marginTop = '12px';
+      const r = el('div', 'grid2', c); r.style.marginTop = '10px';
+      btn(gt('Invite friends'), { kind: 'ghost', icon: 'share' }, r, () => shareInvite());
+      btn(gt('Sign out'), { kind: 'ghost' }, r, () => { pass.clear(); toast(gt('Signed out.')); gamesHome(); });
     } else {
-      el('h2', '', c, 'Hosting a game night?');
-      el('p', 'muted', c, 'Each game needs one Blokvane member as its host. Everyone else just joins, without signing in.');
-      btn('Sign in to host', { kind: 'go', full: true, icon: 'key' }, c, () => signInScreen({ after: gamesHome, back: gamesHome })).style.marginTop = '10px';
+      el('h2', '', c, gt('Hosting a game night?'));
+      el('p', 'muted', c, gt('Each game needs one Blokvane member as its host. Everyone else just joins, without signing in.'));
+      btn(gt('Sign in to host'), { kind: 'go', full: true, icon: 'key' }, c, () => signInScreen({ after: gamesHome, back: gamesHome })).style.marginTop = '10px';
       getCard(v.body);
     }
     if (!standalone() && !store.get('gamesAdded', 0)) {
       const ic = el('div', 'card install', v.body);
       const r = el('div', 'install-row', ic);
       const im = el('img', 'install-ic', r); im.src = 'games-192.png'; im.alt = '';
-      const t = el('div', '', r); el('b', '', t, 'Make it an app'); el('p', 'muted small', t, 'Blokvane Games on your home screen: one tap for every game night.');
-      btn('Add to home screen', { kind: 'tint', icon: 'addbox', full: true }, ic, () => installApp()).style.marginTop = '12px';
+      const t = el('div', '', r); el('b', '', t, gt('Make it an app')); el('p', 'muted small', t, gt('Blokvane Games on your home screen: one tap for every game night.'));
+      btn(gt('Add to home screen'), { kind: 'ghost', icon: 'addbox', full: true }, ic, () => installApp()).style.marginTop = '12px';
     }
     if (!standalone() && store.get('games:how', '')) {
       const ch = el('p', 'muted small center', v.body);
-      ch.append('When you scan a game\'s code: ' + (store.get('games:how', '') === 'app' ? 'the app. ' : 'the browser. '));
-      const a = el('button', 'linkish', ch, 'Change'); a.type = 'button';
-      a.onclick = () => { store.del('games:how'); toast('It asks again next time.'); };
+      ch.append(store.get('games:how', '') === 'app' ? gt('When you scan a game\'s code: the app.') : gt('When you scan a game\'s code: the browser.'));
+      ch.append(' ');
+      const a = el('button', 'linkish', ch, gt('Change')); a.type = 'button';
+      a.onclick = () => { store.del('games:how'); toast(gt('It asks again next time.')); };
     }
   }
   // the camera, right in the app: it reads the game's QR code on the TV. Android's Chrome reads QR codes by itself
@@ -831,25 +1017,25 @@
   async function scanScreen() {
     let stream = null, stopped = false;
     const stop = () => { stopped = true; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
-    const v = view('Scan the QR code', { tint: 'mint', night: true, back: () => { stop(); gamesHome(); } });
+    const v = view(gt('Scan the QR code'), { tint: 'mint', night: true, app: true, back: () => { stop(); gamesHome(); } });
     const typeIt = async () => { stop(); (await need('party'))('code', []); };
     function noCam(why) {
       stop();
       v.body.textContent = '';
-      hero(v.body, why ? 'The camera is blocked' : plat() === 'ios' ? 'Use the iPhone\'s Camera' : 'Type the code instead', why
-        ? (plat() === 'ios' ? 'Open the iPhone\'s Settings, then Safari (or this app), then Camera, and pick Allow. Or type the 6 letters under the QR code.' : 'Allow the camera for this page in the browser\'s settings, or type the 6 letters under the QR code.')
-        : plat() === 'ios' ? 'Open the Camera app, point it at the QR code on the TV, and tap the link that shows. Or type the 6 letters under the QR code here.'
-          : 'This browser can\'t read QR codes. Type the 6 letters under the QR code instead.', { node: boo(why ? 'sleepy' : 'wave') });
-      btn('Type the code', { kind: 'go', full: true, huge: true }, v.body, typeIt);
-      if (why) btn('Try the camera again', { kind: 'ghost', full: true }, v.body, () => scanScreen()).style.marginTop = '10px';
+      hero(v.body, why ? gt('The camera is blocked') : plat() === 'ios' ? gt('Use the iPhone\'s Camera') : gt('Type the code instead'), why
+        ? (plat() === 'ios' ? gt('Open the iPhone\'s Settings, then Safari (or this app), then Camera, and pick Allow. Or type the 6 letters under the QR code.') : gt('Allow the camera for this page in the browser\'s settings, or type the 6 letters under the QR code.'))
+        : plat() === 'ios' ? gt('Open the Camera app, point it at the QR code on the TV, and tap the link that shows. Or type the 6 letters under the QR code here.')
+          : gt('This browser can\'t read QR codes. Type the 6 letters under the QR code instead.'), { sleepy: !!why });
+      btn(gt('Type the code'), { kind: 'go', full: true, huge: true }, v.body, typeIt);
+      if (why) btn(gt('Try the camera again'), { kind: 'ghost', full: true }, v.body, () => scanScreen()).style.marginTop = '10px';
     }
     if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) { noCam(); return; }
     const box = el('div', 'gm-cam', v.body);
     const video = el('video', '', box);
     video.playsInline = true; video.muted = true; video.autoplay = true; video.setAttribute('playsinline', ''); video.setAttribute('muted', '');
     el('div', 'gm-aim', box);
-    const msg = el('p', 'muted center', v.body, 'Point the camera at the QR code on the TV.');
-    btn('Type the code instead', { kind: 'ghost', full: true }, v.body, typeIt).style.marginTop = '10px';
+    const msg = el('p', 'muted center', v.body, gt('Point the camera at the QR code on the TV.'));
+    btn(gt('Type the code instead'), { kind: 'ghost', full: true }, v.body, typeIt).style.marginTop = '10px';
     // the reader first (so the camera doesn't wait for it), then the camera
     let read = null;
     if ('BarcodeDetector' in window) {
@@ -888,7 +1074,7 @@
         for (const text of await read()) {
           const hh = gameHash(text);
           if (hh) { stop(); buzz('ok'); location.hash = hh; return; }
-          msg.textContent = 'That isn\'t a Blokvane game\'s code. Point at the one on the TV.';
+          msg.textContent = gt('That isn\'t a Blokvane game\'s code. Point at the one on the TV.');
         }
       } catch (e) {}
       setTimeout(tick, 220);
@@ -906,7 +1092,7 @@
   // ---------- off we go ----------
   window.GO = { el, icon, boo, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
     computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, say: null, get pc() { return pc; },
-    games: GAMES, pass, signInScreen, getCard, shareGames };
+    games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir, swBoo };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });
@@ -916,5 +1102,5 @@
     return;
   }
   // (first the connection, from the second copy if the first is gone; then the page)
-  keepConnected().finally(() => { route(); if (pairs().length) askToKeep(); });
+  keepConnected().finally(async () => { if (GAMES) await gamesLang(); route(); if (pairs().length) askToKeep(); });
 })();

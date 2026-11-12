@@ -463,7 +463,8 @@ html.no-flexgap[dir="rtl"] .bw-cv .bw-bub > * + * { margin-left: 0; margin-right
 .bw-cv .bw-bub.in { animation: bwk-bubIn .6s cubic-bezier(.2, 1.5, .4, 1) both; }
 .bw-cv .bw-bub.out { animation: bwk-bubOut .35s ease-in both; }
 .bw-cv .bw-bub.small .t { font-size: 34px; padding: 18px 30px; }
-.bw-cv .bw-bub.up .t { max-width: 560px; }
+/* (Boo's word in the corner of a winner screen: narrow enough never to reach the podium, the 2nd and 3rd places included) */
+.bw-cv .bw-bub.up .t { max-width: 440px; }
 .bw-cv .bw-bub.up .t::before { left: auto; right: 72px; top: 100%; margin-top: 0; border: 16px solid transparent; border-top: 26px solid var(--bc, #ff5a8a); border-bottom: 0; }
 .bw-cv .bw-bub.up .t::after { left: auto; right: 77px; top: 100%; margin-top: -1px; border: 11px solid transparent; border-top: 18px solid #fff; border-bottom: 0; }
 .bw-cv .bw-bub.kids .t { background: linear-gradient(180deg, #fff, #fff4fb); }

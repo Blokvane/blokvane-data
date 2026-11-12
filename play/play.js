@@ -58,14 +58,34 @@ var BVPLAY = (() => {
   // Phones on the same Wi-Fi find this TV in their list, with its game and its code (BVLIVE.nearby), and join with one
   // tap. The host can turn it off (Screen and players).
   let near = null, nearBusy = false, nearSig = '';
-  const nearInfo = () => ({ c: code, g: game ? game.id : '', p: list().length, ph: phase === 'lobby' ? 0 : 1 });
+  // (h: it has a host, so a phone that starts a game looks for another TV)
+  const nearInfo = () => ({ c: code, g: game ? game.id : '', p: list().length, ph: phase === 'lobby' ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  // the name phones see in their list of TVs nearby: what kind of screen this is
+  const screenName = (() => {
+    const ua = navigator.userAgent || '';
+    if (/Tizen|SMART-TV.*Samsung/i.test(ua)) return 'Samsung TV';
+    if (/Web0S|webOS|NetCast/i.test(ua)) return 'LG TV';
+    if (/AFT[A-Z]|\bSilk\//.test(ua)) return 'Fire TV';
+    if (/CrKey/.test(ua)) return 'Chromecast';
+    if (/Android TV|AndroidTV|GoogleTV|BRAVIA/i.test(ua)) return 'Android TV';
+    if (/VIDAA|Hisense/i.test(ua)) return 'Hisense TV';
+    if (/Roku/i.test(ua)) return 'Roku TV';
+    if (/PlayStation/i.test(ua)) return 'PlayStation';
+    if (/Xbox/i.test(ua)) return 'Xbox';
+    if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'iPad';
+    if (/Android/.test(ua)) return 'Android tablet';
+    if (/CrOS/.test(ua)) return 'Chromebook';
+    if (/Macintosh/.test(ua)) return 'Mac';
+    if (/Windows/.test(ua)) return 'Windows computer';
+    return 'TV';
+  })();
   async function nearOn() {
     const want = settings.k_near !== false && phase !== 'closed' && !!code && !!L.nearby;
     if (!want) { if (near) { near.close(); near = null; nearSig = ''; } return; }
     if (near) { const i = nearInfo(), sg = JSON.stringify(i); if (sg !== nearSig) { nearSig = sg; near.setInfo(i); } return; }
     if (nearBusy) return;
     nearBusy = true;
-    try { const i = nearInfo(); near = await L.nearby({ role: 'tv', name: 'TV', info: i }); nearSig = JSON.stringify(i); } catch (e) { near = null; }
+    try { const i = nearInfo(); near = await L.nearby({ role: 'tv', name: screenName, info: i }); nearSig = JSON.stringify(i); } catch (e) { near = null; }
     nearBusy = false;
     if (near && (settings.k_near === false || phase === 'closed')) { near.close(); near = null; }
     // (the game was picked meanwhile, say: the phones hear the news at once)
@@ -85,6 +105,8 @@ var BVPLAY = (() => {
     document.documentElement.dir = P.RTL.has(lang) ? 'rtl' : 'ltr';
     document.body.classList.toggle('rtl', P.RTL.has(lang));
     document.title = P.f('Blokvane party games');
+    // (the address keeps the game and its language, so the screen opens the same way after a reload)
+    if (game) { const h = '#' + game.id + (lang !== 'en' ? '.' + lang : ''); if (location.hash !== h) { try { history.replaceState(history.state, '', h); } catch (e) {} } }
     // (a setting that the new language doesn't have, like a Trivia category with no questions in it, goes back)
     if (game && game.langOptions) for (const [key, fn] of Object.entries(game.langOptions)) { const f = game.settings.find(x => x.key === key); if (f && !fn(lang, f.options).some(o => String(o[0]) === String(settings[key]))) settings[key] = f.default; }
   }
@@ -340,7 +362,9 @@ var BVPLAY = (() => {
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
       howto: game && game.howto ? game.howto(settings) : null,
       // (the question that's on: a phone that doesn't have it asks for it again)
-      qn: phase === 'play' && cur.q ? cur.q.n : 0, paused: phase === 'play' && paused, gr: run };
+      qn: phase === 'play' && cur.q ? cur.q.n : 0, paused: phase === 'play' && paused, gr: run,
+      // (the join code: the host's phone sends it with "Invite players")
+      code };
     if (to) sayTo(to, m); else say(m);
   }
   // ---------- the sounds, in every game: the host can turn the music or any one kind of moment off (like "next
@@ -637,7 +661,8 @@ var BVPLAY = (() => {
   let hintEl = null, hintRun = 0;
   async function soundHint() {
     const my = ++hintRun;
-    const show = !!(game && game.sounds) && SND.state() === 'locked';
+    // (never over the winners, though: they show whole, the way their designs have them)
+    const show = !!(game && game.sounds) && SND.state() === 'locked' && phase !== 'end';
     if (!show) { if (hintEl) hintEl.hidden = true; return; }
     const text = '🔈 ' + await P.tr('Click anywhere on this screen to turn on the sound');
     if (my !== hintRun) return;
@@ -1114,6 +1139,7 @@ var BVPLAY = (() => {
   }
   async function finish(ranking) {
     phase = 'end';
+    soundHint();
     cur.q = null;
     waitHost = false;
     if (joinEl) showJoin(false);

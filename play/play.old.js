@@ -86,7 +86,25 @@ var BVPLAY = (() => {
     });
   }
   let near = null, nearBusy = false, nearSig = "";
-  const nearInfo = () => ({ c: code, g: game ? game.id : "", p: list().length, ph: phase === "lobby" ? 0 : 1 });
+  const nearInfo = () => ({ c: code, g: game ? game.id : "", p: list().length, ph: phase === "lobby" ? 0 : 1, h: players.get(host) ? 1 : 0 });
+  const screenName = (() => {
+    const ua = navigator.userAgent || "";
+    if (/Tizen|SMART-TV.*Samsung/i.test(ua)) return "Samsung TV";
+    if (/Web0S|webOS|NetCast/i.test(ua)) return "LG TV";
+    if (/AFT[A-Z]|\bSilk\//.test(ua)) return "Fire TV";
+    if (/CrKey/.test(ua)) return "Chromecast";
+    if (/Android TV|AndroidTV|GoogleTV|BRAVIA/i.test(ua)) return "Android TV";
+    if (/VIDAA|Hisense/i.test(ua)) return "Hisense TV";
+    if (/Roku/i.test(ua)) return "Roku TV";
+    if (/PlayStation/i.test(ua)) return "PlayStation";
+    if (/Xbox/i.test(ua)) return "Xbox";
+    if (/iPad/.test(ua) || /Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return "iPad";
+    if (/Android/.test(ua)) return "Android tablet";
+    if (/CrOS/.test(ua)) return "Chromebook";
+    if (/Macintosh/.test(ua)) return "Mac";
+    if (/Windows/.test(ua)) return "Windows computer";
+    return "TV";
+  })();
   function nearOn() {
     return __async(this, null, function* () {
       const want = settings.k_near !== false && phase !== "closed" && !!code && !!L.nearby;
@@ -110,7 +128,7 @@ var BVPLAY = (() => {
       nearBusy = true;
       try {
         const i = nearInfo();
-        near = yield L.nearby({ role: "tv", name: "TV", info: i });
+        near = yield L.nearby({ role: "tv", name: screenName, info: i });
         nearSig = JSON.stringify(i);
       } catch (e) {
         near = null;
@@ -139,6 +157,15 @@ var BVPLAY = (() => {
       document.documentElement.dir = P.RTL.has(lang) ? "rtl" : "ltr";
       document.body.classList.toggle("rtl", P.RTL.has(lang));
       document.title = P.f("Blokvane party games");
+      if (game) {
+        const h = "#" + game.id + (lang !== "en" ? "." + lang : "");
+        if (location.hash !== h) {
+          try {
+            history.replaceState(history.state, "", h);
+          } catch (e) {
+          }
+        }
+      }
       if (game && game.langOptions) for (const [key, fn] of Object.entries(game.langOptions)) {
         const f = game.settings.find((x) => x.key === key);
         if (f && !fn(lang, f.options).some((o) => String(o[0]) === String(settings[key]))) settings[key] = f.default;
@@ -608,7 +635,9 @@ var BVPLAY = (() => {
       // (the question that's on: a phone that doesn't have it asks for it again)
       qn: phase === "play" && cur.q ? cur.q.n : 0,
       paused: phase === "play" && paused,
-      gr: run
+      gr: run,
+      // (the join code: the host's phone sends it with "Invite players")
+      code
     };
     if (to) sayTo(to, m);
     else say(m);
@@ -1127,7 +1156,7 @@ var BVPLAY = (() => {
   function soundHint() {
     return __async(this, null, function* () {
       const my = ++hintRun;
-      const show = !!(game && game.sounds) && SND.state() === "locked";
+      const show = !!(game && game.sounds) && SND.state() === "locked" && phase !== "end";
       if (!show) {
         if (hintEl) hintEl.hidden = true;
         return;
@@ -1800,6 +1829,7 @@ var BVPLAY = (() => {
   function finish(ranking) {
     return __async(this, null, function* () {
       phase = "end";
+      soundHint();
       cur.q = null;
       waitHost = false;
       if (joinEl) showJoin(false);

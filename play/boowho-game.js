@@ -127,11 +127,14 @@
   const $1 = (root, k) => root.querySelector('[data-k="' + k + '"]');
   const setT = (root, k, t) => { for (const e of $k(root, k)) e.textContent = t; };
   // (a line that has to fit its place: smaller until it does)
-  function shrink(e, minK, lines) {
+  // (pad: the box has padding of its own, and only its text has to fit in the lines)
+  function shrink(e, minK, lines, pad) {
     if (!e) return;
-    const base = parseFloat(getComputedStyle(e).fontSize) || 40;
-    const lh = parseFloat(getComputedStyle(e).lineHeight) || base * 1.2;
-    const over = () => (lines ? e.scrollHeight > lh * lines + 2 : e.scrollWidth > e.clientWidth + 2);
+    const cs = getComputedStyle(e);
+    const base = parseFloat(cs.fontSize) || 40;
+    const lh = parseFloat(cs.lineHeight) || base * 1.2;
+    const pv = pad ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 0;
+    const over = () => (lines ? e.scrollHeight - pv > lh * lines + 2 : e.scrollWidth > e.clientWidth + 2);
     if (!lines) e.style.whiteSpace = 'nowrap';
     for (let k = 1, i = 0; i < 16 && over() && k > (minK || 0.4); i++) { k -= 0.05; e.style.fontSize = (base * k).toFixed(1) + 'px'; }
   }
@@ -472,7 +475,8 @@
       im.remove();
     } else { b.style.left = '70px'; b.style.top = '138px'; }
     if (o.at !== 'q' && v.dockEl) v.dockEl.hidden = true;
-    shrink(t, 0.6, 2);
+    // (in the corner of a winner screen: narrow enough never to cover the podium, so up to three lines, at full size)
+    if (o.at === 'corner') shrink(t, 0.6, 3, true); else shrink(t, 0.6, 2);
     v.bub = b;
     K.snd.fx('sparkle', { duck: 0.8 });
     return b;

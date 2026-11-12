@@ -151,20 +151,26 @@ def fix_decls(body, sel, after, stats):
         wrap = any(p in ('flex-wrap', 'flex-flow') and 'wrap' in v and 'nowrap' not in v for p, v in names)
         col = 'column' in fd
         rules = []
-        if col and rg not in ('0', '0px'): rules.append(f'html.no-flexgap {child_sel(sel, "+")} {{ margin-top: {plain(rg)}; }}')
+        if col and rg not in ('0', '0px'): rules.append(f'{child_sel(sel, "+")} {{ margin-top: {plain(rg)}; }}')
         elif not col and cg not in ('0', '0px') and not wrap:
-            rules.append(f'html.no-flexgap {child_sel(sel, "+")} {{ margin-left: {plain(cg)}; }}')
-            rules.append(f'html.no-flexgap[dir="rtl"] {child_sel(sel, "+")} {{ margin-left: 0; margin-right: {plain(cg)}; }}')
+            rules.append(f'{child_sel(sel, "+")} {{ margin-left: {plain(cg)}; }}')
+            rules.append(f'{child_sel(sel, "+", RTL_PRE)} {{ margin-left: 0; margin-right: {plain(cg)}; }}')
         elif not col and wrap:
-            rules.append(f'html.no-flexgap {child_sel(sel, "")} {{ margin: 0 {plain(cg)} {plain(rg)} 0; }}')
+            rules.append(f'{child_sel(sel, "")} {{ margin: 0 {plain(cg)} {plain(rg)} 0; }}')
         if rules: after.append(('', '\n'.join(rules)))
     return ';'.join(out)
 
 def rtl_sel(sel):
     return ', html[dir="rtl"] '.join(s.strip() for s in split_top(sel, ','))
 
-def child_sel(sel, plus):
-    return ', '.join(('html.no-flexgap ' if i else '') + s.strip() + (' > * + *' if plus else ' > *') for i, s in enumerate(split_top(sel, ',')))
+RTL_PRE = 'html.no-flexgap[dir="rtl"]'
+
+def child_sel(sel, plus, pre='html.no-flexgap'):
+    # (a selector that starts at html, like html.pt-night .x, gets the class on that same html: html.no-flexgap.pt-night .x)
+    def one(x):
+        x = x.strip()
+        return (pre + x[4:]) if re.match(r'html[.\[:]', x) else (pre + ' ' + x)
+    return ', '.join(one(x) + (' > * + *' if plus else ' > *') for x in split_top(sel, ','))
 
 def process(css):
     stats = {'in': 0, 'after': 0}

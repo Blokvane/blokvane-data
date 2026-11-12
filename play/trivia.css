@@ -435,7 +435,10 @@ html.no-flexgap .cover.win.tw .pc .who > * + * { margin-top: calc(1.1112 * var(-
   font: 700 calc(11.1112 * var(--u))/1 var(--tf); text-shadow: 0 calc(0.5556 * var(--u)) 0 rgba(0, 0, 0, .25); box-shadow: 0 0 calc(4.6297 * var(--u)) var(--glow); }
 .cover.win.tw .pc .blk::before { height: calc(2.4075 * var(--u)); -webkit-clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); clip-path: polygon(6% 0, 94% 0, 100% 100%, 0 100%); }
 .cover.win.tw .pc.one .blk { width: calc(25 * var(--u)); height: calc(24.4445 * var(--u)); padding-top: calc(9.2593 * var(--u)); font-size: calc(13.8889 * var(--u)); }
-.cover.win.tw .pc.three .blk { height: calc(13.3334 * var(--u)); }
+/* (the 1, the 2 and the 3 on one line, a little above the bottom of the screen, so every number shows whole: the 3's
+   block is the shortest, so its number is a little smaller and higher up in it) */
+.cover.win.tw .pc.two .blk { padding-top: calc(5.1852 * var(--u)); }
+.cover.win.tw .pc.three .blk { height: calc(13.3334 * var(--u)); padding-top: calc(1.2963 * var(--u)); font-size: calc(10.1852 * var(--u)); }
 .cover.win.tw .pc.empty .blk { opacity: 1; filter: none; }
 .cover.win.tw .win-foot { left: calc(5.5556 * var(--u)); inset-inline-start: calc(5.5556 * var(--u)); bottom: calc(4.0741 * var(--u)); max-width: calc(43.5186 * var(--u)); z-index: 4; font: 700 calc(2.4075 * var(--u))/1.35 var(--tf); color: #fff; text-shadow: 0 calc(0.1852 * var(--u)) calc(0.7408 * var(--u)) rgba(0, 0, 0, .6); }
 @supports not (inset-inline-start: 0) {
@@ -492,7 +495,6 @@ body.tw-on .boo { display: none !important; }
 .cover.win.tw-disco .pc.two { --top: #8a5aff; --f1: #6a3ad4; --f2: #3a1a8a; --glow: rgba(138, 90, 255, .45); --num: #d8c8ff; --rg: #8a5aff; }
 .cover.win.tw-disco .pc.one { --top: #ffe28a; --f1: #ffcf3d; --f2: #e09a12; --glow: rgba(255, 201, 60, .6); --num: #fff7d6; }
 .cover.win.tw-disco .pc.three { --top: #ff8ab8; --f1: #e0508a; --f2: #8a1a4a; --glow: rgba(255, 90, 160, .4); --num: #ffd0e4; --rg: #ff8ab8; }
-.cover.win.tw-disco .pc.three .blk { padding-top: calc(1.2963 * var(--u)); font-size: calc(10.1852 * var(--u)); }
 
 /* ==================== Fireworks: fireworks bursting in five colors, a golden glowing name ==================== */
 .cover.win.tw-fireworks { background: radial-gradient(ellipse 50% 45% at 50% 50%, #3a1f7a, transparent 75%), linear-gradient(180deg, #120a33, #060313); }

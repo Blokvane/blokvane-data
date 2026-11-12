@@ -1,46 +1,12 @@
-// Blokvane on your phone: cheers and emoji for the big screen (fan reactions), the phone light show, and a big reveal.
+// Blokvane on your phone: the phone light show, and a big reveal.
 (() => {
-  const { el, view, btn, toast, buzz, hero, input, confetti } = GO;
+  const { el, view, btn, buzz, hero, confetti } = GO;
   const L = BVLIVE, C = BVWT_CORE;
   GO.def('fun', async (kind, parts) => {
     if (kind === 'light') return light(parts);
-    if (kind === 'rev') return reveal(parts);
-    return fans(parts);
+    return reveal(parts);
   });
   const wake = async () => { try { if (navigator.wakeLock) return await navigator.wakeLock.request('screen'); } catch (e) {} return null; };
-
-  // ---------- fan reactions: tap, and it shows on the big screen (the screen sets the limits) ----------
-  async function fans(parts) {
-    const [s, host] = parts;
-    const v = view('Cheer on the big screen', { tint: 'pink' });
-    if (!s) { hero(v.body, 'This code isn\'t complete', 'Scan it again on the screen.', { sleepy: true }); return; }
-    const name = el('div', 'card', v.body);
-    el('h2', '', name, 'Your name on the screen');
-    const ni = input({ value: GO.store.get('fanName', ''), placeholder: 'Your first name', max: 16 });
-    name.appendChild(ni);
-    ni.onchange = () => GO.store.set('fanName', L.clean(ni.value, 16));
-    // (the screen says whether it shows cheers in words: when it doesn't, only the emoji are here)
-    let cfg = { words: true }, last = 0, say = null;
-    const R = await L.room({ secret: s, label: 'bvfan', me: await GO.member('fan:' + s.slice(0, 10)), name: '', role: 'fan', owner: host || '', open: true, onMsg: m => {
-      if (m.k === 'fan-cfg') { cfg = m; if (say) say.hidden = m.words === false; }
-      if (m.k === 'fan-slow') toast('Easy! The screen takes a few at a time.');
-    } });
-    const send = async (e, text) => {
-      const t = Date.now();
-      if (t - last < 1500) { toast('One moment...'); return; }
-      last = t;
-      await R.send({ k: 'react', e, text: text || '', n: L.clean(ni.value, 16) });
-      buzz('tap');
-    };
-    const fun = el('div', 'fun', v.body); fun.style.marginTop = '6px';
-    for (const e of ['🎉', '🔥', '👏', '😂', '😱', '❤️', '🏈', '🏆', '🙌', '💪', '👻', '🥳']) { const b = el('button', '', fun, e); b.type = 'button'; b.onclick = () => send(e); }
-    say = el('div', 'card', v.body); say.style.marginTop = '12px';
-    say.hidden = cfg.words === false;
-    el('h2', '', say, 'A cheer');
-    const chips = el('div', 'chips', say);
-    for (const w of ['Let\'s go!', 'Defense!', 'What a play!', 'Touchdown!', 'We love you!']) { const b = el('button', 'chip', chips, w); b.type = 'button'; b.onclick = () => send('📣', w); }
-    el('p', 'muted small', v.body, 'Words go through a filter before they show. The screen may take only a few cheers a minute from each phone.').style.marginTop = '10px';
-  }
 
   // ---------- the phone light show ----------
   // Every phone glows in time with the others: the colors come from the same clock (the host's), and each phone's

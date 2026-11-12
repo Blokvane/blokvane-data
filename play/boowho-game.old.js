@@ -204,11 +204,13 @@ var __async = (__this, __arguments, generator) => {
   const setT = (root, k, t) => {
     for (const e of $k(root, k)) e.textContent = t;
   };
-  function shrink(e, minK, lines) {
+  function shrink(e, minK, lines, pad) {
     if (!e) return;
-    const base = parseFloat(getComputedStyle(e).fontSize) || 40;
-    const lh = parseFloat(getComputedStyle(e).lineHeight) || base * 1.2;
-    const over = () => lines ? e.scrollHeight > lh * lines + 2 : e.scrollWidth > e.clientWidth + 2;
+    const cs = getComputedStyle(e);
+    const base = parseFloat(cs.fontSize) || 40;
+    const lh = parseFloat(cs.lineHeight) || base * 1.2;
+    const pv = pad ? (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0) : 0;
+    const over = () => lines ? e.scrollHeight - pv > lh * lines + 2 : e.scrollWidth > e.clientWidth + 2;
     if (!lines) e.style.whiteSpace = "nowrap";
     for (let k = 1, i = 0; i < 16 && over() && k > (minK || 0.4); i++) {
       k -= 0.05;
@@ -658,7 +660,8 @@ var __async = (__this, __arguments, generator) => {
       b.style.top = "138px";
     }
     if (o.at !== "q" && v.dockEl) v.dockEl.hidden = true;
-    shrink(t, 0.6, 2);
+    if (o.at === "corner") shrink(t, 0.6, 3, true);
+    else shrink(t, 0.6, 2);
     v.bub = b;
     K.snd.fx("sparkle", { duck: 0.8 });
     return b;

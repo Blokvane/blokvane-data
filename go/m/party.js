@@ -6,7 +6,13 @@
 (() => {
   'use strict';
   const { el, view: goView, btn, toast, buzz, hero, input, store, seg, toggle, sheet, confetti } = GO;
-  const view = (title, o) => { noZoom(false); return goView(title, o); };
+  const view = (title, o) => {
+    noZoom(false);
+    const v = goView(title, o);
+    // (the game itself, and its end: the night look, the same as the TV's, also when the phone is light)
+    document.documentElement.classList.toggle('pt-dark', G.phase === 'play' || G.phase === 'end');
+    return v;
+  };
   // (the pin screen: the page itself doesn't scroll or zoom there, only the map does; every other screen as usual)
   function noZoom(on) {
     const r = document.documentElement;
@@ -94,6 +100,8 @@ html.no-flexgap[dir="rtl"] .pt-num > * + * { margin-left: 0; margin-right: 10px;
 html.no-flexgap .pt-selfie > * + * { margin-left: 12px; }
 html.no-flexgap[dir="rtl"] .pt-selfie > * + * { margin-left: 0; margin-right: 12px; }
 .pt-selfie img{width:64px;height:64px;border-radius:50%;object-fit:cover;border:3px solid var(--tint)}
+.pt-pics .btn{padding:0 12px;font-size:16px;line-height:1.15;text-align:center;min-width:0}
+.pt-pics .btn svg{width:20px;height:20px}
 .pt-q{font:800 22px/1.25 var(--round);text-align:center;margin:4px 4px 14px;overflow-wrap:anywhere}
 .pt-q.emoji{font-size:54px;line-height:1.15}
 .pt-look{font:800 17px/1.3 var(--round);text-align:center;margin:2px 4px 12px;color:var(--dim)}
@@ -228,6 +236,21 @@ html[dir="rtl"] .pt-map>.pt-note.pt-tu{left:50%;right:auto}
 @media (min-height:760px){.pt-qrow .pt-flag{max-width:132px;max-height:76px}.pt-qrow .pt-wq{font-size:22px}}
 /* TVs near you, on the Join a game screen */
 .pt-near h2{margin:0 0 4px}
+.pt-tvst{margin:8px 2px 0}
+.pt-tvhow{margin-top:8px}
+.pt-where+.pt-lbl,.pt-tvhow+.pt-lbl{margin-top:20px}
+.pt-signin{border-color:var(--tint)}
+.pt-signin b{display:block;font:800 17px var(--round)}
+.pt-url{padding:12px 14px;border-radius:14px;background:var(--sw-field,rgba(0,0,0,.25));border:1px solid var(--line);font:700 14px/1.45 var(--round);word-break:break-all;-webkit-user-select:all;user-select:all;color:var(--text)}
+.pt-wait{display:flex;align-items:center;margin-top:14px;color:var(--dim);font-weight:700}
+.pt-wait .spin{width:18px;height:18px;border-width:2px;margin:0 10px 0 0}
+html[dir="rtl"] .pt-wait .spin{margin:0 0 0 10px}
+.pt-how{margin:0;padding:0 0 0 22px}
+.pt-how li{margin:0 0 16px}
+.pt-how b{display:block;font:800 16px var(--round)}
+.pt-how small{color:var(--dim)}
+.pt-addr{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--sw-field,rgba(0,0,0,.25));border:1px solid var(--line);font:800 17px/1.35 var(--round);word-break:break-all;-webkit-user-select:all;user-select:all}
+.pt-addr-i{display:inline-block;max-width:100%;color:var(--text);word-break:break-all}
 .pt-near .pt-games{margin-top:10px}
 .pt-near .pt-games:empty{display:none}
 .pt-near.none{padding-top:12px;padding-bottom:12px}
@@ -297,20 +320,7 @@ html.no-flexgap[dir="rtl"] .pt-list .r > * + * { margin-left: 0; margin-right: 1
 .pt-list .r .n{font:900 18px var(--round);color:var(--sun)}
 .pt-list .r.me{outline:2px solid var(--tint)}
 @media (prefers-reduced-motion:reduce){.pt-res,.pt-wait .boo{animation:none}}
-/* ---------- the party games' night look (the same as the TV's): deep indigo, one warm yellow for what you pick ---------- */
-@font-face{font-family:'BV Fun';font-style:normal;font-weight:300 700;font-display:swap;src:url(../play/fonts/fredoka.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+20AC,U+2122,U+2212}
-html.pt-night{--ink:#140d2e;--panel:#1f1745;--raise:#291f55;--raise2:#352a6b;--line:rgba(255,255,255,.11);--text:#f7f4ff;--dim:#b6add8;--faint:#8077aa;--sun:#ffc93c;--warn:#ffc93c;--lav:#cbbcff;--dk:#2a2150;--fun:'BV Fun',var(--round)}
-html.pt-night body{background:radial-gradient(120% 55% at 0% -5%,rgba(124,92,255,.28),transparent 62%),radial-gradient(90% 45% at 100% 105%,rgba(255,107,150,.13),transparent 70%),linear-gradient(175deg,#221447 0%,#170f33 52%,#110b26 100%) fixed}
-html.pt-night h1,html.pt-night h2,html.pt-night .top .who h1{font-family:var(--fun);font-weight:700}
-html.pt-night .card{background:var(--panel);border-color:rgba(255,255,255,.08)}
-html.pt-night .btn.go{background:var(--sun);color:#2a1d00;box-shadow:0 10px 24px -12px rgba(255,201,60,.75);font-family:var(--fun);font-weight:700}
-html.pt-night .btn.ghost{background:var(--dk);border-color:rgba(255,255,255,.08)}
-html.pt-night .btn.tint{background:var(--sun);color:#2a1d00}
-html.pt-night .sheet{background:#1c143f}
-html.pt-night .seg{background:var(--raise)}
-html.pt-night .seg button[aria-pressed=true]{background:rgba(255,201,60,.16);color:#fff;box-shadow:0 0 0 1.5px var(--sun)}
-html.pt-night .switch input:checked{background:var(--sun)}
-html.pt-night .input{background:var(--panel);border-color:rgba(255,255,255,.12)}
+/* ---------- the party games' look: "Silk waves" in ../go.css (dark, or light like the phone; the game screens stay dark) ---------- */
 /* the top: the house and the game on the left, you on the right */
 .pt-top{grid-gap: 10px;gap:10px;padding:2px 0 12px}
 .pt-top .pt-home{width:36px;height:36px;border-radius:11px;display:grid;align-items: center; justify-items: center;place-items:center;background:rgba(255,255,255,.07);flex:none;color:#fff}
@@ -906,6 +916,28 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // the game this phone is in, for "Back to the game" on Blokvane's first page (until 3 hours after it was last here)
   function keepBack() { if (G.s && G.tv) store.set('party:back', { s: G.s, tv: G.tv, lg: tvLangOf(G.lobby), name: gameName(), at: Date.now() }); }
   const dropBack = () => { const b = store.get('party:back', null); if (b && b.s === G.s) store.del('party:back'); };
+  // (a game picked on "Start a game" for a TV near you: the game and its language go to that TV once, as soon as this
+  // phone is its host. When the TV already has another host, this phone simply plays.)
+  function applySetup(m) {
+    const su = store.get('party:setup', null);
+    if (!su || typeof su !== 'object' || su.s !== G.s.slice(0, 10)) return;
+    if (Date.now() - (+su.at || 0) > 15 * 60000 || m.phase !== 'lobby') { store.del('party:setup'); return; }
+    if (!G.host) { if (m.host) { store.del('party:setup'); toast(T('This TV already has a host, so you joined as a player.')); } return; }
+    store.del('party:setup');
+    const other = !!su.game && m.game !== su.game && (Array.isArray(m.games) ? m.games : []).some(g => g && g.id === su.game);
+    if (other) send({ k: 'game', id: su.game });
+    if (typeof su.lang === 'string' && su.lang && su.lang !== m.lang) setTimeout(() => send({ k: 'set', key: 'lang', v: su.lang }), other ? 700 : 0);
+  }
+  // the host sends the game to more phones: the join link and the code, to a group chat or a text
+  async function invite() {
+    const l = G.lobby || {};
+    const lg = tvLangOf(l);
+    const url = L.GO + 'games.html#game.' + G.s + '.' + G.tv + (lg !== 'en' ? '.' + lg : '');
+    const code = typeof l.code === 'string' && /^[A-Z]{6}$/.test(l.code) ? l.code.slice(0, 3) + ' ' + l.code.slice(3) : '';
+    const text = code ? T('Join my game on the TV: tap the link, or type {code} in Blokvane Games.', { code }) : T('Join my game on the TV: tap the link.');
+    try { if (navigator.share) { await navigator.share({ title: T('Party games'), text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(text + ' ' + url); toast(T('Link copied. Send it to the players.'), 'ok'); } catch (e) { toast(url); }
+  }
   async function start(parts) {
     css();
     await loadI18n();
@@ -954,18 +986,17 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       b.onclick = () => { av = id; photo = ''; mark(); selfieRow.hidden = true; buzz('tap'); };
     }
     mark();
-    // a selfie: shrunk on this phone, sealed for the TV alone, never saved
-    const pick = el('button', 'btn ghost full', card);
-    pick.type = 'button';
-    pick.appendChild(GO.icon('camera'));
-    el('span', '', pick, S().selfie);
+    // or a picture of you: a selfie, or a photo already on this phone. Shrunk here, sealed for the TV alone, never saved
+    const pics = el('div', 'grid2 pt-pics', card);
     const selfieRow = el('div', 'pt-selfie', card);
     selfieRow.style.marginTop = '12px';
     const sImg = el('img', '', selfieRow); sImg.alt = '';
-    el('small', 'muted', selfieRow, T('Your selfie only goes to the TV, for this game. It is never saved.'));
+    el('small', 'muted', selfieRow, T('Your picture only goes to the TV, for this game. It is never saved.'));
     selfieRow.hidden = !photo;
     if (photo) sImg.src = photo;
-    pick.onclick = () => takeSelfie(d => { photo = d; sImg.src = photo; selfieRow.hidden = false; mark(); });
+    const got = d => { photo = d; sImg.src = photo; selfieRow.hidden = false; mark(); buzz('ok'); };
+    btn(S().selfie, { kind: 'ghost', icon: 'camera' }, pics, () => takeSelfie(got));
+    btn(T('Choose a photo'), { kind: 'ghost', icon: 'photo' }, pics, () => takeSelfie(got, true));
     const go = btn(editing ? S().done : S().join, { kind: 'go', huge: true, full: true }, v.body, async () => {
       const name = L.clean(ni.value, 16);
       if (!name) { toast(T('Type your name first.'), 'bad'); ni.focus(); return; }
@@ -981,10 +1012,11 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ni.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     if (!G.name) setTimeout(() => ni.focus(), 300);
   }
-  // a selfie: the camera (or a picture on the phone), shrunk here, for the TV alone
-  function takeSelfie(done) {
+  // a selfie with the front camera, or (fromPhone) a photo already on the phone; shrunk here, for the TV alone
+  function takeSelfie(done, fromPhone) {
     const f = document.createElement('input');
-    f.type = 'file'; f.accept = 'image/*'; f.setAttribute('capture', 'user');
+    f.type = 'file'; f.accept = 'image/*';
+    if (!fromPhone) f.setAttribute('capture', 'user');
     f.style.display = 'none';
     document.body.appendChild(f);
     f.onchange = async () => {
@@ -1248,6 +1280,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
     if (!G.joined) return;
+    applySetup(m);
     // (the game paused, or going on: the same here, also on a phone that just came back)
     if (!!(m.phase === 'play' && m.paused) !== P2.on) setPausedPhone(m.phase === 'play' && !!m.paused);
     else if (P2.on && prev && prev.host !== m.host) pauseCover();
@@ -1333,7 +1366,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     v.top.classList.add('pt-top');
     // (top left: the game's own icon once the host picked one, a little house before)
     if (!o.back) {
-      const b = v.top.querySelector('.boo'); if (b) b.remove();
+      const b = v.top.querySelector('.boo, .sw-appic'); if (b) b.remove();
       const gid = G.lobby && G.lobby.game;
       let h;
       if (ICONS.has(gid)) { h = gameIcon(gid); h.classList.add('pt-home'); } else { h = el('span', 'pt-home'); h.appendChild(GO.icon('home')); }
@@ -1433,6 +1466,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         const on = !!l.joinOn;
         const jc = btn(on ? S().hideCode : S().showCode, { kind: on ? 'ghost' : 'tint', full: true, icon: 'phone' }, sh, () => { send({ k: 'showjoin', on: !on }); if (!on) toast(S().codeOn, 'ok'); close(); });
         jc.style.marginTop = '14px';
+        // (the join link and the code, sent to the players' phones)
+        btn(T('Invite players'), { kind: 'ghost', full: true, icon: 'share' }, sh, () => { close(); return invite(); }).style.marginTop = '10px';
         // (the sounds on the TV: the music, or any one kind of sound, off or on again right away)
         const sf = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string' && /^snd_/.test(f.key));
         if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
@@ -1465,7 +1500,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     }
     return adm;
   }
-  // a new picture, in the middle of a game: one of the Boos, or a selfie (it only goes to the TV, and isn't kept)
+  // a new picture, in the middle of a game: one of the Boos, a selfie or a photo from the phone (it only goes to the TV,
+  // and isn't kept)
   function picSheet() {
     sheet(S().changePic, (sh, close) => {
       el('h2', 'pt-sub', sh, S().pickBoo);
@@ -1478,8 +1514,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         const im = el('img', '', b); im.src = booUri(id); im.alt = '';
         b.onclick = () => { close(); setPic(id, ''); };
       }
-      btn(S().selfie, { kind: 'ghost', full: true, icon: 'camera' }, sh, () => takeSelfie(d => { close(); setPic(G.av, d); }));
-      el('p', 'pt-note', sh, T('Your selfie only goes to the TV, for this game. It is never saved.'));
+      const pics = el('div', 'grid2 pt-pics', sh);
+      btn(S().selfie, { kind: 'ghost', icon: 'camera' }, pics, () => takeSelfie(d => { close(); setPic(G.av, d); }));
+      btn(T('Choose a photo'), { kind: 'ghost', icon: 'photo' }, pics, () => takeSelfie(d => { close(); setPic(G.av, d); }, true));
+      el('p', 'pt-note', sh, T('Your picture only goes to the TV, for this game. It is never saved.'));
     });
   }
   function setPic(av, photo) {
@@ -3015,13 +3053,13 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     }
     y += top.length * 92 + 30;
     if (r.word && !final) { g.font = N(800, 34); g.fillStyle = '#c8bde6'; g.fillText(T('The word was "{word}".', { word: L.clean(r.word, 40) }), 540, Math.max(y + 30, H2 - 150), 1000); }
-    g.font = F(700, 34); g.fillStyle = '#ffe3e8'; g.fillText(T('Play it free at blokvane.com'), 540, H2 - 70, 1000);
+    g.font = F(700, 34); g.fillStyle = '#ffe3e8'; g.fillText(T('Play it at blokvane.com'), 540, H2 - 70, 1000);
     return new Promise(res => cv.toBlob(b => res(b), 'image/png'));
   }
   async function impShare(r, final, how, b) {
     const list = (Array.isArray(r.list) ? r.list : []);
     const winners = list.filter(x => x.w).map(x => L.clean(x.n, 16));
-    const text = T('We played Who\'s the Imposter? The winners: {names}. Play it free at blokvane.com', { names: winners.join(', ') || T('Nobody this time') });
+    const text = T('We played Who\'s the Imposter? The winners: {names}. Play it at blokvane.com', { names: winners.join(', ') || T('Nobody this time') });
     if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
     b.disabled = true;
     try {
@@ -3336,13 +3374,13 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const meRow = list.find(x => x.id === G.id);
     if (me && me.place > 1 && meRow) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText(T('I came {n}!', { n: '#' + numFmt(me.place) }) + '  ' + T('{n} points', { n: numFmt(+me.score || 0) }), 540, Y0 + PH - 70, PW - 80); }
     else if (me && me.place === 1) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText('🏆 ' + T('I won Emoji Riddles!'), 540, Y0 + PH - 70, PW - 80); }
-    g.font = F(700, 38); g.fillStyle = '#fff3d6'; g.fillText(T('Play it free at blokvane.com'), 540, 1648, 1000);
+    g.font = F(700, 38); g.fillStyle = '#fff3d6'; g.fillText(T('Play it at blokvane.com'), 540, 1648, 1000);
     return new Promise(res => cv.toBlob(b2 => res(b2), 'image/png'));
   }
   async function emoShare(r, how, b) {
     const list = (Array.isArray(r.list) ? r.list : []);
     const w1 = list[0];
-    const text = T('We played Emoji Riddles! The winner: {name}. Play it free at blokvane.com', { name: w1 ? L.clean(w1.n, 20) : '?' });
+    const text = T('We played Emoji Riddles! The winner: {name}. Play it at blokvane.com', { name: w1 ? L.clean(w1.n, 20) : '?' });
     if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
     b.disabled = true;
     try {
@@ -3506,7 +3544,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     g.textAlign = 'center';
     const mine = shMine();
     if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = '#ffc93c'; g.fillText(mine, 540, 1730, 980); }
-    g.font = shFont(700, 38); g.fillStyle = '#e6eeff'; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000);
+    g.font = shFont(700, 38); g.fillStyle = '#e6eeff'; g.fillText(T('Play it at blokvane.com'), 540, 1836, 1000);
   }
 
   // Trivia and Guess It Right!: the winner in the middle, second and third on the podium
@@ -3515,17 +3553,23 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     // Trivia's cosmic night: stars, two planets
     cosmic: {
       label: '#cdbcff', ring: '#ffc93c', glow: 'rgba(199,125,255,.85)', ring2: 'rgba(199,125,255,.55)',
-      bg(g, rnd) {
+      bg(g, rnd, o) {
         const bg = g.createRadialGradient(540, 700, 60, 540, 900, 1300); bg.addColorStop(0, '#3a1a7a'); bg.addColorStop(0.5, '#1a0d45'); bg.addColorStop(1, '#07041a');
         g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
         for (let i = 0; i < 260; i++) { g.globalAlpha = 0.2 + rnd() * 0.8; g.fillStyle = rnd() > 0.85 ? '#ffe9a8' : '#fff'; g.beginPath(); g.arc(rnd() * 1080, rnd() * 1920, 0.6 + rnd() * 2.4, 0, Math.PI * 2); g.fill(); }
         g.globalAlpha = 1;
+        // (a planet; a ringed one has the far half of its ring behind it and the near half in front, like Saturn)
         const planet = (x, y, r, c, ring) => {
+          const half = (a0, a1) => { g.save(); g.translate(x, y); g.rotate(-0.4); g.strokeStyle = ring; g.globalAlpha = 0.85; g.lineWidth = Math.max(6, r * 0.075); g.lineCap = 'round'; g.beginPath(); g.ellipse(0, 0, r * 1.7, r * 0.42, 0, a0, a1); g.stroke(); g.restore(); g.globalAlpha = 1; };
+          if (ring) half(Math.PI, Math.PI * 2);
           const pg = g.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.1, x, y, r); pg.addColorStop(0, c[0]); pg.addColorStop(0.6, c[1]); pg.addColorStop(1, c[2]);
           g.fillStyle = pg; g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2); g.fill();
-          if (ring) { g.save(); g.translate(x, y); g.rotate(-0.4); g.strokeStyle = ring; g.globalAlpha = 0.8; g.lineWidth = 10; g.beginPath(); g.ellipse(0, 0, r * 1.7, r * 0.42, 0, 0, Math.PI * 2); g.stroke(); g.restore(); g.globalAlpha = 1; }
+          if (ring) half(0, Math.PI);
         };
-        planet(150, 1470, 140, ['#e2a6ff', '#7a3cc8', '#2a0f5e'], '#ffc93c');
+        // (the ringed one, all of it in the picture: low on the left when the winner is alone, beside the winner when
+        // the podium takes the bottom)
+        if (o && o.pod) planet(165, 760, 80, ['#e2a6ff', '#7a3cc8', '#2a0f5e'], '#ffc93c');
+        else planet(250, 1460, 130, ['#e2a6ff', '#7a3cc8', '#2a0f5e'], '#ffc93c');
         planet(950, 380, 78, ['#a8ecff', '#2f86d6', '#0d2a5e'], null);
         g.fillStyle = '#ffc93c';
         for (const [x, y, r] of [[120, 420, 16], [960, 1180, 20], [870, 600, 10], [210, 980, 12], [640, 1240, 9]]) { shStar(g, x, y, r, r * 0.3, 4); g.fill(); }
@@ -3579,7 +3623,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
           for (let i = 0; i < 26; i++) { const a = Math.PI * 2 * i / 26, r0 = R * 0.18, r1 = R * (0.78 + rnd() * 0.22); g.beginPath(); g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); g.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); g.stroke(); g.beginPath(); g.arc(cx + Math.cos(a) * (r1 + 12), cy + Math.sin(a) * (r1 + 12), 5, 0, Math.PI * 2); g.fill(); }
           g.globalAlpha = 1;
         };
-        burst(170, 470, '#ff5a8a', 150); burst(920, 430, '#5ad1ff', 130); burst(120, 1160, '#ffc93c', 110); burst(970, 1120, '#34d399', 120);
+        // (each burst whole, inside the picture)
+        burst(185, 470, '#ff5a8a', 150); burst(920, 430, '#5ad1ff', 130); burst(150, 1160, '#ffc93c', 110); burst(925, 1120, '#34d399', 120);
         // (the city)
         g.fillStyle = '#06051a';
         let x = 0; while (x < 1080) { const w = 50 + rnd() * 90, h = 120 + rnd() * 220; g.fillRect(x, 1920 - h, w, h); for (let wy = 1920 - h + 20; wy < 1900; wy += 34) for (let wx = x + 12; wx < x + w - 14; wx += 26) if (rnd() > 0.55) { g.fillStyle = 'rgba(255,214,120,.45)'; g.fillRect(wx, wy, 10, 14); g.fillStyle = '#06051a'; } x += w + 6; }
@@ -3668,7 +3713,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   async function shPoster(g, list, o) {
     const lk = SH_LOOKS[o.look] || SH_LOOKS.cosmic, rtl = o.rtl;
     const X = x => (rtl ? 1080 - x : x);
-    lk.bg(g, shRnd(o.seed));
+    lk.bg(g, shRnd(o.seed), { pod: list.length > 1 });
     g.textAlign = 'center'; g.textBaseline = 'alphabetic';
     const title = gameName(); shFit(g, title, 920, 116, 56, px => shFont(700, px));
     const ink = (y0, y1) => (lk.light ? lk.title : shGold(g, y0, y1)), shd = lk.light ? 'rgba(232,80,122,.25)' : 'rgba(0,0,0,.45)';
@@ -3704,7 +3749,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const mine = shMine();
     g.textAlign = 'center';
     if (mine) { shFit(g, mine, 960, 52, 30, px => shFont(700, px)); g.fillStyle = lk.mine || '#ffc93c'; g.save(); g.shadowColor = lk.light ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(mine, 540, 1712, 980); g.restore(); }
-    g.font = shFont(700, 38); g.fillStyle = lk.foot || '#fff3d6'; g.save(); g.shadowColor = lk.light ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(T('Play it free at blokvane.com'), 540, 1836, 1000); g.restore();
+    g.font = shFont(700, 38); g.fillStyle = lk.foot || '#fff3d6'; g.save(); g.shadowColor = lk.light ? 'rgba(0,0,0,0)' : 'rgba(0,0,0,.6)'; g.shadowBlur = 16; g.fillText(T('Play it at blokvane.com'), 540, 1836, 1000); g.restore();
   }
   // the picture, made once for this end screen (and again when the table or my place changes)
   const SH = { sig: '', blob: null, url: '', p: null };
@@ -3756,7 +3801,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   async function shareWin(how, b) {
     const gname = gameName();
     const list = shList();
-    const text = T('We played {game}! The winner: {name}. Play it free at blokvane.com', { game: gname, name: list[0] ? list[0].n : '?' });
+    const text = T('We played {game}! The winner: {name}. Play it at blokvane.com', { game: gname, name: list[0] ? list[0].n : '?' });
     if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
     b.disabled = true;
     try {
@@ -3843,10 +3888,15 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     }
   }
 
-  // ---------- starting a game from this phone (your computer's page here: Party games) ----------
-  // Pick a game, its language and where it shows: on the computer, or on one of its TV screens. The computer opens it
-  // there with a join code this phone made, and this phone joins it by itself, as the host. Everyone else scans the
-  // code on that screen.
+  // ---------- starting a game from this phone ----------
+  // A Blokvane member (signed in here) picks a game and its language, then the screen everyone watches:
+  //  - a TV near you: a TV, laptop or tablet on this Wi-Fi with the party games open shows up by itself. This phone
+  //    joins it as the host, and the game and the language picked here go to it.
+  //  - a link for the screen: shared to (or opened on) a laptop, a tablet or a TV's web browser. The game opens there
+  //    with a join code this phone made, and this phone joins it by itself as the host.
+  //  - your computer, or one of its TV screens, when this phone is linked to Blokvane on a computer (Connect, then
+  //    Your phone): the computer opens the game there.
+  // Everyone else joins by scanning the code on that screen: no app, no account.
   const GAME_LIST = [
     ['trivia', '🧠', 'Trivia', 'Questions on the TV, answers on the phones. Knockout, teams, family mode and more.'],
     ['gir', '❓', 'Guess It Right!', 'Four clues from the Stories of the Prophets, in English and Arabic. Guess on your phone.'],
@@ -3856,102 +3906,325 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.']
   ];
   const GAME_LANGS = { gir: ['en', 'ar'] };
+  const gameNameOf = id => T((GAME_LIST.find(g => g[0] === id) || [0, 0, 'Party games'])[2]);
+  // the address to type on a TV: the party games' own page (or the short one, once Blokvane's own GitHub Pages site,
+  // blokvane.github.io, is there: see tools/short-address in blokvane-data)
+  const TV_ADDR = 'blokvane.github.io/blokvane-data/play';
+  let tvAddr = '';
+  async function tvAddress() {
+    if (tvAddr) return tvAddr;
+    let short = false;
+    try {
+      if (location.hostname === 'blokvane.github.io') {
+        const r = await Promise.race([fetch('/', { cache: 'no-store', credentials: 'omit' }), new Promise(res => setTimeout(() => res(null), 3000))]);
+        short = !!(r && r.ok && /blokvane-data\/play\//.test(await r.text()));
+      }
+    } catch (e) {}
+    return (tvAddr = short ? 'blokvane.github.io' : TV_ADDR);
+  }
+  // TVs near you: the ones on this Wi-Fi with the party games open (BVLIVE.nearby), each with its name, its game, its
+  // code (the same one the TV shows) and whether it has a host. onList(tvs, looking) runs as they come and go, while
+  // node is on the screen.
+  function watchNear(node, onList) {
+    if (!L.nearby) { onList([], false); return () => {}; }
+    let nr = null, stopped = false, last = '';
+    const t0 = Date.now();
+    const tell = ps => {
+      if (stopped) return;
+      if (!node.isConnected) { stop(); return; }
+      const tvs = (ps || []).filter(p => p.role === 'tv' && p.info && typeof p.info.c === 'string' && /^[A-Z]{6}$/.test(p.info.c)).slice(0, 8)
+        .map(p => ({ id: p.id, code: p.info.c, game: typeof p.info.g === 'string' ? p.info.g : '', players: Math.max(0, +p.info.p || 0), playing: !!p.info.ph, hosted: !!p.info.h, name: L.clean(p.name, 30) }));
+      const looking = !tvs.length && Date.now() - t0 < 7000;
+      const sig = JSON.stringify(tvs) + looking;
+      if (sig !== last) { last = sig; onList(tvs, looking); }
+    };
+    const stop = () => { stopped = true; clearInterval(watch); if (nr) nr.close(); };
+    const watch = setInterval(() => { if (!node.isConnected) stop(); }, 1500);
+    L.nearby({ role: 'phone', onPeers: tell }).then(r => {
+      nr = r;
+      if (stopped) { if (r) r.close(); return; }
+      if (!r) { stopped = true; clearInterval(watch); onList([], false); return; }
+      setTimeout(() => tell(r.list()), 7200);
+    }).catch(() => { onList([], false); });
+    tell([]);
+    return stop;
+  }
+  // a TV in a list: its name, its code, and what it's doing
+  function tvButton(parent, tv, sub) {
+    const b = el('button', 'pt-game pt-tv', parent);
+    b.type = 'button';
+    const g = GAME_LIST.find(x => x[0] === tv.game);
+    b.appendChild(g ? gameIcon(g[0], g[1]) : el('span', 'e', null, '📺'));
+    const t = el('span', '', b);
+    el('b', '', t, tv.name && tv.name !== 'TV' ? T(tv.name) : g ? T(g[2]) : T('Party games'));
+    el('small', '', t, tv.code.slice(0, 3) + ' ' + tv.code.slice(3) + ' · ' + sub);
+    return b;
+  }
+  // how to open the games on a TV, so it shows up in TVs near you
+  async function tvHowSheet() {
+    const addr = await tvAddress();
+    sheet(T('Open the games on a TV'), (sh) => {
+      const ol = el('ol', 'pt-how', sh);
+      for (const [t, s] of [[T('Open the TV\'s web browser'), T('Or a laptop, a tablet, anything with a big screen.')], [T('Go to this address'), ''], [T('It shows up here'), T('Under TVs near you, when the TV is on the same Wi-Fi as this phone. Or type the 6 letters it shows.')]]) {
+        const li = el('li', '', ol); el('b', '', li, t);
+        if (s) el('small', '', li, s);
+        if (!s) {
+          const a = el('div', 'pt-addr', li, addr); a.dir = 'ltr';
+          btn(T('Copy the address'), { kind: 'ghost', icon: 'copy' }, li, async () => { try { await navigator.clipboard.writeText('https://' + addr); toast(T('Address copied.'), 'ok'); } catch (e) { toast(addr); } }).style.marginTop = '8px';
+        }
+      }
+    });
+  }
   async function startScreen(o) {
     css();
     await loadI18n();
-    const pc = o.pc, back = o.back || (() => GO.route());
-    if (!pc) { codeScreen(); return; }
+    const back = o.back || (() => GO.route());
+    // (this phone linked to Blokvane on a computer: the computer and its TV screens are places for the game too)
+    let pc = o.pc || null;
+    if (!pc && GO.pairs && GO.computer) { const pr = GO.pairs()[0]; if (pr) { try { pc = GO.computer(pr); } catch (e) { pc = null; } } }
     const i18 = I();
     let gameId = GAME_LIST.some(g => g[0] === store.get('party:last', '')) ? store.get('party:last', '') : 'trivia';
     let lang = (i18 && i18.ok(store.get('party:lang', ''))) ? store.get('party:lang', '') : (i18 ? i18.pick() : 'en');
-    let where = store.get('party:where', 'here');
-    document.documentElement.dir = 'ltr'; document.documentElement.lang = 'en';
-    const v = view('Party games', { tint: 'sun', night: true, back });
+    // where it shows: { k: 'tv', tv } (a TV near you), { k: 'link' }, or { k: 'pc', id: 'here' or a TV screen's id, name }
+    let where = null, chose = false;
+    await useLang(GO.lang ? GO.lang() : (i18 ? i18.pick() : 'en'));
+    const v = view(T('Start a game'), { tint: 'sun', night: true, back });
     if (GO.backCard) GO.backCard(v.body);
-    hero(v.body, 'Start a party game', 'Pick a game and where it shows. Everyone else joins by scanning the code on that screen: no app, no account.', { node: booPic('boo:party', 'float') });
+    hero(v.body, T('Start a game'), T('Pick a game, then the screen everyone will watch. Everyone else joins from their own phone: no app, no account.'), { node: booPic('boo:party', 'float') });
+    if (!(GO.pass && GO.pass.get())) {
+      const sc = el('div', 'card pt-signin', v.body);
+      el('b', '', sc, T('Hosting needs a Blokvane member'));
+      el('p', 'muted small', sc, T('Sign in on this phone to start a game. Everyone who joins your game plays for free.'));
+      btn(T('Sign in to host'), { kind: 'go', full: true, icon: 'key' }, sc, () => GO.signInScreen({ after: () => startScreen(o), back: () => startScreen(o) })).style.marginTop = '10px';
+    }
     // 1. the game
     const c1 = el('div', 'card', v.body);
-    el('h2', '', c1, '1. Pick a game');
+    el('h2', '', c1, T('1. Pick a game'));
     const ls = el('div', 'pt-games', c1);
     const gameBtns = [];
     for (const [id, e, name, sub] of GAME_LIST) {
       const b = el('button', 'pt-game', ls);
       b.type = 'button';
       b.appendChild(gameIcon(id, e));
-      const t = el('span', '', b); el('b', '', t, name); el('small', '', t, sub);
+      const t = el('span', '', b); el('b', '', t, T(name)); el('small', '', t, T(sub));
       b.onclick = () => { gameId = id; mark(); buzz('tap'); };
       gameBtns.push([id, b]);
     }
-    const mark = () => { for (const [id, b] of gameBtns) b.setAttribute('aria-pressed', String(id === gameId)); fillLangs(); };
     // 2. the language (the whole game: the screen and every phone)
     const c2 = el('div', 'card', v.body);
-    el('h2', '', c2, '2. Language');
-    el('p', 'muted small', c2, 'The whole game shows in it: the screen and every phone. The host can change it later.');
+    el('h2', '', c2, T('2. Language'));
+    el('p', 'muted small', c2, T('The whole game shows in it: the screen and every phone. You can change it later.'));
     const sel = el('select', 'input', c2);
     // (a game written in only some languages offers only those)
     function fillLangs() {
       const only = GAME_LANGS[gameId] || null;
       sel.textContent = '';
       for (const [code, name] of langsFull()) { if (only && !only.includes(code)) continue; const op = el('option', '', sel, name); op.value = code; }
-      if (!only && langsMore().length) { const og = el('optgroup', '', sel); og.label = 'More languages (translated by Chrome on a computer)'; for (const [code, name] of langsMore()) { const op = el('option', '', og, name); op.value = code; } }
+      if (!only && langsMore().length) { const og = el('optgroup', '', sel); og.label = T('More languages (translated by Chrome on a computer)'); for (const [code, name] of langsMore()) { const op = el('option', '', og, name); op.value = code; } }
       if (only && !only.includes(lang)) { const pk0 = i18 ? i18.pick() : 'en'; lang = only.includes(pk0) ? pk0 : only[0]; }
       sel.value = lang;
     }
     sel.onchange = () => { lang = sel.value; };
+    function mark() { for (const [id, b] of gameBtns) b.setAttribute('aria-pressed', String(id === gameId)); fillLangs(); }
     mark();
-    // 3. where it shows: the computer, or one of its TV screens (the ones that are on right now)
+    // 3. where everyone watches
     const c3 = el('div', 'card', v.body);
-    el('h2', '', c3, '3. Where should it show?');
-    const wl = el('div', 'pt-where', c3);
-    const choices = [['here', '💻', pc.name || 'Your computer', 'In its own window. Put that window on a TV or a big screen if you like.', true]];
-    const paint = () => {
-      wl.textContent = '';
-      for (const [id, e, name, sub, on] of choices) {
-        const b = el('button', 'pt-game', wl);
-        b.type = 'button';
-        b.disabled = !on;
-        b.setAttribute('aria-pressed', String(id === where));
-        el('span', 'e', b, e);
-        const t = el('span', '', b); el('b', '', t, name); el('small', '', t, sub);
-        b.onclick = () => { where = id; paint(); buzz('tap'); };
-      }
-    };
-    paint();
-    const looking = el('p', 'muted small', c3, 'Looking for your TV screens...');
-    pc.ask('screens', {}).then(list => {
-      looking.remove();
-      for (const sc of (Array.isArray(list) ? list : []).slice(0, 20)) choices.push([sc.id, '📺', L.clean(sc.name, 40) || 'A TV screen', sc.on ? 'On right now' + (sc.show ? ': ' + L.clean(sc.show, 40) : '') : 'Off right now', !!sc.on]);
-      if (!choices.some(c => c[0] === where && c[4])) where = 'here';
-      paint();
-    }).catch(() => { looking.textContent = 'TV screens: allow Screen check for this phone on the computer (Connect, then Your phone) to start games on them from here.'; });
-    // start
-    const go = btn('Start the game', { kind: 'go', huge: true, full: true, icon: 'play' }, v.body, async () => {
-      store.set('party:last', gameId); store.set('party:lang', lang); store.set('party:where', where);
-      const code = L.shortCode(6);
-      const r = await pc.ask('partyOpen', { game: gameId, lang, where, code }, { timeout: 20000 });
-      const w = view('Party games', { tint: 'sun', night: true });
-      const h = hero(w.body, 'Opening the game...', where === 'here' ? 'It opens on ' + (pc.name || 'your computer') + '. This phone joins by itself in a moment.' : 'It opens on ' + (r && r.where ? r.where : 'the TV') + '. This phone joins by itself in a moment.', { node: booPic('boo:party', 'float') });
-      const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
-      try {
-        const link = await byCode(code, 24);
-        buzz('ok');
-        G.autoJoin = link.s.slice(0, 10);
-        location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
-      } catch (e) {
-        sp.remove();
-        hero((w.body.textContent = '', w.body), 'The game didn\'t answer', 'It may still be opening. Scan the code on the screen with this phone, or type the 6 letters under it.', { sleepy: true });
-        btn('Type the code', { kind: 'go', full: true, huge: true }, w.body, () => codeScreen());
-        btn('Back', { kind: 'ghost', full: true }, w.body, () => back()).style.marginTop = '10px';
-      }
-    });
+    el('h2', '', c3, T('3. Where will everyone watch?'));
+    el('label', 'pt-lbl', c3, '📺 ' + T('TVs near you'));
+    const tvl = el('div', 'pt-where', c3);
+    const tvst = el('p', 'muted small pt-tvst', c3, T('Looking for TVs on this Wi-Fi...'));
+    const how = el('button', 'linkish pt-tvhow', c3, T('How do I open the games on a TV?'));
+    how.type = 'button';
+    how.onclick = () => tvHowSheet();
+    el('label', 'pt-lbl', c3, '🔗 ' + T('Any other screen'));
+    const other = el('div', 'pt-where', c3);
+    let paintGo = () => {};
+    const pressed = () => { for (const b of c3.querySelectorAll('.pt-game')) b.setAttribute('aria-pressed', String(!!where && b.dataset.w === key(where))); paintGo(); };
+    const key = w => (w.k === 'tv' ? 'tv:' + w.tv.code : w.k === 'pc' ? 'pc:' + w.id : 'link');
+    const choose = (w, b) => { if (b && b.disabled) return; where = w; chose = true; pressed(); buzz('tap'); };
+    // (the link: always there)
+    const lb = el('button', 'pt-game', other);
+    lb.type = 'button'; lb.dataset.w = 'link';
+    el('span', 'e', lb, '🔗');
+    const lt = el('span', '', lb); el('b', '', lt, T('Send a link to the screen')); el('small', '', lt, T('A laptop, a tablet or a TV\'s web browser. Share or copy the link, open it there, and this phone joins as the host.'));
+    lb.onclick = () => choose({ k: 'link' }, lb);
+    // (your computer, and its TV screens that are on)
+    if (pc) {
+      const pb = el('button', 'pt-game', other);
+      pb.type = 'button'; pb.dataset.w = 'pc:here';
+      el('span', 'e', pb, '💻');
+      const pt = el('span', '', pb); el('b', '', pt, pc.name || T('Your computer')); el('small', '', pt, T('Blokvane opens it there, in its own window. Put that window on a TV or a big screen.'));
+      pb.onclick = () => choose({ k: 'pc', id: 'here', name: pc.name || T('your computer') }, pb);
+      const look = el('p', 'muted small', other, T('Looking for your computer\'s TV screens...'));
+      pc.ask('screens', {}).then(list => {
+        look.remove();
+        for (const sc of (Array.isArray(list) ? list : []).slice(0, 12)) {
+          const b = el('button', 'pt-game', other);
+          b.type = 'button'; b.dataset.w = 'pc:' + sc.id;
+          b.disabled = !sc.on;
+          el('span', 'e', b, '📺');
+          const t = el('span', '', b); el('b', '', t, L.clean(sc.name, 40) || T('A TV screen')); el('small', '', t, sc.on ? T('One of your TV screens, on right now') + (sc.show ? ': ' + L.clean(sc.show, 40) : '') : T('One of your TV screens. It\'s off right now'));
+          b.onclick = () => choose({ k: 'pc', id: sc.id, name: L.clean(sc.name, 40) || T('the TV') }, b);
+        }
+        pressed();
+      }).catch(() => { look.textContent = T('Your computer\'s TV screens: on the computer, allow Screen check for this phone (Connect, then Your phone) to start games on them from here.'); });
+    }
+    // start (its words say where: "Start on Living room TV", "Get the link")
+    const go = btn(T('Start the game'), { kind: 'go', huge: true, full: true, icon: 'play' }, v.body, () => start());
     go.style.marginTop = '6px';
+    paintGo = () => {
+      const s = go.querySelector('span');
+      if (!s) return;
+      s.textContent = !where ? T('Pick where everyone watches') : where.k === 'tv' ? T('Start on {name}', { name: where.tv.name && where.tv.name !== 'TV' ? T(where.tv.name) : T('this TV') }) : where.k === 'link' ? T('Get the link') : T('Start on {name}', { name: where.name });
+      go.disabled = !where;
+    };
+    paintGo();
+    // (the TVs on this Wi-Fi, as they come and go: the first free one is picked by itself, until you pick)
+    watchNear(c3, (tvs, looking) => {
+      tvl.textContent = '';
+      for (const tv of tvs) {
+        const busy = tv.playing || tv.hosted;
+        const b = tvButton(tvl, tv, tv.playing ? T('In a game') : tv.hosted ? T('It has a host already') : T('Ready for a host'));
+        b.dataset.w = 'tv:' + tv.code;
+        b.disabled = busy;
+        b.onclick = () => choose({ k: 'tv', tv }, b);
+      }
+      if (where && where.k === 'tv') { const now = tvs.find(x => x.code === where.tv.code); if (now) where.tv = now; }
+      if (!chose && !where) { const free = tvs.find(x => !x.playing && !x.hosted); if (free) where = { k: 'tv', tv: free }; }
+      tvst.textContent = tvs.length ? T('Tap the TV that shows the same 6 letters.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
+      how.hidden = tvs.some(x => !x.playing && !x.hosted);
+      pressed();
+    });
+    async function start() {
+      if (!where) return;
+      if (!(GO.pass && GO.pass.get())) { GO.signInScreen({ why: 'host', after: () => start(), back: () => startScreen(o) }); return; }
+      store.set('party:last', gameId); store.set('party:lang', lang);
+      const w = where, g = gameId, lg = lang;
+      if (w.k === 'link') return linkScreen(g, lg, () => startScreen(o));
+      if (w.k === 'tv') return startOnTv(w.tv, g, lg, () => startScreen(o));
+      return startOnPc(pc, w, g, lg, () => startScreen(o));
+    }
+  }
+  // (the game and its language, for the TV this phone joins next: they go to it as soon as this phone is its host)
+  const setUp = (s, game, lang) => store.set('party:setup', { s: s.slice(0, 10), game, lang, at: Date.now() });
+  function starting(title, text) {
+    const w = view(T('Party games'), { tint: 'sun', night: true });
+    const h = hero(w.body, title, text, { node: booPic('boo:party', 'float') });
+    const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
+    return { w, sp };
+  }
+  function didntStart(w, back, why) {
+    w.body.textContent = '';
+    hero(w.body, T('The game didn\'t start'), why || T('Scan the code on the screen with this phone, or type the 6 letters under it.'), { sleepy: true });
+    btn(T('Type the code'), { kind: 'go', full: true, huge: true }, w.body, () => codeScreen());
+    btn(T('Back'), { kind: 'ghost', full: true }, w.body, () => back()).style.marginTop = '10px';
+  }
+  async function startOnTv(tv, game, lang, back) {
+    const name = tv.name && tv.name !== 'TV' ? T(tv.name) : T('the TV');
+    const { w } = starting(T('Starting on {name}...', { name }), T('This phone joins it as the host in a moment.'));
+    try {
+      const link = await byCode(tv.code, 9);
+      setUp(link.s, game, lang);
+      buzz('ok');
+      G.autoJoin = link.s.slice(0, 10);
+      location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+    } catch (e) { didntStart(w, back, T('The TV didn\'t answer. Check that the games are still open on it, then try again.')); }
+  }
+  async function startOnPc(pc, where, game, lang, back) {
+    const code = L.shortCode(6);
+    const { w } = starting(T('Opening the game...'), T('It opens on {name}. This phone joins it by itself in a moment.', { name: where.name }));
+    try {
+      const r = await pc.ask('partyOpen', { game, lang, where: where.id, code }, { timeout: 20000 });
+      void r;
+      const link = await byCode(code, 24);
+      buzz('ok');
+      G.autoJoin = link.s.slice(0, 10);
+      location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+    } catch (e) { didntStart(w, back, (e && e.message && !/code/i.test(e.message) ? e.message + ' ' : '') + T('It may still be opening: scan the code on the screen with this phone, or type the 6 letters under it.')); }
+  }
+  // the link for the screen: share it or copy it, open it there, and this phone joins as the host by itself
+  async function linkScreen(game, lang, back) {
+    const code = L.shortCode(6);
+    const url = L.PLAY + '#' + game + '.' + lang + '.' + code;
+    let stop = () => {};
+    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { stop(); back(); } });
+    hero(v.body, T('Open this link on the screen'), T('On the laptop, tablet or TV everyone will watch. {game} opens there, and this phone joins it as the host by itself.', { game: gameNameOf(game) }), { node: booPic('boo:party', 'float') });
+    const card = el('div', 'card pt-link', v.body);
+    el('div', 'pt-url', card, url.replace(/^https:\/\//, '')).dir = 'ltr';
+    const r = el('div', 'grid2', card); r.style.marginTop = '12px';
+    const share = async () => {
+      try { if (navigator.share) { await navigator.share({ title: T('Party games'), text: T('Open this on the screen for our game of {game}:', { game: gameNameOf(game) }), url }); return; } }
+      catch (e) { if (e && e.name === 'AbortError') return; }
+      await copy();
+    };
+    const copy = async () => { try { await navigator.clipboard.writeText(url); toast(T('Link copied. Open it on the screen.'), 'ok'); } catch (e) { toast(url); } };
+    btn(T('Share the link'), { kind: 'go', icon: 'share' }, r, share);
+    btn(T('Copy the link'), { kind: 'ghost', icon: 'copy' }, r, copy);
+    const st = el('div', 'pt-wait', card);
+    el('div', 'spin', st);
+    el('span', '', st, T('Waiting for the screen to open it...'));
+    // (a TV with a remote: its web browser and a short address, then it shows up here)
+    const tc = el('div', 'card', v.body);
+    el('h2', '', tc, T('On a TV with a remote?'));
+    const addr = await tvAddress();
+    const p = el('p', 'muted small', tc);
+    const [pa, pb2] = T('Open the TV\'s web browser and go to {address}. It shows up here, and you can start the game on it.').split('{address}');
+    p.append(pa || '');
+    const ab = el('b', 'pt-addr-i', p, addr); ab.dir = 'ltr';
+    p.append(pb2 || '');
+    const tvl = el('div', 'pt-where', tc);
+    const tvst = el('p', 'muted small pt-tvst', tc, T('Looking for TVs on this Wi-Fi...'));
+    watchNear(tc, (tvs, looking) => {
+      tvl.textContent = '';
+      for (const tv of tvs) {
+        const busy = tv.playing || tv.hosted;
+        const b = tvButton(tvl, tv, tv.playing ? T('In a game') : tv.hosted ? T('It has a host already') : T('Tap to start {game} here', { game: gameNameOf(game) }));
+        b.disabled = busy;
+        b.onclick = () => { stop(); buzz('tap'); startOnTv(tv, game, lang, back); };
+      }
+      tvst.textContent = tvs.length ? T('Tap the TV that shows the same 6 letters.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV with the games open on this Wi-Fi yet.');
+    });
+    btn(T('Cancel'), { kind: 'ghost', full: true }, v.body, () => { stop(); back(); }).style.marginTop = '4px';
+    // (the screen opens the link: it answers in the room of the code, and this phone goes straight in as the host)
+    stop = waitCode(code, v.body, link => {
+      buzz('ok');
+      G.autoJoin = link.s.slice(0, 10);
+      location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : '');
+    });
+  }
+  // the room of a join code, watched until a screen answers in it (or node leaves the screen): onLink({ s, tv, lang })
+  function waitCode(c, node, onLink) {
+    let done = false, R2 = null, t = 0, n = 0;
+    const ask = () => { if (!done && R2) R2.send({ k: 'link?' }).catch(() => {}); };
+    const loop = () => {
+      if (done) return;
+      if (!node.isConnected) { stop(); return; }
+      ask();
+      n++;
+      t = setTimeout(loop, n < 40 ? 3000 : 6000);
+    };
+    const stop = () => { done = true; clearTimeout(t); if (R2) { const r = R2; R2 = null; setTimeout(() => r.close(), 300); } };
+    C.newMember().then(me => L.codeSecret(c, 'play').then(sec => L.room({ secret: sec, label: 'bvplaycode', me, name: '', role: 'player', open: true,
+      onMsg: m => {
+        if (done || m.k !== 'link' || typeof m.s !== 'string' || !/^[A-Za-z0-9_-]{16,64}$/.test(m.s) || !L.okId(m.tv)) return;
+        const link = { s: m.s, tv: m.tv, lang: typeof m.lang === 'string' && /^[a-z]{2}$/.test(m.lang) && m.lang !== 'en' ? m.lang : '' };
+        stop();
+        onLink(link);
+      },
+      // (a screen just came into the room: ask it right away)
+      onPeers: ps => { if ((ps || []).some(p => p.role === 'tv')) ask(); } }))).then(r => {
+      if (done) { r.close(); return; }
+      R2 = r;
+      loop();
+    }).catch(() => {});
+    return stop;
   }
 
   // ---------- joining with the 6 letters on the TV ----------
   async function codeScreen() {
     css();
     await loadI18n();
-    if (G.lang === 'en' && I()) await useLang(I().pick());
+    await useLang(GO.lang ? GO.lang() : I() ? I().pick() : 'en');
     GO.say = T;
     const v = view(T('Join a game'), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     if (GO.backCard) GO.backCard(v.body);
@@ -3974,47 +4247,28 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ci.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     setTimeout(() => { try { ci.focus(); } catch (e) {} }, 300);
   }
-  // TVs near you: the ones on this Wi-Fi (BVLIVE.nearby), each with its game and its code (the same code the TV shows),
-  // and one tap joins. On another network there are none: the code is right under it.
+  // TVs near you, to join one with a tap: the ones on this Wi-Fi, each with its game and its code. On another network
+  // there are none: the code is right under it.
   function nearTvs(parent) {
     if (!L.nearby) return;
     const nc = el('div', 'card pt-near', parent);
     el('h2', '', nc, '📺 ' + T('TVs near you'));
     const st = el('p', 'muted small', nc, T('Looking for TVs on this Wi-Fi...'));
     const ls = el('div', 'pt-games', nc);
-    const t0 = Date.now();
-    let nr = null, shown = '';
-    const draw = ps => {
-      if (!nc.isConnected) return;
-      const tvs = (ps || []).filter(p => p.role === 'tv' && p.info && typeof p.info.c === 'string' && /^[A-Z]{6}$/.test(p.info.c)).slice(0, 6);
-      const sig = JSON.stringify(tvs.map(p => p.info));
-      if (sig !== shown) {
-        shown = sig; ls.textContent = '';
-        for (const p of tvs) {
-          const i = p.info, g = GAME_LIST.find(x => x[0] === i.g);
-          const b = el('button', 'pt-game', ls); b.type = 'button';
-          b.appendChild(gameIcon(g ? g[0] : '', g ? g[1] : '📺'));
-          const t = el('span', '', b);
-          el('b', '', t, g ? T(g[2]) : T('Party games'));
-          el('small', '', t, i.c.slice(0, 3) + ' ' + i.c.slice(3) + ' · ' + (i.ph ? T('Playing now') : T('{n} players', { n: numFmt(Math.max(0, +i.p || 0)) })));
-          b.onclick = async () => {
-            b.disabled = true; buzz('tap');
-            try { const link = await byCode(i.c); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
-            catch (e) { toast(e && e.message ? e.message : T('That didn\'t work. Try again.'), 'bad'); }
-            finally { b.disabled = false; }
-          };
-        }
+    watchNear(nc, (tvs, looking) => {
+      ls.textContent = '';
+      for (const tv of tvs) {
+        const b = tvButton(ls, tv, tv.playing ? T('Playing now') : T('{n} players', { n: numFmt(tv.players) }));
+        b.onclick = async () => {
+          b.disabled = true; buzz('tap');
+          try { const link = await byCode(tv.code); location.hash = '#game.' + link.s + '.' + link.tv + (link.lang ? '.' + link.lang : ''); }
+          catch (e) { toast(e && e.message ? e.message : T('That didn\'t work. Try again.'), 'bad'); }
+          finally { b.disabled = false; }
+        };
       }
-      st.textContent = tvs.length ? T('Tap your TV to join. Its code is the one on the TV.') : Date.now() - t0 > 7000 ? T('No TV found on this Wi-Fi. Type the code instead.') : T('Looking for TVs on this Wi-Fi...');
-      nc.classList.toggle('none', !tvs.length && Date.now() - t0 > 7000);
-    };
-    L.nearby({ role: 'phone', onPeers: draw }).then(r => {
-      nr = r;
-      if (!nc.isConnected) { if (r) r.close(); return; }
-      if (!r) { st.textContent = T('No TV found on this Wi-Fi. Type the code instead.'); nc.classList.add('none'); return; }
-      setTimeout(() => draw(r.list()), 7200);
-    }).catch(() => { st.textContent = T('No TV found on this Wi-Fi. Type the code instead.'); nc.classList.add('none'); });
-    const watch = setInterval(() => { if (!nc.isConnected) { clearInterval(watch); if (nr) nr.close(); } }, 1500);
+      st.textContent = tvs.length ? T('Tap your TV to join. Its code is the one on the TV.') : looking ? T('Looking for TVs on this Wi-Fi...') : T('No TV found on this Wi-Fi. Type the code instead.');
+      nc.classList.toggle('none', !tvs.length && !looking);
+    });
   }
   // the game a code belongs to (tries: how many times to ask; a game that is still opening needs a little longer)
   async function byCode(c, tries) {

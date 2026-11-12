@@ -213,10 +213,6 @@ html.no-flexgap[dir="rtl"] .now > * + * { margin-left: 0; margin-right: 12px; }
 .now small { color: var(--dim); font-size: 14px; }
 .bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: var(--tint); border-radius: 3px; transition: width .4s linear; }
-.fun { display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 10px; gap: 10px; }
-.fun button { aspect-ratio: 1; border: 0; border-radius: 20px; background: var(--raise); font-size: 34px; display: grid; align-items: center; justify-items: center; place-items: center; transition: transform .12s; }
-.fun button:active { transform: scale(.9) rotate(-6deg); }
-.fun button small { display: block; font: 600 12px var(--round); color: var(--dim); margin-top: 2px; }
 
 /* ---------- toasts, sheets and the full screen notes ---------- */
 .toast { position: fixed; left: 50%; bottom: calc(22px + var(--safe-b)); transform: translate(-50%, 20px); opacity: 0; max-width: 520px; max-width: min(92vw, 520px); z-index: 50;
@@ -304,17 +300,19 @@ html.no-flexgap[dir="rtl"] .install-row > * + * { margin-left: 0; margin-right: 
 /* ---------- Blokvane Games (games.html): its home, the camera, and signing in to host ---------- */
 .gm-tiles { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; margin: 4px 0 14px; }
 .gm-tile { display: flex; flex-direction: column; align-items: flex-start; grid-gap: 4px; gap: 4px; padding: 18px 16px; border-radius: var(--r-l); border: 1px solid var(--line); text-align: start; color: var(--text);
+  background: linear-gradient(160deg, var(--panel), var(--panel) 75%);
   background: linear-gradient(160deg, color-mix(in srgb, var(--mint) 22%, var(--panel)), var(--panel) 75%); min-height: 132px; }
+html.no-flexgap .gm-tile > * + * { margin-top: 4px; }
 .gm-tile:active { transform: scale(.97); }
 .gm-tile .e { font-size: 34px; line-height: 1; margin-bottom: auto; }
 .gm-tile b { font-size: 18px; font-weight: 800; }
 .gm-tile small { color: var(--dim); font-size: 14px; line-height: 1.3; }
 .gm-host h2, .gm-get h2 { margin-bottom: 4px; }
-.how-o.gm.rec { border-color: color-mix(in srgb, var(--mint) 60%, var(--line)); background: linear-gradient(150deg, color-mix(in srgb, var(--mint) 18%, var(--panel)), var(--panel) 70%); }
+.how-o.gm.rec { border-color: var(--mint); border-color: color-mix(in srgb, var(--mint) 60%, var(--line)); background: linear-gradient(150deg, var(--panel), var(--panel) 70%); background: linear-gradient(150deg, color-mix(in srgb, var(--mint) 18%, var(--panel)), var(--panel) 70%); }
 .how-o.gm .how-tag { background: var(--mint); color: #062216; }
 .gm-cam { position: relative; border-radius: 26px; overflow: hidden; background: #000; aspect-ratio: 3 / 4; max-height: 62vh; margin: 6px auto 12px; width: 100%; }
 .gm-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
-.gm-aim { position: absolute; inset: 18% 14%; border-radius: 22px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); outline: 4px solid var(--mint); outline-offset: -4px; animation: gm-aim 1.6s ease-in-out infinite; }
+.gm-aim { position: absolute; top: 18%; right: 14%; bottom: 18%; left: 14%; inset: 18% 14%; border-radius: 22px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); outline: 4px solid var(--mint); outline-offset: -4px; animation: gm-aim 1.6s ease-in-out infinite; }
 @keyframes gm-aim { 50% { inset: 20% 16%; } }
 .gm-open { text-align: center; padding: 26px 0 8px; }
 .gm-open img { width: 104px; height: 104px; border-radius: 24px; box-shadow: 0 16px 40px -12px rgba(54, 214, 165, .55); animation: si-bob 2.4s ease-in-out infinite; }
@@ -341,3 +339,334 @@ html.no-flexgap[dir="rtl"] .install-row > * + * { margin-left: 0; margin-right: 
 [dir="rtl"] .si-eye { right: auto; left: 10px; }
 .si-err { color: var(--bad); font-weight: 700; margin: 4px 0 0; }
 @media (prefers-reduced-motion: reduce) { .gm-aim, .si-ticket, .gm-open img, .si-art .boo { animation: none !important; } }
+
+/* =====================================================================
+   Blokvane Games: "Silk waves" (the party games' look on phones and tablets, html.pt-night). A night sky in violet
+   with slow silk waves and two soft glows behind glass cards, golden buttons for what to press, Fredoka for the
+   titles and Nunito for the words, with Cairo for Arabic and Noto for Hindi and Bengali in the same weights. It
+   follows the phone: dark when the phone is dark, a light "day" version when it is light (the game screens keep the
+   night look, the same as the TV: html.pt-dark). Every size works: phones, tablets and iPads, standing or lying.
+   ===================================================================== */
+@font-face { font-family: 'BV Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../play/fonts/imp-fredoka-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BV Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../play/fonts/imp-fredoka-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BV Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../play/fonts/cairo-arabic.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'BV Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../play/fonts/noto-sans-devanagari.woff2) format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; }
+@font-face { font-family: 'BV Fredoka'; font-style: normal; font-weight: 300 700; font-display: swap; src: url(../play/fonts/noto-sans-bengali.woff2) format('woff2');
+  unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+200C-200D, U+20B9, U+25CC; }
+@font-face { font-family: 'BV Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(../play/fonts/imp-nunito-latin.woff2) format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: 'BV Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(../play/fonts/imp-nunito-latin-ext.woff2) format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: 'BV Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(../play/fonts/cairo-arabic.woff2) format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC; }
+@font-face { font-family: 'BV Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(../play/fonts/noto-sans-devanagari.woff2) format('woff2');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+25CC, U+A830-A839, U+A8E0-A8FF; }
+@font-face { font-family: 'BV Nunito'; font-style: normal; font-weight: 200 1000; font-display: swap; src: url(../play/fonts/noto-sans-bengali.woff2) format('woff2');
+  unicode-range: U+0951-0952, U+0964-0965, U+0980-09FE, U+200C-200D, U+20B9, U+25CC; }
+
+/* the night (the phone is dark, and every game screen) */
+html.pt-night {
+  color-scheme: dark;
+  --sw-bg1: #1d1440; --sw-bg2: #0e0920; --sw-glow: rgba(124, 92, 255, .35);
+  --sw-blob1: rgba(167, 123, 255, .4); --sw-blob2: rgba(52, 211, 153, .25);
+  --sw-w1: .22; --sw-w2: .18; --sw-w3: .16; --sw-w4: .12;
+  --ink: #0e0920; --panel: #1f1745; --raise: #291f55; --raise2: #352a6b; --line: rgba(255, 255, 255, .12); --dk: rgba(255, 255, 255, .06);
+  --text: #f3eefe; --dim: #c8bde6; --faint: #9a90c2; --lav: #cbbcff; --sun: #ffc93c; --warn: #ffc93c; --mint: #3ee6b0;
+  --sw-card1: rgba(255, 255, 255, .07); --sw-card2: rgba(255, 255, 255, .03); --sw-cardline: rgba(255, 255, 255, .1); --sw-shadow: 0 12px 30px rgba(0, 0, 0, .25);
+  --sw-sub: #b9add6; --sw-ic: #ffc93c; --sw-icbg: rgba(255, 201, 60, .12); --sw-icline: rgba(255, 201, 60, .3); --sw-hostline: rgba(255, 201, 60, .25);
+  --sw-ghost: rgba(255, 255, 255, .06); --sw-ghostline: rgba(255, 255, 255, .14); --sw-sheet: #1c1440; --sw-field: rgba(10, 6, 30, .45); --sw-link: #c9b8ff;
+  --fun: 'BV Fredoka', 'Fredoka', ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --sw-text: 'BV Nunito', 'Nunito', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --round: var(--fun);
+}
+/* the day (the phone is light): the same silk waves on lavender paper. The game screens stay at night (html.pt-dark) */
+@media (prefers-color-scheme: light) {
+  html.pt-night:not(.pt-dark) {
+    color-scheme: light;
+    --sw-bg1: #f7f3ff; --sw-bg2: #e9e1ff; --sw-glow: rgba(124, 92, 255, .2);
+    --sw-blob1: rgba(167, 123, 255, .32); --sw-blob2: rgba(52, 211, 153, .2);
+    --sw-w1: .16; --sw-w2: .16; --sw-w3: .12; --sw-w4: .16;
+    --ink: #f3eeff; --panel: #ffffff; --raise: #f1ecff; --raise2: #e6deff; --line: rgba(60, 40, 140, .14); --dk: rgba(255, 255, 255, .7);
+    --text: #21164a; --dim: #5d5486; --faint: #8a82ad; --lav: #6d4aff; --sun: #f2b51a; --warn: #c98a12; --mint: #12a57d;
+    --sw-card1: rgba(255, 255, 255, .88); --sw-card2: rgba(255, 255, 255, .7); --sw-cardline: rgba(60, 40, 140, .1); --sw-shadow: 0 12px 30px rgba(60, 40, 140, .1);
+    --sw-sub: #5d5486; --sw-ic: #b7790b; --sw-icbg: rgba(255, 201, 60, .2); --sw-icline: rgba(201, 138, 18, .35); --sw-hostline: rgba(201, 138, 18, .35);
+    --sw-ghost: rgba(255, 255, 255, .72); --sw-ghostline: rgba(60, 40, 140, .16); --sw-sheet: #ffffff; --sw-field: #ffffff; --sw-link: #6d4aff;
+  }
+}
+html.pt-night, html.pt-night body { background: var(--sw-bg2); }
+html.pt-night body { font-family: var(--sw-text); color: var(--text); }
+html.pt-night .app { position: relative; z-index: 1; }
+html.pt-night a, html.pt-night .linkish { color: var(--sw-link); }
+
+/* the sky: a glow at the top, two soft lights that drift, and four silk waves at the bottom (go.js puts .sw-sky in) */
+.sw-sky { display: none; }
+html.pt-night .sw-sky { display: block; position: fixed; top: 0; right: 0; bottom: 0; left: 0; inset: 0; z-index: 0; overflow: hidden; pointer-events: none;
+  background: radial-gradient(ellipse 90% 40% at 50% 0%, var(--sw-glow), transparent 70%), linear-gradient(180deg, var(--sw-bg1), var(--sw-bg2)); --wp: 130px; --wp: clamp(130px, 33.333vw, 240px); }
+.sw-blob { position: absolute; border-radius: 50%; will-change: transform; }
+.sw-blob.a { left: -120px; top: -80px; width: 380px; height: 380px; width: 55vmin; width: clamp(380px, 55vmin, 620px); height: 55vmin; height: clamp(380px, 55vmin, 620px); background: radial-gradient(circle, var(--sw-blob1), transparent 65%); animation: swBlobA 14s ease-in-out infinite; }
+.sw-blob.b { right: -140px; top: 43%; width: 420px; height: 420px; width: 60vmin; width: clamp(420px, 60vmin, 680px); height: 60vmin; height: clamp(420px, 60vmin, 680px); background: radial-gradient(circle, var(--sw-blob2), transparent 65%); animation: swBlobB 18s ease-in-out infinite; }
+@keyframes swBlobA { 0%, 100% { transform: translate(0, 0) scale(1); } 33% { transform: translate(80px, 120px) scale(1.2); } 66% { transform: translate(-60px, 60px) scale(.9); } }
+@keyframes swBlobB { 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-90px, -140px) scale(1.25); } }
+.sw-wave { position: absolute; left: 0; bottom: 0; width: calc(100% + 240px); will-change: transform; background-repeat: repeat-x; background-position: 0 0; background-size: 130px auto; background-size: var(--wp) auto; }
+.sw-wave.w1 { top: 57%; opacity: var(--sw-w1); animation: swWave 4.67s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 1000'%3E%3Cpath d='M0 40Q32.5 0 65 40T130 40V1000H0Z' fill='%237c5cff'/%3E%3C/svg%3E"); }
+.sw-wave.w2 { top: 65%; opacity: var(--sw-w2); animation: swWave 3.33s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 1000'%3E%3Cpath d='M0 50Q32.5 0 65 50T130 50V1000H0Z' fill='%235ad1ff'/%3E%3C/svg%3E"); }
+.sw-wave.w3 { top: 76%; opacity: var(--sw-w3); animation: swWave 2.67s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 1000'%3E%3Cpath d='M0 36Q32.5 0 65 36T130 36V1000H0Z' fill='%23ff5a8a'/%3E%3C/svg%3E"); }
+.sw-wave.w4 { top: 86.5%; opacity: var(--sw-w4); animation: swWave 4s linear infinite;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 1000'%3E%3Cpath d='M0 30Q32.5 0 65 30T130 30V1000H0Z' fill='%23ffc93c'/%3E%3C/svg%3E"); }
+@keyframes swWave { to { transform: translateX(-130px); transform: translateX(calc(var(--wp) * -1)); } }
+/* (an iPhone app in the day look: a deep band under the white clock and battery, so they stay easy to read) */
+@media (prefers-color-scheme: light) and (display-mode: standalone) {
+  html.pt-night:not(.pt-dark) body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #2a1d5c; z-index: 80; }
+}
+
+/* the top: the Games icon (Boo on mint) or the way back, and the name */
+html.pt-night .top .back { width: 42px; height: 42px; background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+html.pt-night .top .who h1 { font: 700 21px/1.15 var(--fun); letter-spacing: normal; }
+.sw-appic { flex: none; width: 42px; height: 42px; border-radius: 13px; background: linear-gradient(160deg, #3ee6b0, #16b386); display: grid; align-items: center; justify-items: center; place-items: center; box-shadow: 0 6px 14px rgba(0, 0, 0, .3); }
+.sw-appic svg { width: 24px; height: 31px; overflow: visible; }
+/* the welcome: Boo floats over his glow, with his shadow under him */
+html.pt-night .hero { padding: 14px 6px 4px; }
+html.pt-night .hero .boo { width: 92px; height: 120px; margin: 15px auto 0; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .35)); animation: swBob 3s ease-in-out infinite; }
+html.pt-night .hero .boo.sleepy { filter: grayscale(.6) brightness(.85) drop-shadow(0 10px 16px rgba(0, 0, 0, .35)); }
+html.pt-night .hero::before { content: ""; display: block; width: 150px; height: 150px; margin: 0 auto -135px; border-radius: 50%; background: radial-gradient(circle, rgba(167, 123, 255, .35), transparent 68%); }
+html.pt-night .hero .boo + h1::before { content: ""; display: block; width: 70px; height: 10px; margin: 0 auto 16px; border-radius: 50%; background: rgba(0, 0, 0, .5); animation: swShade 3s ease-in-out infinite; }
+@media (prefers-color-scheme: light) { html.pt-night:not(.pt-dark) .hero .boo + h1::before { background: rgba(60, 40, 140, .22); } }
+@keyframes swBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+@keyframes swShade { 0%, 100% { transform: scaleX(1); opacity: .5; } 50% { transform: scaleX(.8); opacity: .3; } }
+html.pt-night .hero h1 { font: 700 34px/1.05 var(--fun); margin: 0 0 6px; }
+html.pt-night .hero p { color: var(--dim); font-size: 17px; line-height: 1.45; margin: 6px auto 16px; max-width: 28em; text-wrap: balance; }
+
+/* glass cards */
+html.pt-night .card { background: linear-gradient(180deg, var(--sw-card1), var(--sw-card2)); border: 1px solid var(--sw-cardline); border-radius: 24px; box-shadow: var(--sw-shadow); padding: 20px; }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html.pt-night .card, html.pt-night .gm-tile { -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+}
+html.pt-night .card h2 { font: 700 21px/1.2 var(--fun); margin-bottom: 6px; }
+html.pt-night .card p, html.pt-night .muted { color: var(--dim); }
+html.pt-night .card p { font-size: 15px; line-height: 1.5; }
+html.pt-night .card.gm-host { border-color: var(--sw-hostline); }
+
+/* buttons: golden for the one to press, glass for the rest, orange and blue for getting and sharing Blokvane */
+html.pt-night .btn { min-height: 56px; border-radius: 18px; font: 700 18px/1.2 var(--fun); }
+html.pt-night .btn.huge { min-height: 64px; font-size: 20px; border-radius: 20px; }
+html.pt-night .btn.go { background: linear-gradient(180deg, #ffd75e, #ffc93c); color: #1a1033; box-shadow: 0 6px 0 #c98a12, 0 12px 24px rgba(255, 201, 60, .25); margin-bottom: 6px; }
+html.pt-night .btn.go:active, html.pt-night .btn.orange:active, html.pt-night .btn.blue:active { transform: translateY(4px); box-shadow: 0 2px 0 #c98a12, 0 6px 14px rgba(255, 201, 60, .2); filter: none; }
+html.pt-night .btn.orange { background: linear-gradient(180deg, #ffa94d, #ff7a1a); color: #fff; box-shadow: 0 6px 0 #c2540a, 0 12px 24px rgba(255, 122, 26, .3); margin-bottom: 6px; }
+html.pt-night .btn.blue { background: linear-gradient(180deg, #6aa3ff, #3a78f0); color: #fff; box-shadow: 0 6px 0 #1f4fb8, 0 12px 24px rgba(76, 141, 255, .3); margin-bottom: 6px; }
+html.pt-night .btn.orange:active { box-shadow: 0 2px 0 #c2540a; }
+html.pt-night .btn.blue:active { box-shadow: 0 2px 0 #1f4fb8; }
+html.pt-night .btn.ghost { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+html.pt-night .btn.tint { background: linear-gradient(180deg, #ffd75e, #ffc93c); color: #1a1033; }
+html.pt-night .btn .sub { font: 600 13px/1.3 var(--sw-text); opacity: .78; margin-top: 2px; }
+html.pt-night .btn svg { width: 20px; height: 20px; }
+
+/* the two ways in, on the home page: a tile each, with its icon in a little golden box */
+html.pt-night .gm-tiles { grid-gap: 12px; gap: 12px; margin: 6px 0 16px; }
+html.pt-night .gm-tile { background: linear-gradient(180deg, var(--sw-card1), var(--sw-card2)); border: 1px solid var(--sw-cardline); border-radius: 24px; box-shadow: var(--sw-shadow); padding: 16px; grid-gap: 10px; gap: 10px; min-height: 0; color: var(--text); }
+html.no-flexgap.pt-night .gm-tile > * + * { margin-top: 10px; }
+.sw-ic { width: 48px; height: 48px; border-radius: 14px; background: var(--sw-icbg); border: 1px solid var(--sw-icline); display: grid; align-items: center; justify-items: center; place-items: center; color: var(--sw-ic); flex: none; }
+.sw-ic svg { width: 26px; height: 26px; }
+html.pt-night .gm-tile b { font: 700 18px/1.15 var(--fun); }
+html.pt-night .gm-tile small { color: var(--sw-sub); font-size: 14px; line-height: 1.4; }
+
+/* the rest, in the same look: fields, choices, sheets, notes */
+html.pt-night .input, html.pt-night select.input { background: var(--sw-field); border-color: var(--sw-ghostline); color: var(--text); }
+html.pt-night .seg { background: var(--sw-ghost); border: 1px solid var(--sw-cardline); }
+html.pt-night .seg button[aria-pressed="true"] { background: rgba(255, 201, 60, .18); color: var(--text); box-shadow: 0 0 0 1.5px var(--sun); }
+html.pt-night .switch { background: var(--sw-ghost); }
+html.pt-night .switch input:checked { background: var(--sun); }
+html.pt-night .sheet { background: var(--sw-sheet); border-top-color: var(--sw-cardline); }
+html.pt-night .sheet-bg { background: rgba(8, 5, 24, .62); }
+html.pt-night .item, html.pt-night .pill { background: var(--sw-ghost); }
+html.pt-night .spin { border-color: var(--sw-ghostline); border-top-color: var(--sun); }
+html.pt-night .foot { color: var(--faint); }
+html.pt-night .toast { background: #f3eefe; color: #1a1033; }
+@media (prefers-color-scheme: light) { html.pt-night:not(.pt-dark) .toast { background: #21164a; color: #f3eefe; } html.pt-night:not(.pt-dark) .sheet-bg { background: rgba(33, 22, 74, .36); } }
+html.pt-night .how-o { background: linear-gradient(180deg, var(--sw-card1), var(--sw-card2)); border-color: var(--sw-cardline); }
+html.pt-night .si-ticket::before, html.pt-night .si-ticket::after { background: var(--sw-bg1); }
+
+/* the language, at the top of the Games home: one tap opens the seven */
+.sw-langbtn { margin-inline-start: auto; display: inline-flex; align-items: center; grid-gap: 7px; gap: 7px; min-height: 38px; max-width: 46%; padding: 0 13px 0 11px; border-radius: 99px; border: 1px solid var(--sw-ghostline); background: var(--sw-ghost); color: var(--text); font: 700 14px/1 var(--fun); flex: none; }
+@supports not (margin-inline-start: 0) {
+  .sw-langbtn { margin-left: auto; }
+  html[dir="rtl"] .sw-langbtn { margin-right: auto; }
+}
+@supports not (margin-inline-start: 0) { .sw-langbtn { margin-left: auto; } html[dir="rtl"] .sw-langbtn { margin-left: 0; margin-right: auto; } }
+html.no-flexgap .sw-langbtn > * + * { margin-left: 7px; }
+html.no-flexgap[dir="rtl"] .sw-langbtn > * + * { margin-left: 0; margin-right: 7px; }
+.sw-langbtn svg { width: 17px; height: 17px; flex: none; color: var(--sw-ic); }
+.sw-langbtn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sw-langs { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; margin-top: 12px; }
+.sw-lang { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; grid-gap: 2px; gap: 2px; min-height: 60px; padding: 10px 14px; border-radius: 18px; border: 1px solid var(--sw-cardline); background: var(--sw-ghost); color: var(--text); text-align: start; }
+html.no-flexgap .sw-lang > * + * { margin-top: 2px; }
+.sw-lang:first-child { grid-column: 1 / -1; }
+.sw-lang b { font: 700 17px/1.2 var(--fun); }
+.sw-lang small { color: var(--dim); font-size: 13.5px; }
+.sw-lang[aria-pressed="true"] { border-color: var(--sun); box-shadow: 0 0 0 1.5px var(--sun); background: rgba(255, 201, 60, .14); }
+/* Boo in the day look: a soft lavender edge, so his white stays clear on the light sky */
+@media (prefers-color-scheme: light) {
+  html.pt-night:not(.pt-dark) .boo.sw svg path:first-child { stroke: rgba(60, 40, 140, .18); stroke-width: .7; }
+  html.pt-night:not(.pt-dark) .hero .boo { filter: drop-shadow(0 10px 18px rgba(60, 40, 140, .28)); }
+}
+html[dir="rtl"] .top .back svg { transform: scaleX(-1); }
+
+/* the party games' own parts in the day look (m/party.js draws them for the night): joining, the lobby, the host's
+   setup and the menu. The game screens themselves stay at night (html.pt-dark), so they are not here. */
+@media (prefers-color-scheme: light) {
+  html.pt-night:not(.pt-dark) .pt-top .pt-home:not(.gi), html.pt-night:not(.pt-dark) .pt-more { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+  html.pt-night:not(.pt-dark) .pt-chip { background: var(--sw-ghost); border-color: var(--sw-ghostline); }
+  html.pt-night:not(.pt-dark) .pt-prog i { background: rgba(60, 40, 140, .14); }
+  html.pt-night:not(.pt-dark) .pt-prog i.on { background: var(--c); }
+  html.pt-night:not(.pt-dark) .pt-opt, html.pt-night:not(.pt-dark) .pt-box, html.pt-night:not(.pt-dark) .pt-tg, html.pt-night:not(.pt-dark) .pt-step, html.pt-night:not(.pt-dark) .pt-langrow,
+  html.pt-night:not(.pt-dark) .pt-sum, html.pt-night:not(.pt-dark) .pt-tv, html.pt-night:not(.pt-dark) .pt-gcard, html.pt-night:not(.pt-dark) .pt-adm .r, html.pt-night:not(.pt-dark) .pt-howto li,
+  html.pt-night:not(.pt-dark) .pt-gc, html.pt-night:not(.pt-dark) .pt-fs, html.pt-night:not(.pt-dark) .pt-game, html.pt-night:not(.pt-dark) .pt-me, html.pt-night:not(.pt-dark) .pt-av { border-color: var(--sw-cardline); box-shadow: 0 4px 14px rgba(60, 40, 140, .06); }
+  html.pt-night:not(.pt-dark) .pt-game[aria-pressed="true"], html.pt-night:not(.pt-dark) .pt-av[aria-pressed="true"] { border-color: var(--sun); background: #fff6d8; }
+  html.pt-night:not(.pt-dark) .pt-opt .ck { border-color: rgba(60, 40, 140, .3); }
+  html.pt-night:not(.pt-dark) .pt-box[aria-pressed="true"], html.pt-night:not(.pt-dark) .pt-multi button[aria-pressed="true"] { color: var(--text); }
+  html.pt-night:not(.pt-dark) .pt-info { background: rgba(60, 40, 140, .05); border-color: var(--sw-cardline); }
+  html.pt-night:not(.pt-dark) .pt-tg input { background: rgba(60, 40, 140, .2); }
+  html.pt-night:not(.pt-dark) .pt-step button, html.pt-night:not(.pt-dark) .pt-tvb button, html.pt-night:not(.pt-dark) .pt-adm .r button { color: var(--text); background: var(--raise); }
+  html.pt-night:not(.pt-dark) .pt-step .pt-num { border-bottom-color: rgba(60, 40, 140, .3); }
+  html.pt-night:not(.pt-dark) .pt-sel select { border-color: var(--sw-ghostline); color: var(--text); }
+  html.pt-night:not(.pt-dark) .pt-sum div { border-bottom-color: rgba(60, 40, 140, .08); }
+  html.pt-night:not(.pt-dark) .pt-nav, html.pt-night:not(.pt-dark) .pt-startbar { background: linear-gradient(180deg, transparent, rgba(243, 238, 255, .96) 30%); }
+  html.pt-night:not(.pt-dark) .pt-nav .bk, html.pt-night:not(.pt-dark) .pt-dk { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+  html.pt-night:not(.pt-dark) .pt-multi button, html.pt-night:not(.pt-dark) .pt-multi-all button { border-color: var(--sw-ghostline); background: var(--sw-ghost); }
+  html.pt-night:not(.pt-dark) .pt-me .pill { color: #1a1033; }
+  html.pt-night:not(.pt-dark) .pt-fs, html.pt-night:not(.pt-dark) .pt-gc { color: var(--text); background: var(--sw-ghost); }
+}
+
+/* "Open the Blokvane Games app", as on its design (Open the App, label above), measured on it: a 390 x 844 phone. It
+   always fits on one screen: go.js (oaFit) sets --oa, how big it all is, 1 as drawn, smaller until it fits on a short
+   screen, a little bigger on a tablet. The px values first are for browsers without var() */
+html.pt-night .app.oa { --oa: 1; --u: calc(1px * var(--oa)); height: 100vh; height: 100dvh; min-height: 0; overflow: hidden; max-width: 430px; max-width: calc(430 * var(--u));
+  padding: calc(22px + var(--safe-t)) 18px calc(30px + var(--safe-b));
+  padding: calc(22 * var(--u) + var(--safe-t)) 18px calc(30 * var(--u) + var(--safe-b)); }
+html.pt-night .app.oa.oa-m { height: auto; overflow: visible; }
+html.pt-night .app.oa.oa-scroll { overflow-y: auto; }
+html.pt-night .app.oa .top { padding: 0; margin: 0 0 16px; margin: 0 0 calc(16 * var(--u)); flex: none; }
+html.pt-night .app.oa .top .who h1 { line-height: normal; }
+html.pt-night .app.oa main { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; grid-gap: 16px; gap: 16px; grid-gap: calc(16 * var(--u)); gap: calc(16 * var(--u)); }
+html.no-flexgap.pt-night .app.oa main > * + * { margin-top: calc(16 * var(--u)); }
+html.pt-night .app.oa main > * { flex-shrink: 0; }
+.oa-mid { flex: 1 0 auto; display: flex; flex-direction: column; align-items: center; justify-content: center; grid-gap: 18px; gap: 18px; grid-gap: calc(18 * var(--u)); gap: calc(18 * var(--u));
+  text-align: center; padding: 10px 6px; padding: calc(10 * var(--u)) 6px; }
+html.no-flexgap .oa-mid > * + * { margin-top: calc(18 * var(--u)); }
+.oa-mid > * { flex-shrink: 0; }
+.oa-ic { position: relative; width: 150px; height: 150px; width: calc(150 * var(--u)); height: calc(150 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; }
+.oa-glow { position: absolute; top: -30px; right: -30px; bottom: -30px; left: -30px; inset: -30px; top: calc(-30 * var(--u)); right: calc(-30 * var(--u)); bottom: calc(-30 * var(--u)); left: calc(-30 * var(--u)); inset: calc(-30 * var(--u)); border-radius: 50%;
+  background: radial-gradient(circle, rgba(62, 230, 176, .35), transparent 65%); animation: oaBob 3s ease-in-out infinite; }
+.oa-tile { position: relative; width: 132px; height: 132px; width: calc(132 * var(--u)); height: calc(132 * var(--u)); border-radius: 34px; border-radius: calc(34 * var(--u));
+  background: linear-gradient(160deg, #3ee6b0, #16b386);
+  box-shadow: 0 18px 40px rgba(22, 179, 134, .35), inset 0 2px 0 rgba(255, 255, 255, .35), inset 0 -4px 0 rgba(0, 0, 0, .12);
+  box-shadow: 0 calc(18 * var(--u)) calc(40 * var(--u)) rgba(22, 179, 134, .35), inset 0 calc(2 * var(--u)) 0 rgba(255, 255, 255, .35), inset 0 calc(-4 * var(--u)) 0 rgba(0, 0, 0, .12);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; grid-gap: 6px; gap: 6px; grid-gap: calc(6 * var(--u)); gap: calc(6 * var(--u)); animation: oaBob 3s ease-in-out infinite; }
+html.no-flexgap .oa-tile > * + * { margin-top: calc(6 * var(--u)); }
+.oa-tile svg { display: block; width: 58px; height: 75px; width: calc(58 * var(--u)); height: calc(75 * var(--u)); }
+.oa-games { padding: 3px 12px; padding: calc(3 * var(--u)) calc(12 * var(--u)); border-radius: 8px; border-radius: calc(8 * var(--u)); background: #1a1033; color: #ffc93c;
+  font: 700 14px/normal var(--fun); font-size: calc(14 * var(--u)); letter-spacing: .06em; direction: ltr; }
+html.pt-night .oa-h { margin: 6px 0 0; margin: calc(6 * var(--u)) 0 0; font: 700 32px/1.15 var(--fun); font-size: calc(32 * var(--u)); letter-spacing: normal; color: var(--text); text-wrap: balance; }
+html.pt-night .oa-p { margin: 0; font-size: 16px; font-size: calc(16 * var(--u)); line-height: 1.5; font-weight: 500; color: var(--dim); text-wrap: balance; }
+.oa-acts { display: flex; flex-direction: column; align-items: stretch; grid-gap: 12px; gap: 12px; grid-gap: calc(12 * var(--u)); gap: calc(12 * var(--u)); }
+html.no-flexgap .oa-acts > * + * { margin-top: calc(12 * var(--u)); }
+.oa-rec { display: flex; flex-direction: column; grid-gap: 8px; gap: 8px; grid-gap: calc(8 * var(--u)); gap: calc(8 * var(--u)); }
+html.no-flexgap .oa-rec > * + * { margin-top: calc(8 * var(--u)); }
+.oa-lab { display: flex; align-items: center; grid-gap: 10px; gap: 10px; font: 700 13px/normal var(--fun); font-size: calc(13 * var(--u)); letter-spacing: .14em; text-transform: uppercase; color: #ffc27a; }
+html.no-flexgap .oa-lab > * + * { margin-left: 10px; }
+html.no-flexgap[dir="rtl"] .oa-lab > * + * { margin-left: 0; margin-right: 10px; }
+.oa-lab i { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 194, 122, .6)); }
+.oa-lab i.b { background: linear-gradient(90deg, rgba(255, 194, 122, .6), transparent); }
+[dir="rtl"] .oa-lab i.a { background: linear-gradient(90deg, rgba(255, 194, 122, .6), transparent); }
+[dir="rtl"] .oa-lab i.b { background: linear-gradient(90deg, transparent, rgba(255, 194, 122, .6)); }
+.oa-lab svg { flex: none; width: 12px; height: 12px; width: calc(12 * var(--u)); height: calc(12 * var(--u)); }
+.oa-lab span { white-space: nowrap; }
+/* (letters that join or sit on a line, Arabic, Hindi and Bengali, are not spaced out) */
+html[lang="ar"] .oa-lab, html[lang="hi"] .oa-lab, html[lang="bn"] .oa-lab { letter-spacing: 0; }
+.oa-add { display: flex; align-items: center; justify-content: center; grid-gap: 10px; gap: 10px; grid-gap: calc(10 * var(--u)); gap: calc(10 * var(--u)); width: 100%; height: 64px; height: calc(64 * var(--u));
+  padding: 0 16px; border: 0; border-radius: 20px; border-radius: calc(20 * var(--u)); background: linear-gradient(180deg, #ffa94d, #ff7a1a); color: #fff;
+  box-shadow: 0 6px 0 #c2540a, 0 14px 28px rgba(255, 122, 26, .35); box-shadow: 0 calc(6 * var(--u)) 0 #c2540a, 0 calc(14 * var(--u)) calc(28 * var(--u)) rgba(255, 122, 26, .35);
+  font: 700 21px/normal var(--fun); font-size: calc(21 * var(--u)); text-align: center; cursor: pointer; animation: oaPulse 2.2s infinite; -webkit-tap-highlight-color: transparent; }
+html.no-flexgap .oa-add > * + * { margin-left: calc(10 * var(--u)); }
+html.no-flexgap[dir="rtl"] .oa-add > * + * { margin-left: 0; margin-right: calc(10 * var(--u)); }
+.oa-add svg { flex: none; width: 22px; height: 22px; width: calc(22 * var(--u)); height: calc(22 * var(--u)); }
+.oa-add:active { transform: translateY(4px); }
+.oa-row { display: flex; grid-gap: 10px; gap: 10px; grid-gap: calc(10 * var(--u)); gap: calc(10 * var(--u)); }
+html.no-flexgap .oa-row > * + * { margin-left: calc(10 * var(--u)); }
+html.no-flexgap[dir="rtl"] .oa-row > * + * { margin-left: 0; margin-right: calc(10 * var(--u)); }
+.oa-pill { flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; grid-gap: 8px; gap: 8px; grid-gap: calc(8 * var(--u)); gap: calc(8 * var(--u));
+  height: 56px; height: calc(56 * var(--u)); padding: 0 10px; padding: 0 calc(10 * var(--u)); border-radius: 999px; border: 2px solid rgba(255, 138, 80, .55);
+  background: rgba(255, 122, 26, .08); color: #ffd2b0; font: 700 14px/normal var(--fun); font-size: calc(14 * var(--u)); white-space: nowrap; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+html.no-flexgap .oa-pill > * + * { margin-left: calc(8 * var(--u)); }
+html.no-flexgap[dir="rtl"] .oa-pill > * + * { margin-left: 0; margin-right: calc(8 * var(--u)); }
+.oa-pill svg { flex: none; width: 15px; height: 15px; width: calc(15 * var(--u)); height: calc(15 * var(--u)); }
+.oa-pill:active { background: rgba(255, 122, 26, .2); }
+/* (long words: two lines in each small button, or the two buttons one above the other) */
+.oa-row.wrap .oa-pill { height: auto; min-height: 56px; min-height: calc(56 * var(--u)); white-space: normal; line-height: 1.15; padding: 6px 12px; padding: calc(6 * var(--u)) calc(12 * var(--u)); text-align: center; }
+.oa-row.stack { flex-direction: column; }
+html.no-flexgap .oa-row.stack > * + * { margin-left: 0; margin-right: 0; margin-top: calc(10 * var(--u)); }
+.oa-row.stack .oa-pill { flex: none; }
+.oa-add:focus-visible, .oa-pill:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+@keyframes oaBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); transform: translateY(calc(-10 * var(--u))); } }
+@keyframes oaPulse {
+  0%, 100% { box-shadow: 0 6px 0 #c2540a, 0 0 0 0 rgba(255, 122, 26, .45); box-shadow: 0 calc(6 * var(--u)) 0 #c2540a, 0 0 0 0 rgba(255, 122, 26, .45); }
+  50% { box-shadow: 0 6px 0 #c2540a, 0 0 0 14px rgba(255, 122, 26, 0); box-shadow: 0 calc(6 * var(--u)) 0 #c2540a, 0 0 0 calc(14 * var(--u)) rgba(255, 122, 26, 0); }
+}
+/* a phone lying down (or any short, wide screen): the icon and words on one side, the buttons on the other */
+@media (orientation: landscape) and (max-height: 600px) {
+  html.pt-night .app.oa { max-width: 1000px; padding-left: 24px; padding-right: 24px; padding-left: calc(24px + env(safe-area-inset-left, 0px)); padding-right: calc(24px + env(safe-area-inset-right, 0px)); }
+  html.pt-night .app.oa main { flex-direction: row; align-items: center; grid-gap: 28px; gap: 28px; grid-gap: calc(28 * var(--u)); gap: calc(28 * var(--u)); }
+  html.no-flexgap.pt-night .app.oa main > * + * { margin-top: 0; margin-left: calc(28 * var(--u)); }
+  html.no-flexgap.pt-night[dir="rtl"] .app.oa main > * + * { margin-left: 0; margin-right: calc(28 * var(--u)); }
+  html.pt-night .app.oa .oa-mid { flex: 1 1 0; min-width: 0; align-self: stretch; }
+  html.pt-night .app.oa .oa-acts { flex: 1 1 0; min-width: 0; max-width: 420px; }
+}
+/* the day: the same screen on lavender, its orange words darker so they read well */
+@media (prefers-color-scheme: light) {
+  html.pt-night:not(.pt-dark) .oa-lab { color: #b4520a; }
+  html.pt-night:not(.pt-dark) .oa-lab i.a, html.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.b { background: linear-gradient(90deg, transparent, rgba(180, 82, 10, .45)); }
+  html.pt-night:not(.pt-dark) .oa-lab i.b, html.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.a { background: linear-gradient(90deg, rgba(180, 82, 10, .45), transparent); }
+  html.pt-night:not(.pt-dark) .oa-pill { color: #a9480b; border-color: rgba(230, 110, 30, .5); background: rgba(255, 122, 26, .1); }
+  html.pt-night:not(.pt-dark) .oa-pill:active { background: rgba(255, 122, 26, .22); }
+  html.pt-night:not(.pt-dark) .oa-add:focus-visible, html.pt-night:not(.pt-dark) .oa-pill:focus-visible { outline-color: #21164a; }
+}
+@media (prefers-reduced-motion: reduce) { .oa-glow, .oa-tile, .oa-add { animation: none !important; } }
+
+/* two buttons side by side: a little smaller words, so they stay on one line */
+html.pt-night .grid2 > .btn { font-size: 16px; padding: 0 10px; grid-gap: 8px; gap: 8px; }
+html.pt-night .grid2 > .btn svg { width: 18px; height: 18px; }
+@media (max-width: 360px) {
+  html.pt-night .top .who h1 { font-size: 18px; }
+  html.pt-night .sw-langbtn { padding: 0 10px; font-size: 13px; }
+}
+
+/* tablets and iPads: a wider column in the middle of the sky, a little more room */
+@media (min-width: 700px) {
+  html.pt-night .app { max-width: 620px; padding-top: calc(28px + var(--safe-t)); padding-left: 24px; padding-right: 24px; }
+  html.pt-night .hero h1 { font-size: 40px; }
+  html.pt-night .hero p { font-size: 18px; }
+  html.pt-night .gm-tile { padding: 20px; }
+  html.pt-night .sheet { max-width: 620px; border-radius: 28px; margin-bottom: 24px; margin-bottom: calc(24px + var(--safe-b)); }
+}
+@media (min-width: 1100px) { html.pt-night .app { max-width: 680px; } }
+/* a phone lying down: Boo smaller, so the buttons stay in sight */
+@media (max-height: 520px) and (orientation: landscape) {
+  html.pt-night .hero .boo { width: 60px; height: 78px; margin-top: 6px; }
+  html.pt-night .hero::before { width: 100px; height: 100px; margin-bottom: -92px; }
+  html.pt-night .hero h1 { font-size: 28px; }
+}
+/* small phones */
+@media (max-width: 350px) {
+  html.pt-night .gm-tiles { grid-template-columns: 1fr; }
+  html.pt-night .hero h1 { font-size: 30px; }
+  html.pt-night .btn { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sw-blob, .sw-wave, html.pt-night .hero .boo, html.pt-night .hero .boo + h1::before { animation: none !important; }
+}

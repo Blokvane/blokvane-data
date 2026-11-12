@@ -48,7 +48,7 @@
   // (the plain address, without the link: the last screen opened in this browser plays again)
   if (!link) { try { link = parse(localStorage.getItem(LINK)); } catch (e) {} if (link) { try { history.replaceState(null, '', link.hash); } catch (e) {} } }
   if (!link) {
-    say('Set up this screen', 'In Blokvane on your computer, open Slideshows, click "Live on your screens", then "Set up a TV with a code", and type the letters below. (Or open this screen\'s link from Slideshows, then TV screens.)', { still: true });
+    say('Set up this screen', 'In Blokvane on your computer, open Slideshows, then TV screens, click "Set up a TV with a code", and type the letters below. (Or open this screen\'s own link from TV screens.)', { still: true });
     pairByCode();
     return;
   }
