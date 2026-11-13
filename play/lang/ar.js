@@ -1465,5 +1465,7 @@ BVI18N.add("ar", {
 "The game and your own answers, side by side on this screen.": "اللعبة وإجاباتك جنبًا إلى جنب على هذه الشاشة.",
 "The game is on your TV. Play here:": "اللعبة على تلفازك. العب هنا:",
 "Stop casting": "أوقف الإرسال",
-"The host signs in with Blokvane on their phone. Everyone else just joins.": "المضيف يسجّل الدخول إلى Blokvane على هاتفه. والباقون ينضمون مباشرة."
+"The host signs in with Blokvane on their phone. Everyone else just joins.": "المضيف يسجّل الدخول إلى Blokvane على هاتفه. والباقون ينضمون مباشرة.",
+"Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "ألعاب مجانية: 15 سؤالًا، هي نفسها في كل مرة. المضيف الذي لديه Blokvane Pro يحصل على كل الأسئلة.",
+"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "سجّل الدخول على هذا الهاتف ببريدك الإلكتروني لتستضيف ألعابًا مجانية مع الأصدقاء والعائلة، 15 سؤالًا في كل لعبة. مع Blokvane Pro تحصل على كل الأسئلة. كل من ينضم يلعب مجانًا."
 });

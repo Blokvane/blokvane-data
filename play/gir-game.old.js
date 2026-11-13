@@ -657,7 +657,8 @@ var __async = (__this, __arguments, generator) => {
         const all = bank.q.map((r) => ({ id: r[0], cat: r[1], lv: r[2], ok: r[3], en: r[4], ar: r[5] }));
         const fixedCat = mode === "spin" || s.cat === "mix" ? -1 : catOf(s.cat);
         const wheelEvery = mode === "spin" ? 1 : s.cat !== "mix" || s.wheel === "off" ? 0 : s.wheel === "1" ? 1 : 5;
-        const pool = fixedCat >= 0 ? all.filter((q) => q.cat === fixedCat) : all;
+        let pool = fixedCat >= 0 ? all.filter((q) => q.cat === fixedCat) : all;
+        if (K.free) pool = K.freePick(pool, (q) => q.id, (q) => q.lv);
         const pk = picker(pool);
         const TEAMS = P.TEAMS.slice(0, Math.min(4, +s.teamN || 2)).map((t) => [t[0], t[1], t[2], t[1] + " team"]);
         for (const t of TEAMS) t[4] = yield K.tr(t[3]);

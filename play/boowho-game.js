@@ -715,7 +715,10 @@
       for (const l of langsNow()) bank(l).catch(() => {});
       const own = String(s.own || '').split('\n').map(x => P.safe(x, 120)).filter(Boolean);
       const cats = kids ? KID_CATS : (Array.isArray(s.cats) ? s.cats.filter(c => CATS_SET.has(c)) : []);
-      const qs = deck(D, cats.length ? cats : CATS.filter(c => c[0] !== 'spicy').map(c => c[0]), clamp(s.count, 1, 60, 12), own, !!s.ownOnly);
+      const useCats = cats.length ? cats : CATS.filter(c => c[0] !== 'spicy').map(c => c[0]);
+      // (the free games: the same 15 questions each time, from Blokvane's own)
+      const qs = K.free ? K.freePick(useCats.flatMap(c => (D.q[c] || []).map((x, i) => c + '.' + (i + 1)).filter(id => qText(D, id))).map(id => ({ id })), q => q.id, q => q.id.split('.')[0]).slice(0, clamp(s.count, 1, 60, 12))
+        : deck(D, useCats, clamp(s.count, 1, 60, 12), own, !!s.ownOnly);
       seenAdd(qs.filter(q => q.id).map(q => q.id));
       const sec = kids ? clamp(s.kidSec, 0, 300, 0) : mode === 'lightning' ? clamp(s.fast, 3, 30, 7) : clamp(s.sec, 0, 300, 20);
       const show = ['live', 'reveal', 'secret'].includes(s.show) ? s.show : 'live';

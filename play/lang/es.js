@@ -1374,5 +1374,7 @@ BVI18N.add("es", {
 "The game and your own answers, side by side on this screen.": "El juego y tus respuestas, lado a lado en esta pantalla.",
 "The game is on your TV. Play here:": "El juego está en tu tele. Juega aquí:",
 "Stop casting": "Dejar de enviar",
-"The host signs in with Blokvane on their phone. Everyone else just joins.": "El anfitrión inicia sesión con Blokvane en su teléfono. Los demás simplemente se unen."
+"The host signs in with Blokvane on their phone. Everyone else just joins.": "El anfitrión inicia sesión con Blokvane en su teléfono. Los demás simplemente se unen.",
+"Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "Juegos gratis: 15 preguntas, siempre las mismas. Un anfitrión con Blokvane Pro tiene todas las preguntas.",
+"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "Inicia sesión en este teléfono con tu correo para organizar juegos gratis con amigos y familia, de 15 preguntas cada uno. Con Blokvane Pro tienes todas las preguntas. Quien se une juega gratis."
 });

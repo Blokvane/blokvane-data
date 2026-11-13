@@ -545,7 +545,11 @@ var __async = (__this, __arguments, generator) => {
       const kids = mode === "kids";
       let cat, pi = 0, own = null;
       const ownL = !kids && s.words === "own" ? ownPairs(s) : [];
-      if (ownL.length >= 1) {
+      if (K.free) {
+        const k2 = ((g - 1) % K.freeN + K.freeN) % K.freeN;
+        cat = CATS[k2 % CATS.length];
+        pi = Math.floor(k2 / CATS.length);
+      } else if (ownL.length >= 1) {
         cat = "own";
         pi = freshPick("own", ownL.length);
         own = ownL[pi];

@@ -356,7 +356,9 @@
     const kids = mode === 'kids';
     let cat, pi = 0, own = null;
     const ownL = !kids && s.words === 'own' ? ownPairs(s) : [];
-    if (ownL.length >= 1) { cat = 'own'; pi = freshPick('own', ownL.length); own = ownL[pi]; }
+    // (the free games: the same 15 secret words each time, in turn: the first word of each category, then the second)
+    if (K.free) { const k = ((g - 1) % K.freeN + K.freeN) % K.freeN; cat = CATS[k % CATS.length]; pi = Math.floor(k / CATS.length); }
+    else if (ownL.length >= 1) { cat = 'own'; pi = freshPick('own', ownL.length); own = ownL[pi]; }
     else if (kids) { cat = 'kids'; pi = freshPick('kids', Math.max(1, pairsOf('kids').length)); }
     else {
       cat = CATS.includes(s.words) ? s.words : CATS[(store.get('mix', rnd(CATS.length)) + 1 + rnd(CATS.length - 1)) % CATS.length];

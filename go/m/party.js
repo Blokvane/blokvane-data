@@ -1243,7 +1243,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     btn(T('Join a game'), { kind: 'go', huge: true, full: true }, v.body, () => codeScreen());
   }
   // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
-  // your own (Blokvane's free trial or Pro, then signing in on this phone with the same email)
+  // your own (signing in on this phone: the free games for everyone, every question with Blokvane Pro)
   function hostGoneScreen() {
     if (G.closed) return;
     G.closed = true;
@@ -1252,7 +1252,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     dropBack();
     const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: booPic('boo:sad', 'float') });
-    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Get Blokvane on your computer (it\'s at blokvane.com) and start the free trial or Blokvane Pro. Then sign in on this phone with the same email to host games for friends and family. Everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
+    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
     const j = btn(T('Join a game'), { kind: 'ghost', full: true }, v.body, () => codeScreen());
     j.style.marginTop = '12px';
     buzz('long');
@@ -4026,8 +4026,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       playersAdmin(pc, l, null);
     } else {
       el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]);
-      // (liked it? hosting your own needs Blokvane: where it is, and sharing it)
-      if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('With Blokvane on your computer, you can host games for friends and family. Everyone who joins plays for free.') });
+      // (liked it? anyone can host the free games: signing in on this phone is all it takes)
+      if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.') });
     }
   }
 

@@ -688,6 +688,7 @@ var __async = (__this, __arguments, generator) => {
         const have = qCats(K.lang);
         let pool = (yield Promise.all((cat && have.includes(cat) ? [cat] : have).map((c) => qFile(K.lang, c)))).flat().filter(Boolean);
         if (!pool.length) pool = qBuiltIn(LP);
+        if (K.free) pool = K.freePick(pool, (q) => q.id, (q) => q.d);
         const pk = qPicker(pool);
         const lead = () => Math.max(0, ...K.players().map((p) => p.right));
         const raceStage = () => {
@@ -697,6 +698,7 @@ var __async = (__this, __arguments, generator) => {
         const levels = race ? [] : qLevels(n, level);
         let qs = race ? [] : levels.map((d) => pk.take(d, cat));
         if (qs.indexOf(null) >= 0) qs = qs.slice(0, qs.indexOf(null));
+        if (window.__bvplay) window.__bvplay.lastQs = qs.map((q) => q.id);
         const total = race ? 0 : qs.length;
         const wheelCats = P.shuffle(PK.cats.filter((c) => c[0] && pool.some((q) => q.cat === c[0]))).slice(0, 8);
         let wheelCat = 0, winner = null;

@@ -726,7 +726,7 @@
   // (games.html says so on its <html> tag; an older copy of it still says it with window.BV_GAMES)
   const GAMES = !!window.BV_GAMES || document.documentElement.hasAttribute('data-games');
   // The sign-in that may host games (pass.js), kept on this phone: the email, and the session Blokvane's server gave
-  // this phone for it (plan: what the server said that email has: 'pro', 'trial', 'guest', or '' for none yet).
+  // this phone for it (plan: what the server said that email has: 'pro', 'guest', 'free' (the free games), or '' for none yet).
   const pass = {
     why: '',
     get() { const p = store.get('games:acct', null); return p && typeof p === 'object' && typeof p.session === 'string' && p.session && typeof p.email === 'string' ? p : null; },
@@ -762,7 +762,7 @@
       if (r.code === 'offline' && old && old.exp * 1000 > Date.now()) return old.pass;
       return null;
     },
-    // (does the server say this email may host, right now? 'pro', 'trial' or 'guest'; '' when not; null when it can't be asked)
+    // (does the server say this email may host, right now? 'pro', 'guest' or 'free'; '' when not; null when it can't be asked)
     async check() {
       const a = pass.get();
       if (!a || typeof BVPASS === 'undefined') return '';
@@ -1118,6 +1118,8 @@
       el('h2', '', c, '⭐ ' + gt('You can host games'));
       const who = el('p', 'muted', c, gt('Signed in as {email}. Everyone who joins your games plays for free.', { email: '⁨' + p.email + '⁩' }));
       void who;
+      // (no Blokvane Pro: the free games)
+      if (p.plan === 'free') el('p', 'muted', c, gt('Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.'));
       // (start a game and put it on a TV: one near you, a link for any screen, or your computer)
       btn(gt('Start a game'), { kind: 'go', huge: true, full: true, icon: 'play', sub: gt('On a TV near you, or any screen with a link') }, c, async () => (await need('party'))('start', [], { back: gamesHome })).style.marginTop = '12px';
       const r = el('div', 'grid2', c); r.style.marginTop = '10px';

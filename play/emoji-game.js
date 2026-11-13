@@ -374,6 +374,8 @@
     const oneLang = K.players().every(p => !K.langOf(p.id) || K.langOf(p.id) === lang);
     const loc = D.loc && Array.isArray(D.loc[lang]) && oneLang ? D.loc[lang] : [];
     loc.forEach((r, j) => all.push({ id: lang + 'l' + j, i: -1, e: r[0], cat: r[1], lv: r[2] || 2, kid: !!r[3], ans: r[4] }));
+    // (the free games: the same 15 riddles each time)
+    if (K.free) { const keep = new Set(K.freePick(all.filter(R => R.i >= 0), R => R.id, R => R.lv).map(R => R.id)); for (let k = all.length - 1; k >= 0; k--) if (!keep.has(all[k].id)) all.splice(k, 1); }
     const asked = store.get(ASKED, []);
     const rank = new Map(asked.map((id, k) => [id, k]));
     const used = new Set(), usedAns = new Set();

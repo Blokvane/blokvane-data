@@ -264,6 +264,31 @@ var BVPLAY = (() => {
   let trueHost = "", hostT = 0;
   const hostHere = () => [...players.values()].some((x) => x.paid && !x.away && !x.left);
   const passed = /* @__PURE__ */ new WeakSet();
+  const fullPass = /* @__PURE__ */ new WeakSet();
+  const FREE_N = 15;
+  const fullHere = () => [...players.values()].some((x) => x.paid && x.full && !x.left);
+  const hashId = (s) => {
+    let h = 2166136261;
+    s = String(s);
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  };
+  function freePick(list2, idOf, groupOf, n = FREE_N) {
+    const arr = (list2 || []).slice().sort((a, b) => hashId(idOf(a)) - hashId(idOf(b)) || (String(idOf(a)) < String(idOf(b)) ? -1 : 1));
+    if (!groupOf) return arr.slice(0, n);
+    const by = /* @__PURE__ */ new Map();
+    for (const x of arr) {
+      const g = String(groupOf(x));
+      if (!by.has(g)) by.set(g, []);
+      by.get(g).push(x);
+    }
+    const keys = [...by.keys()].sort(), out = [];
+    while (out.length < n && keys.some((k) => by.get(k).length)) for (const k of keys) if (out.length < n && by.get(k).length) out.push(by.get(k).shift());
+    return out;
+  }
   function pickHost() {
     const was = host;
     const th = players.get(trueHost);
@@ -444,7 +469,11 @@ var BVPLAY = (() => {
           const ps = m.pass;
           delete m.pass;
           BVPASS.ok(ps, m.f).then((ok) => {
-            if (ok) passed.add(m);
+            if (ok) {
+              passed.add(m);
+              const pl0 = BVPASS.read(ps);
+              if (!pl0 || pl0.plan !== "free") fullPass.add(m);
+            }
             take(m, peer);
           }, () => take(m, peer));
           return;
@@ -471,7 +500,10 @@ var BVPLAY = (() => {
           return;
         }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: "" };
-        if (paid) pl.paid = true;
+        if (paid) {
+          pl.paid = true;
+          pl.full = fullPass.has(m);
+        }
         pl.name = P.name(m.name);
         pl.av = P.AVATARS.includes(m.av) ? m.av : "boo:hi";
         pl.gone = false;
@@ -1450,6 +1482,10 @@ var BVPLAY = (() => {
       const LET = I18N.letters(lang);
       const t = top(page, yield T(g ? g.name : "Party games"), yield T(g ? g.sub : "Scan the code to join. The host scans first and picks the game."));
       t.classList.add("lob-top");
+      if (host && !fullHere()) {
+        const fb = el("div", "lob-free", t, yield T("Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question."));
+        fb.style.cssText = "flex-basis:100%;font-size:22px;opacity:.85;margin-top:6px";
+      }
       const deco = el("div", "deco", t);
       const dk = g && g.deco ? g.deco : "letters";
       if (dk === "letters") LET.slice(0, 4).forEach((x, i) => {
@@ -2285,13 +2321,22 @@ var BVPLAY = (() => {
     const live = () => my === run && phase === "play";
     const nop = () => {
     };
+    const free = !fullHere();
+    const freeSet = () => {
+      const o = Object.assign({}, settings);
+      for (const k of ["count", "rounds", "games"]) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N);
+      return o;
+    };
     return {
       players: list,
       alive,
       get settings() {
-        return settings;
+        return free ? freeSet() : settings;
       },
       lang,
+      free,
+      freeN: FREE_N,
+      freePick: (l, idOf, groupOf) => free ? freePick(l, idOf, groupOf) : l,
       tr: P.tr,
       f: P.f,
       P,

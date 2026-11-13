@@ -6,7 +6,8 @@
 // phone's own id in the game), lasts a few hours, and carries the server's signature. The phone shows it to the TV
 // with "join"; the TV checks the signature with the server's public key (written below), and that the pass names the
 // phone that sent it. So nobody can make a pass of their own, and a pass copied out of a game is no use to anyone
-// else. The server gives a pass to someone with Blokvane Pro or a running free trial; joining a game needs none.
+// else. The server gives a pass to everyone signed in: 'free' (the free games: 15 questions, the same ones each time)
+// or the full games ('pro', 'guest'); joining a game needs none.
 //
 // Written the old way on purpose (no arrow functions, no async): smart TVs from 2018 read this very file.
 var BVPASS = (function () {

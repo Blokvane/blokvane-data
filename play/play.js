@@ -192,6 +192,23 @@ var BVPLAY = (() => {
   let trueHost = '', hostT = 0;
   const hostHere = () => [...players.values()].some(x => x.paid && !x.away && !x.left);
   const passed = new WeakSet();   // "join" messages whose host pass was checked here
+  // The free games: a host without Blokvane Pro gets every game with 15 questions, the same ones each time (the pass
+  // says which plan; the server signs it, so a phone can't change it). One host with Pro in the room: the full games.
+  const fullPass = new WeakSet();  // ... and of those, the ones that carry the full games ('pro', 'guest')
+  const FREE_N = 15;
+  const fullHere = () => [...players.values()].some(x => x.paid && x.full && !x.left);
+  // (a stable order for "the same ones each time": a small hash of each question's id, smallest first; with groups,
+  // taken from each group in turn, so a mix of levels stays a mix)
+  const hashId = s => { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  function freePick(list, idOf, groupOf, n = FREE_N) {
+    const arr = (list || []).slice().sort((a, b) => hashId(idOf(a)) - hashId(idOf(b)) || (String(idOf(a)) < String(idOf(b)) ? -1 : 1));
+    if (!groupOf) return arr.slice(0, n);
+    const by = new Map();
+    for (const x of arr) { const g = String(groupOf(x)); if (!by.has(g)) by.set(g, []); by.get(g).push(x); }
+    const keys = [...by.keys()].sort(), out = [];
+    while (out.length < n && keys.some(k => by.get(k).length)) for (const k of keys) if (out.length < n && by.get(k).length) out.push(by.get(k).shift());
+    return out;
+  }
   function pickHost() {
     const was = host;
     const th = players.get(trueHost);
@@ -318,7 +335,11 @@ var BVPLAY = (() => {
         // (a phone with a host pass: the pass is checked first. A "paid" that comes in a message counts for nothing:
         // only a pass checked here does)
         const paid = passed.has(m);
-        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== 'undefined') { const ps = m.pass; delete m.pass; BVPASS.ok(ps, m.f).then(ok => { if (ok) passed.add(m); take(m, peer); }, () => take(m, peer)); return; }
+        if (m.pass && !paid && !(p && p.paid) && typeof BVPASS !== 'undefined') {
+          const ps = m.pass; delete m.pass;
+          BVPASS.ok(ps, m.f).then(ok => { if (ok) { passed.add(m); const pl0 = BVPASS.read(ps); if (!pl0 || pl0.plan !== 'free') fullPass.add(m); } take(m, peer); }, () => take(m, peer));
+          return;
+        }
         if (kicked.has(m.f)) { if (!m.again) { sayTo(m.f, { k: 'kicked' }); return; } kicked.delete(m.f); }
         // nobody comes in before the host: a Blokvane member, signed in on their phone (their phone asks them)
         if (!p && !paid && !hostHere()) { sayTo(m.f, { k: 'needhost' }); return; }
@@ -326,7 +347,7 @@ var BVPLAY = (() => {
         // (someone new in the middle of a game the host keeps closed: they're in from the next game, and their phone says so)
         if (!p && phase === 'play' && settings.k_late === false) { if (waitNext.size < 40) waitNext.set(m.f, m); sayTo(m.f, { k: 'waitnext' }); return; }
         const pl = p || { id: m.f, score: 0, right: 0, lives: +settings.lives || 3, out: false, streak: 0, helpers: {}, color: P.COLORS[players.size % P.COLORS.length], team: '' };
-        if (paid) pl.paid = true;
+        if (paid) { pl.paid = true; pl.full = fullPass.has(m); }
         pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.left = false; pl.at = Date.now(); pl.heard = Date.now();
         // (a new Boo picked in the middle of a game, instead of a selfie: the selfie goes)
         if (m.nophoto) pl.photo = '';
@@ -876,6 +897,8 @@ var BVPLAY = (() => {
     // the top: Boo, the game, and the game's own little sign on the right
     const t = top(page, await T(g ? g.name : 'Party games'), await T(g ? g.sub : 'Scan the code to join. The host scans first and picks the game.'));
     t.classList.add('lob-top');
+    // (the free games: the TV says so, so nobody wonders why it's always the same 15)
+    if (host && !fullHere()) { const fb = el('div', 'lob-free', t, await T('Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.')); fb.style.cssText = 'flex-basis:100%;font-size:22px;opacity:.85;margin-top:6px'; }
     const deco = el('div', 'deco', t);
     const dk = g && g.deco ? g.deco : 'letters';
     if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
@@ -1457,8 +1480,12 @@ var BVPLAY = (() => {
   function kit(my) {
     const live = () => my === run && phase === 'play';
     const nop = () => {};
+    // (the free games: at most 15 questions or rounds, from a fixed set of 15)
+    const free = !fullHere();
+    const freeSet = () => { const o = Object.assign({}, settings); for (const k of ['count', 'rounds', 'games']) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N); return o; };
     return {
-      players: list, alive, get settings() { return settings; }, lang, tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
+      players: list, alive, get settings() { return free ? freeSet() : settings; }, lang,
+      free, freeN: FREE_N, freePick: (l, idOf, groupOf) => (free ? freePick(l, idOf, groupOf) : l), tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
       // the game's own questions, words and places, written for its language (null: English, the packs in packs.js)
       packs: lang === 'en' ? null : I18N.packs(lang),
       sleep: ms => (live() ? psleep(ms) : Promise.resolve()),

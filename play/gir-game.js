@@ -503,7 +503,9 @@
       const all = bank.q.map(r => ({ id: r[0], cat: r[1], lv: r[2], ok: r[3], en: r[4], ar: r[5] }));
       const fixedCat = mode === 'spin' || s.cat === 'mix' ? -1 : catOf(s.cat);
       const wheelEvery = mode === 'spin' ? 1 : s.cat !== 'mix' || s.wheel === 'off' ? 0 : s.wheel === '1' ? 1 : 5;
-      const pool = fixedCat >= 0 ? all.filter(q => q.cat === fixedCat) : all;
+      let pool = fixedCat >= 0 ? all.filter(q => q.cat === fixedCat) : all;
+      // (the free games: the same 15 questions each time)
+      if (K.free) pool = K.freePick(pool, q => q.id, q => q.lv);
       const pk = picker(pool);
       // the teams that play (team turns): the ones with someone on them, in color order; every team the same number of
       // questions, taking turns

@@ -2215,6 +2215,7 @@ ${t ? `<g class="wpl-label" transform="translate(0 -100)${rtl ? " scale(-1 1)" :
         }
         const n = clampN(s.rounds, 1, 60, 10);
         const level = kids ? "easy" : s.level;
+        if (K.free) pools = pools.map((p) => K.freePick(p, (it) => it.key));
         const rounds = pools.length === 1 ? W.choose(pools[0], n, level) : W.interleave(pools.map((p) => W.choose(p, n, level)), n);
         W.markSeen(rounds.map((r) => r.key));
         const photoP = s.photos !== false && !us ? W.photosFor(rounds.filter((r) => r.photo)) : Promise.resolve(/* @__PURE__ */ new Map());

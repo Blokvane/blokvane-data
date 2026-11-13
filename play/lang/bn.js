@@ -1374,5 +1374,7 @@ BVI18N.add("bn", {
 "The game and your own answers, side by side on this screen.": "খেলা আর আপনার উত্তর, এই পর্দায় পাশাপাশি।",
 "The game is on your TV. Play here:": "খেলাটা আপনার টিভিতে আছে। এখানে খেলুন:",
 "Stop casting": "কাস্ট বন্ধ করুন",
-"The host signs in with Blokvane on their phone. Everyone else just joins.": "হোস্ট নিজের ফোনে Blokvane-এ সাইন ইন করেন। বাকিরা সরাসরি যোগ দেন।"
+"The host signs in with Blokvane on their phone. Everyone else just joins.": "হোস্ট নিজের ফোনে Blokvane-এ সাইন ইন করেন। বাকিরা সরাসরি যোগ দেন।",
+"Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "ফ্রি গেম: 15টি প্রশ্ন, প্রতিবার একই। Blokvane Pro থাকা হোস্ট সব প্রশ্ন পান।",
+"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "বন্ধু ও পরিবারের সাথে ফ্রি গেম হোস্ট করতে এই ফোনে আপনার ইমেল দিয়ে সাইন ইন করুন, প্রতিটি গেমে 15টি প্রশ্ন। Blokvane Pro-তে আপনি সব প্রশ্ন পাবেন। যে কেউ যোগ দেন, তিনি বিনা খরচে খেলেন।"
 });
