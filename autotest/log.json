@@ -1,5 +1,23 @@
 [
   {
+    "date": "2026-11-13",
+    "score": 98,
+    "gotThrough": 10,
+    "added": [],
+    "droppedForBreaking": [],
+    "brokenSites": [],
+    "skipped": [
+      {
+        "host": "ssl.p.jwpcdn.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "vid.connatix.com",
+        "why": "not on a public ad or tracker list"
+      }
+    ]
+  },
+  {
     "date": "2026-11-12",
     "score": 99,
     "gotThrough": 6,
