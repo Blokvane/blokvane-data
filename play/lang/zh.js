@@ -1376,5 +1376,7 @@ BVI18N.add("zh", {
 "Stop casting": "停止投屏",
 "The host signs in with Blokvane on their phone. Everyone else just joins.": "房主在自己的手机上登录 Blokvane。其他人直接加入即可。",
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "免费游戏：15 道题，每次都一样。有 Blokvane Pro 的主持人可以玩所有题目。",
-"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "在这部手机上用你的邮箱登录，就能和亲朋好友玩免费游戏，每局 15 道题。有了 Blokvane Pro，你就能玩所有题目。加入的人都免费玩。"
+"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "在这部手机上用你的邮箱登录，就能和亲朋好友玩免费游戏，每局 15 道题。有了 Blokvane Pro，你就能玩所有题目。加入的人都免费玩。",
+"A Chromecast or Google TV on this Wi-Fi": "同一 Wi-Fi 下的 Chromecast 或 Google TV",
+"The TV did not start the game. Try again, or scan the QR code.": "电视没能开始游戏。请再试一次，或扫描二维码。"
 });

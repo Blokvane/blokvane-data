@@ -1376,5 +1376,7 @@ BVI18N.add("fr", {
 "Stop casting": "Arrêter la diffusion",
 "The host signs in with Blokvane on their phone. Everyone else just joins.": "L'hôte se connecte avec Blokvane sur son téléphone. Les autres rejoignent, tout simplement.",
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "Jeux gratuits : 15 questions, toujours les mêmes. Un hôte avec Blokvane Pro a toutes les questions.",
-"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "Connecte-toi sur ce téléphone avec ton e-mail pour organiser des jeux gratuits entre amis et en famille, de 15 questions chacun. Avec Blokvane Pro, tu as toutes les questions. Ceux qui rejoignent jouent gratuitement."
+"Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "Connecte-toi sur ce téléphone avec ton e-mail pour organiser des jeux gratuits entre amis et en famille, de 15 questions chacun. Avec Blokvane Pro, tu as toutes les questions. Ceux qui rejoignent jouent gratuitement.",
+"A Chromecast or Google TV on this Wi-Fi": "Un Chromecast ou une Google TV sur ce Wi-Fi",
+"The TV did not start the game. Try again, or scan the QR code.": "La télé n'a pas lancé la partie. Réessaie, ou scanne le QR code."
 });
