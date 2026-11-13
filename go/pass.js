@@ -52,6 +52,19 @@ var BVPASS = (function () {
       }).then(function (good) { return good === true; }, function () { return false; });
     } catch (e) { return Promise.resolve(false); }
   }
+  // Is this the signed pass of a TV screen's place on a Blokvane Pro plan (sid: the screen's id, made from its link)?
+  // It lasts 8 days, like Pro without the server; a TV's clock can be off by a day.
+  function okScreen(pass, sid) {
+    try {
+      var p = read(pass);
+      if (!subtle || !p || p.v !== 1 || p.typ !== 'screen' || typeof p.sid !== 'string' || !/^[0-9a-f]{24}$/.test(p.sid) || p.sid !== sid) return Promise.resolve(false);
+      if (!(p.exp * 1000 > Date.now() - DAY) || !(p.exp * 1000 < Date.now() + 30 * DAY)) return Promise.resolve(false);
+      var parts = pass.split('.');
+      return key().then(function (k) {
+        return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, unb64url(parts[1]), te.encode(parts[0]));
+      }).then(function (good) { return good === true; }, function () { return false; });
+    } catch (e) { return Promise.resolve(false); }
+  }
   // one request to Blokvane's server: { ok, status, data } (data.message is in plain words when it's a "no")
   function ask(path, body, session) {
     var headers = { 'Content-Type': 'application/json' };
@@ -92,5 +105,5 @@ var BVPASS = (function () {
     });
   }
   function signOut(session) { return session ? ask('/v1/auth/logout', {}, session).then(function () { return true; }) : Promise.resolve(true); }
-  return { start: start, finish: finish, forGame: forGame, signOut: signOut, ok: ok, read: read, norm: norm, api: API };
+  return { start: start, finish: finish, forGame: forGame, signOut: signOut, ok: ok, okScreen: okScreen, read: read, norm: norm, api: API };
 })();

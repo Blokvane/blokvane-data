@@ -121,7 +121,10 @@ var BVLIVE = (() => {
   //      info (a small object everyone sees), owner (an id that is always let in: the host), open (true: anyone with the
   //      secret may talk; false: only the owner and the ids allow(id) says yes to), allow(id), quiet (no hellos),
   //      home (true: a party game's room, which also goes through Blokvane's own relay), onMsg(m, from),
-  //      onPeers(peers), onPipe(pipe), memory }
+  //      onPeers(peers), onPipe(pipe), memory,
+  //      inbox (true: this device also listens on a room of its own, where the others send what is for it alone: the
+  //      TV of a party game), toOwner (true: what this device sends goes to the owner's own room, so only the owner
+  //      gets it: a phone's answers reach the TV, not every other phone), idle (true: a room that mostly waits) }
   async function room(o) {
     const secret = typeof o.secret === 'string' ? C.unb64url(o.secret) : o.secret;
     const keys = await C.secretKeys(secret, o.label || 'bvlive');
@@ -129,6 +132,10 @@ var BVLIVE = (() => {
     const bx = await boxKeys();
     const net = relays({ memory: o.memory });
     const topic = keys.topic;
+    // the owner's own room in this room (only the owner listens there): made from the room and the owner's id
+    const inboxOf = async id => C.hex(await C.sha256(te.encode(topic + ':inbox:' + id))).slice(0, 40);
+    const myInbox = o.inbox ? await inboxOf(me.id) : '';
+    const ownerInbox = o.toOwner && o.owner ? await inboxOf(o.owner) : '';
     const peers = new Map();         // id -> { id, name, role, info, at, bx (their box key) }
     const parts = new Map();         // long message id -> { n, got: [], at, size }
     const pipes = new Map();         // peer id -> pipe
@@ -142,23 +149,27 @@ var BVLIVE = (() => {
     const trusted = id => id === R.owner || id === me.id || (o.allow ? !!o.allow(id) : false);
     const may = id => o.open !== false || trusted(id);
     const gate = NET.gate({ key: keys.key, topic, check: C.verifier(), known: id => peers.has(id) || trusted(id) });
+    const inGate = myInbox ? NET.gate({ key: keys.key, topic: myInbox, check: C.verifier(), known: id => peers.has(id) || trusted(id) }) : null;
 
-    async function publish(m) {
+    async function publish(m, tp) {
       if (closed) return 0;
       m.f = me.id; m.at = now();
-      return net.publish(topic, await C.sealSigned(keys.key, topic, m, me));
+      tp = tp || topic;
+      return net.publish(tp, await C.sealSigned(keys.key, tp, m, me));
     }
-    // send: a message for everyone (or for one device: to), cut in parts when it is long
+    // send: a message for everyone (or for one device: to), cut in parts when it is long. With toOwner, what is not
+    // for someone else goes to the owner's own room.
     async function send(m, to) {
       if (closed || !m || typeof m.k !== 'string') return 0;
       if (to) m.to = to;
+      const tp = ownerInbox && (!to || to === R.owner) ? ownerInbox : topic;
       const body = te.encode(JSON.stringify(m));
-      if (body.length <= PART + 600) return publish(m);
+      if (body.length <= PART + 600) return publish(m, tp);
       if (body.length > MAX_LONG) throw new Error('too big for the relays');
       const id = C.hex(C.rand(6)), n = Math.ceil(body.length / PART);
       let sent = 0;
       for (let i = 0; i < n; i++) {
-        sent = await publish({ k: '~p', id, i, n, to: to || undefined, d: C.b64url(body.subarray(i * PART, (i + 1) * PART)) });
+        sent = await publish({ k: '~p', id, i, n, to: to || undefined, d: C.b64url(body.subarray(i * PART, (i + 1) * PART)) }, tp);
         // (a small gap so the relays don't see a burst)
         if (n > 3 && i < n - 1) await new Promise(r => setTimeout(r, 40));
       }
@@ -226,9 +237,9 @@ var BVLIVE = (() => {
     // ---------- what comes in ----------
     const onBytes = bytes => { take(bytes).catch(() => {}); };
     handlers.set(topic, onBytes);
-    async function take(bytes) {
+    async function take(bytes, g) {
       if (closed) return;
-      const m = await gate(bytes);
+      const m = await (g || gate)(bytes);
       if (!m || !okId(m.f) || m.f === me.id || typeof m.k !== 'string') return;
       if (m.to && m.to !== me.id) { if (peers.has(m.f)) peers.get(m.f).at = now(); return; }
       if (!may(m.f)) return;
@@ -535,7 +546,17 @@ var BVLIVE = (() => {
       return L;
     }
 
-    net.join(topic, { home: o.home === true });
+    // (kind and role: only for Blokvane's relay to count games, TVs and phones, as totals)
+    const kind = o.home === true ? (o.label === 'bvnear' ? 'near' : 'game') : '', role = o.role === 'tv' ? 'tv' : 'phone';
+    net.join(topic, { home: o.home === true, idle: o.idle === true, kind, role });
+    // (the owner's own room: the owner listens there; the others only send to it, on the lines of this room)
+    let onInbox = null;
+    if (myInbox) {
+      onInbox = bytes => { take(bytes, inGate).catch(() => {}); };
+      handlers.set(myInbox, onInbox);
+      net.join(myInbox, { home: o.home === true, kind, role });
+    }
+    if (ownerInbox) net.join(ownerInbox, { home: o.home === true, speak: true, via: topic });
     openRooms.add(R);
     // (hello at once: it waits in the kit until the first relay is connected and goes out that very moment; then again
     // a little later for the relays that take longer, and now and then)
@@ -562,7 +583,11 @@ var BVLIVE = (() => {
         clearInterval(helloT); clearInterval(sweepT);
         for (const p of [...pipes.values()]) p.close();
         // (unless a new room took this topic meanwhile, like joining again right away to reconnect: then it stays)
-        setTimeout(() => { if (handlers.get(topic) === onBytes) { handlers.delete(topic); net.leave(topic); } }, 400);
+        setTimeout(() => {
+          if (handlers.get(topic) === onBytes) { handlers.delete(topic); net.leave(topic); }
+          if (myInbox && handlers.get(myInbox) === onInbox) { handlers.delete(myInbox); net.leave(myInbox); }
+          if (ownerInbox && !handlers.has(topic)) net.leave(ownerInbox);
+        }, 400);
       }
     });
   }

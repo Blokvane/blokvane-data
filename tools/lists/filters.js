@@ -235,7 +235,9 @@ async function asBuildFromNetwork() {
 // (and for the security list only what changed) instead of every list. Data only, never code: every rule is checked
 // here before it is used, and when the list can't be reached Blokvane downloads the lists itself, as before.
 // ======================================================================
+// (first the list's second home on Cloudflare, then GitHub, where the list robot also publishes it, as the backup)
 var BV_LIST_ROOTS = [
+  'https://lists.blokvane.com/',
   'https://raw.githubusercontent.com/Blokvane/blokvane-data/lists/',
   'https://cdn.jsdelivr.net/gh/Blokvane/blokvane-data@lists/'
 ];
@@ -306,7 +308,10 @@ function bvListCheckMeta(m) {
   if (!m || typeof m !== 'object' || m.format !== 1) throw new Error('The list index is not in the right form.');
   const out = {};
   const a = m.ads, s = m.security;
-  if (a && typeof a === 'object' && ver(a.v) && hex(a.sha256)) out.ads = { v: a.v, sha256: a.sha256 };
+  if (a && typeof a === 'object' && ver(a.v) && hex(a.sha256)) {
+    out.ads = { v: a.v, sha256: a.sha256 };
+    if (ver(a.base) && hex(a.baseSha256) && hex(a.deltaSha256)) Object.assign(out.ads, { base: a.base, baseSha256: a.baseSha256, deltaSha256: a.deltaSha256 });
+  }
   if (s && typeof s === 'object' && ver(s.v) && ver(s.base) && hex(s.baseSha256) && hex(s.deltaSha256)) out.security = { v: s.v, base: s.base, baseSha256: s.baseSha256, deltaSha256: s.deltaSha256 };
   // what the list teaches: addresses that scam pages crowd under (plain names only; lib/scamrules.js checks them again
   // and uses them as a warning sign, never as a block)
@@ -330,16 +335,116 @@ async function bvListSha(text) {
   return [...new Uint8Array(d)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// "Only what changed" for the ad list: the list as a set of lines (one per rule and per hide rule), so the robot can
+// publish a big base about once a week and, every hour, only the lines added and removed since. Both sides (this
+// file, and the list robot's copy of it in blokvane-data) turn a list into lines and back the same way.
+function bvAdsItems(obj) {
+  const out = [];
+  // (the compiler's rules for many sites at once, 5,000 sites a rule: one line per site, so one site added or removed
+  // is one small line. They are put back together the same way, sorted and 5,000 a rule.)
+  // (each list the compiler made, in turn: ads, then privacy, then cookie notices, has rules of its own: group g)
+  let g = 0, inBatch = false;
+  for (const r of (obj && obj.rules) || []) {
+    const kind = bvAdsBatchKind(r);
+    if (kind && !inBatch) g++;
+    inBatch = !!kind;
+    if (kind) for (const d of r.condition.requestDomains) out.push('d' + g + ':' + kind + '\t' + d);
+    else out.push('r' + JSON.stringify(r));
+  }
+  const c = (obj && obj.cosmetic) || {};
+  for (const x of c.generic || []) out.push('g\t' + x);
+  for (const x of c.generichide || []) out.push('h\t' + x);
+  for (const [tag, m] of [['s', c.specific], ['e', c.exceptions], ['c', c.cookieSpecific]]) {
+    if (!m || typeof m !== 'object') continue;
+    for (const [host, list] of Object.entries(m)) for (const x of list || []) out.push(tag + '\t' + host + '\t' + x);
+  }
+  return out;
+}
+function bvAdsBatchKind(r) {
+  const c = r && r.condition;
+  if (!c || r.priority !== 1 || !r.action || r.action.type !== 'block' || Object.keys(r).length !== 3 || Object.keys(r.action).length !== 1) return '';
+  const keys = Object.keys(c).sort().join();
+  const ex = Array.isArray(c.excludedResourceTypes) && c.excludedResourceTypes.length === 1 && c.excludedResourceTypes[0] === 'main_frame';
+  if (!ex || !Array.isArray(c.requestDomains)) return '';
+  if (keys === 'excludedResourceTypes,requestDomains') return 'all';
+  if (keys === 'domainType,excludedResourceTypes,requestDomains' && c.domainType === 'thirdParty') return '3p';
+  return '';
+}
+function bvAdsFromItems(items) {
+  const rules = [], cosmetic = { generic: [], specific: {}, exceptions: {}, cookieSpecific: {}, generichide: [] };
+  const maps = { s: cosmetic.specific, e: cosmetic.exceptions, c: cosmetic.cookieSpecific };
+  const grouped = new Map();          // a rule for many sites (without its sites) -> its sites
+  for (const it of items) {
+    if (typeof it !== 'string' || it.length > 25000) continue;
+    const tag = it[0];
+    if (tag === 'r') { try { rules.push(JSON.parse(it.slice(1))); } catch (e) {} continue; }
+    if (tag === 'd') { const i = it.indexOf('\t'); const k = it.slice(1, i); if (i > 1 && /^\d{1,3}:(all|3p)$/.test(k)) (grouped.get(k) || grouped.set(k, []).get(k)).push(it.slice(i + 1)); continue; }
+    if (it[1] !== '\t') continue;
+    if (tag === 'g') { cosmetic.generic.push(it.slice(2)); continue; }
+    if (tag === 'h') { cosmetic.generichide.push(it.slice(2)); continue; }
+    const m = maps[tag];
+    const i = it.indexOf('\t', 2);
+    if (!m || i < 0) continue;
+    const host = it.slice(2, i);
+    if (host === '__proto__' || host === 'constructor' || host === 'prototype') continue;
+    (m[host] || (m[host] = [])).push(it.slice(i + 1));
+  }
+  const batches = [];
+  const order = [...grouped.keys()].sort((x, y) => (parseInt(x, 10) - parseInt(y, 10)) || (x.endsWith(':all') ? -1 : 1));
+  for (const key of order) {
+    const k = key.split(':')[1];
+    const doms = [...new Set(grouped.get(key) || [])].sort();
+    for (let i = 0; i < doms.length; i += 5000) {
+      const cond = { requestDomains: doms.slice(i, i + 5000), excludedResourceTypes: ['main_frame'] };
+      if (k === '3p') cond.domainType = 'thirdParty';
+      batches.push({ priority: 1, action: { type: 'block' }, condition: cond });
+    }
+  }
+  return { format: 1, rules: batches.concat(rules), cosmetic };
+}
+function bvAdsApply(base, delta) {
+  const del = new Set(Array.isArray(delta && delta.del) ? delta.del : []);
+  const out = (Array.isArray(base && base.items) ? base.items : []).filter(x => !del.has(x));
+  for (const x of Array.isArray(delta && delta.add) ? delta.add : []) out.push(x);
+  return out;
+}
+var bvAdsBaseStore = {
+  key: id => 'https://list.blokvane.invalid/ads-base/' + id,
+  async get(id) { const c = await caches.open('bv-list-ads'); const r = await c.match(this.key(id)); return r ? r.text() : null; },
+  async put(id, text) { const c = await caches.open('bv-list-ads'); for (const k of await c.keys()) await c.delete(k); await c.put(this.key(id), new Response(text)); }
+};
+
 // The ad, tracker and cookie-notice list. have: the version this browser already uses ('' when none).
 // Returns { same: true, v } when there is nothing new, or { rules, cosmetic, v } like asBuildFromNetwork. Throws when
 // the list can't be used (the caller then downloads the lists itself).
-async function asBuildFromBlokvane(have) {
+async function asBuildFromBlokvane(have, store) {
+  store = store || bvAdsBaseStore;
   let lastErr = null;
   for (const root of BV_LIST_ROOTS) {
     try {
       const meta = bvListCheckMeta(JSON.parse(await bvListGet(root + 'meta.json', BV_LIST_MAX.meta)));
       if (!meta.ads) throw new Error('The list has no ad part yet.');
       if (have && meta.ads.v === have) return { same: true, v: have };
+      // only what changed: the base this browser keeps (downloaded about once a week) and the lines since
+      if (meta.ads.base) {
+        try {
+          const a = meta.ads;
+          let baseText = null;
+          try { baseText = await store.get(a.base); } catch (e) {}
+          if (baseText && await bvListSha(baseText) !== a.baseSha256) baseText = null;
+          if (!baseText) {
+            baseText = await bvListGet(root + 'ads-base.json', BV_LIST_MAX.ads);
+            if (await bvListSha(baseText) !== a.baseSha256) throw new Error('The ad list base does not match its fingerprint.');
+            try { await store.put(a.base, baseText); } catch (e) {}
+          }
+          const deltaText = await bvListGet(root + 'ads-delta.json', BV_LIST_MAX.delta);
+          if (await bvListSha(deltaText) !== a.deltaSha256) throw new Error('The ad list changes do not match their fingerprint.');
+          const base = JSON.parse(baseText), delta = JSON.parse(deltaText);
+          if (!base || base.id !== a.base || !delta || delta.base !== a.base || delta.v !== a.v) throw new Error('The two parts of the ad list do not belong together.');
+          const built = bvListCheckAds(bvAdsFromItems(bvAdsApply(base, delta)));
+          return { rules: built.rules, cosmetic: built.cosmetic, v: a.v };
+        } catch (e) { /* the whole list below, as before */ }
+      }
       const text = await bvListGet(root + 'ads.json', BV_LIST_MAX.ads);
       if (await bvListSha(text) !== meta.ads.sha256) throw new Error('The ad list does not match its fingerprint.');
       const built = bvListCheckAds(JSON.parse(text));
@@ -399,5 +504,5 @@ async function bvSecurityFromBlokvane(have, store) {
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AS_LISTS, asCompileNetwork, asCompileCosmetic, asBuildFromNetwork, asBuildFromBlokvane, bvSecurityFromBlokvane, bvSecurityApply, bvListCheckRule, bvListCheckAds,
-    bvListCheckMeta, bvListCleanCosmetic, bvListSha, BV_LIST_ROOTS };
+    bvListCheckMeta, bvListCleanCosmetic, bvListSha, BV_LIST_ROOTS, bvAdsItems, bvAdsFromItems, bvAdsApply };
 }

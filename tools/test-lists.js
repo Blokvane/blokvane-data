@@ -51,7 +51,8 @@ function lists(dir, over) {
 // (the extension's downloads, answered from a folder on this computer)
 function serve(dir, seen) {
   global.fetch = async url => {
-    const name = String(url).replace(F.BV_LIST_ROOTS[0], '').replace(F.BV_LIST_ROOTS[1], '');
+    let name = String(url);
+    for (const root of F.BV_LIST_ROOTS) name = name.replace(root, '');
     if (seen) seen.push(name);
     const p = path.join(dir, name);
     if (!fs.existsSync(p)) return { ok: false, status: 404, text: async () => '' };
@@ -230,6 +231,38 @@ test('the big part is replaced after a week, or when too much of it changed', as
   assert.strictEqual((await F.bvSecurityFromBlokvane('', memStore())).phishing.length, 66);         // 60 + the 6 from the newer lists
 });
 
+test('the ad list too: the next build publishes only the lines that changed, and the extension downloads only those', async () => {
+  const many = Array.from({ length: 300 }, (_, i) => '||ad' + i + '.example^').join('\n') + '\n';
+  const from = lists(tmp(), { 'easylist.txt': '! made up\n' + many + 'example.org##.ad-box\n##.sponsored\n' }), out1 = tmp(), out3 = tmp();
+  await build({ from, out: out1, prev: '', floors: FLOORS, now: T0 });
+  const m1 = JSON.parse(fs.readFileSync(path.join(out1, 'meta.json'), 'utf8'));
+  assert.ok(m1.ads.base && m1.ads.deltaSha256, 'the ad list has a base and its changes');
+  // one ad site gone, two new ones, one new hide rule
+  lists(from, { 'easylist.txt': '! made up\n' + many.replace('||ad7.example^\n', '') + '||new-ad1.example^\n||new-ad2.example^\nexample.org##.ad-box\n##.sponsored\n##.new-promo\n' });
+  const r = await build({ from, out: out3, prev: out1, floors: FLOORS, now: T0 + 2 * 3600e3 });
+  assert.deepStrictEqual(r.errors, []);
+  const m3 = JSON.parse(fs.readFileSync(path.join(out3, 'meta.json'), 'utf8'));
+  assert.strictEqual(m3.ads.base, m1.ads.base, 'the big part stays');
+  assert.notStrictEqual(m3.ads.v, m1.ads.v);
+  const delta = JSON.parse(fs.readFileSync(path.join(out3, 'ads-delta.json'), 'utf8'));
+  assert.ok(delta.add.length >= 3 && delta.add.length <= 8 && delta.del.length >= 1 && delta.del.length <= 4, JSON.stringify(delta).slice(0, 300));
+  const full = fs.statSync(path.join(out3, 'ads.json')).size, small = fs.statSync(path.join(out3, 'ads-delta.json')).size;
+  assert.ok(small * 10 < full, `the changes (${small} bytes) are much smaller than the whole list (${full} bytes)`);
+  // an extension with the base downloads only the changes, and ends up with exactly the whole new list
+  const store = memStore(), seen = [];
+  serve(out1); await F.asBuildFromBlokvane('', store);
+  serve(out3, seen);
+  const got = await F.asBuildFromBlokvane(m1.ads.v, store);
+  assert.deepStrictEqual(seen, ['meta.json', 'ads-delta.json']);
+  const whole = F.bvListCheckAds(JSON.parse(fs.readFileSync(path.join(out3, 'ads.json'), 'utf8')));
+  // the same rules (in any order) and the same hide rules
+  const rulesOf = x => x.rules.map(r => JSON.stringify(r)).sort();
+  assert.deepStrictEqual(rulesOf(got), rulesOf(whole));
+  const cos = x => F.bvAdsItems({ rules: [], cosmetic: x.cosmetic }).sort();
+  assert.deepStrictEqual(cos(got), cos(whole));
+  assert.strictEqual(got.v, m3.ads.v);
+});
+
 test('a list that breaks is not used: the part published last time stays', async () => {
   const from = lists(tmp()), out1 = tmp(), out2 = tmp(), out3 = tmp(), out4 = tmp();
   await build({ from, out: out1, prev: '', floors: FLOORS, now: T0 });
@@ -317,11 +350,12 @@ test('the list teaches the addresses that scam pages crowd under, and the extens
 test('a list that was changed on the way is not used', async () => {
   const from = lists(tmp()), out = tmp();
   await build({ from, out, prev: '', floors: FLOORS, now: T0 });
-  const ads = path.join(out, 'ads.json'), delta = path.join(out, 'security-delta.json');
+  const ads = path.join(out, 'ads.json'), delta = path.join(out, 'security-delta.json'), adsBase = path.join(out, 'ads-base.json');
   fs.writeFileSync(ads, fs.readFileSync(ads, 'utf8').replace('ads.example', 'bank.example'));
+  fs.writeFileSync(adsBase, fs.readFileSync(adsBase, 'utf8').replace('ads.example', 'bank.example'));
   fs.writeFileSync(delta, fs.readFileSync(delta, 'utf8').replace('"del":[]', '"del":["phish1.example"]'));
   serve(out);
-  await assert.rejects(F.asBuildFromBlokvane(''), /fingerprint/);
+  await assert.rejects(F.asBuildFromBlokvane('', memStore()), /fingerprint/);
   await assert.rejects(F.bvSecurityFromBlokvane('', memStore()), /fingerprint/);
   // nothing published yet: the extension is told so, and downloads the lists itself
   serve(tmp());

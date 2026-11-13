@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="referrer" content="no-referrer">
+<!-- What this page may load and talk to (a second lock, in case a mistake in the page ever let someone's text through
+     as code): scripts only from Blokvane's own pages, never written into the page or made from text; connections only
+     to Blokvane and to relays; nothing embedded from anywhere else. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org https://en.wikipedia.org; media-src 'self' data: blob: mediastream:; font-src 'self' data:; connect-src 'self' data: blob: https://blokvane.com https://en.wikipedia.org wss: https://*.gstatic.com https://*.google.com; worker-src 'self' blob:; frame-src 'self' blob:; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex">
+<title>Blokvane party games</title>
+<!-- (this page is the game screen on a Chromecast or Google TV: Google's Cast receiver script, then the game) -->
+<link rel="icon" href="../tv/icon.png">
+<link rel="stylesheet" href="play.css?v=22">
+<link rel="stylesheet" href="world.css?v=19">
+<link rel="stylesheet" href="gir.css?v=15">
+<link rel="stylesheet" href="imp.css?v=15">
+<link rel="stylesheet" href="emoji.css?v=16">
+<link rel="stylesheet" href="trivia.css?v=18">
+<link rel="stylesheet" href="wlook.css?v=17">
+<link rel="stylesheet" href="bwlook.css?v=19">
+<!-- Blokvane party games: this page is the TV (or a laptop or tablet: any screen everyone can see). Players join from
+     their phones by scanning the QR code: no app, no account. The phones and this page talk through Blokvane's own
+     relay first, with free public relays as its backup, sealed and signed on the devices so nobody in between can read
+     a word (../go/live-kit.js). Every game speaks seven languages fully (i18n.js and lang/). Trivia's questions are
+     Blokvane's own, thousands in every language (q/). Guess It Right! is written in English and Arabic, with its own
+     questions (gir-data.js), look (gir.css) and music (sounds/g-*.mp3). Who's the Imposter? has its own designed
+     screens (imp-tpl.js), words in every language (imp-words.js), look (imp.css) and music (sounds/i-*.mp3). Emoji
+     Riddles has its own designed screens (emoji-tpl.js), riddles with their answers in every language (emoji-data.js),
+     look (emoji.css) and music (sounds/e-*.mp3). Where in the World? has its own lobby looks (wlook.css), winner
+     screens (world-tpl.js) and music (sounds/wv-*.mp3). Boo Who? has its own designed screens (boowho-tpl.js),
+     questions and Boo's lines in every language (bw/), look (bwlook.css) and music (sounds/bw-*.mp3). -->
+</head>
+<body>
+<main id="stage" class="stage" aria-live="polite"></main>
+<!-- The scripts load in boot.js. A browser that can't read an async function (smart TVs from 2018 and 2019, like LG's
+     with webOS 4) gets the copies made for it; async.js is how the page finds out, without making code from text. -->
+<script src="https://www.gstatic.com/cast/sdk/libs/caf_receiver/v3/cast_receiver_framework.js"></script>
+<script src="async.js?v=1"></script>
+<script src="boot.js?v=1"></script>
+<script src="cast.js?v=1"></script>
+</body>
+</html>

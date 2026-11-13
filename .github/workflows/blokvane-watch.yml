@@ -4,7 +4,11 @@
 # as it should after 3 tries, this run ends with an error and GitHub emails you (Settings, Notifications, Actions:
 # failed workflows only). Render sends its own email when a deploy or the server itself fails; this one also catches
 # what Render cannot see: the domain, the security certificates and the pages on GitHub.
-# Nothing is changed by it and it needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
+# It also checks what the server cannot see about itself (tools/watch.js): the block list is fresh, the security
+# certificates and the name blokvane.com are not about to end, the server's alert checker is alive, the size of the
+# pages, and once a day the free relays. It sends its results to the server (blokvane.com/v1/robot/report), proven
+# by GitHub's own signed token for this workflow, so the admin page shows them and the server notices when the robot
+# stops. Nothing is changed by it and it needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
 name: Blokvane watch
 
 on:
@@ -12,7 +16,11 @@ on:
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch: {}
 
-permissions: {}
+# (actions: read, to see when the list robot last ran; id-token: write, for GitHub's signed token that proves a report
+# comes from this very workflow)
+permissions:
+  actions: read
+  id-token: write
 
 concurrency:
   group: blokvane-watch
@@ -21,9 +29,13 @@ concurrency:
 jobs:
   watch:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 8
     steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
       - name: Everything answers
+        id: site
+        continue-on-error: true
         run: |
           fail=0
           # check <address> <words that must be in the answer>
@@ -74,3 +86,30 @@ jobs:
           door https://blokvane.com/tv https://app.blokvane.com/tv/
           door https://blokvane.com/play https://app.blokvane.com/play/
           exit $fail
+
+      - name: What the server cannot see about itself
+        id: checks
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          relays=""
+          # (the free relays once a day, in the first run after 06:00 UTC)
+          if [ "$(date -u +%H)" = "06" ] && [ "$(date -u +%M)" -lt 15 ]; then relays="--relays"; fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then relays="--relays"; fi
+          down=0; [ "${{ steps.site.outcome }}" = "success" ] || down=1
+          node tools/watch.js --out "$RUNNER_TEMP/report.json" --site-down $down $relays
+
+      - name: Tell the server
+        if: always()
+        run: |
+          [ -f "$RUNNER_TEMP/report.json" ] || exit 0
+          token=$(curl -sS --max-time 20 -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=blokvane" | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{process.stdout.write(JSON.parse(s).value||"")}catch(e){}})')
+          [ -n "$token" ] || { echo "No token from GitHub this time"; exit 0; }
+          curl -sS --max-time 20 -o /dev/null -w "The server answered %{http_code}\n" -X POST -H "Authorization: Bearer $token" -H "Content-Type: application/json" --data-binary @"$RUNNER_TEMP/report.json" https://blokvane.com/v1/robot/report || true
+
+      # (a check at "act" or above fails the run, so GitHub emails you even when the server is down)
+      - name: The result
+        if: always()
+        run: |
+          [ "${{ steps.site.outcome }}" = "success" ] && [ "${{ steps.checks.outcome }}" = "success" ]

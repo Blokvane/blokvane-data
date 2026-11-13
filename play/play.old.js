@@ -100,7 +100,7 @@ var BVPLAY = (() => {
     return __async(this, null, function* () {
       const me = yield C.newMember();
       const s = secret = L.newSecret();
-      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, home: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
       code = given || L.shortCode(6);
       CR = yield L.room({ secret: yield L.codeSecret(code, "play"), label: "bvplaycode", me, name: "TV", role: "tv", open: true, home: true, onMsg: (m) => {
         if (m.k === "link?") CR.send({ k: "link", s, tv: R.id, lang }, m.f).catch(() => {
@@ -202,6 +202,7 @@ var BVPLAY = (() => {
     });
   }
   const linkNow = () => GO + "games.html#game." + secret + "." + R.id + (lang !== "en" ? "." + lang : "");
+  window.bvJoinLink = () => R && secret ? linkNow() : "";
   function setLang(v) {
     return __async(this, null, function* () {
       lang = v;

@@ -11,6 +11,8 @@
 //                         also carries what the list teaches (hints): the addresses scam pages crowd under
 //   ads.json              ads, trackers and cookie notices: ready-made Chrome rules and hide rules. Made with the
 //                         extension's own compiler (tools/lists/filters.js, a copy of blokvane/filters.js)
+//   ads-base.json         the same ad list as lines (one per rule): the big part, replaced about once a week
+//   ads-delta.json        the lines added and removed since that base (small: what each computer downloads)
 //   security-base.json    malware and phishing sites: the big part, replaced about once a week
 //   security-delta.json   what was added and removed since that base (small: what each computer downloads)
 //   CREDITS.txt           the lists this is made from and their licenses. The list stays under those licenses.
@@ -75,7 +77,7 @@ async function buildAds(o) {
     }
   };
   vm.createContext(ctx);
-  vm.runInContext(fs.readFileSync(path.join(HERE, 'filters.js'), 'utf8') + '\n;this.API = { asBuildFromNetwork, bvListCheckAds };', ctx);
+  vm.runInContext(fs.readFileSync(path.join(HERE, 'filters.js'), 'utf8') + '\n;this.API = { asBuildFromNetwork, bvListCheckAds, bvAdsItems };', ctx);
   const built = await ctx.API.asBuildFromNetwork();
   if (failed.length) throw new Error('lists that could not be used: ' + failed.join('; '));
   // (plain copies: what the compiler made, with nothing of the sandbox left on it)
@@ -97,7 +99,8 @@ async function buildAds(o) {
   }
   const c = body.cosmetic;
   const hide = c.generic.length + Object.values(c.specific).reduce((a, l) => a + l.length, 0) + Object.values(c.cookieSpecific).reduce((a, l) => a + l.length, 0);
-  return { text: JSON.stringify({ format: 1, v, rules: body.rules, cosmetic: body.cosmetic }), v, rules: n, sites: doms.size, patterns, hide, domains: doms };
+  return { text: JSON.stringify({ format: 1, v, rules: body.rules, cosmetic: body.cosmetic }), v, rules: n, sites: doms.size, patterns, hide, domains: doms,
+    itemsOf: obj => JSON.parse(JSON.stringify(ctx.API.bvAdsItems(obj))) };
 }
 
 // ---------- malware and phishing ----------
@@ -290,6 +293,39 @@ async function buildSecurity(o, sources, never, warnings) {
     changes: delta.add.malware.length + delta.add.phishing.length + delta.del.length, domains: new Set([...full.malware, ...full.phishing]), popularAll: pop.all };
 }
 
+// "Only what changed" for the ad list: the base published last time, while it is fresh enough, and the lines added and
+// removed since; or a new base (about once a week, or when much changed).
+function adsParts(o, text, itemsOf) {
+  const items = itemsOf(JSON.parse(text));
+  const v = JSON.parse(text).v;
+  let base = null, baseText = null;
+  const pm = o.prevMeta.ads;
+  if (pm && pm.base) {
+    try {
+      const t = fs.readFileSync(path.join(o.prev, 'ads-base.json'), 'utf8');
+      if (sha(t) === pm.baseSha256) { const b = JSON.parse(t); if (b.id === pm.base && Array.isArray(b.items)) { base = b; baseText = t; } }
+    } catch (e) {}
+  }
+  let add = [], del = [];
+  if (base) {
+    const had = new Set(base.items), now = new Set(items);
+    add = items.filter(x => !had.has(x));
+    del = base.items.filter(x => !now.has(x));
+  }
+  const age = base && pm.baseMade ? (o.now - Date.parse(pm.baseMade)) / 864e5 : Infinity;
+  const churn = base ? (add.length + del.length) / Math.max(1, base.items.length) : 1;
+  let baseMade = pm && pm.baseMade;
+  if (!base || !(age < o.baseDays) || churn > o.baseChurn) {
+    const d = new Date(o.now);
+    base = { format: 1, id: 'a' + d.toISOString().replace(/[-:T]/g, '').slice(0, 12), items };
+    baseText = JSON.stringify(base);
+    baseMade = d.toISOString();
+    add = []; del = [];
+  }
+  const deltaText = JSON.stringify({ format: 1, base: base.id, v, add, del });
+  return { baseText, deltaText, base: base.id, baseMade, changes: add.length + del.length };
+}
+
 function credits(sources) {
   const rows = sources.map(s => '- ' + s.name + ': ' + s.home + '\n  License: ' + s.license + '\n  Used for: ' + s.use).join('\n');
   return 'Blokvane\'s list is made from these public lists. Thank you to the people who keep them.\n' +
@@ -315,11 +351,16 @@ async function build(opts) {
   try {
     const a = res.ads = await buildAds(o);
     fs.writeFileSync(path.join(o.out, 'ads.json'), a.text);
+    const p = res.adsParts = adsParts(o, a.text, a.itemsOf);
+    fs.writeFileSync(path.join(o.out, 'ads-base.json'), p.baseText);
+    fs.writeFileSync(path.join(o.out, 'ads-delta.json'), p.deltaText);
     const same = o.prevMeta.ads && o.prevMeta.ads.v === a.v;
-    meta.ads = { v: a.v, sha256: sha(a.text), bytes: Buffer.byteLength(a.text), rules: a.rules, sites: a.sites, patterns: a.patterns, hide: a.hide, made: same ? o.prevMeta.ads.made : stamp };
+    meta.ads = { v: a.v, sha256: sha(a.text), bytes: Buffer.byteLength(a.text), rules: a.rules, sites: a.sites, patterns: a.patterns, hide: a.hide,
+      base: p.base, baseSha256: sha(p.baseText), baseMade: p.baseMade, deltaSha256: sha(p.deltaText), deltaBytes: Buffer.byteLength(p.deltaText),
+      made: same ? o.prevMeta.ads.made : stamp };
   } catch (e) {
     errors.push('Ads and trackers: ' + e.message);
-    if (o.prevMeta.ads && keep('ads.json')) meta.ads = o.prevMeta.ads;
+    if (o.prevMeta.ads && keep('ads.json')) { meta.ads = o.prevMeta.ads; if (meta.ads.base && !(keep('ads-base.json') && keep('ads-delta.json'))) { delete meta.ads.base; } }
   }
   try {
     const s = res.security = await buildSecurity(o, sources, never, warnings);

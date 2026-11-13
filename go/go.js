@@ -10,7 +10,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '25';
+  const VERSION = '26';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -1046,6 +1046,7 @@
   }
   // the two ways in, as on the design: a QR code and a keyboard, each in a little golden box
   const SW_ICONS = {
+    tv: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v12H3zM8 21h8M12 17v4"/></svg>',
     qr: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3z"/><path d="M15 15h2v2h-2zM19 15h2M15 19h2M19 19h2v2"/><path d="M5.5 5.5h1v1h-1zM17.5 5.5h1v1h-1zM5.5 17.5h1v1h-1z" fill="currentColor"/></svg>',
     keys: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>',
     globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'
@@ -1106,6 +1107,15 @@
     const tile = (ic, t, sub, fn) => { const b = el('button', 'gm-tile', tiles); b.type = 'button'; const i = el('span', 'sw-ic', b); i.innerHTML = SW_ICONS[ic]; el('b', '', b, t); el('small', '', b, sub); b.onclick = () => { buzz('tap'); fn(); }; return b; };
     tile('qr', gt('Scan the QR code'), gt('Point this phone at the TV'), () => scanScreen());
     tile('keys', gt('Type the code'), gt('The 6 letters under the QR code'), async () => (await need('party'))('code', []));
+    // a Chromecast or Google TV on this Wi-Fi: the game starts there, and this phone joins it (cast.js)
+    if (typeof BVCAST !== 'undefined' && BVCAST.on) BVCAST.ready().then(ok => {
+      if (!ok || !tiles.isConnected) return;
+      tile('tv', gt('Cast to a TV'), gt('A Chromecast or Google TV on this Wi-Fi'), async () => {
+        const link = await BVCAST.start();
+        if (link) { location.href = link; if (L.parse(location.hash)) route(); }
+        else toast(gt('The TV did not start the game. Try again, or scan the QR code.'));
+      });
+    });
     const acct = pass.get(), p = pass.host();
     const c = el('div', 'card gm-host', v.body);
     if (acct && !p) {

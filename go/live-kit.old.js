@@ -168,6 +168,11 @@ var BVLIVE = (() => {
       const bx = yield boxKeys();
       const net = relays({ memory: o.memory });
       const topic = keys.topic;
+      const inboxOf = (id) => __async(this, null, function* () {
+        return C.hex(yield C.sha256(te.encode(topic + ":inbox:" + id))).slice(0, 40);
+      });
+      const myInbox = o.inbox ? yield inboxOf(me.id) : "";
+      const ownerInbox = o.toOwner && o.owner ? yield inboxOf(o.owner) : "";
       const peers = /* @__PURE__ */ new Map();
       const parts = /* @__PURE__ */ new Map();
       const pipes = /* @__PURE__ */ new Map();
@@ -191,25 +196,28 @@ var BVLIVE = (() => {
       const trusted = (id) => id === R.owner || id === me.id || (o.allow ? !!o.allow(id) : false);
       const may = (id) => o.open !== false || trusted(id);
       const gate = NET.gate({ key: keys.key, topic, check: C.verifier(), known: (id) => peers.has(id) || trusted(id) });
-      function publish(m) {
+      const inGate = myInbox ? NET.gate({ key: keys.key, topic: myInbox, check: C.verifier(), known: (id) => peers.has(id) || trusted(id) }) : null;
+      function publish(m, tp) {
         return __async(this, null, function* () {
           if (closed) return 0;
           m.f = me.id;
           m.at = now();
-          return net.publish(topic, yield C.sealSigned(keys.key, topic, m, me));
+          tp = tp || topic;
+          return net.publish(tp, yield C.sealSigned(keys.key, tp, m, me));
         });
       }
       function send(m, to) {
         return __async(this, null, function* () {
           if (closed || !m || typeof m.k !== "string") return 0;
           if (to) m.to = to;
+          const tp = ownerInbox && (!to || to === R.owner) ? ownerInbox : topic;
           const body = te.encode(JSON.stringify(m));
-          if (body.length <= PART + 600) return publish(m);
+          if (body.length <= PART + 600) return publish(m, tp);
           if (body.length > MAX_LONG) throw new Error("too big for the relays");
           const id = C.hex(C.rand(6)), n = Math.ceil(body.length / PART);
           let sent = 0;
           for (let i = 0; i < n; i++) {
-            sent = yield publish({ k: "~p", id, i, n, to: to || void 0, d: C.b64url(body.subarray(i * PART, (i + 1) * PART)) });
+            sent = yield publish({ k: "~p", id, i, n, to: to || void 0, d: C.b64url(body.subarray(i * PART, (i + 1) * PART)) }, tp);
             if (n > 3 && i < n - 1) yield new Promise((r) => setTimeout(r, 40));
           }
           return sent;
@@ -297,10 +305,10 @@ var BVLIVE = (() => {
         });
       };
       handlers.set(topic, onBytes);
-      function take(bytes) {
+      function take(bytes, g) {
         return __async(this, null, function* () {
           if (closed) return;
-          const m = yield gate(bytes);
+          const m = yield (g || gate)(bytes);
           if (!m || !okId(m.f) || m.f === me.id || typeof m.k !== "string") return;
           if (m.to && m.to !== me.id) {
             if (peers.has(m.f)) peers.get(m.f).at = now();
@@ -813,7 +821,18 @@ var BVLIVE = (() => {
         }, 6e3);
         return L;
       }
-      net.join(topic, { home: o.home === true });
+      const kind = o.home === true ? o.label === "bvnear" ? "near" : "game" : "", role = o.role === "tv" ? "tv" : "phone";
+      net.join(topic, { home: o.home === true, idle: o.idle === true, kind, role });
+      let onInbox = null;
+      if (myInbox) {
+        onInbox = (bytes) => {
+          take(bytes, inGate).catch(() => {
+          });
+        };
+        handlers.set(myInbox, onInbox);
+        net.join(myInbox, { home: o.home === true, kind, role });
+      }
+      if (ownerInbox) net.join(ownerInbox, { home: o.home === true, speak: true, via: topic });
       openRooms.add(R);
       hello(true);
       setTimeout(() => hello(true), 1e3);
@@ -861,6 +880,11 @@ var BVLIVE = (() => {
               handlers.delete(topic);
               net.leave(topic);
             }
+            if (myInbox && handlers.get(myInbox) === onInbox) {
+              handlers.delete(myInbox);
+              net.leave(myInbox);
+            }
+            if (ownerInbox && !handlers.has(topic)) net.leave(ownerInbox);
           }, 400);
         }
       });

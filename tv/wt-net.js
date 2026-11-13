@@ -35,6 +35,12 @@ var BVWT_NET = (() => {
   const MAX_BAD = 6 * 3600000;       // a relay that has never worked here is left alone for up to 6 hours
   const MAX_OWN = 8;                 // a relay list from settings uses at most this many of each kind
   const HOME_FRESH = 60000;          // our own relay counts as working while a message of ours came back this recently
+  // A device that is only waiting (a TV waiting for your computer, your computer waiting for your phone or a friend)
+  // keeps 2 of its room's 7 lines open, not all 7, and moves to the next 2 every few minutes. Everyone in the room
+  // picks the same 2 at the same time (from the room's own order), so two waiting devices still meet; a device that
+  // is not waiting uses all 7, so it reaches a waiting one on whichever 2 it has. The moment a message arrives, the
+  // room opens all 7 lines for a while. So Blokvane asks much less of relays that other people run for free.
+  const IDLE_LINES = 2, IDLE_SLOT = 5 * 60000, IDLE_AWAKE = 3 * 60000, IDLE_EDGE = 30000;
   // allowances, counted only for messages that open with the party key (in one burst, then each second)
   const PER_SENDER = 20, PER_SENDER_BURST = 40;    // each member the party counts in: their own, shared with nobody
   const CHECKS = 40, CHECKS_BURST = 80;            // signature checks for messages that say they're from one such member
@@ -139,6 +145,10 @@ var BVWT_NET = (() => {
     function deliver(topic, bytes, url) {
       if (!rooms.has(topic) || !bytes || bytes.length < 29 || bytes.length > 16384) return;
       const at = now();
+      // (a waiting room heard something: all of its lines open for a while)
+      const room = rooms.get(topic);
+      if (room.speak) return;
+      if (room.idle) { const was = room.awake > at; room.awake = at + IDLE_AWAKE; if (!was) setTimeout(rebalance, 0); }
       const c = conns.get(url);
       if (c) c.lastIn = at;
       inbox = inbox.then(async () => {
@@ -163,7 +173,7 @@ var BVWT_NET = (() => {
 
     // ---------- one connection ----------
     function base(url, type) {
-      return { url, type, ws: null, state: 'idle', topics: new Set(), tries: 0, retryAt: 0, misses: 0, oks: 0, lastIn: 0, lastEcho: 0, slowUntil: 0, opened: 0,
+      return { url, type, ws: null, state: 'idle', topics: new Set(), speaks: new Set(), tries: 0, retryAt: 0, misses: 0, oks: 0, lastIn: 0, lastEcho: 0, slowUntil: 0, opened: 0,
         close() { this.state = 'closed'; clearTimeout(this.t1); clearInterval(this.t2); try { if (this.ws) { this.ws.onclose = this.ws.onerror = this.ws.onmessage = this.ws.onopen = null; this.ws.close(); } } catch (e) {} this.ws = null; },
         failed() {
           const was = this.state;
@@ -210,6 +220,8 @@ var BVWT_NET = (() => {
       c.publish = (t, ev) => { if (c.state === 'open' && c.ws.readyState === 1 && now() >= c.slowUntil) { c.ws.send(ev); return true; } return false; };
       return c;
     }
+    // what Blokvane's relay is told about a room, only so that it can count (a game or "TVs near you"; a TV or a phone)
+    const meta = t => { const r = rooms.get(t); return r && r.kind ? { kind: r.kind, role: r.role || undefined } : {}; };
     // Blokvane's own relay: {"t":"sub","topics":[...]} to listen, and each sealed message as bytes behind its room
     // (0x01, the room's 20 bytes). It hands the same bytes to everyone in the room, us included.
     function homeConn(url) {
@@ -229,7 +241,8 @@ var BVWT_NET = (() => {
             if (m.t === 'hi' && c.state === 'connecting') {
               clearTimeout(c.t1);
               c.state = 'open'; c.opened = now(); c.tries = 0; c.lastPong = now();
-              if (c.topics.size) say({ t: 'sub', topics: [...c.topics] });
+              for (const t of c.topics) say(Object.assign({ t: 'sub', topics: [t] }, meta(t)));
+              if (c.speaks.size) say({ t: 'speak', topics: [...c.speaks] });
               c.t2 = setInterval(() => {
                 if (now() - c.lastPong > 70000) { c.failed(); return; }
                 say({ t: 'ping' });
@@ -247,7 +260,8 @@ var BVWT_NET = (() => {
           if (c.topics.has(t)) deliver(t, b.slice(21), url);
         };
       };
-      c.sub = t => { if (c.state === 'open') say({ t: 'sub', topics: [t] }); };
+      c.sub = t => { if (c.state === 'open') say(Object.assign({ t: 'sub', topics: [t] }, meta(t))); };
+      c.speak = t => { if (c.state === 'open') say({ t: 'speak', topics: [t] }); };
       c.unsub = t => { if (c.state === 'open') say({ t: 'unsub', topics: [t] }); };
       c.publish = (t, bytes) => {
         if (c.state !== 'open' || c.ws.readyState !== 1 || now() < c.slowUntil) return false;
@@ -307,9 +321,32 @@ var BVWT_NET = (() => {
     }
 
     // ---------- which relays each party uses ----------
+    // the 2 lines a waiting room keeps now (and, just before the next turn, the next 2 as well)
+    function idleLines(r) {
+      const all = r.order.slice(0, perRoom).concat(mqttList.map(m => m.url));
+      if (all.length <= IDLE_LINES) return new Set(all);
+      const t = now(), out = new Set();
+      const pick = slot => {
+        let i = (slot * IDLE_LINES) % all.length, got = 0, tries = 0;
+        while (got < IDLE_LINES && tries < all.length) { const u = all[i % all.length]; i++; tries++; if (isBad(u) || out.has(u)) continue; out.add(u); got++; }
+      };
+      const slot = Math.floor(t / IDLE_SLOT);
+      pick(slot);
+      if ((slot + 1) * IDLE_SLOT - t < IDLE_EDGE) pick(slot + 1);
+      return out;
+    }
+    const waiting = r => r.idle && !r.home && !(r.awake > now());
     function wanted() {
       const want = new Map(); // url -> Set(topics)
       for (const r of rooms.values()) {
+        if (r.speak) continue;
+        if (waiting(r)) {
+          const lines = idleLines(r);
+          r.sig = [...lines].join();
+          for (const u of lines) (want.get(u) || want.set(u, new Set()).get(u)).add(r.topic);
+          continue;
+        }
+        r.sig = '*';
         let n = 0;
         for (const url of r.order) { if (n >= perRoom) break; if (isBad(url)) continue; n++; (want.get(url) || want.set(url, new Set()).get(url)).add(r.topic); }
         for (const m of mqttList) if (!isBad(m.url)) (want.get(m.url) || want.set(m.url, new Set()).get(m.url)).add(r.topic);
@@ -318,19 +355,35 @@ var BVWT_NET = (() => {
       }
       return want;
     }
+    // the rooms this device only sends to (a phone's answers go to the TV's own room): on the lines the room
+    // listens on anyway, never one more connection just for them
+    function wantedSpeak(want) {
+      const sp = new Map();
+      for (const r of rooms.values()) {
+        if (!r.speak) continue;
+        const via = rooms.get(r.via);
+        for (const [url, ts] of want) if (!via || ts.has(via.topic)) (sp.get(url) || sp.set(url, new Set()).get(url)).add(r.topic);
+      }
+      return sp;
+    }
     function rebalance() {
       const want = wanted();
+      const sp = wantedSpeak(want);
       for (const [url, c] of conns) {
         if (!want.has(url)) { for (const t of c.topics) c.unsub(t); c.close(); conns.delete(url); continue; }
         const ts = want.get(url);
         for (const t of [...c.topics]) if (!ts.has(t)) { c.topics.delete(t); c.unsub(t); }
         for (const t of ts) if (!c.topics.has(t)) { c.topics.add(t); c.sub(t); }
+        const ss = sp.get(url) || new Set();
+        for (const t of [...c.speaks]) if (!ss.has(t)) c.speaks.delete(t);
+        for (const t of ss) if (!c.speaks.has(t)) { c.speaks.add(t); if (c.speak) c.speak(t); }
       }
       for (const [url, ts] of want) {
         if (conns.has(url)) continue;
         const cfg = mqttList.find(m => m.url === url);
         const c = homeList.includes(url) ? homeConn(url) : cfg ? mqttConn(cfg) : nostrConn(url);
         c.topics = new Set(ts);
+        c.speaks = new Set(sp.get(url) || []);
         conns.set(url, c);
         c.open();
       }
@@ -352,6 +405,8 @@ var BVWT_NET = (() => {
     }
     function maintain() {
       const t = now();
+      // (a waiting room moves to its next 2 lines, or a room that was awake goes back to waiting)
+      for (const r of rooms.values()) if (r.idle && (waiting(r) ? [...idleLines(r)].join() : '*') !== r.sig) { rebalance(); break; }
       for (const c of conns.values()) if (c.state === 'retry' && t >= c.retryAt) c.open();
       for (const [id, p] of pending) {
         if (t - p.at < echoWait) continue;
@@ -364,11 +419,13 @@ var BVWT_NET = (() => {
 
     // (kept: when a message that waited for a relay is sent at last, the time it was first said)
     async function publish(topic, bytes, kept) {
-      if (!rooms.has(topic)) return 0;
+      const room = rooms.get(topic);
+      if (!room) return 0;
       const id = C.hex(await C.sha256(bytes));
-      const targets = [...conns.values()].filter(c => c.state === 'open' && c.topics.has(topic));
+      const targets = [...conns.values()].filter(c => c.state === 'open' && (c.topics.has(topic) || c.speaks.has(topic)));
       const p = { at: now(), urls: new Set() };
-      pending.set(id, p);
+      // (a message to a room this device doesn't listen to never comes back to it: it can't tell whether a relay works)
+      if (!room.speak) pending.set(id, p);
       let sent = 0, home = false;
       // (our own relay first: nothing to sign, so the message is on its way at once)
       for (const c of targets) if (c.type === 'home' && c.publish(topic, bytes)) { p.urls.add(c.url); sent++; if (!c.misses && c.lastEcho > p.at - HOME_FRESH) home = true; }
@@ -388,14 +445,20 @@ var BVWT_NET = (() => {
       if (!sent) { pending.delete(id); outbox.push({ topic, bytes, at: kept || now() }); if (outbox.length > OUT_MAX) outbox.shift(); }
       return sent;
     }
-    // opt: { home: true } for a room that also goes through Blokvane's own relay (a party game)
+    // opt: { home: true } for a room that also goes through Blokvane's own relay (a party game);
+    //      { idle: true } for a room that mostly waits (it keeps 2 lines open until something arrives)
+    //      { speak: true, via: topic } for a room this device only sends to, on the lines of the room `via`
     function join(topic, opt) {
       if (!/^[0-9a-f]{40}$/.test(topic)) return;
-      const home = !!(opt && opt.home), old = rooms.get(topic);
-      if (old) { if (home && !old.home) { old.home = true; rebalance(); } return; }
-      rooms.set(topic, { topic, order: shuffled(nostrList, topic), home });
+      const home = !!(opt && opt.home), idle = !!(opt && opt.idle) && !home, old = rooms.get(topic);
+      const speak = !!(opt && opt.speak), via = speak && opt && typeof opt.via === 'string' ? opt.via : '';
+      const kind = opt && (opt.kind === 'game' || opt.kind === 'near') ? opt.kind : '', role = opt && (opt.role === 'tv' || opt.role === 'phone') ? opt.role : '';
+      if (old) { if (home && !old.home) { old.home = true; old.idle = false; rebalance(); } return; }
+      rooms.set(topic, { topic, order: shuffled(nostrList, topic), home, idle, awake: 0, sig: '', speak, via, kind, role });
       rebalance();
     }
+    // something starts in a waiting room (the app knows): all its lines open now
+    function active(topic) { const r = rooms.get(topic); if (r && r.idle) { r.awake = now() + IDLE_AWAKE; rebalance(); } }
     function leave(topic) { if (rooms.delete(topic)) rebalance(); }
     function stats(topic) {
       const list = [...conns.values()].filter(c => !topic || c.topics.has(topic));
@@ -419,7 +482,7 @@ var BVWT_NET = (() => {
       rebalance();
       maintain();
     }
-    return { join, leave, publish, stats, close, wake, _conns: conns, _health: health };
+    return { join, leave, publish, stats, close, wake, active, _conns: conns, _health: health };
   }
   // an allowance: up to `burst` at once, then `rate` more each second
   function bucket(rate, burst, now) {
@@ -460,6 +523,6 @@ var BVWT_NET = (() => {
       return m.m;
     };
   }
-  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST };
+  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST, IDLE_LINES, IDLE_SLOT };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = BVWT_NET;

@@ -117,14 +117,43 @@
     m.at = Date.now();
     try { await net.publish(keys.topic, await C.sealSigned(keys.key, keys.topic, m, me)); } catch (e) {}
   }
+  // ---------- this screen's place on the plan ----------
+  // Blokvane Pro includes 1 TV screen; each extra one is bought on the account page. Your computer sends a pass that
+  // Blokvane's server signed for this screen's place (made from this link: the server never sees the link). This page
+  // checks the signature, and keeps the pass: with it, the screen keeps playing for 8 days without the server or your
+  // computer, like Pro itself.
+  let sidP = null;
+  const sid = () => sidP || (sidP = crypto.subtle.digest('SHA-256', new TextEncoder().encode('bvtv:' + link.s))
+    .then(b => [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join('').slice(0, 24)));
+  const PASS = () => 'bvtv:pass:' + ns;
+  async function passOk(pass) { return typeof BVPASS !== 'undefined' && typeof pass === 'string' && pass && BVPASS.okScreen(pass, await sid()); }
+  async function storedPassOk() { let p = ''; try { p = localStorage.getItem(PASS()) || ''; } catch (e) {} return passOk(p); }
+  function noPlace(why) {
+    drop(false);
+    started = false;
+    frame.hidden = true;
+    frame.src = 'about:blank';
+    say('This TV screen has no place on your plan', (why ? why + ' ' : '') + 'On the computer with your slideshows, open Blokvane, Slideshows, then TV screens.', { still: true, bad: true });
+  }
   let lastOwner = 0, haveV = 0;
   async function onRelay(topic, bytes) {
     if (topic !== keys.topic) return;
     const m = await gate(bytes);
     if (!m || m.f !== link.owner) return;
     lastOwner = Date.now();
+    if (m.k === 'full') {
+      if (m.to !== me.id) return;
+      // (one TV too many: said, in place of waiting without a word)
+      if (m.why === 'link') say('This link is already on ' + (+m.n || 8) + ' screens', 'On your computer, open Blokvane, TV screens, and make a new link for this TV.', { still: true, bad: true });
+      else say('Your computer is sending to ' + (+m.n || 40) + ' screens already', 'That is the most at once. Turn one of the other screens off, and this one connects by itself.', { still: true });
+      return;
+    }
     if (m.k === 'v') {
       if (m.to && m.to !== me.id) return;
+      if (m.locked) { try { localStorage.removeItem(PASS()); } catch (e) {} noPlace(String(m.locked).slice(0, 200)); return; }
+      if (!(await passOk(m.pass))) { if (!(await storedPassOk())) noPlace('This screen\'s pass could not be checked.'); return; }
+      try { localStorage.setItem(PASS(), m.pass); } catch (e) {}
+      if (!started && haveMan && boot.classList.contains('bad')) start(haveMan.code || '');
       // your computer is there: connect (or, connected, copy what changed)
       if (open()) { if (+m.v !== haveV) sync(); }
       else connect();
@@ -363,8 +392,9 @@
     cache = await caches.open('bvtv-' + ns);
     haveMan = await savedMan();
     haveV = haveMan ? +haveMan.v || 0 : 0;
-    // what this screen has already plays right away (even with the computer off)
-    if (haveMan) { await toSw({ op: 'v', ns, v: haveV }); start(haveMan.code || ''); }
+    // what this screen has already plays right away (even with the computer off), while its pass is good
+    if (haveMan && await storedPassOk()) { await toSw({ op: 'v', ns, v: haveV }); start(haveMan.code || ''); }
+    else if (haveMan) await toSw({ op: 'v', ns, v: haveV });
     keys = await C.secretKeys(secret, 'bvtv');
     let jwk = null;
     try { jwk = JSON.parse(localStorage.getItem('bvtv:me:' + ns) || 'null'); } catch (e) {}
@@ -374,7 +404,7 @@
     // (what was learned about the relays is kept in this browser, so a relay that is down isn't tried again and again)
     const memory = { load: () => { try { return JSON.parse(localStorage.getItem('bvtv:relays') || 'null'); } catch (e) { return null; } }, save: h => { try { localStorage.setItem('bvtv:relays', JSON.stringify(h)); } catch (e) {} } };
     net = NET.create({ onMessage: onRelay, memory });
-    net.join(keys.topic);
+    net.join(keys.topic, { idle: true });   // (waiting for your computer: 2 lines open until it answers)
     // (the relays need a moment to connect)
     setTimeout(hello, 1200);
     // back online after the network dropped: look for your computer again

@@ -1060,7 +1060,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.me = await memberFor('g:' + G.s.slice(0, 10));
     G.id = G.me.id;
     if (G.R) { try { G.R.close(); } catch (e) {} }
-    G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, home: true, onMsg: m => { if (m.f === G.tv) take(m); } });
+    // (toOwner: what this phone says goes to the TV only, never to every other phone in the game)
+    G.R = await L.room({ secret: G.s, label: 'bvplay', me: G.me, name: G.name, role: 'player', owner: G.tv, open: false, home: true, toOwner: true, onMsg: m => { if (m.f === G.tv) take(m); } });
     G.phase = 'join'; G.joined = false; G.tries = 0;
     G.waitNext = false;
     G.needHost = false;

@@ -66,7 +66,8 @@ var BVPLAY = (() => {
   async function open(given) {
     const me = await C.newMember();
     const s = secret = L.newSecret();
-    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, home: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+    // (inbox: the phones send their answers to the TV's own room, so they go to the TV only)
+    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
     // a short code for phones that can't scan: a room of its own that only hands out the link. (A phone that started
     // this game from Blokvane made the code itself, so it joins by itself as the host.)
     code = given || L.shortCode(6);
@@ -140,6 +141,8 @@ var BVPLAY = (() => {
   // what the phones scan: the game's room, and the language the game is in (so a phone shows it from the first screen)
   // (the QR code opens Blokvane Games: the party games' own page, that a phone can keep as an app)
   const linkNow = () => GO + 'games.html#game.' + secret + '.' + R.id + (lang !== 'en' ? '.' + lang : '');
+  // (a phone that cast this game to a Chromecast asks it for the link: cast.js)
+  window.bvJoinLink = () => (R && secret ? linkNow() : '');
   // the game's language, everywhere on this screen
   async function setLang(v) {
     lang = v;
