@@ -1,0 +1,34 @@
+Blokvane's list is made from these public lists. Thank you to the people who keep them.
+Each list keeps its own license, and Blokvane's list (the files in this folder) is shared under the same licenses:
+you may use and share it under their terms, with these credits. The licenses folder has the full text of the
+licenses that ask to be passed on.
+
+- EasyList and EasyPrivacy: https://easylist.to
+  License: GPLv3 or CC BY-SA 3.0
+  Used for: Ads and trackers
+- uBlock Origin filters (uAssets): uBlock filters, privacy, quick fixes, unbreak, resource abuse, cookie notices, badware risks: https://github.com/uBlockOrigin/uAssets
+  License: GPLv3
+  Used for: Ads, trackers, site fixes, cookie notices, scam and malware sites
+- AdGuard DNS filter: https://github.com/AdguardTeam/AdGuardSDNSFilter
+  License: GPLv3
+  Used for: Ad and tracking sites
+- Phishing.Database: https://github.com/Phishing-Database/Phishing.Database
+  License: MIT, Copyright (c) 2018-2025 Mitchell Krog, Nissar Chababy and the Phishing.Database Contributors
+  Used for: Phishing sites
+- uBlock Origin filters: Badware risks: https://github.com/uBlockOrigin/uAssets
+  License: GPLv3
+  Used for: Scam and malware sites
+- MetaMask eth-phishing-detect: https://github.com/MetaMask/eth-phishing-detect
+  License: DBAD Public License 1.2, Copyright (C) 2018 kumavis
+  Used for: Fake crypto and wallet sites
+- polkadot{.js} phishing list: https://github.com/polkadot-js/phishing
+  License: Apache License 2.0
+  Used for: Fake crypto sites
+- TweetFeed: https://github.com/0xDanielLopez/TweetFeed
+  License: CC0 1.0 (public domain)
+  Used for: Scam and phishing sites that security researchers reported in the last 30 days
+- Chrome UX Report, most-visited sites (crux-top-lists): https://github.com/zakird/crux-top-lists
+  License: CC BY 4.0 (the Chrome UX Report, by Google)
+  Used for: Not part of the list: used to make sure a real site that has been popular for a year is never blocked by mistake
+
+Made automatically by https://github.com/Blokvane/blokvane-data (tools/build-lists.js).

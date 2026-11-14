@@ -1,0 +1,157 @@
+{
+ "format": 1,
+ "made": "2026-11-14T16:47:23.031Z",
+ "ads": {
+  "v": "43255290f643e3c0",
+  "sha256": "cd5220f2b6649c070ba380be3b95d06a356529d6913208827133c399f9a6498b",
+  "bytes": 9359891,
+  "rules": 20716,
+  "sites": 206917,
+  "patterns": 16967,
+  "hide": 38338,
+  "base": "a202611130737",
+  "baseSha256": "19a23fdb5735e1f1529bef1cbf1c5db6da95ef1212882e33bd93acf09f2a7522",
+  "baseMade": "2026-11-13T07:37:46.677Z",
+  "deltaSha256": "319392634512bed297be1178c037c2d42daf1496d0f64ae2870cad9ae26c0360",
+  "deltaBytes": 20299,
+  "made": "2026-11-14T16:47:23.031Z"
+ },
+ "security": {
+  "v": "7813dd8fa59ac548",
+  "base": "b202611110137",
+  "baseSha256": "7c5e67811e937fb29ba9f3e1d15f774386d94c1053f5f4ace778dbf7a6cc246b",
+  "baseMade": "2026-11-11T01:37:20.370Z",
+  "deltaSha256": "3682500748fdbe916dd4cd93b3c4bf23d58b0dafad1b916de60675e887cc40a5",
+  "deltaBytes": 125370,
+  "count": 566093,
+  "malware": 3320,
+  "phishing": 562773,
+  "from": [
+   {
+    "name": "Phishing.Database",
+    "sites": 391261
+   },
+   {
+    "name": "uBlock Origin filters: Badware risks",
+    "sites": 3333
+   },
+   {
+    "name": "MetaMask eth-phishing-detect",
+    "sites": 119707
+   },
+   {
+    "name": "polkadot{.js} phishing list",
+    "sites": 54796
+   },
+   {
+    "name": "TweetFeed",
+    "sites": 1473
+   }
+  ],
+  "made": "2026-11-14T16:47:23.031Z"
+ },
+ "hints": {
+  "v": "ded6ea54f7fc26d2",
+  "crowded": [
+   "000webhostapp.com",
+   "arweave.net",
+   "atwebpages.com",
+   "blogspot.am",
+   "blogspot.bg",
+   "blogspot.fi",
+   "blogspot.hr",
+   "blogspot.is",
+   "blogspot.li",
+   "blogspot.lu",
+   "blogspot.md",
+   "blogspot.sn",
+   "blogspot.tw",
+   "blogspot.ug",
+   "cf-ipfs.com",
+   "co.vu",
+   "crabdance.com",
+   "dweb.link",
+   "ewp.live",
+   "ey.r.appspot.com",
+   "filesusr.com",
+   "fleek.co",
+   "framer.ai",
+   "framer.app",
+   "glitch.me",
+   "infura-ipfs.io",
+   "mybluehost.me",
+   "nftstorage.link",
+   "qwo231sdx.club",
+   "r2.dev",
+   "raw.ic0.app",
+   "repl.co",
+   "replit.dev",
+   "rj.r.appspot.com",
+   "runcloud.link",
+   "sspl.com.au",
+   "surge.sh",
+   "swtest.ru",
+   "tmweb.ru",
+   "trycloudflare.com",
+   "tw1.ru",
+   "typedream.app",
+   "uc.r.appspot.com",
+   "usrfiles.com",
+   "w3s.link",
+   "wcnv20.cn",
+   "webcindario.com",
+   "weeblysite.com",
+   "wixstudio.com",
+   "wl.r.appspot.com",
+   "xsph.ru",
+   "yolasite.com"
+  ]
+ },
+ "sources": [
+  {
+   "name": "EasyList and EasyPrivacy",
+   "home": "https://easylist.to",
+   "license": "GPLv3 or CC BY-SA 3.0"
+  },
+  {
+   "name": "uBlock Origin filters (uAssets): uBlock filters, privacy, quick fixes, unbreak, resource abuse, cookie notices, badware risks",
+   "home": "https://github.com/uBlockOrigin/uAssets",
+   "license": "GPLv3"
+  },
+  {
+   "name": "AdGuard DNS filter",
+   "home": "https://github.com/AdguardTeam/AdGuardSDNSFilter",
+   "license": "GPLv3"
+  },
+  {
+   "name": "Phishing.Database",
+   "home": "https://github.com/Phishing-Database/Phishing.Database",
+   "license": "MIT, Copyright (c) 2018-2025 Mitchell Krog, Nissar Chababy and the Phishing.Database Contributors"
+  },
+  {
+   "name": "uBlock Origin filters: Badware risks",
+   "home": "https://github.com/uBlockOrigin/uAssets",
+   "license": "GPLv3"
+  },
+  {
+   "name": "MetaMask eth-phishing-detect",
+   "home": "https://github.com/MetaMask/eth-phishing-detect",
+   "license": "DBAD Public License 1.2, Copyright (C) 2018 kumavis"
+  },
+  {
+   "name": "polkadot{.js} phishing list",
+   "home": "https://github.com/polkadot-js/phishing",
+   "license": "Apache License 2.0"
+  },
+  {
+   "name": "TweetFeed",
+   "home": "https://github.com/0xDanielLopez/TweetFeed",
+   "license": "CC0 1.0 (public domain)"
+  },
+  {
+   "name": "Chrome UX Report, most-visited sites (crux-top-lists)",
+   "home": "https://github.com/zakird/crux-top-lists",
+   "license": "CC BY 4.0 (the Chrome UX Report, by Google)"
+  }
+ ]
+}
