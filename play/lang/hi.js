@@ -1378,5 +1378,19 @@ BVI18N.add("hi", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "मुफ़्त गेम: 15 सवाल, हर बार वही। Blokvane Pro वाले होस्ट को सारे सवाल मिलते हैं।",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "दोस्तों और परिवार के साथ मुफ़्त गेम होस्ट करने के लिए इस फ़ोन पर अपने ईमेल से साइन इन करें, हर गेम में 15 सवाल। Blokvane Pro से आपको सारे सवाल मिलते हैं। जो भी जुड़ता है, मुफ़्त में खेलता है।",
 "A Chromecast or Google TV on this Wi-Fi": "इसी Wi-Fi पर कोई Chromecast या Google TV",
-"The TV did not start the game. Try again, or scan the QR code.": "टीवी पर गेम शुरू नहीं हुआ। दोबारा कोशिश करें, या QR कोड स्कैन करें।"
+"The TV did not start the game. Try again, or scan the QR code.": "टीवी पर गेम शुरू नहीं हुआ। दोबारा कोशिश करें, या QR कोड स्कैन करें।",
+"Look": "रूप",
+"Light": "हल्का",
+"Dark": "गहरा",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "ऑटो इस फ़ोन जैसा रहता है: फ़ोन हल्का हो तो हल्का, गहरा हो तो गहरा।",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "फ़ोन की सेटिंग कुछ भी हो, इस फ़ोन पर Blokvane Games ऐसा ही रहेगा।",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "Samsung Internet का डार्क मोड चालू होने पर वह हर वेबसाइट के रंग बदल देता है। Blokvane के अपने रंग देखने के लिए Samsung Internet का मेन्यू खोलें और साइटें हल्के रंग में दिखाना चुनें। फिर Blokvane Games यहाँ चुना गया रूप दिखाएगा।",
+"More settings": "और सेटिंग",
+"Back to the usual settings": "सामान्य सेटिंग पर वापस जाएँ",
+"The usual settings are back.": "सामान्य सेटिंग वापस आ गई हैं।",
+"Same settings as last time.": "पिछली बार जैसी ही सेटिंग।",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "समय, रूप, आवाज़ें और बाकी सब। हर सेटिंग अगली बार के लिए सहेजी जाती है।",
+"On": "चालू",
+"Off": "बंद",
+"{n} of {total} on": "{total} में से {n} चालू"
 });

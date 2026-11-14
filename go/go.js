@@ -10,7 +10,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '27';
+  const VERSION = '29';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -64,14 +64,15 @@
     '<ellipse class="eye" cx="47" cy="52" rx="6" ry="8" fill="#2b2346"/><ellipse class="eye" cx="73" cy="52" rx="6" ry="8" fill="#2b2346"/><circle cx="49" cy="49" r="2.2" fill="#fff"/><circle cx="75" cy="49" r="2.2" fill="#fff"/>' +
     '<path d="M51 68c5 5 13 5 18 0" fill="none" stroke="#2b2346" stroke-width="4.5" stroke-linecap="round"/><ellipse cx="38" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/><ellipse cx="82" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/></svg>';
   function boo(cls) { const b = el('div', 'boo' + (cls ? ' ' + cls : '')); b.innerHTML = BOO_SVG; return b; }
-  // Boo of Blokvane Games ("Silk waves"): a white ghost with rosy cheeks. face: 'smile' (the welcome), 'plain' (the
+  // Boo of Blokvane Games ("Silk waves"): a white ghost with rosy cheeks. face: 'smile' (the welcome), 'sad' (leaving, or a game that ended), 'plain' (the
   // app's icon) or 'sleepy' (something didn't work)
   const SW_EYES = '<ellipse cx="23.6" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><ellipse cx="35.4" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><circle cx="24.4" cy="22.6" r="1.2" fill="#fff"/><circle cx="36.2" cy="22.6" r="1.2" fill="#fff"/>';
   const SW_BOO = face => '<svg viewBox="10 0 40 52" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" class="sw-boo"><path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff"/>' +
     (face === 'sleepy' ? '<path d="M21 24.5q2.6 1.6 5.2 0M32.8 24.5q2.6 1.6 5.2 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M27.4 32q2.6-1.4 5.2 0" stroke="#2a0f3a" stroke-width="1.4" fill="none" stroke-linecap="round"/>'
-      : SW_EYES + (face === 'smile' ? '<path d="M27 31q3 2.4 6 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>' : '')) +
+      : SW_EYES + (face === 'smile' ? '<path d="M27 31q3 2.4 6 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>'
+        : face === 'sad' ? '<path d="M27 33q3-2.4 6 0" stroke="#2a0f3a" stroke-width="1.5" fill="none" stroke-linecap="round"/>' : '')) +
     '<ellipse cx="19.5" cy="29" rx="2.4" ry="1.4" fill="#ff8aa0"/><ellipse cx="40.5" cy="29" rx="2.4" ry="1.4" fill="#ff8aa0"/></svg>';
-  function swBoo(cls) { const b = el('div', 'boo sw' + (cls ? ' ' + cls : '')); b.innerHTML = SW_BOO(cls === 'sleepy' ? 'sleepy' : 'smile'); return b; }
+  function swBoo(cls, face) { const b = el('div', 'boo sw' + (cls ? ' ' + cls : '')); b.innerHTML = SW_BOO(face || (cls === 'sleepy' ? 'sleepy' : 'smile')); return b; }
   // (the sky behind every Games page: drawn once, shown by go.css only with the games' look)
   function swSky() {
     if (document.querySelector('.sw-sky')) return;
@@ -85,16 +86,20 @@
   // every other page keeps the color it starts with)
   function barColor() {
     const h = document.documentElement, night = h.classList.contains('pt-night');
-    let day = false;
-    try { day = night && !h.classList.contains('pt-dark') && matchMedia('(prefers-color-scheme: light)').matches; } catch (e) {}
+    const day = night && !h.classList.contains('pt-dark') && h.classList.contains('bv-day');
+    // (and the browser's own parts, like a field or a scroll bar, in the same colors: a game screen is always dark)
+    if (h.getAttribute('data-games') === '1') {
+      const cs = document.querySelector('meta[name="color-scheme"]');
+      if (cs && cs.content !== (day ? 'light' : 'dark')) cs.content = day ? 'light' : 'dark';
+    }
     for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
       if (m.getAttribute('data-c0') == null) m.setAttribute('data-c0', m.content);
       const want = !night ? m.getAttribute('data-c0') : day ? '#f3eeff' : '#1d1440';
       if (m.content !== want) m.content = want;
     }
   }
+  // (theme.js changes html.bv-day when the look or the phone changes: the class change calls this too)
   try { new MutationObserver(barColor).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] }); } catch (e) {}
-  try { const mq = matchMedia('(prefers-color-scheme: light)'); if (mq.addEventListener) mq.addEventListener('change', barColor); else if (mq.addListener) mq.addListener(barColor); } catch (e) {}
 
   let toastT = 0;
   function toast(text, tone) {
@@ -1051,6 +1056,36 @@
     keys: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2.5"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M6 14h.01M18 14h.01M9 14h6"/></svg>',
     globe: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></svg>'
   };
+  // the look: Auto (like this phone), Light or Dark (theme.js keeps it, on this phone only). The three in a row, on
+  // the Games home's "Look" and in the menu during a game
+  const LOOK_IC = {
+    auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M12 7.5a4.5 4.5 0 0 1 0 9z" fill="currentColor"/><path d="M12 7.5a4.5 4.5 0 0 0 0 9"/></svg>',
+    light: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>',
+    dark: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>'
+  };
+  const lookNow = () => (window.BVTHEME ? BVTHEME.get() : 'auto');
+  function lookRow(parent, after) {
+    const row = el('div', 'sw-looks', parent);
+    row.setAttribute('role', 'group'); row.setAttribute('aria-label', gt('Look'));
+    const paint = () => { for (const b of row.children) b.setAttribute('aria-pressed', String(b.dataset.t === lookNow())); };
+    for (const [t, name] of [['auto', gt('Auto')], ['light', gt('Light')], ['dark', gt('Dark')]]) {
+      const b = el('button', 'sw-look', row); b.type = 'button'; b.dataset.t = t;
+      const i = el('span', 'ic', b); i.innerHTML = LOOK_IC[t];
+      el('b', '', b, name);
+      b.onclick = () => { buzz('tap'); if (window.BVTHEME) BVTHEME.set(t); paint(); if (after) after(t); };
+    }
+    paint();
+    return row;
+  }
+  function lookSheet() {
+    sheet(gt('Look'), sh => {
+      const note = el('p', 'muted', sh);
+      const say = () => { note.textContent = lookNow() === 'auto' ? gt('Auto matches this phone: light when the phone is light, dark when it is dark.') : gt('Blokvane Games stays like this on this phone, whatever the phone is set to.'); };
+      say();
+      lookRow(sh, say);
+      if (window.BVTHEME && BVTHEME.samsung) el('p', 'sw-looknote', sh, gt('Samsung Internet repaints every website when its dark mode is on. For Blokvane\'s own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.'));
+    });
+  }
   // the language of the app, picked here (or the phone's own)
   function langSheet() {
     const I = window.BVI18N;
@@ -1101,6 +1136,14 @@
     lb.innerHTML = SW_ICONS.globe;
     el('span', '', lb, (window.BVI18N && (BVI18N.LANGS.find(l => l[0] === gl) || [])[1]) || 'English');
     lb.onclick = () => langSheet();
+    // (the look, beside it: Auto, Light or Dark)
+    const kb = el('button', 'sw-lookbtn', v.top);
+    kb.type = 'button';
+    kb.setAttribute('aria-label', gt('Look'));
+    const kpaint = () => { kb.innerHTML = LOOK_IC[lookNow()] || LOOK_IC.auto; };
+    kpaint();
+    kb.onclick = () => { lookSheet(); };
+    if (window.BVTHEME) BVTHEME.onchange = () => { if (kb.isConnected) kpaint(); };
     backCard(v.body);
     hero(v.body, gt('Party games'), gt('The game is on the TV, and you play on this phone. Join it:'));
     const tiles = el('div', 'gm-tiles', v.body);
@@ -1234,7 +1277,7 @@
   }
 
   // ---------- off we go ----------
-  window.GO = { el, icon, boo, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
+  window.GO = { el, icon, boo, swBoo, lookRow, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
     computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, say: null, get pc() { return pc; },
     games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir, swBoo };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)

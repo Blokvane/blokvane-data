@@ -387,9 +387,9 @@ html.pt-night {
   --sw-text: 'BV Nunito', 'Nunito', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --round: var(--fun);
 }
-/* the day (the phone is light): the same silk waves on lavender paper. The game screens stay at night (html.pt-dark) */
-@media (prefers-color-scheme: light) {
-  html.pt-night:not(.pt-dark) {
+/* the day (the Light look, or Auto on a light phone: theme.js puts html.bv-day on): the same silk waves on lavender
+   paper. The game screens stay at night (html.pt-dark) */
+  html.bv-day.pt-night:not(.pt-dark) {
     color-scheme: light;
     --sw-bg1: #f7f3ff; --sw-bg2: #e9e1ff; --sw-glow: rgba(124, 92, 255, .2);
     --sw-blob1: rgba(167, 123, 255, .32); --sw-blob2: rgba(52, 211, 153, .2);
@@ -400,7 +400,6 @@ html.pt-night {
     --sw-sub: #5d5486; --sw-ic: #b7790b; --sw-icbg: rgba(255, 201, 60, .2); --sw-icline: rgba(201, 138, 18, .35); --sw-hostline: rgba(201, 138, 18, .35);
     --sw-ghost: rgba(255, 255, 255, .72); --sw-ghostline: rgba(60, 40, 140, .16); --sw-sheet: #ffffff; --sw-field: #ffffff; --sw-link: #6d4aff;
   }
-}
 html.pt-night, html.pt-night body { background: var(--sw-bg2); }
 html.pt-night body { font-family: var(--sw-text); color: var(--text); }
 html.pt-night .app { position: relative; z-index: 1; }
@@ -426,8 +425,8 @@ html.pt-night .sw-sky { display: block; position: fixed; top: 0; right: 0; botto
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 130 1000'%3E%3Cpath d='M0 30Q32.5 0 65 30T130 30V1000H0Z' fill='%23ffc93c'/%3E%3C/svg%3E"); }
 @keyframes swWave { to { transform: translateX(-130px); transform: translateX(calc(var(--wp) * -1)); } }
 /* (an iPhone app in the day look: a deep band under the white clock and battery, so they stay easy to read) */
-@media (prefers-color-scheme: light) and (display-mode: standalone) {
-  html.pt-night:not(.pt-dark) body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #2a1d5c; z-index: 80; }
+@media (display-mode: standalone) {
+  html.bv-day.pt-night:not(.pt-dark) body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #2a1d5c; z-index: 80; }
 }
 
 /* the top: the Games icon (Boo on mint) or the way back, and the name */
@@ -441,7 +440,7 @@ html.pt-night .hero .boo { width: 92px; height: 120px; margin: 15px auto 0; filt
 html.pt-night .hero .boo.sleepy { filter: grayscale(.6) brightness(.85) drop-shadow(0 10px 16px rgba(0, 0, 0, .35)); }
 html.pt-night .hero::before { content: ""; display: block; width: 150px; height: 150px; margin: 0 auto -135px; border-radius: 50%; background: radial-gradient(circle, rgba(167, 123, 255, .35), transparent 68%); }
 html.pt-night .hero .boo + h1::before { content: ""; display: block; width: 70px; height: 10px; margin: 0 auto 16px; border-radius: 50%; background: rgba(0, 0, 0, .5); animation: swShade 3s ease-in-out infinite; }
-@media (prefers-color-scheme: light) { html.pt-night:not(.pt-dark) .hero .boo + h1::before { background: rgba(60, 40, 140, .22); } }
+html.bv-day.pt-night:not(.pt-dark) .hero .boo + h1::before { background: rgba(60, 40, 140, .22); }
 @keyframes swBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
 @keyframes swShade { 0%, 100% { transform: scaleX(1); opacity: .5; } 50% { transform: scaleX(.8); opacity: .3; } }
 html.pt-night .hero h1 { font: 700 34px/1.05 var(--fun); margin: 0 0 6px; }
@@ -492,7 +491,7 @@ html.pt-night .item, html.pt-night .pill { background: var(--sw-ghost); }
 html.pt-night .spin { border-color: var(--sw-ghostline); border-top-color: var(--sun); }
 html.pt-night .foot { color: var(--faint); }
 html.pt-night .toast { background: #f3eefe; color: #1a1033; }
-@media (prefers-color-scheme: light) { html.pt-night:not(.pt-dark) .toast { background: #21164a; color: #f3eefe; } html.pt-night:not(.pt-dark) .sheet-bg { background: rgba(33, 22, 74, .36); } }
+html.bv-day.pt-night:not(.pt-dark) .toast { background: #21164a; color: #f3eefe; } html.bv-day.pt-night:not(.pt-dark) .sheet-bg { background: rgba(33, 22, 74, .36); }
 html.pt-night .how-o { background: linear-gradient(180deg, var(--sw-card1), var(--sw-card2)); border-color: var(--sw-cardline); }
 html.pt-night .si-ticket::before, html.pt-night .si-ticket::after { background: var(--sw-bg1); }
 
@@ -515,37 +514,33 @@ html.no-flexgap .sw-lang > * + * { margin-top: 2px; }
 .sw-lang small { color: var(--dim); font-size: 13.5px; }
 .sw-lang[aria-pressed="true"] { border-color: var(--sun); box-shadow: 0 0 0 1.5px var(--sun); background: rgba(255, 201, 60, .14); }
 /* Boo in the day look: a soft lavender edge, so his white stays clear on the light sky */
-@media (prefers-color-scheme: light) {
-  html.pt-night:not(.pt-dark) .boo.sw svg path:first-child { stroke: rgba(60, 40, 140, .18); stroke-width: .7; }
-  html.pt-night:not(.pt-dark) .hero .boo { filter: drop-shadow(0 10px 18px rgba(60, 40, 140, .28)); }
-}
+  html.bv-day.pt-night:not(.pt-dark) .boo.sw svg path:first-child { stroke: rgba(60, 40, 140, .18); stroke-width: .7; }
+  html.bv-day.pt-night:not(.pt-dark) .hero .boo { filter: drop-shadow(0 10px 18px rgba(60, 40, 140, .28)); }
 html[dir="rtl"] .top .back svg { transform: scaleX(-1); }
 
 /* the party games' own parts in the day look (m/party.js draws them for the night): joining, the lobby, the host's
    setup and the menu. The game screens themselves stay at night (html.pt-dark), so they are not here. */
-@media (prefers-color-scheme: light) {
-  html.pt-night:not(.pt-dark) .pt-top .pt-home:not(.gi), html.pt-night:not(.pt-dark) .pt-more { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
-  html.pt-night:not(.pt-dark) .pt-chip { background: var(--sw-ghost); border-color: var(--sw-ghostline); }
-  html.pt-night:not(.pt-dark) .pt-prog i { background: rgba(60, 40, 140, .14); }
-  html.pt-night:not(.pt-dark) .pt-prog i.on { background: var(--c); }
-  html.pt-night:not(.pt-dark) .pt-opt, html.pt-night:not(.pt-dark) .pt-box, html.pt-night:not(.pt-dark) .pt-tg, html.pt-night:not(.pt-dark) .pt-step, html.pt-night:not(.pt-dark) .pt-langrow,
-  html.pt-night:not(.pt-dark) .pt-sum, html.pt-night:not(.pt-dark) .pt-tv, html.pt-night:not(.pt-dark) .pt-gcard, html.pt-night:not(.pt-dark) .pt-adm .r, html.pt-night:not(.pt-dark) .pt-howto li,
-  html.pt-night:not(.pt-dark) .pt-gc, html.pt-night:not(.pt-dark) .pt-fs, html.pt-night:not(.pt-dark) .pt-game, html.pt-night:not(.pt-dark) .pt-me, html.pt-night:not(.pt-dark) .pt-av { border-color: var(--sw-cardline); box-shadow: 0 4px 14px rgba(60, 40, 140, .06); }
-  html.pt-night:not(.pt-dark) .pt-game[aria-pressed="true"], html.pt-night:not(.pt-dark) .pt-av[aria-pressed="true"] { border-color: var(--sun); background: #fff6d8; }
-  html.pt-night:not(.pt-dark) .pt-opt .ck { border-color: rgba(60, 40, 140, .3); }
-  html.pt-night:not(.pt-dark) .pt-box[aria-pressed="true"], html.pt-night:not(.pt-dark) .pt-multi button[aria-pressed="true"] { color: var(--text); }
-  html.pt-night:not(.pt-dark) .pt-info { background: rgba(60, 40, 140, .05); border-color: var(--sw-cardline); }
-  html.pt-night:not(.pt-dark) .pt-tg input { background: rgba(60, 40, 140, .2); }
-  html.pt-night:not(.pt-dark) .pt-step button, html.pt-night:not(.pt-dark) .pt-tvb button, html.pt-night:not(.pt-dark) .pt-adm .r button { color: var(--text); background: var(--raise); }
-  html.pt-night:not(.pt-dark) .pt-step .pt-num { border-bottom-color: rgba(60, 40, 140, .3); }
-  html.pt-night:not(.pt-dark) .pt-sel select { border-color: var(--sw-ghostline); color: var(--text); }
-  html.pt-night:not(.pt-dark) .pt-sum div { border-bottom-color: rgba(60, 40, 140, .08); }
-  html.pt-night:not(.pt-dark) .pt-nav, html.pt-night:not(.pt-dark) .pt-startbar { background: linear-gradient(180deg, transparent, rgba(243, 238, 255, .96) 30%); }
-  html.pt-night:not(.pt-dark) .pt-nav .bk, html.pt-night:not(.pt-dark) .pt-dk { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
-  html.pt-night:not(.pt-dark) .pt-multi button, html.pt-night:not(.pt-dark) .pt-multi-all button { border-color: var(--sw-ghostline); background: var(--sw-ghost); }
-  html.pt-night:not(.pt-dark) .pt-me .pill { color: #1a1033; }
-  html.pt-night:not(.pt-dark) .pt-fs, html.pt-night:not(.pt-dark) .pt-gc { color: var(--text); background: var(--sw-ghost); }
-}
+  html.bv-day.pt-night:not(.pt-dark) .pt-top .pt-home:not(.gi), html.bv-day.pt-night:not(.pt-dark) .pt-more { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-chip { background: var(--sw-ghost); border-color: var(--sw-ghostline); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-prog i { background: rgba(60, 40, 140, .14); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-prog i.on { background: var(--c); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-opt, html.bv-day.pt-night:not(.pt-dark) .pt-box, html.bv-day.pt-night:not(.pt-dark) .pt-tg, html.bv-day.pt-night:not(.pt-dark) .pt-step, html.bv-day.pt-night:not(.pt-dark) .pt-langrow,
+  html.bv-day.pt-night:not(.pt-dark) .pt-sum, html.bv-day.pt-night:not(.pt-dark) .pt-tv, html.bv-day.pt-night:not(.pt-dark) .pt-gcard, html.bv-day.pt-night:not(.pt-dark) .pt-adm .r, html.bv-day.pt-night:not(.pt-dark) .pt-howto li,
+  html.bv-day.pt-night:not(.pt-dark) .pt-gc, html.bv-day.pt-night:not(.pt-dark) .pt-fs, html.bv-day.pt-night:not(.pt-dark) .pt-game, html.bv-day.pt-night:not(.pt-dark) .pt-me, html.bv-day.pt-night:not(.pt-dark) .pt-av { border-color: var(--sw-cardline); box-shadow: 0 4px 14px rgba(60, 40, 140, .06); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-game[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .pt-av[aria-pressed="true"] { border-color: var(--sun); background: #fff6d8; }
+  html.bv-day.pt-night:not(.pt-dark) .pt-opt .ck { border-color: rgba(60, 40, 140, .3); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-box[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .pt-multi button[aria-pressed="true"] { color: var(--text); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-info { background: rgba(60, 40, 140, .05); border-color: var(--sw-cardline); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-tg input:not(:checked) { background: #e4e0ef; }
+  html.bv-day.pt-night:not(.pt-dark) .pt-step button, html.bv-day.pt-night:not(.pt-dark) .pt-tvb button, html.bv-day.pt-night:not(.pt-dark) .pt-adm .r button { color: var(--text); background: var(--raise); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-step .pt-num { border-bottom-color: rgba(60, 40, 140, .3); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-sel select { border-color: var(--sw-ghostline); color: var(--text); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-sum div { border-bottom-color: rgba(60, 40, 140, .08); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-nav, html.bv-day.pt-night:not(.pt-dark) .pt-startbar { background: linear-gradient(180deg, transparent, rgba(243, 238, 255, .96) 30%); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-nav .bk, html.bv-day.pt-night:not(.pt-dark) .pt-dk { background: var(--sw-ghost); border: 1px solid var(--sw-ghostline); color: var(--text); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-multi button, html.bv-day.pt-night:not(.pt-dark) .pt-multi-all button { border-color: var(--sw-ghostline); background: var(--sw-ghost); }
+  html.bv-day.pt-night:not(.pt-dark) .pt-me .pill { color: #1a1033; }
+  html.bv-day.pt-night:not(.pt-dark) .pt-fs, html.bv-day.pt-night:not(.pt-dark) .pt-gc { color: var(--text); background: var(--sw-ghost); }
 
 /* "Open the Blokvane Games app", as on its design (Open the App, label above), measured on it: a 390 x 844 phone. It
    always fits on one screen: go.js (oaFit) sets --oa, how big it all is, 1 as drawn, smaller until it fits on a short
@@ -632,14 +627,12 @@ html.no-flexgap .oa-row.stack > * + * { margin-left: 0; margin-right: 0; margin-
   html.pt-night .app.oa .oa-acts { flex: 1 1 0; min-width: 0; max-width: 420px; }
 }
 /* the day: the same screen on lavender, its orange words darker so they read well */
-@media (prefers-color-scheme: light) {
-  html.pt-night:not(.pt-dark) .oa-lab { color: #b4520a; }
-  html.pt-night:not(.pt-dark) .oa-lab i.a, html.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.b { background: linear-gradient(90deg, transparent, rgba(180, 82, 10, .45)); }
-  html.pt-night:not(.pt-dark) .oa-lab i.b, html.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.a { background: linear-gradient(90deg, rgba(180, 82, 10, .45), transparent); }
-  html.pt-night:not(.pt-dark) .oa-pill { color: #a9480b; border-color: rgba(230, 110, 30, .5); background: rgba(255, 122, 26, .1); }
-  html.pt-night:not(.pt-dark) .oa-pill:active { background: rgba(255, 122, 26, .22); }
-  html.pt-night:not(.pt-dark) .oa-add:focus-visible, html.pt-night:not(.pt-dark) .oa-pill:focus-visible { outline-color: #21164a; }
-}
+  html.bv-day.pt-night:not(.pt-dark) .oa-lab { color: #b4520a; }
+  html.bv-day.pt-night:not(.pt-dark) .oa-lab i.a, html.bv-day.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.b { background: linear-gradient(90deg, transparent, rgba(180, 82, 10, .45)); }
+  html.bv-day.pt-night:not(.pt-dark) .oa-lab i.b, html.bv-day.pt-night:not(.pt-dark)[dir="rtl"] .oa-lab i.a { background: linear-gradient(90deg, rgba(180, 82, 10, .45), transparent); }
+  html.bv-day.pt-night:not(.pt-dark) .oa-pill { color: #a9480b; border-color: rgba(230, 110, 30, .5); background: rgba(255, 122, 26, .1); }
+  html.bv-day.pt-night:not(.pt-dark) .oa-pill:active { background: rgba(255, 122, 26, .22); }
+  html.bv-day.pt-night:not(.pt-dark) .oa-add:focus-visible, html.bv-day.pt-night:not(.pt-dark) .oa-pill:focus-visible { outline-color: #21164a; }
 @media (prefers-reduced-motion: reduce) { .oa-glow, .oa-tile, .oa-add { animation: none !important; } }
 
 /* two buttons side by side: a little smaller words, so they stay on one line */
@@ -674,3 +667,141 @@ html.pt-night .grid2 > .btn svg { width: 18px; height: 18px; }
 @media (prefers-reduced-motion: reduce) {
   .sw-blob, .sw-wave, html.pt-night .hero .boo, html.pt-night .hero .boo + h1::before { animation: none !important; }
 }
+
+/* ---------- the Games, polished (both looks; m/party.js draws the parts, these come after and win) ----------
+   One rule for "picked": warm gold you can't miss, by day and by night. Switches are green when on, like a phone's. The
+   bar with Back and Next melts into the sky instead of ending on a line. Leaving a game is red. */
+
+/* the Look (Auto, Light, Dark): three side by side, on the Games home and in a game's menu */
+.sw-lookbtn { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--sw-ghostline); background: var(--sw-ghost); color: var(--sw-ic); display: grid; align-items: center; justify-items: center; place-items: center; padding: 0; }
+.sw-lookbtn svg { width: 18px; height: 18px; }
+/* (beside the language, a little closer, so "Blokvane Games" still fits on a phone) */
+html.pt-night .top .sw-lookbtn { width: 36px; height: 36px; margin-inline-start: -4px; }
+html.pt-night .top:has(.sw-lookbtn) .sw-langbtn { padding: 0 11px 0 9px; }
+@media (max-width: 400px) { html.pt-night .top:has(.sw-lookbtn) .who h1 { font-size: 19px; } }
+.sw-looks { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 8px; gap: 8px; margin-top: 12px; }
+.sw-look { display: flex; flex-direction: column; align-items: center; justify-content: center; grid-gap: 6px; gap: 6px; min-height: 74px; padding: 10px 6px; border-radius: 18px; border: 1.5px solid var(--sw-cardline); background: var(--sw-ghost); color: var(--text); font: 700 15px/1.15 var(--fun); }
+html.no-flexgap .sw-look > * + * { margin-top: 6px; }
+.sw-look .ic { width: 26px; height: 26px; color: var(--sw-ic); }
+.sw-look .ic svg { width: 26px; height: 26px; }
+.sw-looknote { margin: 14px 0 0; padding: 10px 12px; border-radius: 14px; background: var(--sw-ghost); border: 1px solid var(--sw-cardline); color: var(--dim); font-size: 14px; line-height: 1.45; }
+.pt-menu .sw-looks.pt-looks { margin-top: 10px; }
+.pt-menu .sw-look { min-height: 58px; flex-direction: row; font-size: 14px; }
+html.no-flexgap .pt-menu .sw-look > * + * { margin-top: 0; margin-left: 6px; }
+.pt-menu .sw-look .ic, .pt-menu .sw-look .ic svg { width: 20px; height: 20px; }
+
+/* picked: gold, with a check (the game's mode, a number, a category, a look, a language, a Boo) */
+html.pt-night .pt-box[aria-pressed="true"], html.pt-night .pt-opt[aria-pressed="true"], html.pt-night .pt-game[aria-pressed="true"],
+html.pt-night .pt-multi button[aria-pressed="true"], html.pt-night .sw-lang[aria-pressed="true"], html.pt-night .sw-look[aria-pressed="true"],
+html.pt-night .seg button[aria-pressed="true"] {
+  border-color: #ffc93c; color: #fff;
+  background: linear-gradient(180deg, rgba(255, 201, 60, .34), rgba(255, 201, 60, .18)), var(--panel);
+  box-shadow: inset 0 0 0 1px #ffc93c, 0 8px 22px rgba(255, 201, 60, .2);
+}
+html.pt-night .pt-av[aria-pressed="true"] { border-color: #ffc93c; background: rgba(255, 201, 60, .26); box-shadow: 0 0 0 2px #ffc93c, 0 8px 22px rgba(255, 201, 60, .25); }
+html.pt-night .pt-box { position: relative; }
+html.pt-night .pt-box[aria-pressed="true"]::after { content: "\2713"; position: absolute; top: 5px; right: 5px; width: 17px; height: 17px; border-radius: 50%; background: #ffc93c; color: #2a1d00; font: 900 11px/17px var(--round); text-align: center; }
+html[dir="rtl"].pt-night .pt-box[aria-pressed="true"]::after { right: auto; left: 5px; }
+html.pt-night .pt-grid.many .pt-box[aria-pressed="true"]::after { top: 4px; right: 4px; width: 15px; height: 15px; font-size: 10px; line-height: 15px; }
+html.pt-night .pt-opt[aria-pressed="true"] .ck { background: #ffc93c; border-color: #ffc93c; color: #2a1d00; }
+html.pt-night .sw-look[aria-pressed="true"] .ic { color: #ffd75e; }
+html.bv-day.pt-night:not(.pt-dark) .pt-box[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .pt-opt[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .pt-game[aria-pressed="true"],
+html.bv-day.pt-night:not(.pt-dark) .pt-multi button[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .sw-lang[aria-pressed="true"], html.bv-day.pt-night:not(.pt-dark) .sw-look[aria-pressed="true"],
+html.bv-day.pt-night:not(.pt-dark) .seg button[aria-pressed="true"] {
+  border-color: #e0a100; color: #2a1d00;
+  background: linear-gradient(180deg, #fff4c9, #ffe08a);
+  box-shadow: inset 0 0 0 1px #e0a100, 0 8px 18px rgba(201, 138, 18, .22);
+}
+html.bv-day.pt-night:not(.pt-dark) .pt-opt[aria-pressed="true"] small { color: #5a4310; }
+html.bv-day.pt-night:not(.pt-dark) .pt-av[aria-pressed="true"] { border-color: #e0a100; background: #ffe9a6; box-shadow: 0 0 0 2px #e0a100, 0 8px 18px rgba(201, 138, 18, .22); }
+html.bv-day.pt-night:not(.pt-dark) .pt-box[aria-pressed="true"]::after, html.bv-day.pt-night:not(.pt-dark) .pt-opt[aria-pressed="true"] .ck { background: #e0a100; border-color: #e0a100; color: #fff; }
+html.bv-day.pt-night:not(.pt-dark) .sw-look[aria-pressed="true"] .ic { color: #9a6400; }
+
+/* switches: green when on, grey when off, a white knob with a soft shadow */
+html.pt-night .pt-tg input, html.pt-night .switch input { width: 51px; height: 31px; border-radius: 16px; background: rgba(120, 120, 128, .36); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); transition: background .2s ease; }
+html.pt-night .pt-tg input::after, html.pt-night .switch input::after { top: 2px; inset-inline-start: 2px; width: 27px; height: 27px; background: #fff; box-shadow: 0 3px 8px rgba(0, 0, 0, .18), 0 1px 1px rgba(0, 0, 0, .12); transition: transform .22s cubic-bezier(.3, 1.3, .5, 1); }
+@supports not (inset-inline-start: 0) {
+  html.pt-night .pt-tg input::after, html.pt-night .switch input::after { left: 2px; }
+  html[dir="rtl"].pt-night .pt-tg input::after, html[dir="rtl"].pt-night .switch input::after { left: auto; right: 2px; }
+}
+html.pt-night .pt-tg input:checked, html.pt-night .switch input:checked { background: #34c759; box-shadow: none; }
+html.pt-night .pt-tg input:checked::after, html.pt-night .switch input:checked::after { transform: translateX(20px); }
+html[dir="rtl"].pt-night .pt-tg input:checked::after, html.pt-night body.rtl .switch input:checked::after { transform: translateX(-20px); }
+html.bv-day.pt-night:not(.pt-dark) .pt-tg input:not(:checked), html.bv-day.pt-night:not(.pt-dark) .switch input:not(:checked) { background: #e4e0ef; box-shadow: inset 0 0 0 1px rgba(60, 40, 140, .08); }
+html.bv-day.pt-night:not(.pt-dark) .pt-tg input:checked, html.bv-day.pt-night:not(.pt-dark) .switch input:checked { background: #34c759; }
+html.pt-night .pt-tg input:focus-visible, html.pt-night .switch input:focus-visible { outline: 3px solid #ffc93c; outline-offset: 2px; }
+
+/* Back and Next: two soft buttons on a bar that fades into the sky, edge to edge */
+html.pt-night .pt-nav, html.pt-night .pt-startbar { background: none; isolation: isolate; z-index: 5; padding-top: 26px; }
+html.pt-night .pt-nav::before, html.pt-night .pt-startbar::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; bottom: calc(-1 * var(--safe-b)); left: 50%; width: 100vw; transform: translateX(-50%); pointer-events: none;
+  background: linear-gradient(180deg, rgba(14, 9, 32, 0) 0, rgba(14, 9, 32, .55) 22px, rgba(14, 9, 32, .86) 52px, rgba(14, 9, 32, .92) 100%);
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 26px); mask-image: linear-gradient(180deg, transparent 0, #000 26px); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html.pt-night .pt-nav::before, html.pt-night .pt-startbar::before { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+}
+html.bv-day.pt-night:not(.pt-dark) .pt-nav, html.bv-day.pt-night:not(.pt-dark) .pt-startbar { background: none; }
+html.bv-day.pt-night:not(.pt-dark) .pt-nav::before, html.bv-day.pt-night:not(.pt-dark) .pt-startbar::before {
+  background: linear-gradient(180deg, rgba(240, 234, 255, 0) 0, rgba(240, 234, 255, .6) 22px, rgba(240, 234, 255, .9) 52px, rgba(240, 234, 255, .94) 100%); }
+html.pt-night .pt-nav .bk, html.pt-night .pt-nav .nx { min-height: 54px; border-radius: 16px; font: 700 17px/1 var(--fun); margin-bottom: 5px; }
+html.pt-night .pt-nav .bk { background: rgba(255, 255, 255, .08); border: 1px solid rgba(255, 255, 255, .13); color: #fff; box-shadow: 0 5px 0 rgba(0, 0, 0, .28); }
+html.pt-night .pt-nav .nx { clip-path: none; background: linear-gradient(180deg, #ffd75e, #ffc93c); color: #1a1033; box-shadow: 0 5px 0 #c98a12, 0 12px 24px rgba(255, 201, 60, .22); }
+html.pt-night .pt-nav .nx::after { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-start: 10px; border: solid currentColor; border-width: 2.5px 2.5px 0 0; transform: translateY(-1px) rotate(45deg); }
+html[dir="rtl"].pt-night .pt-nav .nx::after { transform: translateY(-1px) rotate(-135deg); }
+html.pt-night .pt-nav .bk:active, html.pt-night .pt-nav .nx:active { transform: translateY(4px); box-shadow: 0 1px 0 rgba(0, 0, 0, .28); }
+html.pt-night .pt-nav .nx:active { box-shadow: 0 1px 0 #c98a12; }
+html.pt-night .pt-nav .bk.sp { opacity: .45; }
+html.bv-day.pt-night:not(.pt-dark) .pt-nav .bk { background: #fff; border: 1px solid rgba(60, 40, 140, .14); color: var(--text); box-shadow: 0 5px 0 rgba(60, 40, 140, .12); }
+
+/* leaving: red, by day and by night (the Leave the game? question, and Leave in the menu) */
+html.pt-night .pt-leave .pt-dk.bad { min-height: 54px; border: 0; color: #fff; font-size: 17px; background: linear-gradient(180deg, #ff6b78, #e5384a); box-shadow: 0 5px 0 #a51f30, 0 12px 24px rgba(229, 56, 74, .3); margin-bottom: 5px; }
+html.pt-night .pt-leave .pt-dk.bad:active { transform: translateY(4px); box-shadow: 0 1px 0 #a51f30; }
+html.pt-night .pt-dk.bad { color: #ff8f8a; border-color: rgba(255, 107, 120, .38); background: rgba(255, 90, 100, .12); }
+html.bv-day.pt-night:not(.pt-dark) .pt-dk.bad { color: #c4283a; border-color: #f2b4bb; background: #ffeef0; }
+html.bv-day.pt-night:not(.pt-dark) .pt-leave .pt-dk.bad { color: #fff; border: 0; background: linear-gradient(180deg, #ff6b78, #e5384a); }
+html.pt-night .pt-leave .boo.sw { width: 72px; height: 94px; margin: 4px auto 8px; filter: drop-shadow(0 10px 16px rgba(0, 0, 0, .3)); }
+html.bv-day.pt-night:not(.pt-dark) .pt-leave .boo.sw { filter: drop-shadow(0 10px 18px rgba(60, 40, 140, .25)); }
+
+/* the night, richer: cards lit softly from above, deeper shadows, quieter lines */
+html.pt-night .pt-opt, html.pt-night .pt-box, html.pt-night .pt-tg, html.pt-night .pt-step, html.pt-night .pt-sum, html.pt-night .pt-langrow, html.pt-night .pt-game, html.pt-night .pt-info {
+  border-color: rgba(255, 255, 255, .09); }
+html.pt-night .pt-opt:not([aria-pressed="true"]), html.pt-night .pt-box:not([aria-pressed="true"]), html.pt-night .pt-tg, html.pt-night .pt-step, html.pt-night .pt-sum, html.pt-night .pt-langrow, html.pt-night .pt-game:not([aria-pressed="true"]) {
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .015)), var(--panel);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 20px rgba(6, 3, 20, .28); }
+html.bv-day.pt-night:not(.pt-dark) .pt-opt:not([aria-pressed="true"]), html.bv-day.pt-night:not(.pt-dark) .pt-box:not([aria-pressed="true"]), html.bv-day.pt-night:not(.pt-dark) .pt-tg,
+html.bv-day.pt-night:not(.pt-dark) .pt-step, html.bv-day.pt-night:not(.pt-dark) .pt-sum, html.bv-day.pt-night:not(.pt-dark) .pt-langrow, html.bv-day.pt-night:not(.pt-dark) .pt-game:not([aria-pressed="true"]) {
+  background: #fff; box-shadow: 0 1px 0 rgba(255, 255, 255, .9) inset, 0 6px 16px rgba(60, 40, 140, .08); }
+html.pt-night .pt-opt, html.pt-night .pt-box, html.pt-night .pt-game, html.pt-night .sw-look, html.pt-night .sw-lang { transition: border-color .15s, background .15s, box-shadow .15s, transform .12s; }
+html.pt-night .pt-opt:active, html.pt-night .pt-box:active, html.pt-night .pt-game:active, html.pt-night .sw-look:active, html.pt-night .sw-lang:active { transform: scale(.98); }
+@media (prefers-reduced-motion: reduce) {
+  html.pt-night .pt-tg input::after, html.pt-night .switch input::after { transition: none; }
+  html.pt-night .pt-opt:active, html.pt-night .pt-box:active, html.pt-night .pt-game:active { transform: none; }
+}
+/* (Samsung Internet's own "make it dark" judges a page by this: these pages say they draw their own dark) */
+@media (prefers-color-scheme: dark) { html.pt-night:not(.bv-day) { color-scheme: dark; } }
+/* Who's the Imposter? draws its pages for the night (play/imp-ph.js): by day, its words in the day's ink */
+html.bv-day.g-imp.pt-night:not(.pt-dark) .app { color: var(--text); }
+
+/* the setup in two quick pages (m/party.js): the mode with Change, the main choices, then More settings */
+html.pt-night .pt-moderow { display: flex; align-items: center; justify-content: space-between; grid-gap: 12px; gap: 12px; width: 100%; margin: 0 0 6px; padding: 12px 14px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .09); color: var(--text); text-align: start;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .06), rgba(255, 255, 255, .015)), var(--panel); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06), 0 8px 20px rgba(6, 3, 20, .28); }
+html.pt-night .pt-moderow > span:first-child { display: flex; flex-direction: column; min-width: 0; }
+html.pt-night .pt-moderow small { color: var(--dim); font: 700 12.5px var(--round); }
+html.pt-night .pt-moderow b { font: 700 17px/1.25 var(--fun); }
+html.pt-night .pt-moderow .ch { flex: none; color: #ffd75e; font: 700 14px var(--fun); padding: 6px 12px; border-radius: 999px; background: rgba(255, 201, 60, .14); }
+html.pt-night .pt-morebox { margin: 18px 0 4px; }
+html.pt-night .pt-morebox .pt-sum { cursor: pointer; }
+html.pt-night .pt-morebtn { display: flex; flex-direction: column; align-items: center; width: 100%; margin: 10px 0 0; padding: 13px 14px; border-radius: 16px; border: 1.5px dashed rgba(255, 255, 255, .22); background: none; color: var(--text); }
+html.pt-night .pt-morebtn b { font: 700 17px var(--fun); }
+html.pt-night .pt-morebtn b::before { content: "\2699\FE0F  "; }
+html.pt-night .pt-morebtn small { margin-top: 3px; color: var(--dim); font-size: 13.5px; line-height: 1.35; }
+html.pt-night .pt-msec { margin: 6px 0 22px; padding-top: 4px; }
+html.pt-night .pt-msec + .pt-msec { border-top: 1px solid rgba(255, 255, 255, .08); padding-top: 18px; }
+html.pt-night .pt-mh { margin: 0 0 6px; font: 700 20px/1.2 var(--fun); }
+html.pt-night .pt-usual { display: block; width: 100%; margin: 4px 0 6px; }
+html.pt-night .pt-prog.two { max-width: 140px; margin-inline: auto; }
+html.bv-day.pt-night:not(.pt-dark) .pt-moderow { border-color: var(--sw-cardline); background: #fff; box-shadow: 0 6px 16px rgba(60, 40, 140, .08); }
+html.bv-day.pt-night:not(.pt-dark) .pt-moderow .ch { color: #8a5a00; background: #fff1c4; }
+html.bv-day.pt-night:not(.pt-dark) .pt-morebtn { border-color: rgba(60, 40, 140, .25); }
+html.bv-day.pt-night:not(.pt-dark) .pt-msec + .pt-msec { border-top-color: rgba(60, 40, 140, .12); }
+/* the − and + of a number: a long press is a hold, never a text selection or the phone's own menu */
+html.pt-night .pt-step button { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }

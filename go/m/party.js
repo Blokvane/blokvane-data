@@ -41,7 +41,8 @@
     picking: 'The host is picking a game', timeUp: 'Time\'s up!', theRight: 'The right answer:', yourPlace: 'Your place', first: 'You were the fastest!',
     red: 'Red', blue: 'Blue', green: 'Green', gold: 'Gold', changeName: 'Change my name or Boo',
     needMore: 'This game needs more players', endGame: 'End the game', endSure: 'End the game now? The scores so far count.', keepPlaying: 'Keep playing', hostAgain: 'The host can play again or pick another game.', mine: 'That one is yours', helpers1: 'Each helper works once.',
-    next: 'Next', back: 'Back', stepOf: '{n} of {total}', allSet: 'All set', readyQ: 'Ready to play?', editSet: 'Edit settings', none: 'None', hostBadge: 'Host', readyN: '{n} / {total} ready',
+    next: 'Next', back: 'Back', stepOf: '{n} of {total}', allSet: 'All set', readyQ: 'Ready to play?', editSet: 'Edit settings', moreSet: 'More settings', change: 'Change',
+    usual: 'Back to the usual settings', on: 'On', off: 'Off', onOf: '{n} of {total} on', usualDone: 'The usual settings are back.', lastTime: 'Same settings as last time.', moreWhy: 'Timing, looks, sounds and everything else. Each one is saved for next time.', none: 'None', hostBadge: 'Host', readyN: '{n} / {total} ready',
     myLang: 'Your language', sameTv: 'Same as the TV: {lang}', langFollow: 'The questions and answers show on the TV in {lang}. Pick another language to see them on your phone too.',
     langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
     joinAgain: 'Join again', hostTools: 'Host tools', showCode: 'Show the join code on the TV', hideCode: 'Hide the join code', codeOn: 'The join code is on the TV. New players scan it to join.',
@@ -65,6 +66,9 @@
     if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
     return el('span', 'e', null, e || '🎲');
   }
+  // (the pages around the games, like Start a game or Leave the game?, show the Games' own Boo, the same one as on the
+  // Games home; the game screens keep the Boos of the games)
+  function heroBoo(id) { return GO.swBoo ? GO.swBoo('float', id === 'boo:sad' ? 'sad' : 'smile') : booPic(id, 'float'); }
   function booPic(id, cls) {
     const d = el('div', 'boo' + (cls ? ' ' + cls : ''));
     const src = booUri(id);
@@ -525,7 +529,7 @@ html.no-flexgap[dir="rtl"] .pt-rdy .dots > * + * { margin-left: 0; margin-right:
 .pt-rdy .dots i:nth-child(3){animation-delay:.4s}
 @keyframes ptDot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 @media (prefers-reduced-motion: reduce){.pt-rdy .dots i{animation:none;opacity:.7}}
-@media (prefers-color-scheme: light){html.pt-night:not(.pt-dark) .pt-rdy{color:#0d7f50}}
+html.bv-day.pt-night:not(.pt-dark) .pt-rdy{color:#0d7f50}
 .pt-gcard{display:flex;grid-gap: 14px;gap:14px;align-items:center;padding:14px 16px;border-radius:16px;background:var(--panel);border:1.5px solid rgba(255,255,255,.08);margin-bottom:12px}
 html.no-flexgap .pt-gcard > * + * { margin-left: 14px; }
 html.no-flexgap[dir="rtl"] .pt-gcard > * + * { margin-left: 0; margin-right: 14px; }
@@ -827,7 +831,12 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   const langName = c => ([...langsFull(), ...langsMore()].find(x => x[0] === c) || [c, c])[1];
   const numFmt = n => { try { return Number(n).toLocaleString(G.lang + '-u-nu-latn'); } catch (e) { return String(n); } };
   // ("join" carries this phone's host pass, when it has one: each game needs one Blokvane member as its host)
-  const send = m => { if (m && m.k === 'join' && G.pass) m.pass = G.pass; return G.R ? G.R.send(m).catch(() => {}) : Promise.resolve(); };
+  const send = m => {
+    if (m && m.k === 'join' && G.pass) m.pass = G.pass;
+    // (the host's choices for this game, kept on this phone for next time)
+    if (m && m.k === 'set' && typeof m.key === 'string') keepSet(m.key, m.v);
+    return G.R ? G.R.send(m).catch(() => {}) : Promise.resolve();
+  };
   // "it's me": the name and the Boo, what this phone understands (cap 3: the lobby in two parts, the heartbeat, results
   // with their question's number), and the words and settings it already has (sv), so the TV only sends what's new
   const joinMsg = more => Object.assign({ k: 'join', name: G.name, av: G.av, cap: 3, sv: G.sv || '', lg: G.plang || '' }, more || {});
@@ -992,7 +1001,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // ---------- joining ----------
   function joinScreen(editing) {
     const v = view(editing ? S().changeName : T('Party games'), { tint: 'sun', night: true, back: editing ? () => backToNow() : null });
-    if (!editing) hero(v.body, S().join, T('Pick a name and a Boo. The game itself is on the TV.'), { node: booPic('boo:party', 'float') });
+    if (!editing) hero(v.body, S().join, T('Pick a name and a Boo. The game itself is on the TV.'), { node: heroBoo('boo:party') });
     const card = el('div', 'card', v.body);
     const ni = input({ value: G.name, placeholder: S().name, max: 16 });
     ni.autocapitalize = 'words';
@@ -1055,7 +1064,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.again = !!(o && o.again);
     G.kicked = false; G.closed = false;
     const v = view(gameName(), { tint: 'sun', night: true });
-    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
+    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: heroBoo('boo:hi') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     G.me = await memberFor('g:' + G.s.slice(0, 10));
     G.id = G.me.id;
@@ -1143,7 +1152,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   function movedScreen() {
     quitParty(true);
     const v = view(gameName(), { tint: 'sun', night: true });
-    hero(v.body, T('This game is open in another tab'), T('You\'re playing there now. You can close this one.'), { node: booPic('boo:peek', 'float') });
+    hero(v.body, T('This game is open in another tab'), T('You\'re playing there now. You can close this one.'), { node: heroBoo('boo:peek') });
   }
   function rcPill(on) {
     let p = document.querySelector('.pt-rc');
@@ -1198,7 +1207,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     let leaving = false;
     trap.ask = sheet(S().leaveQ, (sh, close) => {
       sh.classList.add('pt-leave');
-      sh.insertBefore(booPic('boo:sad', 'float'), sh.querySelector('h2'));
+      sh.insertBefore(heroBoo('boo:sad'), sh.querySelector('h2'));
       el('p', 'pt-leave-p', sh, G.host ? S().leaveHost : S().leaveWhy);
       btn(S().stay, { kind: 'go', full: true, huge: true }, sh, () => close());
       pair(sh, [[S().leave, () => { leaving = true; close(); leaveNow(); }, 'bad']]);
@@ -1240,7 +1249,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     quitParty(true);
     dropBack();
     const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
-    hero(v.body, S().closedT, S().thanks, { node: booPic('boo:love', 'float') });
+    hero(v.body, S().closedT, S().thanks, { node: heroBoo('boo:love') });
     btn(T('Join a game'), { kind: 'go', huge: true, full: true }, v.body, () => codeScreen());
   }
   // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
@@ -1252,7 +1261,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     quitParty(true);
     dropBack();
     const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
-    hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: booPic('boo:sad', 'float') });
+    hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: heroBoo('boo:sad') });
     if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
     const j = btn(T('Join a game'), { kind: 'ghost', full: true }, v.body, () => codeScreen());
     j.style.marginTop = '12px';
@@ -1594,6 +1603,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       }
       pair(sh, [['🖼️ ' + S().changePic, () => { close(); picSheet(); }], ['🚪 ' + S().leaveGame, () => { close(); askLeave(); }, 'bad']]);
       fsRow(sh, close);
+      // (the look of this phone's pages: Auto, Light or Dark. The game screens stay dark, like the TV)
+      if (GO.lookRow) GO.lookRow(sh).classList.add('pt-looks');
       if (l.mlang && !G.host) langCard(sh, l, close);
       if (G.host) {
         el('label', 'pt-lbl', sh, S().players);
@@ -1608,7 +1619,9 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
         tvSizeRow(sh, l);
         if (G.phase === 'play' || G.phase === 'end') gameCtl(sh, close);
-        else if (l.game) { const og = btn('🎮 ' + S().otherGame, { kind: 'ghost', full: true }, sh, () => { close(); pickGameSheet(Array.isArray(l.games) ? l.games : []); }); og.style.marginTop = '12px'; }
+        // (in the lobby: every setting of the game, in its groups)
+        if (G.phase !== 'play' && G.phase !== 'end' && l.game) { const ms = btn('⚙️ ' + S().moreSet, { kind: 'ghost', full: true }, sh, () => { close(); G.wizMore = true; if (G.wizGame !== l.game) G.wizMore = false; wizard(G.lobby || l); window.scrollTo(0, 0); }); ms.style.marginTop = '10px'; }
+        if (G.phase !== 'play' && G.phase !== 'end' && l.game) { const og = btn('🎮 ' + S().otherGame, { kind: 'ghost', full: true }, sh, () => { close(); pickGameSheet(Array.isArray(l.games) ? l.games : []); }); og.style.marginTop = '12px'; }
       }
     });
   }
@@ -1721,7 +1734,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.joined) return;
     G.tries = 0;
     const v = view(gameName(), { tint: 'sun', night: true });
-    hero(v.body, T('The game has already started'), T('You\'re in for the next one. Keep this page open: you join by yourself as soon as this game ends.'), { node: booPic('boo:hi', 'float') });
+    hero(v.body, T('The game has already started'), T('You\'re in for the next one. Keep this page open: you join by yourself as soon as this game ends.'), { node: heroBoo('boo:hi') });
   }
   function showWait(text, boo, sub) {
     stopQ();
@@ -1792,6 +1805,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const l = G.lobby || {};
     // (the host's steps show again as they are now, unless the host is typing in one)
     if (G.ui.wiz) {
+      if (HOLDS.size) { G.redrawLater = true; return; }
       const a = document.activeElement;
       if (a && a.closest && a.closest('.pt-wz') && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.type !== 'checkbox') return;
       wizard(l, true);
@@ -1894,6 +1908,23 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
 
   // ---------- the host sets the game up: one thing at a time, then everything at a glance, and Start ----------
+  // (a − or + held down: any finger lifting anywhere, the app going to the background, or the window losing focus stops
+  // it; the setup redraws once it ends)
+  const HOLDS = new Set();
+  const holdStopAll = () => { for (const f of [...HOLDS]) f(); };
+  let holdWired = false;
+  function holdStart(stop) {
+    HOLDS.add(stop);
+    if (holdWired) return;
+    holdWired = true;
+    for (const ev of ['pointerup', 'pointercancel', 'touchend', 'touchcancel', 'mouseup']) addEventListener(ev, holdStopAll, true);
+    addEventListener('blur', holdStopAll);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) holdStopAll(); });
+  }
+  function holdEnd(stop) {
+    HOLDS.delete(stop);
+    if (!HOLDS.size && G.redrawLater) { G.redrawLater = false; setTimeout(updLobby, 0); }
+  }
   const WZC = ['#ff5f57', '#3d8bff', '#ffbf3c', '#2fd59a', '#a46bff', '#ff7ac8', '#33d1c4', '#ff9f43'];
   function wizSteps(l) {
     const schema = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string');
@@ -1919,36 +1950,117 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const on = k => k === 'lang' || shown(schema.find(f => f.key === k), l.settings);
     return steps.map(x => Object.assign({}, x, { keys: x.keys.filter(on) })).filter(x => x.keys.length);
   }
+  // The host's setup, in two quick pages: the game mode, then the few choices that matter most for that game with a
+  // big Start. Everything else is under "More settings" (on that page, and in the ⋮ menu), grouped like the game's own
+  // steps. The host's phone remembers each game's settings: a host who played it before starts on the second page.
+  // (the choices on the second page, per game; a game not listed shows the settings of its second step there)
+  const QUICK = { trivia: ['count', 'raceTo', 'lives', 'level', 'cat'], gir: ['teams', 'teamN', 'count', 'perTeam', 'raceTo', 'level'],
+    world: ['map', 'rounds'], boowho: ['cats', 'count'], emoji: ['count', 'cat', 'level'], imposter: ['words', 'imps'] };
+  function setupParts(l) {
+    const steps = wizSteps(l);
+    const schema = Array.isArray(l.schema) ? l.schema : [];
+    const has = k => k === 'lang' || schema.some(f => f.key === k);
+    const first = steps[0] ? steps[0].keys.filter(k => k !== 'lang') : [];
+    const modeKeys = first.includes('mode') ? ['mode'] : [];
+    let quick = (QUICK[l.game] || (steps[1] ? steps[1].keys : first)).filter(k => has(k) && !modeKeys.includes(k));
+    quick = ['lang'].concat(quick.filter(k => k !== 'lang' && (steps.some(st => st.keys.includes(k)))));
+    const more = steps.map((st, i) => ({ t: st.t, s: st.s, keys: st.keys.filter(k => !quick.includes(k) && !modeKeys.includes(k)) }))
+      .filter(st => st.keys.length);
+    return { steps, modeKeys, quick, more };
+  }
+  // (what the host picked, per game, on this phone: the game's own settings and its language; the screen's settings and
+  // the sounds the TV keeps by itself)
+  const KEEP_SKIP = /^(k_|snd_|vol_)/;
+  const lastKey = game => 'party:set:' + String(game || '').replace(/[^a-z0-9_-]/gi, '').slice(0, 30);
+  function keepSet(key, v) {
+    const l = G.lobby || {};
+    if (!G.host || !l.game || KEEP_SKIP.test(String(key))) return;
+    const k = lastKey(l.game), o = GO.store.get(k, null) || {};
+    o[key] = v;
+    GO.store.set(k, o);
+  }
+  // (a new game for this host: last time's settings go to the TV, the mode and the language first)
+  function restoreLast(l) {
+    const o = GO.store.get(lastKey(l.game), null);
+    if (!o || typeof o !== 'object') return false;
+    const schema = Array.isArray(l.schema) ? l.schema : [];
+    // (only on a game nobody has set up yet: a host who takes over in the middle, or comes back after a reload, keeps
+    // what is already on the TV)
+    const fresh = schema.every(f => !f || typeof f.key !== 'string' || KEEP_SKIP.test(f.key) || !l.settings || !(f.key in l.settings) || JSON.stringify(l.settings[f.key]) === JSON.stringify(f.default));
+    if (!fresh) return 'kept';
+    const keys = Object.keys(o).filter(k => k === 'lang' || schema.some(f => f.key === k && !KEEP_SKIP.test(k)));
+    keys.sort((x, y) => (x === 'lang' ? -1 : y === 'lang' ? 1 : x === 'mode' ? -1 : y === 'mode' ? 1 : 0));
+    let any = false;
+    for (const k of keys) {
+      const cur = k === 'lang' ? l.lang : (l.settings && k in l.settings ? l.settings[k] : undefined);
+      if (JSON.stringify(cur) !== JSON.stringify(o[k])) { send({ k: 'set', key: k, v: o[k] }); }
+      any = true;
+    }
+    return any;
+  }
+  function backToUsual(l) {
+    for (const f of (Array.isArray(l.schema) ? l.schema : [])) {
+      if (!f || typeof f.key !== 'string' || KEEP_SKIP.test(f.key) || f.default === undefined) continue;
+      const cur = l.settings && f.key in l.settings ? l.settings[f.key] : f.default;
+      if (JSON.stringify(cur) !== JSON.stringify(f.default)) send({ k: 'set', key: f.key, v: f.default });
+    }
+    GO.store.del(lastKey(l.game));
+    G.wizLast = false;
+    GO.toast(S().usualDone);
+    buzz('ok');
+  }
   function wizard(l, keep) {
     stopQ();
-    const steps = wizSteps(l);
-    if (G.wizGame !== l.game) { G.wizGame = l.game; G.wiz = 0; }
-    G.wiz = Math.max(0, Math.min(steps.length, G.wiz | 0));
-    const k = G.wiz, last = k === steps.length, N = steps.length + 1;
+    const P = setupParts(l);
+    if (G.wizGame !== l.game) {
+      G.wizGame = l.game; G.wizMore = false;
+      // (played before: last time's settings, and straight to the second page)
+      const r = restoreLast(l);
+      G.wizLast = r === true;
+      G.wiz = r || !P.modeKeys.length ? 1 : 0;
+    }
+    if (!P.modeKeys.length) G.wiz = 1;
+    G.wiz = G.wiz ? 1 : 0;
     const y = keep ? window.scrollY : 0;
     G.ui = { wiz: true };
     const v = partyView(l.gname || T('Party games'));
     moreBtn(v);
     const wz = el('div', 'pt-wz', v.body);
-    const pr = el('div', 'pt-prog', wz);
-    pr.setAttribute('aria-hidden', 'true');
-    for (let i = 0; i < N; i++) { const x = el('i', i <= k ? 'on' : '', pr); x.style.setProperty('--c', WZC[i % WZC.length]); }
-    const go = n => { G.wiz = n; buzz('tap'); wizard(G.lobby || l); window.scrollTo(0, 0); };
-    if (!last) {
-      const st = steps[k];
+    const go = n => { G.wiz = n; G.wizMore = false; buzz('tap'); wizard(G.lobby || l); window.scrollTo(0, 0); };
+    if (G.wizMore) { morePage(wz, l, P, () => { G.wizMore = false; buzz('tap'); wizard(G.lobby || l); window.scrollTo(0, 0); }); if (keep) window.scrollTo(0, y); return; }
+    const N = P.modeKeys.length ? 2 : 1;
+    if (N > 1) {
+      const pr = el('div', 'pt-prog two', wz);
+      pr.setAttribute('aria-hidden', 'true');
+      for (let i = 0; i < N; i++) { const x = el('i', i <= G.wiz ? 'on' : '', pr); x.style.setProperty('--c', WZC[i % WZC.length]); }
+    }
+    if (G.wiz === 0) {
+      const st = P.steps[0];
       const hd = el('div', 'pt-wh', wz);
       el('h1', '', hd, st.t);
-      el('span', '', hd, T(STR0.stepOf, { n: k + 1, total: N }));
-      for (const key of st.keys) {
-        if (key === 'lang') langRow(wz, l);
-        else setCtl(wz, l.schema.find(f => f.key === key), l);
-      }
+      el('span', '', hd, T(STR0.stepOf, { n: 1, total: N }));
+      for (const key of P.modeKeys) setCtl(wz, l.schema.find(f => f.key === key), l);
       const nav = el('div', 'pt-nav', wz);
-      if (k > 0) { const b = el('button', 'bk', nav, S().back); b.type = 'button'; b.onclick = () => go(k - 1); }
-      else { const b = el('button', 'bk sp', nav, S().back); b.type = 'button'; b.disabled = true; }
-      const n = el('button', 'nx', nav, S().next); n.type = 'button'; n.onclick = () => go(k + 1);
-    } else readyPage(wz, l, steps, () => go(0));
+      const n = el('button', 'nx', nav, S().next); n.type = 'button'; n.onclick = () => go(1);
+    } else readyPage(wz, l, P, () => go(0), () => { G.wizMore = true; buzz('tap'); wizard(G.lobby || l); window.scrollTo(0, 0); });
     if (keep) window.scrollTo(0, y);
+  }
+  // everything else, in the game's own groups (Timing, Looks, Screen and players, Sounds...), and Done
+  function morePage(wz, l, P, done) {
+    const hd = el('div', 'pt-wh', wz);
+    el('h1', '', hd, S().moreSet);
+    for (const st of P.more) {
+      const sec = el('section', 'pt-msec', wz);
+      el('h2', 'pt-mh', sec, st.t);
+      for (const key of st.keys) {
+        if (key === 'lang') langRow(sec, l);
+        else setCtl(sec, l.schema.find(f => f.key === key), l);
+      }
+    }
+    const rb = el('button', 'pt-dk pt-usual', wz, S().usual); rb.type = 'button';
+    rb.onclick = () => { backToUsual(G.lobby || l); };
+    const nav = el('div', 'pt-nav', wz);
+    const d = el('button', 'nx', nav, S().done); d.type = 'button'; d.onclick = done;
   }
   // the game's language, for the TV and every phone (the host picks it on the first step)
   function langRow(parent, l) {
@@ -2004,13 +2116,16 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       vb.addEventListener('change', typed);
       vb.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); typed(); vb.blur(); } });
       const step = d => { const nv = Math.max(lo, Math.min(hi, val + d)); if (nv === val) return; val = nv; vb.value = String(val); paintQ(); clearTimeout(tm); tm = setTimeout(() => send({ k: 'set', key: f.key, v: val }), 400); buzz('tap'); };
-      // (hold to keep going, faster and faster)
+      // (hold to keep going, faster and faster. Letting go anywhere stops it, and the page doesn't redraw while a
+      // finger is down: a redraw used to swap the button out, so it never heard the finger lift and kept counting)
       for (const [b, d] of [[minus, -1], [plus, 1]]) {
         let rt = 0, n = 0;
-        const stop = () => { clearTimeout(rt); rt = 0; };
-        const run = () => { step(d); n++; rt = setTimeout(run, n < 4 ? 320 : n < 12 ? 140 : 60); };
-        b.addEventListener('pointerdown', e => { e.preventDefault(); n = 0; stop(); run(); });
+        const stop = () => { if (!rt && !n) return; clearTimeout(rt); rt = 0; n = 0; holdEnd(stop); };
+        // (and never more than 10 seconds in one go, whatever the phone does with the finger)
+        const run = () => { if (!b.isConnected || n > 160) return stop(); step(d); n++; rt = setTimeout(run, n < 4 ? 320 : n < 12 ? 140 : 60); };
+        b.addEventListener('pointerdown', e => { if (e.button > 0) return; e.preventDefault(); stop(); holdStart(stop); run(); });
         for (const ev of ['pointerup', 'pointerleave', 'pointercancel']) b.addEventListener(ev, stop);
+        b.addEventListener('contextmenu', e => e.preventDefault());
         b.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); step(d); } });
       }
       if (desc) el('p', 'pt-info', parent, desc);
@@ -2074,30 +2189,56 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (desc) el('p', 'pt-info', parent, desc);
   }
   // the last step: everything at a glance, who's in, the TV's size, and Start
-  function readyPage(wz, l, steps, edit) {
-    const hd = el('div', 'pt-ready', wz);
-    el('small', '', hd, S().allSet);
-    el('h1', '', hd, S().readyQ);
-    const sum = el('div', 'pt-sum', wz);
-    for (const st of steps) {
-      const vals = [];
-      let toggles = 0, lang = '';
-      for (const key of st.keys) {
-        if (key === 'lang') { lang = langName(l.lang || 'en'); continue; }
-        const f = l.schema.find(y => y.key === key);
-        if (!f) continue;
-        const v = l.settings && key in l.settings ? l.settings[key] : f.default;
-        if (f.type === 'toggle') { toggles++; if (v) vals.push(L.clean(f.label, 40)); }
-        else if (f.type === 'number') vals.push(v + (f.unit ? ' ' + L.clean(f.unit, 20) : ''));
-        else if (f.type === 'text') { const n = String(v || '').split('\n').filter(Boolean).length; if (n) vals.push('✍️ ' + n); }
-        else if (f.type === 'multi' && Array.isArray(f.options)) { const on = Array.isArray(v) ? v.map(String) : []; vals.push(on.length >= f.options.length ? T('All of them') : f.options.filter(o2 => Array.isArray(o2) && on.includes(String(o2[0]))).map(o2 => L.clean(o2[1], 30)).join(', ')); }
-        else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push(L.clean(o[1], 40)); }
-      }
-      if (!vals.length && toggles) vals.push(S().none);
-      if (lang) vals.push(lang);
-      const r = el('div', '', sum); el('span', '', r, st.s || st.t); el('b', '', r, vals.join(' · ') || '·');
+  function sumOf(l, keys) {
+    const vals = [], tg = [];
+    let toggles = 0, lang = '';
+    for (const key of keys) {
+      if (key === 'lang') { lang = langName(l.lang || 'en'); continue; }
+      const f = l.schema.find(y => y.key === key);
+      if (!f) continue;
+      const v = l.settings && key in l.settings ? l.settings[key] : f.default;
+      if (f.type === 'toggle') { toggles++; if (v) tg.push(L.clean(f.label, 40)); }
+      else if (f.type === 'number') { let u = f.unit ? L.clean(f.unit, 20) : ''; if (+v === 1 && G.lang === 'en' && /[a-z]s$/.test(u)) u = u.slice(0, -1); vals.push(v + (u ? ' ' + u : '')); }
+      else if (f.type === 'text') { const n = String(v || '').split('\n').filter(Boolean).length; if (n) vals.push('✍️ ' + n); }
+      else if (f.type === 'multi' && Array.isArray(f.options)) { const on = Array.isArray(v) ? v.map(String) : []; vals.push(on.length >= f.options.length ? T('All of them') : f.options.filter(o2 => Array.isArray(o2) && on.includes(String(o2[0]))).map(o2 => L.clean(o2[1], 30)).join(', ')); }
+      else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push(L.clean(o[1], 40)); }
     }
-    const ed = el('button', 'pt-edit', wz, S().editSet); ed.type = 'button'; ed.onclick = edit;
+    // (one switch: On or Off; many: how many are on; a few: the ones that are on)
+    if (toggles === 1 && keys.filter(k => k !== 'lang').length === 1) vals.push(tg.length ? S().on : S().off);
+    else if (toggles > 3) vals.push(T(STR0.onOf, { n: tg.length, total: toggles }));
+    else if (tg.length) vals.push(...tg);
+    else if (toggles && !vals.length) vals.push(S().none);
+    if (lang) vals.push(lang);
+    return vals.join(' · ') || '·';
+  }
+  function readyPage(wz, l, P, edit, openMore) {
+    const hd = el('div', 'pt-ready', wz);
+    el('small', '', hd, G.wizLast ? S().lastTime : S().allSet);
+    el('h1', '', hd, S().readyQ);
+    // (the mode, with Change: back to the first page)
+    if (P.modeKeys.length) {
+      const mr = el('button', 'pt-moderow', wz); mr.type = 'button';
+      const t = el('span', '', mr); el('small', '', t, P.steps[0].s || P.steps[0].t); el('b', '', t, sumOf(l, P.modeKeys));
+      el('span', 'ch', mr, S().change);
+      mr.onclick = edit;
+    }
+    for (const key of P.quick) {
+      if (key === 'lang') langRow(wz, l);
+      else setCtl(wz, l.schema.find(f => f.key === key), l);
+    }
+    // (the rest, in one line each; a tap opens More settings)
+    if (P.more.length) {
+      const mb = el('div', 'pt-morebox', wz);
+      const sum = el('div', 'pt-sum', mb);
+      for (const st of P.more) {
+        const one = st.keys.length === 1 ? l.schema.find(f => f.key === st.keys[0]) : null;
+        const r = el('div', '', sum); el('span', '', r, one ? L.clean(one.label, 30) : st.s || st.t); el('b', '', r, sumOf(l, st.keys));
+      }
+      sum.onclick = openMore;
+      const ed = el('button', 'pt-morebtn', mb); ed.type = 'button'; ed.onclick = openMore;
+      el('b', '', ed, S().moreSet);
+      el('small', '', ed, S().moreWhy);
+    }
     howtoCard(wz, l);
     tvSizeRow(wz, l);
     G.ui.pb = el('div', '', wz);
@@ -4163,7 +4304,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     await useLang(GO.lang ? GO.lang() : (i18 ? i18.pick() : 'en'));
     const v = view(T('Start a game'), { tint: 'sun', night: true, back });
     if (GO.backCard) GO.backCard(v.body);
-    hero(v.body, T('Start a game'), T('Pick a game, then the screen everyone will watch. Everyone else joins from their own phone: no app, no account.'), { node: booPic('boo:party', 'float') });
+    hero(v.body, T('Start a game'), T('Pick a game, then the screen everyone will watch. Everyone else joins from their own phone: no app, no account.'), { node: heroBoo('boo:party') });
     const mayHost = () => !!(GO.pass && (GO.pass.host ? GO.pass.host() : GO.pass.get()));
     if (!mayHost()) {
       const sc = el('div', 'card pt-signin', v.body);
@@ -4296,7 +4437,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   const setUp = (s, game, lang) => store.set('party:setup', { s: s.slice(0, 10), game, lang, at: Date.now() });
   function starting(title, text) {
     const w = view(T('Party games'), { tint: 'sun', night: true });
-    const h = hero(w.body, title, text, { node: booPic('boo:party', 'float') });
+    const h = hero(w.body, title, text, { node: heroBoo('boo:party') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     return { w, sp };
   }
@@ -4336,7 +4477,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     let stop = () => {};
     const end = () => { stop(); try { conn.terminate(); } catch (e) {} };
     const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { end(); back(); } });
-    hero(v.body, T('Casting to your TV...'), T('{game} opens on the TV in a moment, and this page joins it as the host by itself.', { game: gameNameOf(game) }), { node: booPic('boo:party', 'float') });
+    hero(v.body, T('Casting to your TV...'), T('{game} opens on the TV in a moment, and this page joins it as the host by itself.', { game: gameNameOf(game) }), { node: heroBoo('boo:party') });
     const st = el('div', 'pt-wait', v.body);
     el('div', 'spin', st);
     el('span', '', st, T('Waiting for the screen to open it...'));
@@ -4367,7 +4508,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const url = L.PLAY + '#' + game + '.' + lang + '.' + code;
     let stop = () => {};
     const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { stop(); back(); } });
-    hero(v.body, T('Open this link on the screen'), T('On the laptop, tablet or TV everyone will watch. {game} opens there, and this phone joins it as the host by itself.', { game: gameNameOf(game) }), { node: booPic('boo:party', 'float') });
+    hero(v.body, T('Open this link on the screen'), T('On the laptop, tablet or TV everyone will watch. {game} opens there, and this phone joins it as the host by itself.', { game: gameNameOf(game) }), { node: heroBoo('boo:party') });
     const card = el('div', 'card pt-link', v.body);
     el('div', 'pt-url', card, url.replace(/^https:\/\//, '')).dir = 'ltr';
     const r = el('div', 'grid2', card); r.style.marginTop = '12px';
@@ -4453,7 +4594,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     await GO.script('watch-boo.js').catch(() => {});
     const leave = () => { history.replaceState(null, '', location.pathname); GO.route(); };
     const v = view(T('Join a game'), { tint: 'sun', night: true, back: leave });
-    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: booPic('boo:hi', 'float') });
+    const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: heroBoo('boo:hi') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     waitCode(c, v.body, link => {
       buzz('ok');
@@ -4474,7 +4615,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const v = view(T('Join a game'), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     if (GO.backCard) GO.backCard(v.body);
     nearTvs(v.body);
-    hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: booPic('boo:party', 'float') });
+    hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: heroBoo('boo:party') });
     const card = el('div', 'card', v.body);
     const ci = input({ placeholder: 'ABC DEF', max: 7 });
     ci.autocapitalize = 'characters';

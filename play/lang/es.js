@@ -1378,5 +1378,19 @@ BVI18N.add("es", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "Juegos gratis: 15 preguntas, siempre las mismas. Un anfitrión con Blokvane Pro tiene todas las preguntas.",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "Inicia sesión en este teléfono con tu correo para organizar juegos gratis con amigos y familia, de 15 preguntas cada uno. Con Blokvane Pro tienes todas las preguntas. Quien se une juega gratis.",
 "A Chromecast or Google TV on this Wi-Fi": "Un Chromecast o Google TV en esta red Wi-Fi",
-"The TV did not start the game. Try again, or scan the QR code.": "La tele no ha empezado la partida. Inténtalo de nuevo o escanea el código QR."
+"The TV did not start the game. Try again, or scan the QR code.": "La tele no ha empezado la partida. Inténtalo de nuevo o escanea el código QR.",
+"Look": "Aspecto",
+"Light": "Claro",
+"Dark": "Oscuro",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "Auto sigue a este teléfono: claro cuando el teléfono está en claro, oscuro cuando está en oscuro.",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "Blokvane Games se queda así en este teléfono, sin importar cómo esté configurado.",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "Samsung Internet cambia los colores de todas las webs cuando su modo oscuro está activado. Para ver los colores de Blokvane, abre el menú de Samsung Internet y elige ver los sitios en claro. Blokvane Games mostrará el aspecto que elijas aquí.",
+"More settings": "Más ajustes",
+"Back to the usual settings": "Volver a los ajustes de siempre",
+"The usual settings are back.": "Ya están los ajustes de siempre.",
+"Same settings as last time.": "Los mismos ajustes que la última vez.",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "Tiempos, aspecto, sonidos y todo lo demás. Cada cosa se guarda para la próxima vez.",
+"On": "Sí",
+"Off": "No",
+"{n} of {total} on": "{n} de {total} activados"
 });

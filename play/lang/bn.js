@@ -1378,5 +1378,19 @@ BVI18N.add("bn", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "ফ্রি গেম: 15টি প্রশ্ন, প্রতিবার একই। Blokvane Pro থাকা হোস্ট সব প্রশ্ন পান।",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "বন্ধু ও পরিবারের সাথে ফ্রি গেম হোস্ট করতে এই ফোনে আপনার ইমেল দিয়ে সাইন ইন করুন, প্রতিটি গেমে 15টি প্রশ্ন। Blokvane Pro-তে আপনি সব প্রশ্ন পাবেন। যে কেউ যোগ দেন, তিনি বিনা খরচে খেলেন।",
 "A Chromecast or Google TV on this Wi-Fi": "এই Wi-Fi-তে থাকা একটি Chromecast বা Google TV",
-"The TV did not start the game. Try again, or scan the QR code.": "টিভিতে গেমটা শুরু হয়নি। আবার চেষ্টা করুন, বা QR কোডটা স্ক্যান করুন।"
+"The TV did not start the game. Try again, or scan the QR code.": "টিভিতে গেমটা শুরু হয়নি। আবার চেষ্টা করুন, বা QR কোডটা স্ক্যান করুন।",
+"Look": "চেহারা",
+"Light": "হালকা",
+"Dark": "গাঢ়",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "অটো এই ফোনের মতোই চলে: ফোন হালকা থাকলে হালকা, গাঢ় থাকলে গাঢ়।",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "ফোনের সেটিং যা-ই হোক, এই ফোনে Blokvane Games এমনই থাকবে।",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "Samsung Internet-এর ডার্ক মোড চালু থাকলে এটি সব ওয়েবসাইটের রং বদলে দেয়। Blokvane-এর নিজের রং দেখতে Samsung Internet-এর মেনু খুলে সাইটগুলো হালকা রঙে দেখানো বেছে নিন। তখন Blokvane Games এখানে বেছে নেওয়া চেহারায় দেখাবে।",
+"More settings": "আরও সেটিং",
+"Back to the usual settings": "আগের মতো সাধারণ সেটিংয়ে ফিরুন",
+"The usual settings are back.": "সাধারণ সেটিং ফিরে এসেছে।",
+"Same settings as last time.": "গতবারের মতোই সেটিং।",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "সময়, চেহারা, শব্দ আর বাকি সবকিছু। প্রতিটি পরের বারের জন্য রাখা থাকে।",
+"On": "চালু",
+"Off": "বন্ধ",
+"{n} of {total} on": "{total}টির মধ্যে {n}টি চালু"
 });

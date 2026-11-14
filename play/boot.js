@@ -11,7 +11,7 @@
     '../go/qrcode.js?v=11',
     '../go/pass.js?v=4',
     'watch-boo.js?v=11',
-    'i18n.js?v=23',
+    'i18n.js?v=25',
     'common.js?v=20',
     'sound.js?v=19',
     'packs.js?v=19',

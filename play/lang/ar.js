@@ -1469,5 +1469,18 @@ BVI18N.add("ar", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "ألعاب مجانية: 15 سؤالًا، هي نفسها في كل مرة. المضيف الذي لديه Blokvane Pro يحصل على كل الأسئلة.",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "سجّل الدخول على هذا الهاتف ببريدك الإلكتروني لتستضيف ألعابًا مجانية مع الأصدقاء والعائلة، 15 سؤالًا في كل لعبة. مع Blokvane Pro تحصل على كل الأسئلة. كل من ينضم يلعب مجانًا.",
 "A Chromecast or Google TV on this Wi-Fi": "جهاز Chromecast أو Google TV على شبكة Wi-Fi هذه",
-"The TV did not start the game. Try again, or scan the QR code.": "لم يبدأ التلفاز اللعبة. حاول مجددًا، أو امسح رمز QR."
+"The TV did not start the game. Try again, or scan the QR code.": "لم يبدأ التلفاز اللعبة. حاول مجددًا، أو امسح رمز QR.",
+"Look": "المظهر",
+"Light": "فاتح",
+"Dark": "داكن",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "تلقائي يتبع هذا الهاتف: فاتح عندما يكون الهاتف فاتحًا، وداكن عندما يكون داكنًا.",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "يبقى Blokvane Games هكذا على هذا الهاتف، مهما كان إعداد الهاتف.",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "يغيّر Samsung Internet ألوان كل المواقع عند تشغيل الوضع الداكن فيه. لرؤية ألوان Blokvane الأصلية، افتح قائمة Samsung Internet واختر عرض المواقع بالوضع الفاتح. عندها يعرض Blokvane Games المظهر الذي تختاره هنا.",
+"More settings": "إعدادات أكثر",
+"Back to the usual settings": "العودة إلى الإعدادات المعتادة",
+"The usual settings are back.": "عادت الإعدادات المعتادة.",
+"Same settings as last time.": "نفس إعدادات المرة الماضية.",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "الوقت والمظهر والأصوات وكل شيء آخر. يُحفظ كل إعداد للمرة القادمة.",
+"On": "تشغيل",
+"{n} of {total} on": "{n} من {total} مفعّلة"
 });

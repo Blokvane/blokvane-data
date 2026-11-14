@@ -1378,5 +1378,19 @@ BVI18N.add("fr", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "Jeux gratuits : 15 questions, toujours les mêmes. Un hôte avec Blokvane Pro a toutes les questions.",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "Connecte-toi sur ce téléphone avec ton e-mail pour organiser des jeux gratuits entre amis et en famille, de 15 questions chacun. Avec Blokvane Pro, tu as toutes les questions. Ceux qui rejoignent jouent gratuitement.",
 "A Chromecast or Google TV on this Wi-Fi": "Un Chromecast ou une Google TV sur ce Wi-Fi",
-"The TV did not start the game. Try again, or scan the QR code.": "La télé n'a pas lancé la partie. Réessaie, ou scanne le QR code."
+"The TV did not start the game. Try again, or scan the QR code.": "La télé n'a pas lancé la partie. Réessaie, ou scanne le QR code.",
+"Look": "Apparence",
+"Light": "Clair",
+"Dark": "Sombre",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "Auto suit ce téléphone : clair quand le téléphone est en clair, sombre quand il est en sombre.",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "Blokvane Games reste ainsi sur ce téléphone, quel que soit son réglage.",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "Samsung Internet change les couleurs de tous les sites quand son mode sombre est activé. Pour voir les couleurs de Blokvane, ouvre le menu de Samsung Internet et choisis d'afficher les sites en clair. Blokvane Games affiche alors l'apparence choisie ici.",
+"More settings": "Plus de réglages",
+"Back to the usual settings": "Revenir aux réglages habituels",
+"The usual settings are back.": "Les réglages habituels sont de retour.",
+"Same settings as last time.": "Les mêmes réglages que la dernière fois.",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "Temps, apparence, sons et tout le reste. Chaque réglage est gardé pour la prochaine fois.",
+"On": "Oui",
+"Off": "Non",
+"{n} of {total} on": "{n} sur {total} activés"
 });

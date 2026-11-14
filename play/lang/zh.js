@@ -1378,5 +1378,19 @@ BVI18N.add("zh", {
 "Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.": "免费游戏：15 道题，每次都一样。有 Blokvane Pro 的主持人可以玩所有题目。",
 "Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.": "在这部手机上用你的邮箱登录，就能和亲朋好友玩免费游戏，每局 15 道题。有了 Blokvane Pro，你就能玩所有题目。加入的人都免费玩。",
 "A Chromecast or Google TV on this Wi-Fi": "同一 Wi-Fi 下的 Chromecast 或 Google TV",
-"The TV did not start the game. Try again, or scan the QR code.": "电视没能开始游戏。请再试一次，或扫描二维码。"
+"The TV did not start the game. Try again, or scan the QR code.": "电视没能开始游戏。请再试一次，或扫描二维码。",
+"Look": "外观",
+"Light": "浅色",
+"Dark": "深色",
+"Auto matches this phone: light when the phone is light, dark when it is dark.": "自动：跟随这部手机，手机是浅色时为浅色，深色时为深色。",
+"Blokvane Games stays like this on this phone, whatever the phone is set to.": "无论手机如何设置，Blokvane Games 在这部手机上都保持这个外观。",
+"Samsung Internet repaints every website when its dark mode is on. For Blokvane's own colors, open the Samsung Internet menu and tap Light sites. Blokvane Games then shows the look you pick here.": "Samsung Internet 开启深色模式时，会改变所有网站的颜色。要看到 Blokvane 本来的颜色，请打开 Samsung Internet 的菜单，选择以浅色显示网站。之后 Blokvane Games 就会显示你在这里选的外观。",
+"More settings": "更多设置",
+"Back to the usual settings": "恢复常用设置",
+"The usual settings are back.": "已恢复常用设置。",
+"Same settings as last time.": "和上次的设置一样。",
+"Timing, looks, sounds and everything else. Each one is saved for next time.": "时间、外观、声音和其他所有设置。每一项都会保存到下次。",
+"On": "开",
+"Off": "关",
+"{n} of {total} on": "已开启 {n}/{total}"
 });
