@@ -70,9 +70,17 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "Cloudflare is not set up yet: GitHub carries the list alone."; exit 0; fi
-          if [ ! -f "$RUNNER_TEMP/changed" ]; then echo "Nothing new to publish."; exit 0; fi
-          rm -rf "$RUNNER_TEMP/out/.git"
-          npx --yes wrangler@4.152.0 pages deploy "$RUNNER_TEMP/out" --project-name blokvane-lists --branch main --commit-dirty=true
+          dir="$RUNNER_TEMP/out"
+          # (nothing new this hour: Cloudflare still gets the list GitHub has, when it doesn't have it yet, like the
+          # first time or after a failed upload)
+          if [ ! -f "$RUNNER_TEMP/changed" ]; then
+            if [ ! -f "$RUNNER_TEMP/prev/meta.json" ]; then echo "No list yet."; exit 0; fi
+            if curl -sf --max-time 20 https://lists.blokvane.com/meta.json -o "$RUNNER_TEMP/cf-meta.json" && cmp -s "$RUNNER_TEMP/cf-meta.json" "$RUNNER_TEMP/prev/meta.json"; then echo "Cloudflare already has this list."; exit 0; fi
+            echo "Cloudflare does not have this list yet: sending it."
+            dir="$RUNNER_TEMP/prev"
+          fi
+          rm -rf "$dir/.git"
+          npx --yes wrangler@4.152.0 pages deploy "$dir" --project-name blokvane-lists --branch main --commit-dirty=true
 
       # (GitHub switches a schedule off after 60 days without changes to the repository; this keeps it on)
       - name: Keep the schedule on
