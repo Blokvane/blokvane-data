@@ -1191,6 +1191,8 @@ BVI18N.add("bn", {
 "This browser can't read QR codes. Type the 6 letters under the QR code instead.": "এই ব্রাউজার QR কোড পড়তে পারে না। তার বদলে QR কোডের নিচের 6টি অক্ষর লিখুন।",
 "Try the camera again": "ক্যামেরা আবার চেষ্টা করুন",
 "Point the camera at the QR code on the TV.": "ক্যামেরাটা টিভির QR কোডের দিকে ধরুন।",
+"Far from the TV? Pinch the picture or slide to zoom in.": "টিভি থেকে দূরে? জুম করতে ছবিতে দুই আঙুল ছড়ান বা স্লাইডার সরান।",
+"Zoom": "জুম",
 "That isn't a Blokvane game's code. Point at the one on the TV.": "এটা Blokvane খেলার কোড নয়। টিভির কোডটার দিকে ধরুন।",
 "Tap the Share button": "শেয়ার বোতামে চাপুন",
 "The square with an arrow, next to the address at the top.": "তীর-চিহ্ন দেওয়া চৌকো বোতাম, ওপরে ঠিকানার পাশে।",

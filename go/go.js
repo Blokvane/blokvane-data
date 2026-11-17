@@ -1,7 +1,8 @@
 // Blokvane on your phone (https://app.blokvane.com/go/). One page for everything a phone does with
 // Blokvane: be the remote for your computer and TV screens, send files and links, share the clipboard, answer Kid mode
-// requests, find a lost computer, unlock KeyVane, join a party game or a poll. There is no app, and no account
-// either (only the host of a party game signs in, with a code sent to their email: pass.js).
+// requests, find a lost computer, unlock KeyVane, join a party game or a poll, and block ads on the phone itself.
+// Only two things need a sign-in (an email and the code sent to it: pass.js): hosting a party game, and putting this
+// phone on a Blokvane license (m/shield.js). Everything else works with no account at all.
 // What to do is after the # in the address (browsers never send that part to any website): "c1" is your paired
 // computer, "p1" pairs one, and each other kind (a poll, a game, a camera for a slide...) has its own. Messages go
 // through free public relays, sealed and signed on the devices so nobody in between can read them (live-kit.js); big
@@ -10,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '29';
+  const VERSION = '30';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -58,11 +59,12 @@
     s.appendChild(p);
     return s;
   }
-  // Boo, Blokvane's ghost (drawn here, so it shows even before anything else loads)
-  const BOO_SVG = '<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="bg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e7ebf5"/></linearGradient></defs>' +
-    '<ellipse cx="60" cy="110" rx="26" ry="5" fill="#000" opacity=".25"/><path d="M60 12c22 0 38 17 38 39v42c0 3-3 4-5 2l-7-6-8 7c-2 1-4 1-5 0l-8-7-8 7c-1 1-3 1-5 0l-8-7-7 6c-2 2-5 1-5-2V51c0-22 16-39 38-39z" fill="url(#bg1)" stroke="#2b2346" stroke-width="5" stroke-linejoin="round"/>' +
-    '<ellipse class="eye" cx="47" cy="52" rx="6" ry="8" fill="#2b2346"/><ellipse class="eye" cx="73" cy="52" rx="6" ry="8" fill="#2b2346"/><circle cx="49" cy="49" r="2.2" fill="#fff"/><circle cx="75" cy="49" r="2.2" fill="#fff"/>' +
-    '<path d="M51 68c5 5 13 5 18 0" fill="none" stroke="#2b2346" stroke-width="4.5" stroke-linecap="round"/><ellipse cx="38" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/><ellipse cx="82" cy="64" rx="6" ry="3.5" fill="#ff8a8a" opacity=".6"/></svg>';
+  // Boo, Blokvane's ghost: the very one on Blokvane's icon (a plain white ghost with a round head, three round feet
+  // and two dark eyes; no outline, no mouth). Drawn here, so it shows even before anything else loads. The party
+  // games' Boo below is the same ghost with a face for the moment.
+  const BOO_SVG = '<svg viewBox="4 -1 52 54" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+    '<path d="M14 22C14 3 46 3 46 22V46.8Q46 50 42.5 50Q39 50 39 46.8A3.25 2.8 0 0 0 32.5 46.8Q32.5 50 29.25 50Q26 50 26 46.8A2.75 2.8 0 0 0 20.5 46.8Q20.5 50 17.25 50Q14 50 14 46.8Z" fill="#fff"/>' +
+    '<ellipse class="eye" cx="23.6" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><ellipse class="eye" cx="35.4" cy="24" rx="3" ry="3.7" fill="#2a0f3a"/><circle cx="24.4" cy="22.6" r="1.2" fill="#fff"/><circle cx="36.2" cy="22.6" r="1.2" fill="#fff"/></svg>';
   function boo(cls) { const b = el('div', 'boo' + (cls ? ' ' + cls : '')); b.innerHTML = BOO_SVG; return b; }
   // Boo of Blokvane Games ("Silk waves"): a white ghost with rosy cheeks. face: 'smile' (the welcome), 'sad' (leaving, or a game that ended), 'plain' (the
   // app's icon) or 'sleepy' (something didn't work)
@@ -655,7 +657,7 @@
   }
   // which part handles each kind of link
   const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
-    wb: 'board', game: 'party', join: 'party' };
+    wb: 'board', game: 'party', join: 'party', ads: 'shield', tvplay: 'shield' };
   // no link: the computers this phone knows, or how to start
   async function home() {
     // (Blokvane as an app, opened again soon after it was in a party game it didn't leave: straight back into that game,
@@ -674,6 +676,15 @@
     if (picking) store.del('pick');
     if (list.length === 1 && !picking) { history.replaceState(null, '', '#c1.' + list[0].s + '.' + list[0].cid); return (await need('home'))(list[0]); }
     const v = view('Blokvane');
+    // (what this phone does by itself, with or without a computer: its license and ad blocking, and a video for the TV)
+    const ownCard = () => {
+      const c = el('div', 'card', v.body);
+      el('h2', '', c, 'This phone');
+      el('p', '', c, 'Put this phone on your Blokvane license, block ads in every app, and send a YouTube video to your computer to watch on the TV without the ads.');
+      const r = el('div', 'grid2', c);
+      btn('Block ads here', { kind: 'tint', icon: 'shield' }, r, () => { location.hash = '#ads'; });
+      btn('Play on the TV', { kind: 'ghost', icon: 'tv' }, r, () => { location.hash = '#tvplay'; });
+    };
     const gameCard = () => {
       const c = el('div', 'card', v.body);
       el('h2', '', c, 'Joining a game or a poll?');
@@ -683,6 +694,7 @@
     if (!list.length) {
       backCard(v.body);
       hero(v.body, 'Blokvane on your phone', 'Connect this phone to Blokvane on your computer: there, open Blokvane, then Connect, and scan the QR code with this phone\'s camera.');
+      ownCard();
       gameCard();
       foot();
       return;
@@ -699,6 +711,7 @@
       el('small', '', t, p.kind === 'kid' ? 'Kid mode' : 'Remote and more');
       it.onclick = () => { history.replaceState(null, '', '#c1.' + p.s + '.' + p.cid); route(); };
     }
+    ownCard();
     gameCard();
     foot();
   }
@@ -1221,12 +1234,54 @@
     const video = el('video', '', box);
     video.playsInline = true; video.muted = true; video.autoplay = true; video.setAttribute('playsinline', ''); video.setAttribute('muted', '');
     el('div', 'gm-aim', box);
+    // Zoom, like the phone's own camera: pinch the picture or move the slider, so the code can be read from the couch.
+    // Where the phone lets a web page use the camera's real zoom, that is used (hard). Elsewhere the picture is
+    // enlarged on the screen and only its middle is read, at full sharpness.
+    let zoom = 1, zmax = 5, hard = null;
+    const zrow = el('div', 'gm-zoom', v.body);
+    const zout = el('b', 'gm-zoom-n', zrow, '1x');
+    const zin = el('input', '', zrow);
+    zin.type = 'range'; zin.min = '1'; zin.max = String(zmax); zin.step = '0.1'; zin.value = '1'; zin.setAttribute('aria-label', gt('Zoom'));
+    const setZoom = z => {
+      zoom = Math.max(1, Math.min(zmax, +z || 1));
+      zin.value = String(zoom);
+      zout.textContent = (Math.round(zoom * 10) / 10) + 'x';
+      if (hard) { try { hard.track.applyConstraints({ advanced: [{ zoom: hard.min * zoom }] }).catch(() => {}); } catch (e) {} }
+      else video.style.transform = zoom > 1 ? 'scale(' + zoom + ')' : '';
+    };
+    zin.addEventListener('input', () => setZoom(zin.value));
+    let pinch = 0, pinchFrom = 1;
+    const spread = t => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    box.addEventListener('touchstart', e => { if (e.touches.length === 2) { pinch = spread(e.touches); pinchFrom = zoom; } }, { passive: true });
+    box.addEventListener('touchmove', e => { if (e.touches.length === 2 && pinch) { e.preventDefault(); setZoom(pinchFrom * spread(e.touches) / pinch); } }, { passive: false });
+    box.addEventListener('touchend', e => { if (e.touches.length < 2) pinch = 0; }, { passive: true });
+    box.addEventListener('touchcancel', () => { pinch = 0; }, { passive: true });
     const msg = el('p', 'muted center', v.body, gt('Point the camera at the QR code on the TV.'));
+    el('p', 'muted center small', v.body, gt('Far from the TV? Pinch the picture or slide to zoom in.'));
     btn(gt('Type the code instead'), { kind: 'ghost', full: true }, v.body, typeIt).style.marginTop = '10px';
     // the reader first (so the camera doesn't wait for it), then the camera
-    let read = null;
+    let read = null, looks = 0;
+    const cv = document.createElement('canvas');
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    // the part of the camera's picture to read: all of it, or only its middle (zf times closer), never bigger than 960
+    // dots a side (a smaller picture reads just as well and fast enough on an older phone)
+    const frame = zf => {
+      const w0 = video.videoWidth, h0 = video.videoHeight;
+      if (!w0 || !h0 || !g) return null;
+      const sw = w0 / zf, sh = h0 / zf, k = Math.min(1, 960 / Math.max(sw, sh)), w = Math.max(1, Math.round(sw * k)), h = Math.max(1, Math.round(sh * k));
+      if (cv.width !== w) cv.width = w;
+      if (cv.height !== h) cv.height = h;
+      g.drawImage(video, (w0 - sw) / 2, (h0 - sh) / 2, sw, sh, 0, 0, w, h);
+      return { w, h };
+    };
+    // how much closer this look is: what the person chose, or, left at 1x, twice as close every other time (so a code
+    // across the room is read without touching anything). With the camera's real zoom the picture itself is closer.
+    const closer = () => (!hard && zoom > 1 ? zoom : (looks >> 1) % 2 ? 2 : 1);
     if ('BarcodeDetector' in window) {
-      try { const det = new BarcodeDetector({ formats: ['qr_code'] }); read = async () => (await det.detect(video)).map(c => c.rawValue); } catch (e) {}
+      try {
+        const det = new BarcodeDetector({ formats: ['qr_code'] });
+        read = async () => { const zf = closer(); looks++; if (zf === 1) return (await det.detect(video)).map(c => c.rawValue); return frame(zf) ? (await det.detect(cv)).map(c => c.rawValue) : []; };
+      } catch (e) {}
     }
     if (!read) {
       try { await script('vendor/jsQR.min.js?v=1'); } catch (e) {}
@@ -1234,25 +1289,22 @@
       for (let i = 0; i < 50 && typeof window.jsQR !== 'function' && !stopped; i++) await new Promise(r => setTimeout(r, 100));
       if (stopped) return;
       if (typeof window.jsQR !== 'function') { noCam(); return; }
-      const cv = document.createElement('canvas');
-      const g = cv.getContext('2d', { willReadFrequently: true });
-      let n = 0;
       read = async () => {
-        const w0 = video.videoWidth, h0 = video.videoHeight;
-        if (!w0 || !h0 || !g) return [];
-        // (a smaller picture reads just as well and fast enough on an older phone)
-        const k = Math.min(1, 720 / Math.max(w0, h0)), w = Math.round(w0 * k), h = Math.round(h0 * k);
-        if (cv.width !== w) cv.width = w;
-        if (cv.height !== h) cv.height = h;
-        g.drawImage(video, 0, 0, w, h);
+        const zf = closer(), n = looks++, f = frame(zf);
+        if (!f) return [];
         // (light on dark too, every other try: some screens show the code that way)
-        const r = window.jsQR(g.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: n++ % 2 ? 'onlyInvert' : 'dontInvert' });
+        const r = window.jsQR(g.getImageData(0, 0, f.w, f.h).data, f.w, f.h, { inversionAttempts: n % 2 ? 'onlyInvert' : 'dontInvert' });
         return r && r.data ? [r.data] : [];
       };
     }
-    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false }); }
+    try { stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false }); }
     catch (e) { if (!stopped) noCam(e && e.name === 'NotAllowedError' ? 'blocked' : ''); return; }
     if (stopped) { stop(); return; }
+    try {
+      const track = stream.getVideoTracks()[0], caps = track && track.getCapabilities ? track.getCapabilities() : null;
+      const zmin = caps && caps.zoom ? +caps.zoom.min || 1 : 0;
+      if (zmin && caps.zoom.max / zmin >= 1.5) { hard = { track, min: zmin }; zmax = Math.min(8, caps.zoom.max / zmin); zin.max = String(zmax); }
+    } catch (e) {}
     video.srcObject = stream;
     video.play().catch(() => {});
     const tick = async () => {
@@ -1288,6 +1340,17 @@
     hero(v.body, 'This browser is too old for this', 'Open this link in Chrome, Safari, Edge or Firefox.', { sleepy: true });
     return;
   }
+  // A link shared to Blokvane from another app (YouTube's Share button on Android, once Blokvane is on the home
+  // screen): it is kept for "Play on the computer" and taken out of the address, so it is not shared twice.
+  try {
+    const q = new URLSearchParams(location.search);
+    const sharedText = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
+    if (!GAMES && sharedText) {
+      const m = /https?:\/\/[^\s<>"']+/i.exec(sharedText);
+      if (m && webUrl(m[0])) { sessionStorage.setItem('bvgo:shared', webUrl(m[0])); history.replaceState(null, '', location.pathname + '#tvplay'); }
+      else history.replaceState(null, '', location.pathname + location.hash);
+    }
+  } catch (e) {}
   // (first the connection, from the second copy if the first is gone; then the page)
   keepConnected().finally(async () => { if (GAMES) await gamesLang(); route(); if (pairs().length) askToKeep(); });
 })();

@@ -1191,6 +1191,8 @@ BVI18N.add("zh", {
 "This browser can't read QR codes. Type the 6 letters under the QR code instead.": "这个浏览器无法识别二维码。请改为输入二维码下方的6个字母。",
 "Try the camera again": "再试一次相机",
 "Point the camera at the QR code on the TV.": "把相机对准电视上的二维码。",
+"Far from the TV? Pinch the picture or slide to zoom in.": "离电视太远？双指放大画面，或拖动滑块放大。",
+"Zoom": "缩放",
 "That isn't a Blokvane game's code. Point at the one on the TV.": "这不是 Blokvane 游戏的码。请对准电视上的那个。",
 "Tap the Share button": "点“分享”按钮",
 "The square with an arrow, next to the address at the top.": "带箭头的方框，在顶部网址旁边。",

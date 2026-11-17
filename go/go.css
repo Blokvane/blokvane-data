@@ -131,7 +131,10 @@ html.no-flexgap[dir="rtl"] .row > * + * { margin-left: 0; margin-right: 12px; }
 html.no-flexgap .stack > * + * { margin-top: 10px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; grid-gap: 10px; gap: 10px; }
 .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 10px; gap: 10px; }
-.grid4 { display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 8px; gap: 8px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-gap: 8px; gap: 8px; }
+/* (four buttons in a row never push past their card: tight inside, and two rows of two on a narrow phone) */
+.grid4 .btn { min-width: 0; padding: 0 8px; font-size: 15.5px; }
+@media (max-width: 430px) { .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .list { display: flex; flex-direction: column; grid-gap: 8px; gap: 8px; }
 html.no-flexgap .list > * + * { margin-top: 8px; }
 .item { display: flex; align-items: center; grid-gap: 12px; gap: 12px; padding: 13px 14px; border-radius: var(--r); background: var(--raise); }
@@ -312,6 +315,11 @@ html.no-flexgap .gm-tile > * + * { margin-top: 4px; }
 .how-o.gm .how-tag { background: var(--mint); color: #062216; }
 .gm-cam { position: relative; border-radius: 26px; overflow: hidden; background: #000; aspect-ratio: 3 / 4; max-height: 62vh; margin: 6px auto 12px; width: 100%; }
 .gm-cam video { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* (two fingers on the picture zoom the camera, not the page) */
+.gm-cam { touch-action: pan-y; } .gm-cam video { transform-origin: 50% 50%; transition: transform .12s ease-out; }
+.gm-zoom { display: flex; align-items: center; gap: 12px; width: 100%; margin: 0 auto 8px; }
+.gm-zoom-n { flex: none; min-width: 52px; text-align: center; padding: 7px 8px; border-radius: 999px; background: rgba(255, 255, 255, .16); font-weight: 800; font-variant-numeric: tabular-nums; }
+.gm-zoom input { flex: 1; min-width: 0; height: 36px; margin: 0; accent-color: var(--mint); }
 .gm-aim { position: absolute; top: 18%; right: 14%; bottom: 18%; left: 14%; inset: 18% 14%; border-radius: 22px; box-shadow: 0 0 0 999px rgba(0, 0, 0, .35); outline: 4px solid var(--mint); outline-offset: -4px; animation: gm-aim 1.6s ease-in-out infinite; }
 @keyframes gm-aim { 50% { inset: 20% 16%; } }
 .gm-open { text-align: center; padding: 26px 0 8px; }
@@ -805,3 +813,29 @@ html.bv-day.pt-night:not(.pt-dark) .pt-morebtn { border-color: rgba(60, 40, 140,
 html.bv-day.pt-night:not(.pt-dark) .pt-msec + .pt-msec { border-top-color: rgba(60, 40, 140, .12); }
 /* the − and + of a number: a long press is a hold, never a text selection or the phone's own menu */
 html.pt-night .pt-step button { touch-action: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+
+/* ---------- this phone: its license, ad blocking, play on the computer (m/shield.js) ---------- */
+a.btn { text-decoration: none; }
+.card .pill + h2 { margin-top: 10px; }
+.sh-err { color: var(--bad); font-weight: 600; margin: 0 0 10px; }
+.sh-setup { margin-top: 14px; }
+.sh-setup h3 { font: 700 16px/1.3 var(--round); margin: 16px 0 10px; }
+.sh-setup h3:first-child { margin-top: 0; }
+.sh-setup .steps-pic { margin-bottom: 4px; }
+.sh-copy { display: flex; align-items: stretch; grid-gap: 8px; gap: 8px; margin: 0 0 4px; }
+.sh-copy code { flex: 1; min-width: 0; display: flex; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--ink); border: 1px dashed var(--line);
+  font: 600 13.5px/1.35 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color: var(--text); overflow-wrap: anywhere; word-break: break-all; user-select: all; -webkit-user-select: all; }
+.sh-copy .btn { min-height: 48px; padding: 0 14px; flex: none; }
+.sh-x { flex: none; width: 44px; height: 44px; border-radius: 14px; border: 0; background: transparent; color: var(--dim); display: grid; place-items: center; }
+.sh-x:active { background: rgba(255, 111, 125, .16); color: var(--bad); }
+.sh-x svg { width: 21px; height: 21px; }
+.sh-more { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.sh-more summary { cursor: pointer; color: var(--dim); font-weight: 650; font-size: 15px; }
+.sh-more ul { margin: 10px 0 0; padding-inline-start: 20px; color: var(--dim); font-size: 14.5px; line-height: 1.45; display: grid; grid-gap: 8px; gap: 8px; }
+.sh-big { display: grid; place-items: center; width: 92px; height: 92px; margin: 0 auto 12px; border-radius: 28px; color: var(--teal);
+  background: rgba(51, 209, 196, .14); background: color-mix(in srgb, var(--teal) 16%, transparent); }
+.sh-big svg { width: 46px; height: 46px; }
+.list .item.on { outline: 2px solid var(--tint); }
+.sh-devs .item > svg { width: 26px; height: 26px; flex: none; color: var(--dim); }
+.sh-again { margin-top: 12px; }
+.sh-again > summary { cursor: pointer; color: var(--dim); font-weight: 650; font-size: 15px; margin-bottom: 10px; }

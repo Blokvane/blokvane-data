@@ -1283,6 +1283,8 @@ BVI18N.add("ar", {
 "This browser can't read QR codes. Type the 6 letters under the QR code instead.": "هذا المتصفح لا يقرأ رموز QR. اكتب الأحرف الستة تحت رمز QR بدلًا من ذلك.",
 "Try the camera again": "جرّب الكاميرا مجددًا",
 "Point the camera at the QR code on the TV.": "وجّه الكاميرا نحو رمز QR على التلفاز.",
+"Far from the TV? Pinch the picture or slide to zoom in.": "بعيد عن التلفاز؟ باعد بين إصبعين على الصورة أو حرّك الشريط للتكبير.",
+"Zoom": "تكبير",
 "That isn't a Blokvane game's code. Point at the one on the TV.": "هذا ليس رمز لعبة من Blokvane. وجّه الكاميرا نحو الرمز الظاهر على التلفاز.",
 "Tap the Share button": "اضغط على زر المشاركة",
 "The square with an arrow, next to the address at the top.": "المربع الذي فيه سهم، بجانب العنوان في الأعلى.",

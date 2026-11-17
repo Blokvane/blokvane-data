@@ -1191,6 +1191,8 @@ BVI18N.add("es", {
 "This browser can't read QR codes. Type the 6 letters under the QR code instead.": "Este navegador no puede leer códigos QR. Escribe las 6 letras debajo del código QR.",
 "Try the camera again": "Probar la cámara otra vez",
 "Point the camera at the QR code on the TV.": "Apunta la cámara al código QR de la tele.",
+"Far from the TV? Pinch the picture or slide to zoom in.": "¿Lejos de la tele? Pellizca la imagen o desliza para acercarla.",
+"Zoom": "Zoom",
 "That isn't a Blokvane game's code. Point at the one on the TV.": "Ese no es el código de una partida de Blokvane. Apunta al de la tele.",
 "Tap the Share button": "Toca el botón Compartir",
 "The square with an arrow, next to the address at the top.": "El cuadrado con una flecha, junto a la dirección arriba.",

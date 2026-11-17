@@ -83,6 +83,13 @@ GO.def('home', (pair) => {
     if (!perms) el('p', 'muted small center', v.body, 'Connecting to your computer...').style.marginTop = '14px';
     // (the computer's own word on what this phone may do comes with its hello: the tiles follow it)
     if (!perms) { const off = pc.onStatus(() => { if (pc.perms() && onHome) { off(); home(); } }); }
+    // what this phone does by itself: its own license and ad blocking, and a video sent to the computer for the TV
+    const own = el('div', 'card', v.body); own.style.marginTop = '16px';
+    el('h2', '', own, 'This phone');
+    el('p', '', own, 'Block ads in every app on this phone, and play a YouTube video on ' + pc.name + ' without the ads.');
+    const orow = el('div', 'grid2', own);
+    btn('Block ads here', { kind: 'tint', icon: 'shield' }, orow, () => { location.hash = '#ads'; });
+    btn('Play on the TV', { kind: 'ghost', icon: 'tv' }, orow, () => { location.hash = '#tvplay'; });
     // not on the home screen yet: one tap to make Blokvane an app icon
     if (GO.installCard) GO.installCard(v.body);
     const more = el('div', 'card', v.body); more.style.marginTop = '16px';
