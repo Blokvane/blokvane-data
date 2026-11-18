@@ -1394,5 +1394,7 @@ BVI18N.add("fr", {
 "Timing, looks, sounds and everything else. Each one is saved for next time.": "Temps, apparence, sons et tout le reste. Chaque réglage est gardé pour la prochaine fois.",
 "On": "Oui",
 "Off": "Non",
-"{n} of {total} on": "{n} sur {total} activés"
+"{n} of {total} on": "{n} sur {total} activés",
+"The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "La table est sur la télé, tes dominos sur ton téléphone. En équipes, à un contre un ou chacun pour soi. En anglais et en arabe.",
+"The table is on the TV. Your tiles are on your phone.": "La table est sur la télé. Tes dominos sont sur ton téléphone."
 });

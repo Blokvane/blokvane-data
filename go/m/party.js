@@ -61,7 +61,7 @@
   const langsMore = () => (I() ? I().MORE : []);
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
   // each game's own icon (the TV's pictures, in ../play/icons: the same ones as on the TV and in Blokvane)
-  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'emoji', 'imposter']);
+  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'emoji', 'imposter', 'dominoes']);
   function gameIcon(id, e) {
     if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
     return el('span', 'e', null, e || '🎲');
@@ -835,6 +835,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (m && m.k === 'join' && G.pass) m.pass = G.pass;
     // (the host's choices for this game, kept on this phone for next time)
     if (m && m.k === 'set' && typeof m.key === 'string') keepSet(m.key, m.v);
+    // (Dominoes 151: a look the host picks shows in the small table of the preview right away)
+    if (m && m.k === 'set' && window.BVDOMP && isDom()) { try { BVDOMP.onSet(m.key, m.v); } catch (e) {} }
     return G.R ? G.R.send(m).catch(() => {}) : Promise.resolve();
   };
   // "it's me": the name and the Boo, what this phone understands (cap 3: the lobby in two parts, the heartbeat, results
@@ -1323,6 +1325,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'bwv': return onBwv(m);
       case 'res': return onRes(m);
       case 'imp': return isImpGame() ? onImp(m) : undefined;
+      case 'dom': return isDom() ? domMsg(m) : undefined;
       case 'emo': return isEmo() ? onEmo(m) : undefined;
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; G.endLook = typeof m.look === 'string' ? m.look.slice(0, 20) : ''; G.endTeam = !!m.team; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
@@ -1370,6 +1373,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.used.clear(); G.res = null; G.endRes = null; G.ranking = null; G.endLook = ''; G.endTeam = false; G.endFx = false; G.q = null; G.imp = null; G.impQ = null; G.impRes = null; G.impFinal = null; G.impClues = []; G.emoWin = null;
     // (a secret word that already came in for this very game stays)
     if (G.secret && G.secret.gr !== gr) G.secret = null;
+    if (window.BVDOMP) BVDOMP.reset();
+    DOMG.q = [];
   }
   function onLobby(m, force) {
     // (the small lobby: put together with its setup; kept waiting when the setup isn't here yet)
@@ -1405,7 +1410,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     document.documentElement.classList.toggle('g-gir', m.game === 'gir');
     document.documentElement.classList.toggle('g-imp', m.game === 'imposter');
     document.documentElement.classList.toggle('g-emo', m.game === 'emoji');
+    document.documentElement.classList.toggle('g-dom', m.game === 'dominoes');
     if (m.game === 'imposter') impLoad();
+    if (m.game === 'dominoes') domLoad();
+    if (window.BVDOMP && (m.game !== 'dominoes' || m.phase !== 'play')) BVDOMP.left();
     if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
@@ -1617,6 +1625,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         // (the sounds on the TV: the music, or any one kind of sound, off or on again right away)
         const sf = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string' && /^snd_/.test(f.key));
         if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
+        // (Dominoes 151: the table's look with its preview, the computer players, and the moves of the round)
+        if (isDom() && window.BVDOMP) BVDOMP.menu(sh, close, (t, fn) => { const b = btn(t, { kind: 'ghost', full: true }, sh, fn); b.style.marginTop = '10px'; return b; });
         tvSizeRow(sh, l);
         if (G.phase === 'play' || G.phase === 'end') gameCtl(sh, close);
         // (in the lobby: every setting of the game, in its groups)
@@ -1630,6 +1640,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const l = G.lobby || {};
     sheet(T('Sounds'), sh => {
       el('p', 'muted small', sh, T('Turn off any sound you don\'t want. The TV remembers it for the next game.'));
+      // (how loud the music and the other sounds are, then each kind of sound on or off)
+      for (const f of (Array.isArray(l.schema) ? l.schema : []).filter(x => x && typeof x.key === 'string' && /^vol_/.test(x.key))) setCtl(sh, f, l);
       for (const f of (Array.isArray(l.schema) ? l.schema : []).filter(x => x && typeof x.key === 'string' && /^snd_/.test(x.key))) setCtl(sh, f, l);
     });
   }
@@ -1955,7 +1967,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // steps. The host's phone remembers each game's settings: a host who played it before starts on the second page.
   // (the choices on the second page, per game; a game not listed shows the settings of its second step there)
   const QUICK = { trivia: ['count', 'raceTo', 'lives', 'level', 'cat'], gir: ['teams', 'teamN', 'count', 'perTeam', 'raceTo', 'level'],
-    world: ['map', 'rounds'], boowho: ['cats', 'count'], emoji: ['count', 'cat', 'level'], imposter: ['words', 'imps'] };
+    world: ['map', 'rounds'], boowho: ['cats', 'count'], emoji: ['count', 'cat', 'level'], imposter: ['words', 'imps'], dominoes: ['target', 'level', 'turnSec'] };
   function setupParts(l) {
     const steps = wizSteps(l);
     const schema = Array.isArray(l.schema) ? l.schema : [];
@@ -2052,10 +2064,14 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     for (const st of P.more) {
       const sec = el('section', 'pt-msec', wz);
       el('h2', 'pt-mh', sec, st.t);
+      // (Dominoes 151: a small table that wears each look as it is picked)
+      if (isDom() && window.BVDOMP && st.keys.includes('table')) { const pb = BVDOMP.previewBox(sec); pb.style.cssText = 'position:sticky;top:6px;z-index:3;margin-bottom:10px'; }
       for (const key of st.keys) {
         if (key === 'lang') langRow(sec, l);
         else setCtl(sec, l.schema.find(f => f.key === key), l);
       }
+      // (Dominoes 151: the computer players' names, colors and faces have a page of their own)
+      if (isDom() && window.BVDOMP && st.keys.includes('table')) { const bb = btn('🤖 ' + T('Computer players'), { kind: 'ghost', full: true }, sec, () => BVDOMP.botsSheet()); bb.style.marginTop = '12px'; }
     }
     const rb = el('button', 'pt-dk pt-usual', wz, S().usual); rb.type = 'button';
     rb.onclick = () => { backToUsual(G.lobby || l); };
@@ -2201,7 +2217,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       else if (f.type === 'number') { let u = f.unit ? L.clean(f.unit, 20) : ''; if (+v === 1 && G.lang === 'en' && /[a-z]s$/.test(u)) u = u.slice(0, -1); vals.push(v + (u ? ' ' + u : '')); }
       else if (f.type === 'text') { const n = String(v || '').split('\n').filter(Boolean).length; if (n) vals.push('✍️ ' + n); }
       else if (f.type === 'multi' && Array.isArray(f.options)) { const on = Array.isArray(v) ? v.map(String) : []; vals.push(on.length >= f.options.length ? T('All of them') : f.options.filter(o2 => Array.isArray(o2) && on.includes(String(o2[0]))).map(o2 => L.clean(o2[1], 30)).join(', ')); }
-      else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push(L.clean(o[1], 40)); }
+      else if (Array.isArray(f.options)) { const o = f.options.find(o2 => Array.isArray(o2) && String(o2[0]) === String(v)); if (o) vals.push((f.tag ? L.clean(f.tag, 24) + ': ' : '') + L.clean(o[1], 40)); }
     }
     // (one switch: On or Off; many: how many are on; a few: the ones that are on)
     if (toggles === 1 && keys.filter(k => k !== 'lang').length === 1) vals.push(tg.length ? S().on : S().off);
@@ -2286,6 +2302,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const q = G.q;
     if (!q) return showWait();
     if (isImpGame()) { if (q.kind !== 'wait' && Array.isArray(q.who) && q.who.includes(G.id)) G.impQ = q; return impDraw(); }
+    // (Dominoes 151: the phone holds its player's tiles; until the table has said how things stand, it asks)
+    if (isDom() && !(q.kind === 'wait' && Array.isArray((q.extra || {}).rules))) { if (window.BVDOMP && BVDOMP.on) return BVDOMP.draw(); domAsk(); }
     if (isEmo() && ((q.extra && q.extra.emo) || q.kind === 'emojimake')) return emoQ(q);
     const ex = q.extra || {};
     if (q.kind === 'wait' && ex.tw && typeof ex.tw === 'object') return twScreen(q);
@@ -2797,6 +2815,28 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     box.addEventListener('keyup', hidden);
     box.addEventListener('blur', hidden);
   }
+
+  // ---------- Dominoes 151: each phone holds its player's own tiles (../play/dom-core.js and ../play/dom-ph.js) ----------
+  // The TV says how the table stands ({k:'dom', t:'pub'}) and, sealed for this phone alone, which tiles are its own
+  // ({k:'dom', t:'me'}); this phone says what its player does ({k:'dom', a:'play' | 'draw' | 'pass' | 'react' ...}).
+  const DOMG = { p: null, q: [], at: 0 };
+  const isDom = () => (G.lobby || {}).game === 'dominoes';
+  function domLoad() {
+    if (window.BVDOMP && DOMG.ready) return Promise.resolve(true);
+    if (!DOMG.p) DOMG.p = GO.script('../play/dom-core.js?v=' + GO.VERSION).then(() => GO.script('../play/dom-ph.js?v=' + GO.VERSION)).then(() => {
+      BVDOMP.init({ el, send, G, buzz, toast, sheet, btn, booUri, myPic, AVATARS, clean: L.clean, view: () => { const v = partyView(gameName(), { chip: false }); moreBtn(v); return v; } });
+      DOMG.ready = true;
+      return true;
+    }, () => { DOMG.p = null; return false; });
+    return DOMG.p;
+  }
+  function domMsg(m) {
+    if (window.BVDOMP && DOMG.ready) return BVDOMP.onMsg(m);
+    DOMG.q.push(m); if (DOMG.q.length > 40) DOMG.q.shift();
+    domLoad().then(ok => { if (!ok) return; const q = DOMG.q; DOMG.q = []; for (const x of q) BVDOMP.onMsg(x); });
+  }
+  // (this phone has nothing of the table yet, like right after the page opened again: it asks, not more than once a second)
+  function domAsk() { const t = Date.now(); if (t - DOMG.at < 1000) return; DOMG.at = t; domLoad(); send({ k: 'dom', a: 'sync' }); }
 
   // ---------- Who's the Imposter?: its screens, as the game's design has them (../play/imp-ph.js) ----------
   // The TV says which part of the game it is ({k:'imp', t: 'peek' | 'clue' | 'talk' | 'reveal' | 'unmask' | 'guessing' |
@@ -3685,7 +3725,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // A tall story picture (1080 x 1920) in the game's own look, the same one as the winners on the TV: a boarding pass for
   // Where in the World?, Trivia's cosmic, disco or fireworks night, Guess It Right!'s gold. For Instagram, TikTok,
   // Facebook, WhatsApp, Messages or anywhere; or saved, or the words copied.
-  const SHARE_GAMES = new Set(['world', 'trivia', 'gir', 'boowho']);
+  const SHARE_GAMES = new Set(['world', 'trivia', 'gir', 'boowho', 'dominoes']);
   const shFont = (w2, px) => w2 + ' ' + px + 'px "BV Fun", ui-rounded, "Nunito", system-ui, sans-serif';
   const shSans = (w2, px) => w2 + ' ' + px + 'px ui-rounded, "Nunito", system-ui, sans-serif';
   const shEmo = px => px + 'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
@@ -4038,7 +4078,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
   // the picture, made once for this end screen (and again when the table or my place changes)
   const SH = { sig: '', blob: null, url: '', p: null };
-  function shSig() { return JSON.stringify([G.lobby && G.lobby.game, G.endLook, G.lang, G.ranking, G.endRes && [G.endRes.place, G.endRes.score], !!G.photo]); }
+  function shSig() { return JSON.stringify([G.lobby && G.lobby.game, G.endLook, G.lang, G.ranking, G.endRes && [G.endRes.place, G.endRes.score], !!G.photo, isDom() && window.BVDOMP && BVDOMP.pub ? BVDOMP.pub.win : 0]); }
   function sharePic() {
     const sig = shSig();
     if (SH.sig === sig && (SH.blob || SH.p)) return SH.blob ? Promise.resolve(SH.blob) : SH.p;
@@ -4053,7 +4093,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const list = shList();
       const gid = (G.lobby || {}).game;
       const o = { rtl, seed: shSeed(list.map(x => x.n).join('|') + gid), kids: shKids(), team: !!G.endTeam, look: gid === 'gir' ? 'gir' : G.endLook };
-      if (gid === 'world') await shWorld(g, list, o); else await shPoster(g, list, o);
+      if (gid === 'world') await shWorld(g, list, o); else if (gid === 'dominoes' && window.BVDOMP && BVDOMP.pub && BVDOMP.pub.win) await BVDOMP.share(g, o); else await shPoster(g, list, o);
       const blob = await new Promise(res => { try { cv.toBlob(b2 => res(b2), 'image/jpeg', 0.92); } catch (e) { res(null); } });
       if (SH.sig === sig) { SH.blob = blob; SH.p = null; }
       return blob;
@@ -4086,7 +4126,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   async function shareWin(how, b) {
     const gname = gameName();
     const list = shList();
-    const text = T('We played {game}! The winner: {name}. Play it at blokvane.com', { game: gname, name: list[0] ? list[0].n : '?' });
+    const text = T('We played {game}! The winner: {name}. Play it at blokvane.com', { game: gname, name: (isDom() && window.BVDOMP && BVDOMP.winName()) || (list[0] ? list[0].n : '?') });
     if (how === 'copy') { try { await navigator.clipboard.writeText(text); toast(T('Copied!'), 'ok'); } catch (e) { toast(text, ''); } return; }
     b.disabled = true;
     try {
@@ -4144,7 +4184,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     else el('h1', '', box, S().look);
     if (r && r.place === 1 && !G.endFx) { G.endFx = true; confetti(); buzz('long'); }
     shareBlock(v.body);
-    if (Array.isArray(G.ranking) && G.ranking.length) {
+    if (isDom() && window.BVDOMP && BVDOMP.endList(v.body)) { /* Dominoes 151: the two sides, or each player, with their points */ }
+    else if (Array.isArray(G.ranking) && G.ranking.length) {
       const ls = el('div', 'pt-list', v.body); ls.style.marginTop = '16px';
       const kidsW = shKids();
       for (const x of G.ranking) {
@@ -4188,9 +4229,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ['boowho', '👻', 'Boo Who?', '"Who is most likely to..." Vote for each other. No right answers, just laughs.'],
     ['world', '🌍', 'Where in the World?', 'Drop a pin on the map. The closest pin wins.'],
     ['emoji', '🦁', 'Emoji Riddles', 'Guess the movie, food or saying from a row of emoji.'],
-    ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.']
+    ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.'],
+    ['dominoes', '🎲', 'Dominoes 151', 'The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.']
   ];
-  const GAME_LANGS = { gir: ['en', 'ar'] };
+  const GAME_LANGS = { gir: ['en', 'ar'], dominoes: ['en', 'ar'] };
   const gameNameOf = id => T((GAME_LIST.find(g => g[0] === id) || [0, 0, 'Party games'])[2]);
   // the address to type on a TV: Blokvane's short one. blokvane.com/play opens the party games (app.blokvane.com/play/)
   // on a TV or a computer, and the phone's side of the games on a phone.

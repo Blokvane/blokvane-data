@@ -1394,5 +1394,7 @@ BVI18N.add("bn", {
 "Timing, looks, sounds and everything else. Each one is saved for next time.": "সময়, চেহারা, শব্দ আর বাকি সবকিছু। প্রতিটি পরের বারের জন্য রাখা থাকে।",
 "On": "চালু",
 "Off": "বন্ধ",
-"{n} of {total} on": "{total}টির মধ্যে {n}টি চালু"
+"{n} of {total} on": "{total}টির মধ্যে {n}টি চালু",
+"The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "টেবিল টিভিতে, আর আপনার ঘুঁটি আপনার ফোনে। দল বেঁধে, একজনের বিরুদ্ধে একজন, বা সবাই একা একা। ইংরেজি আর আরবিতে।",
+"The table is on the TV. Your tiles are on your phone.": "টেবিল টিভিতে। আপনার ঘুঁটি আপনার ফোনে।"
 });

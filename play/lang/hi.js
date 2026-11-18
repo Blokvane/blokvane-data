@@ -1394,5 +1394,7 @@ BVI18N.add("hi", {
 "Timing, looks, sounds and everything else. Each one is saved for next time.": "समय, रूप, आवाज़ें और बाकी सब। हर सेटिंग अगली बार के लिए सहेजी जाती है।",
 "On": "चालू",
 "Off": "बंद",
-"{n} of {total} on": "{total} में से {n} चालू"
+"{n} of {total} on": "{total} में से {n} चालू",
+"The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "मेज़ टीवी पर है और आपकी गोटियाँ आपके फ़ोन पर। टीमों में, एक के सामने एक, या हर कोई अकेले। अंग्रेज़ी और अरबी में।",
+"The table is on the TV. Your tiles are on your phone.": "मेज़ टीवी पर है। आपकी गोटियाँ आपके फ़ोन पर हैं।"
 });

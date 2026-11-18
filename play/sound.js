@@ -90,14 +90,30 @@ var BVSOUND = (() => {
     bwPlayB: ['', 1, { list: ['bwP2', 'bwP3', 'bwP1'], xf: 5 }],
     bwPlayC: ['', 1, { list: ['bwP3', 'bwP1', 'bwP2'], xf: 5 }],
     bwWin: ['bw-win.mp3', 0.389, { stream: true, once: true, then: 'bwLobby', tail: 2.6 }],
-    bwNext: ['bw-next.mp3', 0.442], bwEvery5: ['bw-every5.mp3', 0.367], bwTimesup: ['bw-timesup.mp3', 0.556]
+    bwNext: ['bw-next.mp3', 0.442], bwEvery5: ['bw-every5.mp3', 0.367], bwTimesup: ['bw-timesup.mp3', 0.556],
+    // Dominoes 151's own: Afternoon on the Terrace in the lobby; Seven Pips on the Table, Cards After Sunset, Tiles
+    // Across the Table and Tiles on Cedar taking turns all match long (a different one first each match); Gold on the
+    // Podium or Midnight Victory Lap for the winners, then the lobby tune again. Measured like the others, and the four
+    // game tunes sit 2 dB lower still: a match is long, and the tiles on the table should be heard over them. (The
+    // tiles' own sounds, the clack, the slam, the knock, are made in the game itself: see synth below.)
+    dLobby: ['d-lobby.mp3', 0.302, { stream: true, tail: 2.2, xf: 3 }],
+    dP1: ['d-play1.mp3', 0.24, { stream: true, tail: 0.6, xf: 4 }],
+    dP2: ['d-play2.mp3', 0.243, { stream: true, tail: 1.4, xf: 4 }],
+    dP3: ['d-play3.mp3', 0.248, { stream: true, tail: 0.6, xf: 4 }],
+    dP4: ['d-play4.mp3', 0.251, { stream: true, tail: 1, xf: 4 }],
+    dPlayA: ['', 1, { list: ['dP1', 'dP2', 'dP3', 'dP4'], xf: 5 }],
+    dPlayB: ['', 1, { list: ['dP2', 'dP3', 'dP4', 'dP1'], xf: 5 }],
+    dPlayC: ['', 1, { list: ['dP3', 'dP4', 'dP1', 'dP2'], xf: 5 }],
+    dPlayD: ['', 1, { list: ['dP4', 'dP1', 'dP2', 'dP3'], xf: 5 }],
+    dWin1: ['d-win1.mp3', 0.367, { stream: true, once: true, then: 'dLobby', tail: 1.9 }],
+    dWin2: ['d-win2.mp3', 0.38, { stream: true, once: true, then: 'dLobby', tail: 2 }]
   };
   const isStream = f => !!(f && f[2] && typeof f[2] === 'object' && (f[2].stream || f[2].list));
   // ---------- the host can turn single kinds of sound off, in every game (kept on this screen for next time): the
   // music, or one kind of moment, like "next question". Each sound is one kind: a tune is music, the rest by name. ----------
   const KIND = { next: 'next', eNext: 'next', gNext: 'next', iNext: 'next', every5: 'every5', eEvery5: 'every5', gEvery5: 'every5', correct: 'correct', eCorrect: 'correct', gCorrect: 'correct',
     wrong: 'wrong', eWrong: 'wrong', gWrong: 'wrong', timesup: 'timesup', eTimesup: 'timesup', gTimesup: 'timesup', tick: 'tick', gTick: 'tick', win: 'win', eWin: 'win', gWin: 'win',
-    wvNext: 'next', wvTimesup: 'timesup', wvWrong: 'wrong', wvWin: 'win', bwNext: 'next', bwEvery5: 'every5', bwTimesup: 'timesup', bwWin: 'win' };
+    wvNext: 'next', wvTimesup: 'timesup', wvWrong: 'wrong', wvWin: 'win', bwNext: 'next', bwEvery5: 'every5', bwTimesup: 'timesup', bwWin: 'win', dWin1: 'win', dWin2: 'win' };
   const kindOf = name => KIND[name] || (FILES[name] && FILES[name][2] ? 'music' : 'fx');
   let offKinds = new Set(), wantReal = null;
   try { const v = JSON.parse(localStorage.getItem('bvplay:soundoff') || '[]'); if (Array.isArray(v)) offKinds = new Set(v.filter(x => typeof x === 'string')); } catch (e) {}
@@ -388,6 +404,14 @@ var BVSOUND = (() => {
     s.onended = () => { fxs.delete(s); try { g.disconnect(); } catch (e) {} };
     s.start(ac.currentTime + (o.delay || 0));
   }
+  // A sound a game makes itself, note by note (Dominoes 151's tiles): fn gets the page's sound maker and where to plug
+  // into it, so its sounds are as loud as the host set "the other sounds", stop with them, and pause with the game.
+  // kind: which switch turns it off ('fx' unless said). Nothing happens while sound isn't allowed yet.
+  function synth(fn, kind) {
+    if (!ready() || offKinds.has(kind || 'fx')) return false;
+    try { fn(ac, fxBus || master); } catch (e) {}
+    return true;
+  }
   // sound on or off on this screen (kept for next time)
   function setOn(v) {
     on = !!v;
@@ -428,6 +452,6 @@ var BVSOUND = (() => {
   }
   // 'on', 'off', 'locked' (waiting for a first click or key press) or 'none' (this browser can't play it)
   const state = () => (!ctx() ? 'none' : !on ? 'off' : (ready() || pausedNow) ? 'on' : 'locked');
-  return { preload, music, sting, fx, at, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); },
+  return { preload, music, sting, fx, synth, at, unlock, setOn, enabled: () => on, state, onChange: f => { subs.add(f); return () => subs.delete(f); },
     setOff, offKinds: () => [...offKinds], kindOf, kindOff: k => offKinds.has(k), setVol, vol: k => (k in vols ? vols[k] : 1), pause, resume, isPaused: () => pausedNow };
 })();

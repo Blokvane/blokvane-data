@@ -1394,5 +1394,7 @@ BVI18N.add("zh", {
 "Timing, looks, sounds and everything else. Each one is saved for next time.": "时间、外观、声音和其他所有设置。每一项都会保存到下次。",
 "On": "开",
 "Off": "关",
-"{n} of {total} on": "已开启 {n}/{total}"
+"{n} of {total} on": "已开启 {n}/{total}",
+"The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "牌桌在电视上，你的牌在手机上。可以组队、一对一，或者各打各的。有英文和阿拉伯文。",
+"The table is on the TV. Your tiles are on your phone.": "牌桌在电视上，你的牌在手机上。"
 });

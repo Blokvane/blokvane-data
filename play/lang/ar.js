@@ -1484,5 +1484,8 @@ BVI18N.add("ar", {
 "Same settings as last time.": "نفس إعدادات المرة الماضية.",
 "Timing, looks, sounds and everything else. Each one is saved for next time.": "الوقت والمظهر والأصوات وكل شيء آخر. يُحفظ كل إعداد للمرة القادمة.",
 "On": "تشغيل",
-"{n} of {total} on": "{n} من {total} مفعّلة"
+"{n} of {total} on": "{n} من {total} مفعّلة",
+"The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "الميز عالتلفزيون وحجارك بموبايلك. فرق، واحد لواحد، لو كلمن لحاله. بالعربي والإنگليزي.",
+"The table is on the TV. Your tiles are on your phone.": "الميز عالتلفزيون، وحجارك بموبايلك.",
+"Dominoes 151": "دومنة 151"
 });

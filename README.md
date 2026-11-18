@@ -193,6 +193,16 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   moment, written for each of the seven languages, in the same order everywhere) and
   `play/sounds/bw-*.mp3` (its music). Each look takes turns from one game to the next, or the host
   picks one. The phones' vote screen, results and winners' picture are in `go/m/party.js`.
+- Dominoes 151 is `play/dom-core.js` (the rules, the tiles, the tables and the borders, drawn the
+  way the game in `Games/Dominoes 151` draws them, and its words in Iraqi Arabic; the TV and the
+  phones share it), `play/dom-game.js` (the TV: the table with everyone's tiles face down, four
+  modes, computer players in the empty seats, the deal, lock and round-end looks, the winners) and
+  `play/dom-ph.js` (the phones: the table is on the TV only, so a phone shows the score, whose turn
+  it is and its player's own tiles, to tap or to drag; the host's look sheet with its live preview,
+  the computer players' names and faces, the moves of the round, and the winners' picture to share).
+  `play/dom.css` is its lobby, `play/fonts/dm-*.woff2` its two fonts, and `play/sounds/d-*.mp3` its
+  music; the tile sounds are made in the browser. The table, the tiles and the border can be changed
+  in the middle of a match (a setting marked `live` in a game's list may change while it is played).
 - Trivia's questions (`play/q/`) are made by the question bank's `build_q.js`. The Trick questions
   (category 33) have an eighth part: the line that explains the trick, shown on the TV and on every
   phone once the answer is out.

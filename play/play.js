@@ -18,6 +18,7 @@ var BVPLAY = (() => {
   const ended = new Set();        // phones that were in a game that ended because its host left
   const waitNext = new Map();     // phones that came in during a game the host keeps closed: they join when it's over
   const playerSubs = new Set();   // a running game hears when someone leaves, comes back or joins
+  const setSubs = new Set();      // ... and when the host changes one of its looks in the middle of the game
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
   function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -54,7 +55,7 @@ var BVPLAY = (() => {
   }
   const psleep = ms => new Promise(r => pafter(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'emoji', 'imposter', 'gir']);
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'emoji', 'imposter', 'gir', 'dominoes']);
   const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
@@ -383,7 +384,9 @@ var BVPLAY = (() => {
       case 'ready': if (p) { p.ready = !!m.on; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'team': if (p && P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).some(t => t[0] === m.team)) { p.team = m.team; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'plang': if (p && setPlayerLang(p, m.v)) { if (phase === 'lobby') lobby(); sayLobby(); } return;
-      case 'set': if (p && m.f === host && (phase === 'lobby' || /^(snd_[a-z0-9]+|vol_(music|fx)|k_(code|calm|late))$/.test(String(m.key)))) setOne(m.key, m.v); return;
+      // (in the middle of a game the host can still change the sounds, a few things about the screen, and a game's own
+      // looks, like the table and the tiles of Dominoes 151: never its rules or its times)
+      case 'set': if (p && m.f === host && (phase === 'lobby' || /^(snd_[a-z0-9]+|vol_(music|fx)|k_(code|calm|late))$/.test(String(m.key)) || liveKey(m.key))) setOne(m.key, m.v); return;
       case 'game': if (p && m.f === host && (phase === 'lobby' || phase === 'end' || phase === 'play') && games.has(m.id)) { abortGame(); choose(m.id); } return;
       case 'start': if (p && m.f === host && phase === 'lobby' && game) start(); return;
       case 'stop': if (p && m.f === host && phase === 'play') stopGame(); return;
@@ -436,6 +439,7 @@ var BVPLAY = (() => {
       default: { const h = handlers.get(m.k); if (h && p) { try { h(m, p); } catch (e) { console.warn('Blokvane play', e); } } }
     }
   }
+  const liveKey = k => phase === 'play' && !!(game && game.settings.some(f => f.key === k && f.live));
   const say = m => R.send(m).catch(() => {});
   const sayTo = (id, m) => R.send(m, id).catch(() => {});
   async function box(id, m) {
@@ -629,7 +633,7 @@ var BVPLAY = (() => {
     const gl = await Promise.all(gameList().map(async g => ({ id: g.id, name: await P.tr(g.name), e: g.emoji, sub: await P.tr(g.sub) })));
     const optsOf = f => (game.langOptions && game.langOptions[f.key] ? game.langOptions[f.key](lang, f.options) : f.options);
     // (each choice keeps its short explanation, and a setting its own, in the game's language)
-    const schema = game ? await Promise.all(fieldsOf(game).map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined,
+    const schema = game ? await Promise.all(fieldsOf(game).map(async f => Object.assign({}, f, { label: await P.tr(f.label), desc: f.desc ? await P.tr(f.desc) : undefined, unit: f.unit ? await P.tr(f.unit) : undefined, tag: f.tag ? await P.tr(f.tag) : undefined,
       options: f.options ? await Promise.all(optsOf(f).map(async o => (o[2] ? [o[0], await optLabel(o[1]), await P.tr(o[2])] : [o[0], await optLabel(o[1])]))) : undefined }))) : null;
     const name = game ? await P.tr(game.name) : '';
     const steps = game ? await Promise.all(stepsOf(game).map(async s => ({ t: await P.tr(s.t), s: await P.tr(s.s || s.t), keys: s.keys }))) : null;
@@ -654,6 +658,8 @@ var BVPLAY = (() => {
     else if (f.type === 'number') { const n = Math.round(Number(v)); if (!Number.isFinite(n)) return; settings[key] = Math.max(f.min || 0, Math.min(f.max || 999, n)); }
     // (a mode can turn teams on by itself, like Guess It Right!'s team turns: everyone gets a team right away)
     if (key === 'teams' || key === 'teamN' || (key === 'mode' && game.teamsForce)) balanceTeams();
+    // (a look changed in the middle of a game: the game that's on hears it and draws itself again; the lobby isn't drawn)
+    if (phase === 'play') { for (const fn of setSubs) { try { fn(key, settings[key]); } catch (e) {} } sayLobby(); return; }
     lobby(); sayLobby();
   }
   function choose(id) {
@@ -845,7 +851,7 @@ var BVPLAY = (() => {
     unpause(); abandonTimers();
     phase = 'closed';
     nearOn();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     cur.q = null; waitHost = false;
     if (joinEl) { joinEl.remove(); joinEl = null; }
@@ -901,7 +907,7 @@ var BVPLAY = (() => {
     const t = top(page, await T(g ? g.name : 'Party games'), await T(g ? g.sub : 'Scan the code to join. The host scans first and picks the game.'));
     t.classList.add('lob-top');
     // (the free games: the TV says so, so nobody wonders why it's always the same 15)
-    if (host && !fullHere()) { const fb = el('div', 'lob-free', t, await T('Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.')); fb.style.cssText = 'flex-basis:100%;font-size:22px;opacity:.85;margin-top:6px'; }
+    if (host && !fullHere()) { const fb = el('div', 'lob-free', t, await T(g && g.freeNote ? g.freeNote : 'Free games: 15 questions, the same ones each time. A host with Blokvane Pro gets every question.')); fb.style.cssText = 'flex-basis:100%;font-size:22px;opacity:.85;margin-top:6px'; }
     const deco = el('div', 'deco', t);
     const dk = g && g.deco ? g.deco : 'letters';
     if (dk === 'letters') LET.slice(0, 4).forEach((x, i) => { const d = el('span', 'tile-l ' + 'ABCD'[i], deco, x); void d; });
@@ -1289,14 +1295,14 @@ var BVPLAY = (() => {
     if (settings.k_code) showJoin(true, true);
     // (how to play, first: a game with no rules screen of its own gets the kit's, on the TV and on every phone)
     if (settings.k_rules && kitFields(game).some(f => f.key === 'k_rules')) { await kitRules(my); if (my !== run) return; }
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
     let ranking = null;
     try { ranking = await game.tv(kit(my)); }
     catch (e) { console.warn('Blokvane play', e); }
     // (the host ended this game early: the end screen is already up)
     if (my !== run) return;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
     finish(ranking);
   }
   // the host ends the game early: the scores so far win, and the rest of that game just stops
@@ -1304,7 +1310,7 @@ var BVPLAY = (() => {
     if (phase !== 'play') return;
     run++;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     finish(null);
     P.mute(true);
@@ -1375,7 +1381,7 @@ var BVPLAY = (() => {
     if (phase !== 'play' && phase !== 'end') return;
     run++;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     abandonTimers();
     cur.q = null; waitHost = false;
@@ -1400,8 +1406,11 @@ var BVPLAY = (() => {
     // (a game with its own last screen keeps it, and its own music: Who's the Imposter?'s winners)
     const own = !!(ranking && ranking.own && game.ownEnd);
     if (!own) await podium(ps, teamMode);
-    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: i + 1, av: typeof p.av === 'string' && p.av.length < 40 ? p.av : undefined }));
-    for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : rk.findIndex(x => x.id === p.id) + 1, of: rk.length, score: p.score, team: teamMode ? p.team : undefined });
+    // (a game can say each player's place itself, like Dominoes 151, where two partners win together: ranking.places
+    // (id -> place) and ranking.of (how many places there are))
+    const places = ranking && ranking.places instanceof Map ? ranking.places : null;
+    const rk = ps.map((p, i) => ({ id: p.id, name: p.name, score: p.score, place: (places && places.get(p.id)) || i + 1, av: typeof p.av === 'string' && p.av.length < 40 ? p.av : undefined }));
+    for (const p of list()) result(p.id, { end: true, place: teamMode ? (teamPlace.get(p.team) || 0) : (places && places.get(p.id)) || rk.findIndex(x => x.id === p.id) + 1, of: (places && ranking.of) || rk.length, score: p.score, team: teamMode ? p.team : undefined });
     let look = '';
     try { look = game.endLook ? String(game.endLook() || '').slice(0, 20) : ''; } catch (e) {}
     say({ k: 'end', ranking: rk.slice(0, 10), look, team: teamMode ? 1 : 0 });
@@ -1505,6 +1514,8 @@ var BVPLAY = (() => {
       player: id => players.get(id),
       // someone left, came back, joined or was taken out: fn() runs (until the off function it gives back is called)
       onPlayers(fn) { if (!live()) return nop; playerSubs.add(fn); return () => playerSubs.delete(fn); },
+      // the host changed one of the game's looks in the middle of it (a setting marked live): fn(key, value)
+      onSet(fn) { if (!live()) return nop; setSubs.add(fn); return () => setSubs.delete(fn); },
       // a player's own language ('' when they follow the game's), and a line in it
       langOf: id => { const p = players.get(id); return (p && p.lang) || ''; },
       trFor: (code, text, vars) => (code && code !== lang && I18N.FULL.has(code) && I18N.has(code) ? I18N.t(code, text, vars) : P.tr(text, vars)),
@@ -1520,6 +1531,8 @@ var BVPLAY = (() => {
       award(p, base, ms, secs) { const speed = settings.speed ? Math.round(base * (0.5 + 0.5 * Math.max(0, 1 - (ms || 0) / ((secs || 20) * 1000)))) : base; p.score += speed; return speed; },
       speak: t => (live() ? P.speak(t, lang) : false),
       snd: { music: (n, o) => (live() ? SND.music(n, o) : null), sting: (n, o) => (live() ? SND.sting(n, o) : null), fx: (n, o) => (live() && SND.fx ? SND.fx(n, o) : null), on: () => SND.state() === 'on',
+        // (a sound the game makes itself, note by note: see synth in sound.js)
+        synth: (fn, kind) => (live() && SND.synth ? SND.synth(fn, kind) : false),
         // (the moment a tune reaches a second of it: the reveal lands on the music's beat)
         at: (n, sec) => (live() ? (SND.at ? SND.at(n, sec) : sleep(sec * 1000)) : Promise.resolve()) },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },

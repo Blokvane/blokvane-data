@@ -3,7 +3,7 @@
 // on purpose, since it is the file that decides.
 (function () {
   var old = !window.BV_ASYNC;
-  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'boowho-game': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1 };
+  var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'boowho-game': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1, 'dom-core': 1, 'dom-game': 1 };
   var list = ['../go/compat.js?v=15',
     '../go/wt-core.js?v=15',
     '../go/wt-net.js?v=19',
@@ -11,12 +11,12 @@
     '../go/qrcode.js?v=11',
     '../go/pass.js?v=4',
     'watch-boo.js?v=11',
-    'i18n.js?v=25',
+    'i18n.js?v=27',
     'common.js?v=20',
-    'sound.js?v=19',
+    'sound.js?v=20',
     'packs.js?v=19',
     'map.js?v=16',
-    'play.js?v=26',
+    'play.js?v=27',
     'q/index.js?v=12',
     'wheel.js?v=15',
     'games.js?v=20',
@@ -29,7 +29,9 @@
     'imp-words.js?v=14',
     'imp-game.js?v=17',
     'emoji-tpl.js?v=16',
-    'emoji-game.js?v=17'];
+    'emoji-game.js?v=17',
+    'dom-core.js?v=1',
+    'dom-game.js?v=1'];
   for (var i = 0; i < list.length; i++) {
     var src = list[i], name = src.split('?')[0].split('/').pop().replace(/\.js$/, '');
     if (old && hasOld[name]) src = src.replace(/\.js\?/, '.old.js?');

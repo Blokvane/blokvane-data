@@ -134,7 +134,23 @@ var BVSOUND = (() => {
     bwWin: ["bw-win.mp3", 0.389, { stream: true, once: true, then: "bwLobby", tail: 2.6 }],
     bwNext: ["bw-next.mp3", 0.442],
     bwEvery5: ["bw-every5.mp3", 0.367],
-    bwTimesup: ["bw-timesup.mp3", 0.556]
+    bwTimesup: ["bw-timesup.mp3", 0.556],
+    // Dominoes 151's own: Afternoon on the Terrace in the lobby; Seven Pips on the Table, Cards After Sunset, Tiles
+    // Across the Table and Tiles on Cedar taking turns all match long (a different one first each match); Gold on the
+    // Podium or Midnight Victory Lap for the winners, then the lobby tune again. Measured like the others, and the four
+    // game tunes sit 2 dB lower still: a match is long, and the tiles on the table should be heard over them. (The
+    // tiles' own sounds, the clack, the slam, the knock, are made in the game itself: see synth below.)
+    dLobby: ["d-lobby.mp3", 0.302, { stream: true, tail: 2.2, xf: 3 }],
+    dP1: ["d-play1.mp3", 0.24, { stream: true, tail: 0.6, xf: 4 }],
+    dP2: ["d-play2.mp3", 0.243, { stream: true, tail: 1.4, xf: 4 }],
+    dP3: ["d-play3.mp3", 0.248, { stream: true, tail: 0.6, xf: 4 }],
+    dP4: ["d-play4.mp3", 0.251, { stream: true, tail: 1, xf: 4 }],
+    dPlayA: ["", 1, { list: ["dP1", "dP2", "dP3", "dP4"], xf: 5 }],
+    dPlayB: ["", 1, { list: ["dP2", "dP3", "dP4", "dP1"], xf: 5 }],
+    dPlayC: ["", 1, { list: ["dP3", "dP4", "dP1", "dP2"], xf: 5 }],
+    dPlayD: ["", 1, { list: ["dP4", "dP1", "dP2", "dP3"], xf: 5 }],
+    dWin1: ["d-win1.mp3", 0.367, { stream: true, once: true, then: "dLobby", tail: 1.9 }],
+    dWin2: ["d-win2.mp3", 0.38, { stream: true, once: true, then: "dLobby", tail: 2 }]
   };
   const isStream = (f) => !!(f && f[2] && typeof f[2] === "object" && (f[2].stream || f[2].list));
   const KIND = {
@@ -166,7 +182,9 @@ var BVSOUND = (() => {
     bwNext: "next",
     bwEvery5: "every5",
     bwTimesup: "timesup",
-    bwWin: "win"
+    bwWin: "win",
+    dWin1: "win",
+    dWin2: "win"
   };
   const kindOf = (name) => KIND[name] || (FILES[name] && FILES[name][2] ? "music" : "fx");
   let offKinds = /* @__PURE__ */ new Set(), wantReal = null;
@@ -597,6 +615,14 @@ var BVSOUND = (() => {
     };
     s.start(ac.currentTime + (o.delay || 0));
   }
+  function synth(fn, kind) {
+    if (!ready() || offKinds.has(kind || "fx")) return false;
+    try {
+      fn(ac, fxBus || master);
+    } catch (e) {
+    }
+    return true;
+  }
   function setOn(v) {
     on = !!v;
     try {
@@ -684,6 +710,7 @@ var BVSOUND = (() => {
     music,
     sting,
     fx,
+    synth,
     at,
     unlock,
     setOn,

@@ -1,0 +1,36 @@
+/* Blokvane party games: Dominoes 151, its own look on the TV (dom-game.js). The table itself, its tiles and its
+   animations are drawn by the game (dom-core.js), the same way on every screen; this file only dresses the lobby in
+   the game's colors (a deep teal night and gold), and gives the table the whole screen while a match is on.
+   Reem Kufi and IBM Plex Sans Arabic (fonts/OFL-ReemKufi.txt, fonts/OFL-IBMPlexSansArabic.txt) come with the game. */
+body[data-game="dominoes"] {
+  --night: #081717; --night2: #0b2425; --panel: rgba(243, 234, 214, .07); --panel2: rgba(243, 234, 214, .12); --line: rgba(243, 234, 214, .2);
+  --text: #f3ead6; --dim: #bbd7d9; --gold: #deb866; --violet: #12484b; --lav: #deb866; --seat: rgba(243, 234, 214, .075);
+  --fun: 'Reem Kufi', 'BV Fun', ui-rounded, system-ui, sans-serif;
+  --round: 'IBM Plex Sans Arabic', ui-rounded, system-ui, -apple-system, 'BV Script', sans-serif;
+  background: radial-gradient(ellipse at 50% 35%, #085955, #021819 80%);
+}
+body[data-game="dominoes"] .lob-top h1 { color: #deb866; font-weight: 700; letter-spacing: 0; }
+body[data-game="dominoes"] .lob-top .sub { color: #bbd7d9; }
+body[data-game="dominoes"] .lob .card { background: rgba(8, 44, 46, .72); border-color: rgba(222, 184, 102, .38); }
+body[data-game="dominoes"] .lob .stp .n { background: #deb866; color: #1d1b18; }
+body[data-game="dominoes"] .codetiles span { background: linear-gradient(145deg, #fffdf7 0%, #f4ecd9 50%, #e0d3b6 100%); color: #1d1b18; box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 3px 0 #a3916a, 0 8px 12px rgba(0, 0, 0, .45); }
+body[data-game="dominoes"] .ph .pill { background: rgba(222, 184, 102, .18); color: #f3ead6; }
+body[data-game="dominoes"] .dmn-deco { display: flex; align-items: center; }
+body[data-game="dominoes"] .dmn-deco .dmn-deco-t { font-size: calc(1.6 * var(--u)); }
+body[data-game="dominoes"] .cover { background: radial-gradient(circle at 50% 40%, rgba(8, 89, 85, .9), rgba(2, 24, 25, .98)); }
+body[data-game="dominoes"] .cover .cd .big { font-family: 'Reem Kufi', var(--fun); color: #deb866; }
+body[data-game="dominoes"] .howto-box { background: #f3ead6; color: #1d1b18; }
+body[data-game="dominoes"] .howto-box h1 { font-family: 'Reem Kufi', var(--fun); }
+body[data-game="dominoes"] .howto-bar i { background: #12484b; }
+/* while a match is on, the table has the whole screen (the kit's own corner pieces stay out of its way) */
+body.dmn-on .credit, body.dmn-on .boo { display: none; }
+/* the card that explains the game mode: a dark teal panel with a gold line, like the game's own panels */
+body[data-game="dominoes"] .spot { background: linear-gradient(160deg, #0b3a3c 0%, #082c2e 55%, #062022 100%); border-color: rgba(222, 184, 102, .55); box-shadow: 0 calc(1 * var(--u)) calc(3 * var(--u)) rgba(0, 0, 0, .4), inset 0 0 0 calc(.15 * var(--u)) rgba(222, 184, 102, .18); }
+body[data-game="dominoes"] .spot::before, body[data-game="dominoes"] .spot::after { display: none; }
+body[data-game="dominoes"] .spot-ic { background: radial-gradient(circle, #152a2d 0, #152a2d 60%, #c9a24a 62%, #c9a24a 100%); box-shadow: inset 0 calc(.2 * var(--u)) 0 rgba(255, 245, 200, .7), 0 0 calc(3 * var(--u)) rgba(255, 200, 90, .35); }
+body[data-game="dominoes"] .spot-t b { font-family: 'Reem Kufi', var(--fun); color: #deb866; }
+body[data-game="dominoes"] .spot-t p { color: #bbd7d9; }
+body[data-game="dominoes"] .spot-f span { color: #f3ead6; background: rgba(243, 234, 214, .08); border-color: rgba(243, 234, 214, .16); }
+body[data-game="dominoes"] .spot-b div { background: rgba(243, 234, 214, .06); border-color: rgba(243, 234, 214, .12); }
+body[data-game="dominoes"] .ph h2 { font-family: 'Reem Kufi', var(--fun); }
+body[data-game="dominoes"] .lob-foot .snd, body[data-game="dominoes"] .lob-foot .zm, body[data-game="dominoes"] .lob-foot .fs { background: rgba(243, 234, 214, .08); border-color: rgba(243, 234, 214, .2); }
