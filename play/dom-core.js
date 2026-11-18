@@ -46,8 +46,10 @@ var BVDOM = (() => {
   const pts = hd => hd.reduce((s, t) => s + t[0] + t[1], 0);
   const teamOf = (g, p) => (g.teams ? p % 2 : p);
   const logDraw = (g, p) => { const L = g.log = g.log || [], z = L[L.length - 1]; if (z && z.p === p && z.draw) z.draw++; else L.push({ p, draw: 1 }); };
-  // (a computer player's line: the TV shows it in a speech bubble, in the game's language)
-  const say = (g, p, arr) => { if (p == null || p < 0 || p >= g.n || !g.bot[p]) return; g.say = { p, text: arr[Math.floor(Math.random() * arr.length)] }; };
+  // (a computer player's line: the TV shows it in a speech bubble, in the game's language, or as one of the game's
+  // stickers; `kind` is the moment: it went out, its partner did, an opponent did, it passes, it locked the game, or
+  // someone else did)
+  const say = (g, p, arr, kind) => { if (p == null || p < 0 || p >= g.n || !g.bot[p]) return; g.say = { p, text: arr[Math.floor(Math.random() * arr.length)], kind: kind || '' }; };
   // (a computer player who would say something when a person goes out or locks the game: their partner, else an opponent)
   const witness = (g, p, mate) => { for (let k = 1; k < g.n; k++) { const q = (p + k) % g.n; if (g.bot[q] && (teamOf(g, q) === teamOf(g, p)) === mate) return q; } return -1; };
   function award(g, team, points, res, nextStarter, target) {
@@ -67,15 +69,15 @@ var BVDOM = (() => {
     else { const R = g.chain[g.chain.length - 1][1]; g.chain.push(x === R ? [x, y] : [y, x]); g.last = g.chain.length - 1; }
     g.said[p] = false; g.passes = 0; g.lastPlayer = p; g.moves = (g.moves || 0) + 1; ev(g, 'clack');
     if (!g.hands[p].length) {
-      if (g.bot[p]) say(g, p, ['Domino!', 'That is it!', 'Yes!']);
-      else { const m = g.teams ? witness(g, p, true) : -1; if (m >= 0) say(g, m, ['Nice one!', 'Well played!']); else say(g, witness(g, p, false), ['Ahh.', 'Not again…']); }
+      if (g.bot[p]) say(g, p, ['Domino!', 'That is it!', 'Yes!'], 'out');
+      else { const m = g.teams ? witness(g, p, true) : -1; if (m >= 0) say(g, m, ['Nice one!', 'Well played!'], 'mate'); else say(g, witness(g, p, false), ['Ahh.', 'Not again…'], 'foe'); }
       const team = teamOf(g, p), points = g.hands.reduce((s, hd, q) => s + (teamOf(g, q) !== team ? pts(hd) : 0), 0);
       award(g, team, points, { kind: 'out', p }, p, target);
     } else { g.turn = (p + 1) % g.n; if (stuck(g)) blocked(g, target); }
   }
   function pass(g, p, target) {
     g.said[p] = true; g.passes++; ev(g, 'knock'); (g.log = g.log || []).push({ p, pass: true });
-    if (Math.random() < 0.7) say(g, p, ['Ugh.', 'Nothing…', 'I pass.', 'Come on!']);
+    if (Math.random() < 0.7) say(g, p, ['Ugh.', 'Nothing…', 'I pass.', 'Come on!'], 'pass');
     if (g.chain.length) { g.lacks = g.lacks || [[], [], [], []]; g.lacks[p].push(g.chain[0][0], g.chain[g.chain.length - 1][1]); }
     if (g.passes < g.n && !stuck(g)) { g.turn = (p + 1) % g.n; return; }
     blocked(g, target);
@@ -85,7 +87,7 @@ var BVDOM = (() => {
   function blocked(g, target) {
     const st = g.lastPlayer != null ? g.lastPlayer : g.starter;
     g.lockNow = st;
-    if (g.bot[st]) say(g, st, ['Locked!', 'Closed.']); else say(g, witness(g, st, g.teams) >= 0 ? witness(g, st, g.teams) : witness(g, st, false), ['Locked…', 'Hmm.']);
+    if (g.bot[st]) say(g, st, ['Locked!', 'Closed.'], 'lock'); else say(g, witness(g, st, g.teams) >= 0 ? witness(g, st, g.teams) : witness(g, st, false), ['Locked…', 'Hmm.'], 'locked');
     if (g.teams) {
       const a = pts(g.hands[0]) + pts(g.hands[2]), b = pts(g.hands[1]) + pts(g.hands[3]);
       if (a === b) return award(g, -1, 0, { kind: 'tie', p: st, min: a }, g.starter, target);
@@ -473,6 +475,7 @@ var BVDOM = (() => {
     '@keyframes dmDropB{from{transform:translateY(-22px) scale(1.3);opacity:0}}',
     '@keyframes dmRing{from{stroke-dashoffset:0}to{stroke-dashoffset:283}}',
     '@keyframes dmBar{from{transform:scaleX(1)}to{transform:scaleX(0)}}',
+    '@keyframes dmStkIn{0%{transform:scale(.3) rotate(-10deg)}55%{transform:scale(1.1) rotate(3deg)}78%{transform:scale(.97) rotate(-1deg)}100%{transform:none}}',
     '.dmn-felt{background-color:#0c4c4c}',
     '.dmn-felt[data-table="teal"]{background-image:' + NOISE + ',radial-gradient(ellipse at 50% 42%,#156864,#003336 85%)}',
     '.dmn-felt[data-table="green"]{background-image:' + NOISE + ',radial-gradient(ellipse at 50% 42%,#21763c,#003616 85%)}',
@@ -490,9 +493,54 @@ var BVDOM = (() => {
     'Eric', 'Megan', 'Scott', 'Rachel', 'Brandon', 'Heather', 'Ben', 'Nicole', 'Sam', 'Emma', 'Greg', 'Olivia', 'Frank', 'Hannah', 'Alex', 'Abby', 'Pat', 'Chloe', 'Jack', 'Grace', 'Dennis', 'Zoe', 'Tyler', 'Lily', 'Aaron', 'Ella', 'Henry',
     'Sophie', 'Adam', 'Maddie', 'Nathan', 'Claire', 'Zach', 'Lucy', 'Kyle', 'Molly', 'Walt', 'Ruby', 'Luke', 'Stella', 'Owen', 'Hazel', 'Logan', 'Violet', 'Mason', 'Ellie', 'Ethan', 'Nora', 'Noah', 'Riley', 'Liam', 'Paige', 'Cody', 'Brooke',
     'Dylan', 'Savannah', 'Austin', 'Taylor', 'Hunter', 'Morgan', 'Wyatt', 'Bailey', 'Cole', 'Peyton', 'Blake', 'Harper', 'Chase', 'Avery', 'Max', 'Maya', 'Leo', 'Ava', 'Hank', 'Dolly', 'Earl', 'Peggy', 'Wayne', 'Dottie', 'Buddy', 'June'];
-  // Quick things a player says from their phone (a bubble by their seat on the TV): [what the phone shows, the line]
-  const REACTS = [['👏', 'Nice one!'], ['😎', 'Watch this.'], ['⏳', 'You are taking too long!'], ['😤', 'Come on!'], ['😡', 'What kind of move was that?!'], ['😴', 'Wake me up when it is my turn.'], ['😂', 'Ha ha!'],
-    ['😱', 'No way!'], ['🤔', 'Hmm…'], ['🙏', 'Please, just one six.'], ['☕', 'Tea, anyone?'], ['🔥', 'I am on fire!'], ['🫣', 'Do not lock it!'], ['🤝', 'Good game!']];
+  // Quick lines a player sends from their phone in a game that has no stickers yet (a bubble by their seat on the TV).
+  // Words only: the game shows no emoji anywhere.
+  const REACTS = ['Nice one!', 'Watch this.', 'You are taking too long!', 'Come on!', 'What kind of move was that?!', 'Wake me up when it is my turn.', 'Ha ha!',
+    'No way!', 'Hmm…', 'Please, just one six.', 'Tea, anyone?', 'I am on fire!', 'Do not lock it!', 'Good game!'];
+  // =====================================================================
+  // The stickers
+  // =====================================================================
+  // What a player sends from their phone to the TV: the game's own stickers, drawn for it, each with its words on it.
+  // A pack per language; a game in a language that has a pack uses it (Arabic for now; English ones come later, and
+  // until then an English game sends the short lines above). The pictures are stickers/<pack>/01.webp and so on, made
+  // from the big originals by tools/stickers.py, which also brings every one to the same visual size: a sticker is
+  // shown by the pack's `unit` (its own width and height are in dots of that unit), never by a size of its own, so
+  // none looks big next to one that looks small. `text` is what each one says (what a screen reader reads).
+  // `groups` is how a phone lays them out; `bot` are the ones a computer player picks from, for each kind of moment.
+  const STICKERS = {
+    ar: {
+      v: 1, unit: 384,
+      sizes: '376,402 376,412 344,459 381,390 377,416 370,399 361,421 401,395 375,403 375,382 407,379 433,382 453,338 372,421 362,402 390,391 360,421 382,394 398,398 370,397 388,432 384,406 384,405 399,408 406,406 390,375 375,417 383,400 399,388 386,385 374,382 386,405 341,453 355,420 384,436 385,466 356,440 343,431 352,433 451,361 452,353 428,344 418,315 387,374 394,352 395,383 405,426 410,399 414,401 427,368 429,386 385,416 398,400 350,448 424,432 381,404 393,334 382,368 408,356 436,351 422,349 414,371 419,370 413,360 422,373 432,374 440,367 427,354 428,375 438,361 435,360 415,370 447,364 422,379 439,369 429,362 425,355 435,354 432,361'.split(' ').map(x => x.split(',').map(Number)),
+      text: 'أكلت المقلب!|لا تبچي!|لا تحلم تفوز!|راح تنام خسران!|هذا آخر إنذار!|ما عندك سالفة!|خليك ساكت!|لا تسوي نفسك محترف!|طلع حظك تعبان!|وين الدوشيش؟|روح تدرب وتعال!|انته منيلك؟|اذا اخذتو هذا الكيم بعد ما العب!|ابلع!|لا تناغي!|سياقة بعد!|لا تخاف!|اقفل!|يا ملك الدومنة!|فزنا يا معوّد|وين التصفيق؟|أريد إعادة!|مو معقولة!|هاي مو صدفة!|خسارة تاريخية!|لا أحد يحچي وياي!|شكد إنت محظوظ!|قلبي ما يتحمل!|يلا صبّوا چاي!|هاي لعبة الكبار!|لا تعيدها بعد!|ولك إنت تلعب لو تخربط؟|العب وانت ساكت أحسن!|قلبي طلع من مكانه!|ألعن أبو هالحظ!|شفتوا الإبداع؟|صفّقوا للمعلم!|فوز بطعم الشاي!|سجلوا اسمي بالتاريخ!|شكد حلوة الخسارة عليكم!|أريد جولة ثانية حتى أذلكم!|اليوم ماكو رحمة!|واحد صفر يا حبايب!|مخك طالع استراحة؟|شنو هالفضيحة؟|هذا ذكاء اصطناعي لو شنو؟|لا تخليني أضحك عليك!|شنو هالتوزيع التعبان؟|منو خربط؟|يمعود لا تفضحنا!|إنت آخر واحد يفهم!|شنو هاي الخطة الجهنمية؟|الله يساعد اللي يلعب وياك!|مو ناقصني غير إنت!|حتى الدومنة ضدي!|أريد أشتكي على التوزيع!|هاي مو لعبة هاي مؤامرة!|انطوني فرصة أعيش!|راح أنسحب وأفتح مطعم!|أريد أبدل ايدي!|لا تلعب وياي!|راحت عليك!|عيني عليك باردة!|شنو هالحظ؟|دوختني والله!|العب عدل!|مو هيج اللعب!|يا ساتر!|شنو جاي تسوي؟|لا تفرح هواية!|انكشف لعبك!|ولك خلصنا!|هذا مو لعب!|حظك يفوز مو إنت!|عفية على الذكاء!|بعدك تتعلم!|شوف شلون ألعب!|يمعود ارحمنا!|اليوم يومك مو يومي!'.split('|'),
+      groups: [['تحشيش', [1, 2, 3, 4, 6, 8, 11, 12, 25, 40, 41, 44, 47, 51, 53, 62, 70, 71, 72, 74, 76]], ['فوز', [14, 16, 17, 18, 20, 21, 24, 30, 36, 37, 38, 39, 42, 43, 77]], ['معصّب', [5, 7, 13, 15, 22, 26, 31, 32, 33, 49, 50, 54, 61, 66, 67, 69, 73]], ['حظ', [9, 10, 27, 35, 48, 55, 56, 57, 58, 59, 60, 64, 78, 79]], ['صدمة', [23, 28, 34, 45, 46, 52, 65, 68]], ['عفية', [19, 29, 63, 75]]],
+      bot: {
+        out: [14, 36, 37, 77, 21, 16, 24, 30, 42, 62, 1], first: [43], win: [20, 38, 39, 40], mate: [19, 75, 63, 37], mateWin: [20, 19, 37],
+        foe: [23, 27, 74, 68, 45, 70, 34, 28, 46], lose: [25, 22, 59, 79, 41], pass: [35, 55, 64, 58, 78, 57, 60, 26], lock: [18], locked: [68, 23, 52, 45, 49], slow: [72, 44, 4]
+      }
+    }
+  };
+  const stickerPack = l => (Object.prototype.hasOwnProperty.call(STICKERS, l) ? l : '');
+  // one sticker of a pack: { n, w, h (in the pack's unit), text, src }, or null when the pack has no such number
+  function stickerOf(pack, n) {
+    const K = STICKERS[stickerPack(pack)]; n = Math.floor(+n);
+    if (!K || !(n >= 1 && n <= K.sizes.length)) return null;
+    return { n, w: K.sizes[n - 1][0], h: K.sizes[n - 1][1], text: K.text[n - 1] || '', src: BASE + 'stickers/' + pack + '/' + (n < 10 ? '0' : '') + n + '.webp?v=' + K.v };
+  }
+  // its picture, with `u` screen dots to the pack's unit (so every sticker drawn with the same `u` looks the same size)
+  function stickerImg(pack, n, u, parent) {
+    const o = stickerOf(pack, n); if (!o) return null;
+    const k = u / STICKERS[pack].unit, im = h('img', 'display:block;width:' + (o.w * k).toFixed(1) + 'px;height:' + (o.h * k).toFixed(1) + 'px;max-width:none;-webkit-user-select:none;user-select:none;pointer-events:none', parent);
+    im.alt = o.text; im.draggable = false; im.decoding = 'async';
+    return { im, o, w: o.w * k, h: o.h * k };
+  }
+  // a little crown, drawn (the winners wear it)
+  function crown(size) {
+    const NS = 'http://www.w3.org/2000/svg', sv = document.createElementNS(NS, 'svg');
+    sv.setAttribute('viewBox', '0 0 48 36'); sv.setAttribute('width', String(size)); sv.setAttribute('height', String(Math.round(size * 0.75))); sv.setAttribute('aria-hidden', 'true');
+    sv.style.display = 'block'; sv.style.overflow = 'visible';
+    sv.innerHTML = '<path d="M5 28 2.5 8.5 14 17.5 24 3.5 34 17.5 45.5 8.5 43 28z" fill="#deb866" stroke="#8a6a22" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 30.5h38v4H5z" fill="#c9a24a" stroke="#8a6a22" stroke-width="1.4" stroke-linejoin="round"/><circle cx="24" cy="3.6" r="2.6" fill="#f6e3a1" stroke="#8a6a22" stroke-width="1.2"/><circle cx="2.8" cy="8.4" r="2.2" fill="#f6e3a1" stroke="#8a6a22" stroke-width="1.2"/><circle cx="45.2" cy="8.4" r="2.2" fill="#f6e3a1" stroke="#8a6a22" stroke-width="1.2"/><circle cx="24" cy="21" r="2.4" fill="#8a443b"/><circle cx="14" cy="23" r="1.7" fill="#2f7377"/><circle cx="34" cy="23" r="1.7" fill="#2f7377"/>';
+    return sv;
+  }
   // The game in Iraqi Arabic: the way people talk around a real table in Baghdad, not a word-for-word translation.
   const AR = {
     "Dominoes 151": "دومنة 151",
@@ -545,7 +593,7 @@ var BVDOM = (() => {
     "Highlight playable tiles": "بيّن الحجار اللي تركب",
     "On each phone, the tiles that can be played stand a little higher.": "بكل موبايل، الحجار اللي تركب ترتفع شوية.",
     "Player reactions": "تعليقات اللاعبين",
-    "Speech bubbles on the TV, from the players' phones and from the computer players.": "كلام يطلع عالتلفزيون من موبايلات اللاعبين ومن لاعبين الكومبيوتر.",
+    "Speech bubbles on the TV, from the players' phones and from the computer players.": "ستيكرات وكلام يطلع عالتلفزيون، من موبايلات اللاعبين ومن لاعبين الكومبيوتر.",
     "Table": "الميز",
     "Tiles": "الحجار",
     "Deal animation": "حركة التوزيع",
@@ -713,20 +761,45 @@ var BVDOM = (() => {
     "Tea, anyone?": "منو يريد چاي؟",
     "I am on fire!": "اليوم يومي!",
     "Do not lock it!": "لا تقفلها!",
-    "Good game!": "خوش لعب، عاشت إيدكم!"
+    "Good game!": "خوش لعب، عاشت إيدكم!",
+    "Send a sticker to the TV": "دزّ ستيكر عالتلفزيون",
+    "Stickers": "ستيكرات",
+    "Tap one and it shows on the TV.": "دوس على واحد ويطلع عالتلفزيون.",
+    "Sent to the TV": "راح للتلفزيون",
+    "Wait a moment…": "اصبر شوية…",
+    "The last ones you sent": "آخر ما دزّيت",
+    "Say something on the TV": "گول شي عالتلفزيون",
+    "Say something": "گول شي",
+    "Tap a line and it shows by your name on the TV.": "دوس على جملة وتطلع يم اسمك عالتلفزيون.",
+    "Close": "سدّ",
+    "It is your turn": "دورك"
   };
   let lang = 'en';
   const setLang = l => { lang = l === 'ar' ? 'ar' : 'en'; };
-  // (The game's own words join the kit's, for what the kit itself shows: the lobby, the host's setup. A line the kit
-  // already says its own way keeps the kit's wording there, so no other game's Arabic changes; the game's own screens
-  // always use the words above.)
+  // (The game's own words join the kit's, for what the kit itself shows: the lobby, the host's setup, "How to play". A
+  // line the kit already says its own way keeps the kit's wording there, so no other game's Arabic changes; the game's
+  // own screens always use the words above.
+  // They join only once the kit's own Arabic is in, and at that very moment. The kit fetches a language when it has
+  // none of its words yet: ours going in first would make it believe it has Arabic already, its own words would never
+  // come, and every page of the kit would stay in English, in every game.)
+  const KIT_AR = 'Look at the TV!';
+  function joinWords(I, add) {
+    const more = {};
+    let n = 0;
+    for (const k of Object.keys(AR)) if (I.t('ar', k) === k && AR[k] !== k) { more[k] = AR[k]; n++; }
+    if (n) add.call(I, 'ar', more);
+  }
   function words() {
     try {
-      if (!window.BVI18N) return;
-      const add = {};
-      let n = 0;
-      for (const k of Object.keys(AR)) if (BVI18N.t('ar', k) === k && AR[k] !== k) { add[k] = AR[k]; n++; }
-      if (n) BVI18N.add('ar', add);
+      const I = window.BVI18N;
+      if (!I) return;
+      if (!I.bvDomAdd) {
+        // (the kit's Arabic arrives through its own "add": ours goes in right behind it)
+        const add0 = I.add;
+        I.bvDomAdd = add0;
+        I.add = function (code, w) { add0.call(I, code, w); if (code === 'ar') { try { if (I.t('ar', KIT_AR) !== KIT_AR) joinWords(I, add0); } catch (e) {} } };
+      }
+      if (I.t('ar', KIT_AR) !== KIT_AR) joinWords(I, I.bvDomAdd);
     } catch (e) {}
   }
   words();
@@ -763,5 +836,5 @@ var BVDOM = (() => {
 
   return { BASE, GOLD, CREAM, INK, KUFI, PLEX, h, px, CFG, cfg, newMatch, deal, legal, pts, teamOf, play, pass, draw, stuck, blocked, misdeal, ai, sidesFor,
     cells, SETS, setOf, TILE_SETS, TABLES, BORDERS, DEALS, ENDS, LOCKS, RIMS, rim, clip, scalePx, SIZES, chainSize, tile, half, back, BACK, BACK_SH, DEAL_BG, layout, drawChain, lockScene, fxScene, drawScene, previewDeal, dealPlan, keyframes,
-    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
+    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, STICKERS, stickerPack, stickerOf, stickerImg, crown, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
 })();

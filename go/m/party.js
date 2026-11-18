@@ -1626,7 +1626,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         const sf = (Array.isArray(l.schema) ? l.schema : []).filter(f => f && typeof f.key === 'string' && /^snd_/.test(f.key));
         if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
         // (Dominoes 151: the table's look with its preview, the computer players, and the moves of the round)
-        if (isDom() && window.BVDOMP) BVDOMP.menu(sh, close, (t, fn) => { const b = btn(t, { kind: 'ghost', full: true }, sh, fn); b.style.marginTop = '10px'; return b; });
+        if (isDom() && window.BVDOMP) BVDOMP.menu(sh, close, (t, fn, ic) => { const b = btn(t, { kind: 'ghost', full: true, icon: ic || undefined }, sh, fn); b.style.marginTop = '10px'; return b; });
         tvSizeRow(sh, l);
         if (G.phase === 'play' || G.phase === 'end') gameCtl(sh, close);
         // (in the lobby: every setting of the game, in its groups)
@@ -1733,9 +1733,12 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const ul = el('ul', '', box);
     const sp = ex.sp && typeof ex.sp === 'object' ? ex.sp : null;
     const vars = sp && sp.vars && typeof sp.vars === 'object' ? sp.vars : undefined;
-    if (sp && typeof sp.name === 'string') { const li = el('li', 'mode', ul); el('i', '', li, '🎮'); el('span', '', li, T(L.clean(sp.name, 60)) + (sp.desc ? ': ' + T(L.clean(sp.desc, 200)) : '')); }
-    for (const t of ex.rules.slice(0, 6)) if (typeof t === 'string') { const li = el('li', '', ul); el('i', '', li, '•'); el('span', '', li, T(L.clean(t, 200))); }
-    if (sp && Array.isArray(sp.bullets)) for (const b of sp.bullets.slice(0, 3)) if (typeof b === 'string') { const ic = [...b][0] || '•'; const li = el('li', '', ul); el('i', '', li, ic); el('span', '', li, T(L.clean(b.slice(ic.length).trim(), 200), vars)); }
+    // (a "plain" game shows no emoji: the marks stay empty and the game's own style draws them, like Dominoes 151's pips)
+    const plain = !!ex.plain;
+    if (plain) box.classList.add('plain');
+    if (sp && typeof sp.name === 'string') { const li = el('li', 'mode', ul); el('i', '', li, plain ? '' : '🎮'); el('span', '', li, T(L.clean(sp.name, 60)) + (sp.desc ? ': ' + T(L.clean(sp.desc, 200)) : '')); }
+    for (const t of ex.rules.slice(0, 6)) if (typeof t === 'string') { const li = el('li', '', ul); el('i', '', li, plain ? '' : '•'); el('span', '', li, T(L.clean(t, 200))); }
+    if (sp && Array.isArray(sp.bullets)) for (const b of sp.bullets.slice(0, 3)) if (typeof b === 'string') { const ic = [...b][0] || '•'; const li = el('li', '', ul); el('i', '', li, plain ? '' : ic); el('span', '', li, T(L.clean(b.slice(ic.length).trim(), 200), vars)); }
     const secs = Math.max(3, Math.min(120, +ex.secs || 12));
     const bar = el('div', 'pt-timer', box); const i = el('i', '', bar);
     try { i.animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: secs * 1000, fill: 'forwards', easing: 'linear' }); } catch (e) {}
@@ -2071,7 +2074,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         else setCtl(sec, l.schema.find(f => f.key === key), l);
       }
       // (Dominoes 151: the computer players' names, colors and faces have a page of their own)
-      if (isDom() && window.BVDOMP && st.keys.includes('table')) { const bb = btn('🤖 ' + T('Computer players'), { kind: 'ghost', full: true }, sec, () => BVDOMP.botsSheet()); bb.style.marginTop = '12px'; }
+      if (isDom() && window.BVDOMP && st.keys.includes('table')) { const bb = btn(T('Computer players'), { kind: 'ghost', full: true, icon: 'ghost' }, sec, () => BVDOMP.botsSheet()); bb.style.marginTop = '12px'; }
     }
     const rb = el('button', 'pt-dk pt-usual', wz, S().usual); rb.type = 'button';
     rb.onclick = () => { backToUsual(G.lobby || l); };

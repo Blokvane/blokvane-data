@@ -3,7 +3,8 @@
 // look, as big as they fit (upright or on its side), and plays them: a tap, or a drag up out of the hand. A tile that
 // fits both ends asks which one: "Play on 6" or "Play on 0", to tap or to drop the tile on (only this player sees them).
 // Above the tiles: the score with everyone's names and pictures, how many tiles each player holds, the round, and whose
-// turn it is ("Your turn" in gold when it is yours), with the time left when the host set one, and quick reactions.
+// turn it is ("Your turn" in gold when it is yours), with the time left when the host set one, and one button that
+// opens the game's stickers: a tap sends one to the TV (one every four seconds at the most). No emoji anywhere.
 // The host's phone has more: the table's look with a live preview (also in the middle of a match), the computer
 // players' names, colors and faces, the moves of the round in order, and Next round. Each phone shows all of it in its
 // own language.
@@ -12,7 +13,7 @@ var BVDOMP = (() => {
   const D = BVDOM, h = D.h, px = D.px, GOLD = D.GOLD, CREAM = D.CREAM, INK = D.INK, KUFI = D.KUFI, PLEX = D.PLEX;
   const T = (t, v) => D.t(t, v);
   let A = null;   // what party.js lends: el, send, G, view, buzz, toast, sheet, booUri, myPic, clean, setCtl, btn
-  const X = { pub: null, me: null, sel: null, sent: null, drag: null, pv: 'look', lk: {}, ui: null, turnKey: '', syncAt: 0, rxAt: 0, logOpen: null, botT: 0, tiles: null, faceKey: '', k: 1 };
+  const X = { pub: null, me: null, sel: null, sent: null, drag: null, pv: 'look', lk: {}, ui: null, turnKey: '', syncAt: 0, logOpen: null, botT: 0, tiles: null, faceKey: '', k: 1, skAt: 0, skLast: 0, skT: 0, skClose: null, skUi: null, skWarm: false };
   const LOOK_KEYS = ['table', 'tiles', 'dealFx', 'endFx', 'lockFx', 'border'];
   const CSS = `
 html.g-dom.pt-dark, html.g-dom.pt-dark body { background: #081717; }
@@ -113,15 +114,75 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
 .dmp-tl.out { transition: transform .2s ease-in, opacity .2s ease-in; pointer-events: none; z-index: 20; }
 .dmp-tl .ring { position: absolute; left: -4px; top: -4px; right: -4px; bottom: -4px; border: 2px solid #deb866; pointer-events: none; }
 .dmp-tl.nope > div { animation: dmpNope .34s; }
-.dmp-rx { flex: none; display: flex; overflow-x: auto; margin-top: 6px; padding: 2px 0 4px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.dmp-rx { flex: none; display: flex; justify-content: center; margin-top: 8px; }
 .dmp-rx:empty { display: none; }
-.dmp-rx::-webkit-scrollbar { display: none; }
-.dmp-rx button { flex: none; width: 44px; height: 40px; margin-right: 6px; border-radius: 12px; border: 0; background: rgba(243,234,214,.1); font-size: 21px; line-height: 1; }
-.dmp-rx button:active { background: rgba(222,184,102,.35); }
-.dmp-rx.off button { opacity: .4; }
+.dmp-skb { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; max-width: 420px; height: 44px; padding: 0 14px; border: 0; border-radius: 22px; background: rgba(243,234,214,.09); box-shadow: inset 0 0 0 1px rgba(243,234,214,.2); color: #f3ead6; font: 600 15px 'IBM Plex Sans Arabic', sans-serif; overflow: hidden; -webkit-tap-highlight-color: transparent; }
+.dmp-skb:active { background: rgba(222,184,102,.3); }
+.dmp-skb svg { position: relative; flex: none; width: 22px; height: 22px; color: #deb866; }
+.dmp-skb .tx { position: relative; margin: 0 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dmp-skb .th { position: relative; flex: none; height: 36px; width: auto; }
+.dmp-skb .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(222,184,102,.24); transform-origin: 0 50%; transform: scaleX(0); pointer-events: none; }
+.dmp-skb.wait { color: #e6cf99; }
+.dmp-skb.wait .fill { animation: dmpCool linear both; }
+@keyframes dmpCool { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@keyframes dmpSkIn { from { opacity: 0; transform: scale(.86); } }
+html.g-dom .sheet.dmp-sks { display: flex; flex-direction: column; max-width: 900px; height: 86vh; height: 86dvh; max-height: 780px; padding: 14px 0 0; overflow: hidden; font-family: 'IBM Plex Sans Arabic', sans-serif; color: #f3ead6; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+html.g-dom .sheet.dmp-sks.low { height: 96vh; height: 96dvh; padding-top: 8px; margin-bottom: 0; }
+.dmp-sks.low .grab { display: none; }
+.dmp-sks.low .dmp-skh { padding-bottom: 4px; }
+.dmp-sks.low .dmp-skh p { display: none; }
+.dmp-sks.low .dmp-skh h3 { font-size: 19px; }
+.dmp-sks.low .dmp-skh .x { width: 34px; height: 34px; padding: 8px; }
+.dmp-sks.low .dmp-skh .x svg { width: 18px; height: 18px; }
+.dmp-sks.low .dmp-skt { padding-bottom: 6px; }
+.dmp-sks.low .dmp-skt button { height: 30px; }
+.dmp-sks.low .dmp-skl h4 { margin-top: 6px; }
+html.g-dom .sheet.dmp-sks .grab { flex: none; margin: -4px auto 8px; }
+.dmp-skh { flex: none; display: flex; align-items: center; padding: 0 14px 8px; }
+.dmp-skh .t { flex: 1 1 auto; min-width: 0; }
+.dmp-skh h3 { margin: 0; font: 700 22px/1.25 'Reem Kufi', sans-serif; color: #deb866; }
+.dmp-skh p { margin: 1px 0 0; font-size: 13px; line-height: 1.35; color: #bbd7d9; }
+.dmp-skh .turn { flex: none; margin: 0 8px; padding: 3px 11px; border-radius: 12px; background: #deb866; color: #1d1b18; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.dmp-skh .x { flex: none; width: 40px; height: 40px; padding: 10px; border: 0; border-radius: 50%; background: rgba(243,234,214,.1); color: #f3ead6; }
+.dmp-skh .x svg { display: block; width: 20px; height: 20px; }
+.dmp-skt { flex: none; display: flex; overflow-x: auto; padding: 2px 10px 10px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.dmp-skt::-webkit-scrollbar { display: none; }
+.dmp-skt button { flex: none; height: 34px; padding: 0 15px; margin: 0 3px; border: 0; border-radius: 17px; background: rgba(243,234,214,.1); color: #f3ead6; font: 600 14px 'IBM Plex Sans Arabic', sans-serif; white-space: nowrap; transition: background .15s, color .15s; }
+.dmp-skt button[aria-pressed="true"] { background: #deb866; color: #1d1b18; }
+.dmp-skw { position: relative; flex: none; display: none; align-items: center; justify-content: center; height: 34px; margin: 0 13px 8px; border-radius: 17px; background: rgba(0,0,0,.35); overflow: hidden; font-size: 14px; font-weight: 600; color: #e6cf99; }
+.dmp-sks.wait .dmp-skw { display: flex; }
+.dmp-skw i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(222,184,102,.26); transform-origin: 0 50%; animation: dmpCool linear both; }
+.dmp-skw span { position: relative; }
+.dmp-skw.nudge { animation: dmpNope .34s; }
+.dmp-skl { flex: 1 1 0; min-height: 0; overflow-x: hidden; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: 0 9px calc(18px + var(--safe-b, 0px)); }
+.dmp-skl h4 { display: flex; align-items: center; margin: 12px 6px 4px; font: 600 15px/1.3 'IBM Plex Sans Arabic', sans-serif; color: #deb866; }
+.dmp-skl h4::after { content: ''; flex: 1; height: 1px; margin: 0 10px; background: rgba(222,184,102,.3); }
+.dmp-skl h4:first-child { margin-top: 2px; }
+.dmp-skg { display: flex; flex-wrap: wrap; }
+.dmp-skg.one { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.dmp-skg.one::-webkit-scrollbar { display: none; }
+.dmp-sk { flex: none; display: flex; align-items: center; justify-content: center; margin: 4px; padding: 0; border: 0; border-radius: 16px; background: rgba(0,0,0,.24); box-shadow: inset 0 0 0 1px rgba(243,234,214,.08); transition: transform .12s, background .12s, opacity .2s; -webkit-tap-highlight-color: transparent; }
+.dmp-sk img { opacity: 0; transition: opacity .18s; }
+.dmp-sk img.in { opacity: 1; }
+.dmp-sk:active { transform: scale(.94); background: rgba(222,184,102,.28); box-shadow: inset 0 0 0 2px #deb866; }
+.dmp-sks.wait .dmp-sk, .dmp-sks.wait .dmp-say { opacity: .42; }
+.dmp-says { display: flex; flex-wrap: wrap; justify-content: center; padding-top: 4px; }
+.dmp-say { flex: 1 1 42%; min-height: 52px; margin: 5px; padding: 8px 14px; border: 0; border-radius: 18px 18px 18px 5px; background: #fffdf7; color: #1d1b18; font: 600 15px/1.3 'IBM Plex Sans Arabic', sans-serif; text-align: center; box-shadow: 0 3px 8px rgba(0,0,0,.35); transition: transform .12s, opacity .2s; -webkit-tap-highlight-color: transparent; }
+.dmp-say:active { transform: scale(.96); background: #deb866; }
 .dmp.land .dmp-hd { margin-top: 0; }
-.dmp.land .dmp-rx { justify-content: center; flex-wrap: wrap; overflow: visible; }
-.dmp.land .dmp-rx button { margin-bottom: 6px; }
+.dmp.land .dmp-rx { margin-top: 10px; }
+html.g-dom .pt-howto small { color: #deb866; font-family: 'IBM Plex Sans Arabic', sans-serif; font-weight: 600; }
+html.g-dom .pt-howto h1 { font-family: 'Reem Kufi', sans-serif; color: #deb866; }
+html.g-dom .pt-howto li { align-items: center; font: 600 15px/1.38 'IBM Plex Sans Arabic', sans-serif; color: #f3ead6; border-color: rgba(243,234,214,.14); }
+html.g-dom .pt-howto li.mode { border-color: rgba(222,184,102,.6); background: rgba(222,184,102,.1); }
+html.g-dom .pt-howto .pt-timer i { background: linear-gradient(90deg, #deb866, #f6e3a1); }
+html.g-dom .pt-howto li i { width: 26px; height: 26px; font-size: 0; border-radius: 6px; background-color: #fffdf7; background-repeat: no-repeat; box-shadow: inset 0 1px 0 rgba(255,255,255,.95), 0 2px 0 #a3916a, 0 3px 5px rgba(0,0,0,.4); }
+html.g-dom .pt-howto li:nth-child(1) i { background-image: radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
+html.g-dom .pt-howto li:nth-child(2) i { background-image: radial-gradient(circle at 29% 29%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 71% 71%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
+html.g-dom .pt-howto li:nth-child(3) i { background-image: radial-gradient(circle at 26% 26%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 74% 74%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
+html.g-dom .pt-howto li:nth-child(4) i { background-image: radial-gradient(circle at 29% 29%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 71% 29%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 29% 71%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 71% 71%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
+html.g-dom .pt-howto li:nth-child(5) i { background-image: radial-gradient(circle at 27% 27%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 73% 27%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 27% 73%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 73% 73%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
+html.g-dom .pt-howto li:nth-child(n+6) i { background-image: radial-gradient(circle at 30% 24%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 70% 24%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 30% 50%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 70% 50%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 30% 76%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px), radial-gradient(circle at 70% 76%, #2b2824 0, #0d0c0b 2.4px, rgba(13,12,11,0) 3.1px); }
 .dmp-card { background: #f3ead6; color: #1d1b18; border-radius: 18px; padding: 16px 18px 18px; font-family: 'IBM Plex Sans Arabic', sans-serif; text-align: start; }
 .dmp-card h3 { font: 700 22px 'Reem Kufi', sans-serif; margin: 0 0 10px; }
 .dmp-pv { position: relative; height: 150px; direction: ltr; }
@@ -157,10 +218,12 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
 .dmp-fin .r b { flex: 1; min-width: 0; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dmp-fin .r span { font: 700 24px 'Reem Kufi', sans-serif; margin-inline-start: 12px; }
 .dmp-fin .r.w b, .dmp-fin .r.w span { color: #deb866; }
+.dmp-fin .r .cr { flex: none; margin: 0 8px 2px 0; }
+[dir="rtl"] .dmp-fin .r .cr { margin: 0 0 2px 8px; }
 `;
   function css() { D.css(); if (document.getElementById('dmp-css')) return; const st = document.createElement('style'); st.id = 'dmp-css'; st.textContent = CSS; document.head.appendChild(st); }
   function init(api) { A = api; css(); D.words(); }
-  function reset() { X.pub = null; X.me = null; X.sel = null; X.sent = null; X.drag = null; X.turnKey = ''; X.lk = {}; if (X.logOpen) { try { X.logOpen(); } catch (e) {} X.logOpen = null; } }
+  function reset() { X.pub = null; X.me = null; X.sel = null; X.sent = null; X.drag = null; X.turnKey = ''; X.lk = {}; if (X.logOpen) { try { X.logOpen(); } catch (e) {} X.logOpen = null; } if (X.skClose) { try { X.skClose(); } catch (e) {} } }
   const lang = () => { D.setLang(A && A.G.lang === 'ar' ? 'ar' : 'en'); D.words(); };
   const rtl = () => D.lang === 'ar';
   const dir = e => { if (rtl()) e.style.direction = 'rtl'; return e; };
@@ -260,7 +323,7 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
     // (the tiles get the room: all of the side column on a phone lying down; upright, up to half of the screen, and the
     // stage always keeps enough to say whose turn it is)
     const Wd = (land ? ui.R.clientWidth : root.clientWidth) || Math.min(640, innerWidth - 32);
-    const rxH = ui.rx.offsetHeight ? ui.rx.offsetHeight + 6 : 0;
+    const rxH = ui.rx.offsetHeight ? ui.rx.offsetHeight + 10 : 0;
     const maxH = land ? H - rxH - 10 : Math.min(H * 0.5, H - ui.sb.offsetHeight - ui.rl.offsetHeight - 21 - rxH - (H < 560 ? 100 : 136));
     handDraw(handPlan(Wd, Math.max(92, maxH)));
     stage();
@@ -567,23 +630,165 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
     };
     b.addEventListener('pointermove', move); b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
   }
-  // ----- quick reactions: a bubble by my seat on the TV -----
+  // ----- a sticker for the TV -----
+  // One button under the tiles opens all of the game's stickers: big enough to read (each one has its words on it), in
+  // groups with a row of names on top to jump to one, and the last ones this player sent first. A tap sends it: it
+  // shows on the TV, by this player's seat, and nowhere else. One every four seconds at the most (the button fills up
+  // again while the player waits; the TV holds to it too). The stickers are the pack of the game's language: Arabic
+  // for now. A game in a language that has no pack yet sends a short line in a bubble instead, the same way.
+  const COOL = 4000;
+  const SVG = (d, more) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d.split('|').map(x => '<path d="' + x + '"/>').join('') + (more || '') + '</svg>';
+  const IC = {
+    sticker: SVG('M20 12.5V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v10a3 3 0 0 0 3 3h5.5z|M12.5 20c.2-4.4 3.1-7.3 7.5-7.5|M8.6 9.6h.01|M14.4 9.6h.01|M8.6 13.4c1.2 1.3 2.9 1.6 4.3.9'),
+    say: SVG('M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-6.5L8 21v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z|M8 10h8|M8 13h5'),
+    ok: SVG('M5 12.5l4.5 4.5L19 7.5'), x: SVG('M6 6l12 12|M18 6L6 18')
+  };
   const rxOn = () => !!X.pub && !!X.pub.opt.rx && myP() >= 0;
+  const packNow = () => (X.pub ? D.stickerPack(X.pub.opt.sk || '') : '');
+  const coolLeft = () => Math.max(0, COOL - (Date.now() - (X.skAt || 0)));
+  const recentKey = pack => 'bv-dom-stk-' + pack;
+  function recents(pack) { try { const a = JSON.parse(localStorage.getItem(recentKey(pack)) || '[]'); return Array.isArray(a) ? a.filter(n => D.stickerOf(pack, n)).slice(0, 8) : []; } catch (e) { return []; } }
+  function remember(pack, n) { try { localStorage.setItem(recentKey(pack), JSON.stringify([n].concat(recents(pack).filter(x => x !== n)).slice(0, 8))); } catch (e) {} }
   function reactions() {
-    const e = X.ui.rx;
-    if (same('rx', [rxOn(), D.lang])) return;
+    const e = X.ui.rx, pack = packNow(), on = rxOn(), cool = coolLeft() > 0;
+    if (!on && X.skClose) { try { X.skClose(); } catch (er) {} }
+    if (X.skUi && X.skUi.turn.isConnected) X.skUi.turn.style.display = myTurn() ? '' : 'none';
+    if (same('rx', [on, D.lang, pack, cool, cool ? X.skLast : 0])) return;
     e.textContent = '';
+    if (!on) return;
+    const b = A.el('button', 'dmp-skb' + (cool ? ' wait' : ''), e); b.type = 'button';
+    dir(b);
+    const fill = A.el('span', 'fill', b);
+    if (cool) {
+      // (just sent: what went to the TV, while the four seconds run out)
+      fill.style.animationDuration = COOL + 'ms'; fill.style.animationDelay = (coolLeft() - COOL) + 'ms';
+      if (rtl()) fill.style.transformOrigin = '100% 50%';
+      const o = pack && X.skLast ? D.stickerOf(pack, X.skLast) : null;
+      if (o) { const im = A.el('img', 'th', b); im.alt = ''; im.src = o.src; im.style.width = Math.round(36 * o.w / o.h) + 'px'; } else b.insertAdjacentHTML('beforeend', IC.ok);
+      A.el('span', 'tx', b, T('Sent to the TV'));
+    } else {
+      b.insertAdjacentHTML('beforeend', pack ? IC.sticker : IC.say);
+      A.el('span', 'tx', b, pack ? T('Send a sticker to the TV') : T('Say something on the TV'));
+    }
+    b.onclick = () => { A.buzz('tap'); stickerSheet(); };
+    // (the first pictures the sheet shows are fetched ahead, once, so it opens with its stickers already there)
+    if (pack && !X.skWarm) {
+      X.skWarm = true;
+      setTimeout(() => { try { const K = D.STICKERS[pack]; for (const n of recents(pack).concat(K.groups[0][1].slice(0, 6))) { const o = D.stickerOf(pack, n); if (o) { const im = new Image(); im.decoding = 'async'; im.src = o.src; } } } catch (e) {} }, 2500);
+    }
+  }
+  // (the four seconds: the button under the tiles and the open sheet both show them, and both come back by themselves)
+  function coolNow() {
+    clearTimeout(X.skT);
+    if (X.ui && X.ui.root.isConnected) reactions();
+    const u = X.skUi, left = coolLeft();
+    if (u && u.sh.isConnected) {
+      u.sh.classList.toggle('wait', left > 0);
+      if (left > 0) { u.bar.style.animationDuration = COOL + 'ms'; u.bar.style.animationDelay = (left - COOL) + 'ms'; }
+    }
+    if (left > 0) X.skT = setTimeout(coolNow, left + 40);
+  }
+  // (what went to the TV; false while the four seconds are not over)
+  function sendOne(m, n) {
+    if (!rxOn() || coolLeft() > 0) return false;
+    X.skAt = Date.now(); X.skLast = n || 0;
+    send(m);
+    coolNow();
+    return true;
+  }
+  function stickerSheet() {
     if (!rxOn()) return;
-    D.REACTS.forEach((r, i) => {
-      const b = A.el('button', '', e, r[0]); b.type = 'button'; b.title = T(r[1]); b.setAttribute('aria-label', T(r[1]));
-      b.onclick = () => {
-        const t0 = Date.now();
-        if (t0 - X.rxAt < 1600) return;
-        X.rxAt = t0; send({ a: 'react', i }); A.buzz('tap');
-        A.toast(r[0] + ' ' + T(r[1]), 'ok');
-        e.classList.add('off'); setTimeout(() => e.classList.remove('off'), 1600);
+    if (X.skClose) { try { X.skClose(); } catch (e) {} }
+    lang();
+    const pack = packNow(), K = pack ? D.STICKERS[pack] : null;
+    let io = null, onSize = null;
+    X.skClose = A.sheet('', (sh, close) => {
+      sh.classList.add('dmp-sks');
+      if (innerHeight < 520) sh.classList.add('low');
+      // the top: what this is, "your turn" when it is, and a way out
+      const hd = A.el('div', 'dmp-skh', sh); dir(hd);
+      const t = A.el('div', 't', hd);
+      A.el('h3', '', t, pack ? T('Stickers') : T('Say something'));
+      A.el('p', '', t, pack ? T('Tap one and it shows on the TV.') : T('Tap a line and it shows by your name on the TV.'));
+      const turn = A.el('span', 'turn', hd, T('It is your turn')); turn.style.display = myTurn() ? '' : 'none';
+      const x = A.el('button', 'x', hd); x.type = 'button'; x.innerHTML = IC.x; x.setAttribute('aria-label', T('Close')); x.onclick = () => close();
+      const tabs = K ? A.el('div', 'dmp-skt', sh) : null;
+      const wait = A.el('div', 'dmp-skw', sh); const bar = A.el('i', '', wait); dir(A.el('span', '', wait, T('Wait a moment…')));
+      if (rtl()) bar.style.transformOrigin = '100% 50%';
+      const list = A.el('div', 'dmp-skl', sh);
+      X.skUi = { sh, turn, bar };
+      const tooSoon = () => { wait.classList.remove('nudge'); void wait.offsetWidth; wait.classList.add('nudge'); A.buzz('tap'); };
+      if (!K) {
+        // (no stickers in this game's language yet: short lines, words only)
+        const box = A.el('div', 'dmp-says', list); dir(box);
+        D.REACTS.forEach((line, i) => { const b = A.el('button', 'dmp-say', box, T(line)); b.type = 'button'; dir(b); b.onclick = () => { if (!sendOne({ a: 'react', i }, 0)) return tooSoon(); close(); }; });
+        coolNow();
+        return;
+      }
+      // (the pack reads from the right when it is the Arabic one, whatever the phone's own language)
+      const rl = pack === 'ar';
+      if (rl) { tabs.style.direction = 'rtl'; list.style.direction = 'rtl'; }
+      const cells = [], heads = [];
+      const cell = (parent, n, small) => {
+        const o = D.stickerOf(pack, n); if (!o) return;
+        const b = A.el('button', 'dmp-sk', parent); b.type = 'button'; b.setAttribute('aria-label', o.text);
+        const im = A.el('img', '', b); im.alt = ''; im.draggable = false; im.decoding = 'async'; im.dataset.src = o.src;
+        im.onload = () => im.classList.add('in');
+        b.onclick = () => {
+          if (!sendOne({ a: 'stk', i: n }, n)) return tooSoon();
+          remember(pack, n);
+          close();
+        };
+        cells.push({ b, im, o, small: !!small });
       };
-    });
+      const rec = recents(pack);
+      if (rec.length) {
+        dir(A.el('h4', '', list, T('The last ones you sent')));
+        const row = A.el('div', 'dmp-skg one', list);
+        for (const n of rec) cell(row, n, true);
+      }
+      K.groups.forEach(g => {
+        const hh = A.el('h4', '', list, g[0]); heads.push(hh);
+        const grid = A.el('div', 'dmp-skg', list);
+        for (const n of g[1]) cell(grid, n, false);
+        const tb = A.el('button', '', tabs, g[0]); tb.type = 'button'; tb.setAttribute('aria-pressed', 'false');
+        tb.onclick = () => { list.scrollTop = hh.offsetTop - list.offsetTop - 2; mark(); A.buzz('tap'); };
+      });
+      // every sticker the same size: `u` screen dots to the pack's unit, as many across as fit while the words stay easy
+      // to read (two on a phone held upright; more on a tablet, or on a phone lying down)
+      const mw = Math.max.apply(null, K.sizes.map(z => z[0])) / K.unit, mh = Math.max.apply(null, K.sizes.map(z => z[1])) / K.unit;
+      const size = () => {
+        const W = list.clientWidth - 18, H = list.clientHeight;
+        if (W < 80) return;
+        const want = Math.min(176, Math.max(118, H / 1.8)), cols = Math.max(2, Math.min(7, Math.floor(W / want))), cw = Math.floor(W / cols) - 8;
+        const u = (cw - 10) / mw, ch = Math.round(u * mh + 10);
+        for (const c of cells) {
+          const k = c.small ? 0.72 : 1, uu = u * k / K.unit;
+          c.b.style.width = Math.round(cw * k) + 'px'; c.b.style.height = Math.round(ch * k) + 'px';
+          c.im.style.width = (c.o.w * uu).toFixed(1) + 'px'; c.im.style.height = (c.o.h * uu).toFixed(1) + 'px';
+        }
+      };
+      size();
+      onSize = () => { if (sh.isConnected) size(); };
+      addEventListener('resize', onSize);
+      // (a picture is fetched when its part of the list comes near: opening the sheet costs a few pictures, not 79)
+      const load = im => { if (im.dataset.src) { im.src = im.dataset.src; delete im.dataset.src; } };
+      try {
+        io = new IntersectionObserver(es => { for (const en of es) if (en.isIntersecting) { load(en.target); io.unobserve(en.target); } }, { root: list, rootMargin: '500px 0px' });
+        for (const c of cells) io.observe(c.im);
+      } catch (e) { io = null; for (const c of cells) load(c.im); }
+      // (the name on top that matches the part of the list in sight)
+      const mark = () => {
+        const y = list.scrollTop + 40;
+        let at = 0;
+        heads.forEach((hh, i) => { if (hh.offsetTop - list.offsetTop <= y) at = i; });
+        if (list.scrollTop + list.clientHeight >= list.scrollHeight - 4) at = heads.length - 1;
+        [].forEach.call(tabs.children, (tb, i) => { const on = i === at; if ((tb.getAttribute('aria-pressed') === 'true') !== on) { tb.setAttribute('aria-pressed', String(on)); if (on) { try { tabs.scrollTo({ left: tb.offsetLeft - tabs.clientWidth / 2 + tb.offsetWidth / 2, behavior: 'smooth' }); } catch (e) {} } } });
+      };
+      list.addEventListener('scroll', mark, { passive: true });
+      mark();
+      coolNow();
+    }, { onClose: () => { X.skClose = null; X.skUi = null; if (io) { try { io.disconnect(); } catch (e) {} } if (onSize) removeEventListener('resize', onSize); } });
   }
 
   // =====================================================================
@@ -723,9 +928,10 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
     if (!isHost()) return;
     lang();
     const play = A.G.phase === 'play';
-    btn('🎨 ' + T('The table\'s look'), () => { close(); lookSheet(); });
-    btn('🤖 ' + T('Computer players'), () => { close(); botsSheet(); });
-    if (play && X.pub) btn('📜 ' + T('Moves this round'), () => { close(); logSheet(); });
+    // (each with one of the kit's drawn icons: this game shows no emoji)
+    btn(T('The table\'s look'), () => { close(); lookSheet(); }, 'draw');
+    btn(T('Computer players'), () => { close(); botsSheet(); }, 'ghost');
+    if (play && X.pub) btn(T('Moves this round'), () => { close(); logSheet(); }, 'queue');
   }
 
   // =====================================================================
@@ -736,7 +942,12 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
     const P = X.pub; if (!P || !P.win) return false;
     lang();
     const w = P.win, e = A.el('div', 'dmp-fin', parent);
-    for (const i of w.order) { const r = A.el('div', 'r' + (i === w.side ? ' w' : ''), e); dir(A.el('b', '', r, (i === w.side ? '🏆 ' : '') + String(w.names[i]))); A.el('span', '', r, String(w.sc[i])); }
+    for (const i of w.order) {
+      const r = A.el('div', 'r' + (i === w.side ? ' w' : ''), e);
+      // (the winners wear the game's little crown)
+      if (i === w.side) { const c = A.el('i', 'cr', r); c.appendChild(D.crown(24)); }
+      dir(A.el('b', '', r, String(w.names[i]))); A.el('span', '', r, String(w.sc[i]));
+    }
     return true;
   }
   const winName = () => (X.pub && X.pub.win ? String(X.pub.win.names[X.pub.win.side]) : '');
@@ -824,5 +1035,5 @@ html.g-dom.dmp-on .pt-top .who h1 { font-family: 'Reem Kufi', sans-serif; color:
   }
 
   return { init, reset, onMsg, draw, css, preview, previewBox, onSet, lookSheet, botsSheet, logSheet, menu, endList, winName, share, LOOK_KEYS, get pub() { return X.pub; }, get on() { return !!X.pub; },
-    left() { document.documentElement.classList.remove('dmp-on'); X.ui = null; } };
+    left() { document.documentElement.classList.remove('dmp-on'); X.ui = null; if (X.skClose) { try { X.skClose(); } catch (e) {} } } };
 })();

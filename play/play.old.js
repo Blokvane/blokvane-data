@@ -1826,13 +1826,24 @@ var BVPLAY = (() => {
       if (key !== lastSpot) c.classList.add("fresh");
       lastSpot = key;
       const hd = el("div", "spot-top", c);
-      el("div", "spot-ic", hd, sp.icon).setAttribute("aria-hidden", "true");
+      const ic0 = el("div", "spot-ic", hd, sp.icon || "");
+      ic0.setAttribute("aria-hidden", "true");
+      if (typeof sp.iconEl === "function") {
+        try {
+          const x = sp.iconEl();
+          if (x) {
+            ic0.textContent = "";
+            ic0.appendChild(x);
+          }
+        } catch (e) {
+        }
+      }
       const tx2 = el("div", "spot-t", hd);
       el("span", "caps", tx2, yield T(sp.label));
       el("b", "", tx2, yield T(sp.name));
       el("p", "", tx2, yield T(sp.desc));
       const facts = el("div", "spot-f", c);
-      for (const [ic, t2, v] of sp.facts) el("span", "", facts, ic + " " + (yield optLabel2(t2, v)));
+      for (const [ic, t2, v] of sp.facts) el("span", "", facts, (ic ? ic + " " : "") + (yield optLabel2(t2, v)));
       const bl = el("div", "spot-b", c);
       for (const [ic, t2] of sp.bullets) {
         const d = el("div", "", bl);
@@ -2082,8 +2093,9 @@ var BVPLAY = (() => {
       const lines = [];
       const all = (typeof game.rules === "function" ? game.rules(settings) : game.rules) || [];
       const rl = sp && Array.isArray(sp.bullets) && sp.bullets.length ? all.slice(0, 2) : all.slice(0, 6);
-      if (sp && sp.name) lines.push(["🎮", P.f(sp.name) + (sp.desc ? ": " + P.f(sp.desc) : "")]);
-      for (const t2 of rl) lines.push(["•", P.f(t2)]);
+      const plain = !!game.plain;
+      if (sp && sp.name) lines.push([plain ? "" : "🎮", P.f(sp.name) + (sp.desc ? ": " + P.f(sp.desc) : "")]);
+      for (const t2 of rl) lines.push([plain ? "" : "•", P.f(t2)]);
       if (sp && Array.isArray(sp.bullets)) for (const [ic, t2] of sp.bullets.slice(0, 3)) lines.push([ic, P.f(t2, sp.vars)]);
       stage.textContent = "";
       const cv = el("div", "cover howto", stage);
@@ -2107,7 +2119,7 @@ var BVPLAY = (() => {
       const fill = el("i", "", bar);
       fill.style.animationDuration = secs + "s";
       boo("mind");
-      const m = { k: "q", n: ++round, gr: run, kind: "wait", prompt: P.f("How to play"), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map((b) => b[0] + " " + b[1]), vars: sp.vars || null } : null, secs }, who: [] };
+      const m = { k: "q", n: ++round, gr: run, kind: "wait", prompt: P.f("How to play"), extra: { rules: rl, sp: sp ? { name: sp.name, desc: sp.desc, bullets: (sp.bullets || []).slice(0, 3).map((b) => (b[0] || "•") + " " + b[1]), vars: sp.vars || null } : null, secs, plain: plain ? 1 : void 0 }, who: [] };
       cur.q = m;
       say(m);
       yield psleep(secs * 1e3);

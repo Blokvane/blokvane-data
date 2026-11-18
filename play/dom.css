@@ -19,9 +19,30 @@ body[data-game="dominoes"] .dmn-deco { display: flex; align-items: center; }
 body[data-game="dominoes"] .dmn-deco .dmn-deco-t { font-size: calc(1.6 * var(--u)); }
 body[data-game="dominoes"] .cover { background: radial-gradient(circle at 50% 40%, rgba(8, 89, 85, .9), rgba(2, 24, 25, .98)); }
 body[data-game="dominoes"] .cover .cd .big { font-family: 'Reem Kufi', var(--fun); color: #deb866; }
-body[data-game="dominoes"] .howto-box { background: #f3ead6; color: #1d1b18; }
-body[data-game="dominoes"] .howto-box h1 { font-family: 'Reem Kufi', var(--fun); }
-body[data-game="dominoes"] .howto-bar i { background: #12484b; }
+/* "How to play", before the first round: the game's own ivory card, like its panels (ink on ivory, the mode on a dark teal
+   line, a teal bar for the time). No emoji: each line wears a tile's face, one pip for the first line, two for the
+   second, and so on up to six. */
+body[data-game="dominoes"] .howto-box { box-sizing: border-box; width: calc(126 * var(--u)); background: linear-gradient(160deg, #fbf5e6 0%, #f3ead6 55%, #eadfc6 100%); color: #1d1b18; border-radius: calc(3.4 * var(--u)); padding: calc(4.2 * var(--u)) calc(4.6 * var(--u)) calc(4 * var(--u)); box-shadow: 0 calc(2.6 * var(--u)) calc(7 * var(--u)) rgba(0, 0, 0, .55), inset 0 0 0 calc(.25 * var(--u)) rgba(222, 184, 102, .65); text-align: left; text-align: start; }
+body[data-game="dominoes"] .howto-hd { margin-bottom: calc(2.6 * var(--u)); }
+body[data-game="dominoes"] .howto-hd > div { min-width: 0; text-align: left; text-align: start; }
+html[dir="rtl"] body[data-game="dominoes"] .howto-hd > div, html[dir="rtl"] body[data-game="dominoes"] .howto-box { text-align: right; text-align: start; }
+body[data-game="dominoes"] .howto-gi { width: calc(11 * var(--u)); height: calc(11 * var(--u)); border-radius: calc(2.6 * var(--u)); box-shadow: 0 calc(.8 * var(--u)) calc(2 * var(--u)) rgba(0, 0, 0, .35); }
+body[data-game="dominoes"] .howto-hd small { color: #12686b; font-family: var(--round); font-weight: 600; }
+body[data-game="dominoes"] .howto-hd h1 { font: 700 calc(7 * var(--u))/1.1 'Reem Kufi', var(--fun); color: #1d1b18; margin-top: calc(.5 * var(--u)); }
+body[data-game="dominoes"] .howto-list { grid-gap: calc(1.1 * var(--u)); gap: calc(1.1 * var(--u)); }
+body[data-game="dominoes"] .howto-list li { padding: calc(1.3 * var(--u)) calc(2.2 * var(--u)); border-radius: calc(2 * var(--u)); background: rgba(29, 27, 24, .055); border-color: rgba(29, 27, 24, .13); color: #1d1b18; font: 600 calc(2.75 * var(--u))/1.32 var(--round); text-align: left; text-align: start; }
+html[dir="rtl"] body[data-game="dominoes"] .howto-list li { text-align: right; text-align: start; }
+body[data-game="dominoes"] .howto-list li:first-child { background: linear-gradient(160deg, #0d3b3d, #082c2e); border-color: rgba(222, 184, 102, .7); color: #f3ead6; }
+body[data-game="dominoes"] .howto-list li span { min-width: 0; }
+body[data-game="dominoes"] .howto-list li i { flex: none; width: calc(4.5 * var(--u)); height: calc(4.5 * var(--u)); font-size: 0; border-radius: calc(1 * var(--u)); background-color: #fffdf7; background-repeat: no-repeat; box-shadow: inset 0 calc(.15 * var(--u)) 0 rgba(255, 255, 255, .95), 0 calc(.3 * var(--u)) 0 #a3916a, 0 calc(.6 * var(--u)) calc(.9 * var(--u)) rgba(0, 0, 0, .3); }
+body[data-game="dominoes"] .howto-list li:nth-child(1) i { background-image: radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-list li:nth-child(2) i { background-image: radial-gradient(circle at 29% 29%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 71% 71%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-list li:nth-child(3) i { background-image: radial-gradient(circle at 26% 26%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 74% 74%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-list li:nth-child(4) i { background-image: radial-gradient(circle at 29% 29%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 71% 29%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 29% 71%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 71% 71%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-list li:nth-child(5) i { background-image: radial-gradient(circle at 27% 27%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 73% 27%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 50% 50%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 27% 73%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 73% 73%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-list li:nth-child(n+6) i { background-image: radial-gradient(circle at 30% 24%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 70% 24%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 30% 50%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 70% 50%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 30% 76%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))), radial-gradient(circle at 70% 76%, #2b2824 0, #0d0c0b calc(.46 * var(--u)), rgba(13, 12, 11, 0) calc(.56 * var(--u))); }
+body[data-game="dominoes"] .howto-bar { margin-top: calc(2.6 * var(--u)); background: rgba(29, 27, 24, .14); }
+body[data-game="dominoes"] .howto-bar i { background: linear-gradient(90deg, #12686b, #0d3b3d); }
 /* while a match is on, the table has the whole screen (the kit's own corner pieces stay out of its way) */
 body.dmn-on .credit, body.dmn-on .boo { display: none; }
 /* the card that explains the game mode: a dark teal panel with a gold line, like the game's own panels */
@@ -32,5 +53,7 @@ body[data-game="dominoes"] .spot-t b { font-family: 'Reem Kufi', var(--fun); col
 body[data-game="dominoes"] .spot-t p { color: #bbd7d9; }
 body[data-game="dominoes"] .spot-f span { color: #f3ead6; background: rgba(243, 234, 214, .08); border-color: rgba(243, 234, 214, .16); }
 body[data-game="dominoes"] .spot-b div { background: rgba(243, 234, 214, .06); border-color: rgba(243, 234, 214, .12); }
+body[data-game="dominoes"] .spot-b i { width: calc(1.5 * var(--u)); height: calc(1.5 * var(--u)); margin: 0 calc(.5 * var(--u)); font-size: 0; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f6e3a1, #c9a24a 70%); box-shadow: 0 calc(.15 * var(--u)) calc(.3 * var(--u)) rgba(0, 0, 0, .4); }
+body[data-game="dominoes"] .spot.s4 .spot-ic > span { transform: scale(.74); }
 body[data-game="dominoes"] .ph h2 { font-family: 'Reem Kufi', var(--fun); }
 body[data-game="dominoes"] .lob-foot .snd, body[data-game="dominoes"] .lob-foot .zm, body[data-game="dominoes"] .lob-foot .fs { background: rgba(243, 234, 214, .08); border-color: rgba(243, 234, 214, .2); }

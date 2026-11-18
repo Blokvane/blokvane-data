@@ -16,7 +16,7 @@
     'sound.js?v=20',
     'packs.js?v=19',
     'map.js?v=16',
-    'play.js?v=27',
+    'play.js?v=28',
     'q/index.js?v=12',
     'wheel.js?v=15',
     'games.js?v=20',
@@ -30,8 +30,8 @@
     'imp-game.js?v=17',
     'emoji-tpl.js?v=16',
     'emoji-game.js?v=17',
-    'dom-core.js?v=1',
-    'dom-game.js?v=1'];
+    'dom-core.js?v=2',
+    'dom-game.js?v=2'];
   for (var i = 0; i < list.length; i++) {
     var src = list[i], name = src.split('?')[0].split('/').pop().replace(/\.js$/, '');
     if (old && hasOld[name]) src = src.replace(/\.js\?/, '.old.js?');

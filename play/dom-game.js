@@ -20,6 +20,29 @@
   const gapX = (el, g) => { for (let i = 1; i < el.children.length; i++) el.children[i].style.marginLeft = g + 'px'; };
   const gapY = (el, g) => { for (let i = 1; i < el.children.length; i++) el.children[i].style.marginTop = g + 'px'; };
   const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const x = a[i]; a[i] = a[j]; a[j] = x; } return a; };
+  // (the mark of a game mode, drawn with the game's own ivory and pips: a tile whose two halves are the two sides, with a
+  // pip for each player on a side, or a small tile's face for each player who plays alone. It is sized in "em", so the
+  // lobby's card can make it as big as it likes.)
+  function modeIcon(mode) {
+    // (one face of a tile, s em on a side, with n pips)
+    const face = (n, s) => {
+      const f = h('span', 'position:relative;display:block;flex:none;width:' + s + 'em;height:' + s + 'em'), d = s * 0.2, pad = s * 0.15, tr = (s - 2 * pad) / 3;
+      for (const c of D.cells(n, false)) h('span', 'position:absolute;width:' + d.toFixed(2) + 'em;height:' + d.toFixed(2) + 'em;border-radius:50%;background:radial-gradient(circle at 35% 30%,#55504a,#0d0c0b 70%);left:' + (pad + tr * (c % 3 + 0.5) - d / 2).toFixed(2) + 'em;top:' + (pad + tr * (Math.floor(c / 3) + 0.5) - d / 2).toFixed(2) + 'em', f);
+      return f;
+    };
+    const body = 'background:linear-gradient(145deg,#fffdf7 0%,#f4ecd9 50%,#e0d3b6 100%);border-radius:.45em;box-shadow:inset 0 .06em 0 rgba(255,255,255,.95),0 .16em 0 #a3916a,0 .34em .5em rgba(0,0,0,.5)';
+    const out = h('span', 'display:flex;flex-direction:column;align-items:center;justify-content:center;direction:ltr;font-size:calc(1.13 * var(--u, 8px));line-height:1');
+    if (mode === 'teams' || mode === 'duel') {
+      const t = h('span', 'display:flex;align-items:center;' + body, out), n = mode === 'teams' ? 2 : 1;
+      t.appendChild(face(n, 2.5)); h('span', 'flex:none;width:.12em;height:1.9em;border-radius:.06em;background:rgba(70,52,22,.55)', t); t.appendChild(face(n, 2.5));
+    } else {
+      (mode === 'solo3' ? [1, 2] : [2, 2]).forEach((k, r) => {
+        const row = h('span', 'display:flex' + (r ? ';margin-top:.24em' : ''), out);
+        for (let i = 0; i < k; i++) h('span', 'display:block;' + body + (i ? ';margin-left:.24em' : ''), row).appendChild(face(1, 1.85));
+      });
+    }
+    return out;
+  }
 
   // ---------- the tiles' own sounds, made note by note as the game always made them: the clack of a tile on the table,
   // the softer one of a tile drawn, the knock of a pass, the slam of a last tile, the shuffle, the lock, the gates, and
@@ -82,6 +105,8 @@
     // only in English and in Arabic (Iraqi, the way it is said at the table); each player can pick the other for their phone
     langs: ['en', 'ar'], mlang: true,
     endLook: () => 'dom', ownEnd: true,
+    // (the kit's own marks on this game's pages, like the bullets of "How to play", are left empty: dom.css draws pips there)
+    plain: true,
     step: ['Play from your phone', 'Your tiles show on your phone. Tap one, or drag it up, when it is your turn.'],
     // its own music: one tune in the lobby, four that take turns all match long, and one of two for the winners
     sounds: [], music: { lobby: 'dLobby', again: 'dLobby', after: 'dLobby' },
@@ -104,10 +129,11 @@
       { t: 'The table', s: 'Look', keys: ['table', 'tiles', 'dealFx', 'endFx', 'lockFx', 'border', 'bots'] }],
     spot: s => {
       const m = MODES.find(x => x[0] === s.mode) || MODES[0];
-      const pile = m[0] === 'duel' || m[0] === 'solo3';
-      const bullets = [m[0] === 'teams' ? ['🤝', 'Pick your team on your phone: partners sit across'] : ['🧍', 'Everyone has their own score'], pile ? ['📥', 'Can\'t play? Draw from the pile until you can'] : ['✋', 'Can\'t play? You pass'], ['🤖', 'Empty seats are played by the computer']];
-      const facts = [['🎯', 'First to {n}', { n: +s.target || 151 }], +s.turnSec ? ['⏱️', '{n} s a turn', { n: +s.turnSec }] : ['⏳', 'No time limit'], ['🧠', { easy: 'Computer: easy', normal: 'Computer: normal', hard: 'Computer: hard' }[s.level] || 'Computer: normal']];
-      return { key: m[0], icon: { teams: '🤝', duel: '⚔️', solo3: '🥉', solo4: '🎲' }[m[0]], label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: +s.target || 151 }, facts };
+      // (no emoji anywhere in this game: the mode's mark is drawn, and each line gets a pip from the game's style sheet.
+      // "How to play" shows the first two rules and then these three lines, so they say what the two rules don't.)
+      const bullets = [['', m[0] === 'teams' ? 'Pick your team on your phone: partners sit across' : 'Everyone has their own score'], ['', 'Go out first and score the pips left in your opponents\' hands.'], ['', 'Empty seats are played by the computer']];
+      const facts = [['', 'First to {n}', { n: +s.target || 151 }], +s.turnSec ? ['', '{n} s a turn', { n: +s.turnSec }] : ['', 'No time limit'], ['', { easy: 'Computer: easy', normal: 'Computer: normal', hard: 'Computer: hard' }[s.level] || 'Computer: normal']];
+      return { key: m[0], icon: '', iconEl: () => modeIcon(m[0]), label: 'Game mode', name: m[1], desc: m[2], bullets, vars: { n: +s.target || 151 }, facts };
     },
     settings: [
       { key: 'mode', label: 'Game mode', type: 'seg', look: 'list', options: MODES, default: 'teams' },
@@ -232,6 +258,8 @@
       const board = h('div', 'position:absolute;overflow:hidden', inFelt);
       const over = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none', inFelt);
       const V = { k: 1, W: 0, H: 0, bx: 0, by: 0, bw: 600, bh: 300, sig: '', dealing: false, lock: null, fx: false, panel: false, notice: '', count: null, waitHost: false, bubbles: new Map(), timer: null, chainN: 0, seatSig: [], final: false };
+      // (the stickers: above everything on the table, and never in the way of a tap, since a TV has none)
+      const stkLayer = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;z-index:20;pointer-events:none', inFelt);
       const rtl = () => K.lang === 'ar';
       const txt = e => { if (rtl()) e.style.direction = 'rtl'; return e; };
       function fit() {
@@ -499,6 +527,7 @@
       // the round's result as a panel: who holds what, and the sum (the "Panel" style, and always for the last round)
       function drawPanel() {
         if (panelEl) { panelEl.remove(); panelEl = null; }
+        placeStickers();
         if (!V.panel) return;
         const L = look(), r = g.result || {}, w = resultWords(g, S);
         panelEl = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;z-index:10;background:rgba(8,18,20,.6);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;animation:dmFxFade .3s both', over);
@@ -565,6 +594,7 @@
         geo();
         drawHead(); drawSeats(force); drawBoard(force);
         if (force) { drawNotice(); drawLock(); drawFx(); drawPanel(); }
+        placeStickers();
       }
       function refresh() { if (V.final) return; drawHead(); drawSeats(false); drawBoard(false); }
       const onResize = () => { if (K.over() || V.final) return; if (fit()) { boardSig = ''; pileSig = ''; drawAll(true); } };
@@ -578,6 +608,106 @@
         V.bubbles.set(p, b);
         drawSeats(false);
         setTimeout(() => { if (V.bubbles.get(p) === b) { V.bubbles.delete(p); if (!K.over() && !V.final) drawSeats(false); } }, ms || 1900);
+      }
+
+      // ---------- a sticker by a seat: what a player sent from their phone, or a computer player's own ----------
+      // Every sticker is drawn the same size (the pack's unit: tools/stickers.py made all of them cover the same amount
+      // of screen), by its sender's seat, with the sender's name under it. At the top and the bottom it stands beside the
+      // seat's own tiles; at the sides, over the seat's own end of the table. So four at once never touch each other,
+      // and the chain stays in sight. While a round's result covers the middle of the table they stand in the four
+      // corners, left and right of it. Each one pops in, stays a little over three seconds, and goes.
+      const SK = { pack: D.stickerPack(K.lang), at: new Map(), last: new Map(), next: 0, popAt: 0, botAt: 0, used: new Set() };
+      // (as big as the table has room for: on a wide TV about a quarter of its height; the same for every sticker)
+      const stkUnit = () => Math.max(92, Math.min(150, Math.max(V.W, V.H) * 0.135, Math.min(V.W, V.H) * 0.27));
+      function stkSpot(p, w, bh) {
+        const seat = g.seats[p], W = V.W, H = V.H;
+        const cl = (v, lo, hi) => Math.max(lo, Math.min(Math.max(lo, hi), v));
+        // (the result has the middle of the table: the corners beside it)
+        if (V.panel) return { x: seat === 3 || seat === 0 ? 10 : W - w - 10, y: seat === 2 || seat === 3 ? 8 : H - bh - 8 };
+        const e = seatEls[p], live = !!e && e.isConnected, fr = inFelt.getBoundingClientRect(), k = fr.width / (inFelt.offsetWidth || 1) || 1;
+        // (a seat at the side: over its own tiles, under its picture and its name)
+        if (seat === 1 || seat === 3) {
+          let y = V.by + V.bh / 2 - bh / 2;
+          const tl = live ? e.querySelector('[data-seat]') : null;
+          if (tl && tl.offsetHeight > 0) y = (tl.getBoundingClientRect().top - fr.top) / k - 2;
+          return { x: seat === 3 ? 8 : W - w - 8, y: cl(y, 6, H - bh - 6) };
+        }
+        // (the top or the bottom seat: beside its row when there is room, else in front of it, over the table's edge)
+        let right = W / 2 + 150, cx = W / 2;
+        if (live) {
+          const kids = [].slice.call(e.children).filter(c => c.offsetWidth > 0 && getComputedStyle(c).position !== 'absolute'), a = kids[0], z = kids[kids.length - 1];
+          if (a && z) { const l = (a.getBoundingClientRect().left - fr.left) / k, r = (z.getBoundingClientRect().right - fr.left) / k; right = r; cx = (l + r) / 2; }
+        }
+        if (right + 16 + w <= W - 8) return { x: right + 16, y: seat === 2 ? 6 : H - bh - 6 };
+        return { x: cl(cx - w / 2, 8, W - w - 8), y: seat === 2 ? TH - 4 : H - TH - bh + 4 };
+      }
+      function placeStickers() {
+        SK.at.forEach((it, p) => { const sp = stkSpot(p, it.w, it.bh); it.box.style.left = px(sp.x); it.box.style.top = px(sp.y); });
+      }
+      function dropSticker(p, it, atOnce) {
+        clearTimeout(it.t); it.gone = true;
+        if (SK.at.get(p) === it) SK.at.delete(p);
+        if (atOnce) { it.box.remove(); return; }
+        it.box.style.opacity = '0'; it.box.style.transform = 'scale(.8)';
+        setTimeout(() => it.box.remove(), 280);
+      }
+      function showSticker(p, n) {
+        const o = D.stickerOf(SK.pack, n);
+        if (!o || p == null || p < 0 || p >= g.n || V.final || K.over()) return;
+        const old = SK.at.get(p); if (old) dropSticker(p, old, true);
+        const u = stkUnit(), box = h('div', 'position:absolute;left:0;top:0;opacity:0;transition:opacity .22s,transform .22s', stkLayer);
+        const art = h('div', 'transform-origin:50% 62%', box), d = D.stickerImg(SK.pack, n, u, art), im = d.im;
+        box.style.width = px(d.w);
+        try { im.style.filter = 'drop-shadow(0 5px 7px rgba(0,0,0,.45))'; im.style.webkitFilter = 'drop-shadow(0 5px 7px rgba(0,0,0,.45))'; } catch (e) {}
+        // (whose it is: their picture and their name, on their side's color)
+        const tag = h('div', 'display:flex;justify-content:center;margin-top:4px', box);
+        const pill = h('span', 'display:flex;align-items:center;max-width:' + px(Math.max(96, d.w)) + ';height:24px;box-sizing:border-box;padding:0 10px 0 3px;border-radius:12px;background:rgba(8,23,23,.86);box-shadow:inset 0 0 0 1.5px ' + D.RING[D.colOf(g.teams, p)] + ',0 3px 8px rgba(0,0,0,.4);font-size:12.5px;font-weight:600;color:' + CREAM + ';white-space:nowrap', tag);
+        pill.appendChild(avatar(p, 18, 9));
+        txt(h('span', 'margin-left:6px;min-width:0;overflow:hidden;text-overflow:ellipsis', pill, S.name(p)));
+        const it = { n, box, w: d.w, bh: d.h + 28, t: 0, gone: false };
+        SK.at.set(p, it);
+        placeStickers();
+        // (the picture first, so a sticker never pops in empty; and a beat apart when several come at the same moment)
+        const go = () => {
+          if (it.gone || it.t) return;
+          it.t = setTimeout(() => {
+            if (it.gone) return;
+            box.style.opacity = '1'; art.style.animation = 'dmStkIn .45s cubic-bezier(.2,1.3,.4,1) both';
+            const now = Date.now(); if (now - SK.popAt > 320) { SK.popAt = now; sfx('pop'); }
+            // (from now on it glides when the table makes room for a result)
+            setTimeout(() => { box.style.transition = 'opacity .22s,transform .22s,left .3s cubic-bezier(.2,.8,.2,1),top .3s cubic-bezier(.2,.8,.2,1)'; }, 80);
+            it.t = setTimeout(() => dropSticker(p, it), 3300);
+          }, Math.max(0, SK.next - Date.now()));
+          SK.next = Math.max(Date.now(), SK.next) + 170;
+        };
+        im.onload = go; im.onerror = () => dropSticker(p, it, true);
+        im.src = o.src;
+        if (im.complete && im.naturalWidth) go();
+        setTimeout(() => { if (!it.t && !it.gone) dropSticker(p, it, true); }, 5000);
+      }
+      // a computer player says something: in a game with stickers, one of them at the moments that matter (never two
+      // close together, and not the same one again and again); otherwise its short line in a bubble
+      function botSays(x) {
+        const B = SK.pack ? D.STICKERS[SK.pack].bot : null;
+        if (B && x.kind) {
+          const end = g.phase === 'match';
+          let kind = x.kind;
+          if (kind === 'out') kind = end ? 'win' : g.round === 1 && Math.random() < 0.4 ? 'first' : 'out';
+          else if (kind === 'mate' && end) kind = 'mateWin';
+          else if (kind === 'foe' && end) kind = 'lose';
+          const odds = { out: 0.85, first: 1, win: 1, mate: 0.8, mateWin: 1, foe: 0.65, lose: 0.9, pass: 0.22, lock: 1, locked: 0.6, slow: 1 }[kind] || 0;
+          const big = kind === 'win' || kind === 'lose' || kind === 'mateWin' || kind === 'lock' || kind === 'first';
+          const list = B[kind] || [], now = Date.now();
+          if (list.length && Math.random() < odds && (big || now - SK.botAt > 7000)) {
+            let pool = list.filter(n => !SK.used.has(n));
+            if (!pool.length) { for (const n of list) SK.used.delete(n); pool = list.slice(); }
+            const n = pool[Math.floor(Math.random() * pool.length)];
+            SK.used.add(n); SK.botAt = now;
+            return showSticker(x.p, n);
+          }
+          if (kind === 'slow') return;
+        }
+        if (x.text) bubble(x.p, T(x.text));
       }
 
       // ---------- what the phones hear ----------
@@ -594,7 +724,7 @@
           seats: seats.map((x, p) => ({ s: g.seats[p], id: x.bot ? '' : x.id, nm: S.name(p), bot: x.bot ? 1 : 0, av: x.bot ? x.av : ((K.player(x.id) || {}).av || 'boo:hi'), col: x.col, c: g.hands[p].length, away: !x.bot && !here(x.id) ? 1 : 0, said: g.said[p] ? 1 : 0 })),
           sc: g.scores, chain: g.chain, an: g.anchor || 0, last: g.last, mv: g.moves || 0, bone: g.bone.length, must: g.must,
           tl: V.timer ? { p: V.timer.p, sec: V.timer.sec, left: Math.max(0, Math.round(V.timer.end - K.now())) } : null,
-          look: L, opt: { hints: s.hints !== false ? 1 : 0, rx: s.reactions !== false ? 1 : 0, ap: s.autoPass !== false ? 1 : 0 },
+          look: L, opt: { hints: s.hints !== false ? 1 : 0, rx: s.reactions !== false ? 1 : 0, ap: s.autoPass !== false ? 1 : 0, sk: SK.pack },
           res: over2 && r ? { kind: r.kind, p: r.p, team: r.team, points: r.points, min: r.min, hands: g.hands } : null,
           cnt: V.count, cof: V.countOf || 0, wh: V.waitHost ? 1 : 0, hv, host: K.hostId(), free: K.free ? 1 : 0, win: V.win || null };
       }
@@ -618,17 +748,20 @@
 
       // ---------- what the phones say ----------
       let wait = null, nextWait = null;
-      const lastRx = new Map();
       K.on('dom', (m, pl) => {
         if (!m || typeof m.a !== 'string') return;
         const p = seatOf(pl.id);
         if (m.a === 'sync') return syncOne(pl.id);
-        if (m.a === 'react') {
-          if (s.reactions === false || p < 0) return;
+        // (a sticker, or in a game without stickers a short line: from a player with a seat, one every four seconds at
+        // the most, however fast their phone asks. The phone holds to four seconds; a little is allowed for the way.)
+        if (m.a === 'stk' || m.a === 'react') {
+          if (s.reactions === false || p < 0 || K.paused() || V.final) return;
           const i = Math.floor(+m.i), t0 = Date.now();
-          if (!(i >= 0 && i < D.REACTS.length) || t0 - (lastRx.get(pl.id) || 0) < 1500) return;
-          lastRx.set(pl.id, t0);
-          bubble(p, D.REACTS[i][0] + ' ' + T(D.REACTS[i][1]), 2600);
+          if (t0 - (SK.last.get(pl.id) || 0) < 3600) return;
+          if (m.a === 'stk') { if (!SK.pack || !D.stickerOf(SK.pack, i)) return; SK.last.set(pl.id, t0); showSticker(p, i); return; }
+          if (SK.pack || !(i >= 0 && i < D.REACTS.length)) return;
+          SK.last.set(pl.id, t0);
+          bubble(p, T(D.REACTS[i]), 2800);
           sfx('pop');
           return;
         }
@@ -669,7 +802,7 @@
           if (k === 'win') { const r = g.result || {}; const humans = seats.some((x, p) => !x.bot && D.teamOf(g, p) === r.team); sfx(humans ? 'win' : 'lose'); }
           else sfx(k);
         }
-        if (g.say) { if (s.reactions !== false) bubble(g.say.p, T(g.say.text)); delete g.say; }
+        if (g.say) { if (s.reactions !== false) botSays(g.say); delete g.say; }
       }
 
       // ---------- a turn ----------
@@ -703,13 +836,24 @@
             offs.push(K.after(left, () => fin(D.ai(g, p, 'normal'))));
             if (left > 3200) offs.push(K.after(left - 3000, () => { if (!done) P.sfx('tick'); }));
           }
+          // (a person who takes a long time hears about it from a computer player: once a turn at the most, and never
+          // more than once in a minute and a half, so someone who likes to think is not nagged all match long)
+          let nagAt = K.now() + 20000 + Math.random() * 8000;
           (async () => {
             while (!done) {
               await K.sleep(500);
               if (done) return;
               if (K.over()) return fin({ over: 1 });
               const x = seats[p];
-              if (!x.bot && here(x.id)) { awayAt = 0; continue; }
+              if (!x.bot && here(x.id)) {
+                awayAt = 0;
+                if (nagAt && K.now() > nagAt && !K.paused()) {
+                  nagAt = 0;
+                  const bots = seats.filter(b => b.bot);
+                  if (bots.length && s.reactions !== false && K.now() - (SK.nagAt || -1e9) > 90000 && Math.random() < 0.7) { SK.nagAt = K.now(); botSays({ p: bots[Math.floor(Math.random() * bots.length)].p, text: 'You are taking too long!', kind: 'slow' }); }
+                }
+                continue;
+              }
               // (their phone is gone: after a few seconds the computer plays this turn, at its usual pace after that)
               if (!awayAt) { awayAt = K.now(); refresh(); sayPub(); }
               else if (K.now() - awayAt > (x.autoed ? thinkMs : 6000)) { x.autoed = true; return fin(D.ai(g, p, 'normal')); }
@@ -860,7 +1004,7 @@
       const a = o.avatar(p, 112, 46);
       a.style.boxShadow = '0 0 0 4px ' + GOLD + ',0 0 34px rgba(222,184,102,.75),0 10px 24px rgba(0,0,0,.5)';
       w.appendChild(a);
-      h('div', 'position:absolute;left:50%;top:-34px;margin-left:-20px;width:40px;text-align:center;font-size:34px;line-height:1', w, '👑');
+      h('div', 'position:absolute;left:50%;top:-33px;margin-left:-22px;width:44px;-webkit-filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))', w).appendChild(D.crown(44));
     });
     h('div', 'margin-top:16px;font-family:' + KUFI + ';font-weight:700;font-size:50px;line-height:1.15;color:' + GOLD + ';text-align:center;text-shadow:0 4px 16px rgba(0,0,0,.5);animation:dmFxPop .6s .5s both', box, S.sideName(o.wi));
     h('div', 'margin-top:2px;font-size:20px;color:' + CREAM + ';animation:dmFxFade .6s .9s both', box, g.teams ? T('win the match!') : T('wins the match!'));
