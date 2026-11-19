@@ -2,6 +2,7 @@
 """Dominoes 151: makes the small sticker files the game uses from the big pictures they were drawn as.
 
     python3 tools/stickers.py "<folder with the PNG files>" ar          writes play/stickers/ar/01.webp ... 79.webp
+                                                                        (but not the numbers taken out: see GONE)
     python3 tools/stickers.py "<folder with the PNG files>" ar --list   only prints the sizes (for play/dom-core.js)
 
 The pictures themselves are never redrawn: nothing is recolored, sharpened or retouched. Each one is only
@@ -15,7 +16,8 @@ The pictures themselves are never redrawn: nothing is recolored, sharpened or re
      float in the empty room are made empty.
 
 The numbers are the stickers' names in the game (a phone says "sticker 17" to the TV), so a number never moves to
-another picture: new pictures get new numbers at the end of ORDER.
+another picture: new pictures get new numbers at the end of ORDER, and a sticker that is taken out leaves its number
+empty (GONE below, and `gone` in STICKERS in play/dom-core.js).
 """
 import os
 import re
@@ -37,8 +39,14 @@ QUALITY = 70
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+# Numbers taken out of a pack, each with the name of the drawing it was. Such a number is never made again and never
+# given to another picture. The drawing may still be in the folder (it is skipped) or not (its place stays empty).
+GONE = {'ar': {6: '06.png'}}
+
+
 def order_ar(names):
-    """The Arabic pack: Hasan's 79 files, in the order of their names, numbered 1 to 79."""
+    """The Arabic pack: Hasan's files, in the order of their names, numbered 1 to 79. A number that was taken out
+    comes back as None (78 pictures today: number 6 is gone)."""
     def key(n):
         for i, pat in enumerate([r'^(\d\d)\.png$', r'^01-1 \((\d+)\)\.png$', r'^01-2 \((\d+)\)\.png$', r'^02-1 \((\d+)\)\.png$', r'^sticker_(\d+)\.png$']):
             m = re.match(pat, n)
@@ -46,8 +54,15 @@ def order_ar(names):
                 return (i, int(m.group(1)))
         raise SystemExit('A file this pack does not know: ' + n)
     out = sorted((n for n in names if n.lower().endswith('.png')), key=key)
+    for number, name in sorted(GONE['ar'].items()):
+        if name in out:
+            if out.index(name) != number - 1:
+                raise SystemExit('%s should be picture number %d of this folder, and is not: a picture is missing or added before it.' % (name, number))
+            out[number - 1] = None
+        else:
+            out.insert(number - 1, None)
     if len(out) != 79:
-        raise SystemExit('The Arabic pack is 79 pictures; this folder has %d.' % len(out))
+        raise SystemExit('The Arabic pack is 79 numbers (%d pictures, %d taken out); this folder gives %d.' % (79 - len(GONE['ar']), len(GONE['ar']), len(out)))
     return out
 
 
@@ -91,6 +106,12 @@ def main():
     out_dir = os.path.join(ROOT, 'play', 'stickers', pack)
     sizes, total = [], 0
     for i, n in enumerate(names, 1):
+        if n is None:
+            # (taken out: no file is made, and its place in the list of sizes stays, as 0,0)
+            sizes.append((0, 0))
+            if not only_list:
+                print('%02d  taken out' % i)
+            continue
         w, h, scale, cover = make(os.path.join(folder, n), i, out_dir, write=not only_list)
         sizes.append((w, h))
         if not only_list:
@@ -98,7 +119,7 @@ def main():
             total += b
             print('%02d  %-16s -> %3d x %3d  %6.1f KB   (from %.1f MB, scale %.3f, covers %.2f)' % (i, n, w, h, b / 1024, os.path.getsize(os.path.join(folder, n)) / 1048576, scale, cover))
     if not only_list:
-        print('%d stickers, %.2f MB in all' % (len(names), total / 1048576))
+        print('%d stickers, %.2f MB in all' % (sum(1 for n in names if n), total / 1048576))
     # (for STICKERS in play/dom-core.js: the width and the height of each one, in the order of the numbers)
     print('sizes: ' + ' '.join('%d,%d' % s for s in sizes))
 

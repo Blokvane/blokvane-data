@@ -11,7 +11,7 @@
     '../go/qrcode.js?v=11',
     '../go/pass.js?v=4',
     'watch-boo.js?v=11',
-    'i18n.js?v=27',
+    'i18n.js?v=28',
     'common.js?v=20',
     'sound.js?v=20',
     'packs.js?v=19',
@@ -30,7 +30,7 @@
     'imp-game.js?v=17',
     'emoji-tpl.js?v=16',
     'emoji-game.js?v=17',
-    'dom-core.js?v=2',
+    'dom-core.js?v=3',
     'dom-game.js?v=2'];
   for (var i = 0; i < list.length; i++) {
     var src = list[i], name = src.split('?')[0].split('/').pop().replace(/\.js$/, '');
