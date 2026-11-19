@@ -1002,7 +1002,7 @@ var __async = (__this, __arguments, generator) => {
               SK.botAt = now;
               return showSticker(x.p, n);
             }
-            if (kind === "slow") return;
+            if (kind === "slow" && list.length) return;
           }
           if (x.text) bubble(x.p, T(x.text));
         }

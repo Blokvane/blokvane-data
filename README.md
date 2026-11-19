@@ -206,10 +206,13 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   Its own screens show no emoji. Instead a player sends one of the game's own stickers from their phone (one
   button opens them all; a tap sends one; one every four seconds at the most), and it shows on the TV
   only, by that player's seat, every sticker the same size. `play/stickers/ar/` is the Arabic pack
-  (78 stickers; number 6 was taken out, and a number never moves to another picture), used when the game is in Arabic; a game in a language with no pack yet sends a short
-  line in a bubble instead. `tools/stickers.py` makes the small files from the big drawings (it only
-  trims and resizes them, and brings them all to the same visual size); their sizes, their words and
-  their groups are `STICKERS` in `play/dom-core.js`.
+  (79 stickers, numbered 1 to 80: number 6 was taken out, and a number never moves to another
+  picture), used when the game is played in Arabic; `play/stickers/en/` is the English pack
+  (59 stickers), used when the game is played in English. A game in a language with no pack sends a
+  short line in a bubble instead. `tools/stickers.py` makes the small files from the big drawings: it
+  trims and resizes them and brings them all to the same visual size, and it frees the English ones
+  of the slivers of their neighbours that were left on them when they were cut out of their sheets.
+  Their sizes, their words and their groups are `STICKERS` in `play/dom-core.js`.
 - Trivia's questions (`play/q/`) are made by the question bank's `build_q.js`. The Trick questions
   (category 33) have an eighth part: the line that explains the trick, shown on the TV and on every
   phone once the answer is out.

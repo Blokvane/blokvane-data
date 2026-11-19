@@ -705,7 +705,8 @@
             SK.used.add(n); SK.botAt = now;
             return showSticker(x.p, n);
           }
-          if (kind === 'slow') return;
+          // (a pack with no sticker for "you are taking too long" says it in words, as a game without stickers does)
+          if (kind === 'slow' && list.length) return;
         }
         if (x.text) bubble(x.p, T(x.text));
       }

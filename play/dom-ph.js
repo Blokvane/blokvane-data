@@ -635,7 +635,7 @@ html.g-dom .pt-howto li:nth-child(n+6) i { background-image: radial-gradient(cir
   // groups with a row of names on top to jump to one, and the last ones this player sent first. A tap sends it: it
   // shows on the TV, by this player's seat, and nowhere else. One every four seconds at the most (the button fills up
   // again while the player waits; the TV holds to it too). The stickers are the pack of the game's language: Arabic
-  // for now. A game in a language that has no pack yet sends a short line in a bubble instead, the same way.
+  // or English. A game in a language that has no pack sends a short line in a bubble instead, the same way.
   const COOL = 4000;
   const SVG = (d, more) => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d.split('|').map(x => '<path d="' + x + '"/>').join('') + (more || '') + '</svg>';
   const IC = {
