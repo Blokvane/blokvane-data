@@ -1,5 +1,14 @@
 [
   {
+    "date": "2026-11-19",
+    "score": 99,
+    "gotThrough": 8,
+    "added": [],
+    "droppedForBreaking": [],
+    "brokenSites": [],
+    "skipped": []
+  },
+  {
     "date": "2026-11-18",
     "score": 99,
     "gotThrough": 8,
