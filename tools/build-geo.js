@@ -46,7 +46,8 @@ function rows(v4text, v6text) {
     const c = line.trim().split(',');
     if (c.length !== 3 || !/^[A-Z]{2}$/.test(c[2])) continue;
     const a = top(c[0]), b = top(c[1]);
-    if (a && b) rows6.push({ hi: a.hi, lo: a.lo, hi2: b.hi, lo2: b.lo, cc: c[2] });
+    // (like above: a row whose last address comes before its first is not a row)
+    if (a && b && !(b.hi < a.hi || (b.hi === a.hi && b.lo < a.lo))) rows6.push({ hi: a.hi, lo: a.lo, hi2: b.hi, lo2: b.lo, cc: c[2] });
   }
   rows4.sort((x, y) => x.from - y.from);
   rows6.sort((x, y) => x.hi - y.hi || x.lo - y.lo);
@@ -64,12 +65,31 @@ function build(v4text, v6text, o = {}) {
   const d = new Date();
   const made = o.made || d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
   const buf = Buffer.from(G.pack(rows4, rows6, made));
-  // read it back the way the extension reads it, and ask it about a few rows of each table
+  // Read it back the way the extension reads it, and ask it about every row of both tables: each must come back with
+  // its own country, at its first and at its last address.
+  // One kind of row is not asked, because the table is built not to hold it. It keeps the first 64 bits of a
+  // new-style address (the size networks are handed out in), so it knows one country for each block of that size.
+  // Where the source splits such a block between several owners, the first owner's country stands and the later rows
+  // are left out (pack does the same with an old-style row that overlaps an earlier one). Those rows are counted: a
+  // few in a hundred is how the public tables are; many more means the source is not what it was.
+  // (Before, every 997th row was tried and the left-out ones counted as mistakes. About 2 in 100 new-style rows are
+  // of that kind, so whether the week's table passed came down to which rows happened to be tried.)
   const table = G.load(toBuffer(buf));
-  let bad = 0;
-  for (let i = 0; i < rows4.length; i += 997) { const r = rows4[i]; if (G.country(table, { v: 4, n: r.from }) !== r.cc || G.country(table, { v: 4, n: r.to }) !== r.cc) bad++; }
-  for (let i = 0; i < rows6.length; i += 997) { const r = rows6[i]; if (G.country(table, { v: 6, hi: r.hi, lo: r.lo }) !== r.cc) bad++; }
-  if (bad > 5) throw new Error(bad + ' of the rows tried do not come back the same from the table.');
+  let bad = 0, left4 = 0, left6 = 0, end = -1, eh = -1, el = -1;
+  for (const r of rows4) {
+    if (!(r.from > end)) { left4++; continue; }
+    end = r.to;
+    if (G.country(table, { v: 4, n: r.from }) !== r.cc || G.country(table, { v: 4, n: r.to }) !== r.cc) bad++;
+  }
+  for (const r of rows6) {
+    if (eh >= 0 && (r.hi < eh || (r.hi === eh && r.lo <= el))) { left6++; continue; }
+    eh = r.hi2; el = r.lo2;
+    if (G.country(table, { v: 6, hi: r.hi, lo: r.lo }) !== r.cc || G.country(table, { v: 6, hi: r.hi2, lo: r.lo2 }) !== r.cc) bad++;
+  }
+  if (bad) throw new Error(bad + ' rows do not come back the same from the table.');
+  if (left4 > rows4.length / 10 || left6 > rows6.length / 10) {
+    throw new Error('Too many rows share a block with an earlier row (' + left4 + ' of ' + rows4.length + ' and ' + left6 + ' of ' + rows6.length + '): the source tables are not what they were.');
+  }
   // next to the one published last time: much smaller means something went wrong at the source
   if (o.prev) {
     let last = null;
@@ -80,7 +100,7 @@ function build(v4text, v6text, o = {}) {
   }
   const note = { format: 1, made, bytes: buf.length, sha256: crypto.createHash('sha256').update(buf).digest('hex'), v4: table.v4.length, v6: table.hi.length, countries: table.names.length - 1 };
   if (!G.checkNote(note)) throw new Error('The note for the table is not in the form the extension reads.');
-  return { buf, note, table, rows4: rows4.length, rows6: rows6.length };
+  return { buf, note, table, rows4: rows4.length, rows6: rows6.length, left4, left6 };
 }
 
 const CREDITS = `Blokvane's country table (geo.bin) says which country a server's address is in. Blokvane's Country blocking uses it.
@@ -107,7 +127,8 @@ async function main() {
     fs.writeFileSync(path.join(path.dirname(path.resolve(arg('--note'))), 'CREDITS.txt'), CREDITS);
   }
   if (arg('--flag')) fs.writeFileSync(path.resolve(arg('--flag')), 'yes\n');
-  console.log('Wrote ' + out + ': ' + b.buf.length + ' bytes, ' + b.note.v4 + ' + ' + b.note.v6 + ' entries from ' + b.rows4 + ' + ' + b.rows6 + ' rows, ' + b.note.countries + ' countries, made ' + b.note.made + '.');
+  console.log('Wrote ' + out + ': ' + b.buf.length + ' bytes, ' + b.note.v4 + ' + ' + b.note.v6 + ' entries from ' + b.rows4 + ' + ' + b.rows6 + ' rows, ' + b.note.countries + ' countries, made ' + b.note.made + '.'
+    + (b.left4 + b.left6 ? ' ' + (b.left4 + b.left6) + ' rows start inside a block an earlier row already has: there the earlier row\'s country stands.' : ''));
 }
 if (require.main === module) main().catch(e => { console.error('The country table was not renewed:', e.message); process.exit(1); });
 module.exports = { rows, build, CREDITS };

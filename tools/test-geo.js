@@ -58,6 +58,33 @@ test('a broken table is never published: the one from last time stays', () => {
   assert.strictEqual(build(V4(400), V6(300), { min4: 100, min6: 100, made: 20261115, prev: Buffer.from('not a table') }).note.made, 20261115);
 });
 
+test('a block the source splits between owners keeps its first owner, and such rows never stop the week\'s table', () => {
+  // The table keeps the first 64 bits of a new-style address, so it knows one country for each block of that size.
+  // Here every 997th row is a second owner inside the same block as the row before it. (The check used to try every
+  // 997th row and count these as mistakes: more than 5 of them, and the table of the week was refused.)
+  const hex = i => (0x200 + i).toString(16), lines = [];
+  for (let i = 0; i < 12000; i++) {
+    if (i && i % 997 === 0) lines.push(`2001:${hex(i - 1)}::1:0:0:0,2001:${hex(i - 1)}::1:ffff:ffff:ffff,RU`);
+    else if ((i + 1) % 997 === 0) lines.push(`2001:${hex(i)}::,2001:${hex(i)}::ffff,JP`);
+    else lines.push(`2001:${hex(i)}::,2001:${hex(i)}:ffff:ffff:ffff:ffff:ffff:ffff,${CC6[i % 3]}`);
+  }
+  const b = build(V4(400), lines.join('\n') + '\n', { min4: 100, min6: 100, made: 20261115 });
+  assert.deepStrictEqual([b.left4, b.left6], [0, 12], 'the 12 second owners are counted, and are no mistake');
+  const t = asTable(b.buf), p = hex(996);
+  assert.deepStrictEqual([G.country(t, `2001:${p}::5`), G.country(t, `2001:${p}::1:0:0:9`)], ['JP', 'JP'], 'the whole block says what its first owner says');
+  assert.strictEqual(G.country(t, `2001:${p}:0:1::1`), '', 'and the block after it belongs to nobody');
+  assert.strictEqual(G.country(t, `2001:${hex(998)}::1`), CC6[998 % 3], 'the rows after it are as they were');
+  // an old-style row that overlaps an earlier one: the earlier one stands too
+  const o = build('16777216,16777471,AU\n16777300,16777400,FR\n' + V4(400).split('\n').slice(1).join('\n'), V6(300), { min4: 100, min6: 100 });
+  assert.deepStrictEqual([o.left4, o.left6, G.country(asTable(o.buf), '1.0.0.100')], [1, 0, 'AU']);
+  // when a large part of a table is rows like these, the source is not what it was: nothing is published
+  const many = [];
+  for (let i = 0; i < 300; i++) { many.push(`2001:${hex(i)}::,2001:${hex(i)}::ffff,JP`); if (i % 3 === 0) many.push(`2001:${hex(i)}::1:0:0:0,2001:${hex(i)}::1:ffff:ffff:ffff,RU`); }
+  assert.throws(() => build(V4(400), many.join('\n') + '\n', { min4: 100, min6: 100 }), /Too many rows share a block with an earlier row \(0 of 400 and 100 of 400\)/);
+  // (a row whose last address comes before its first is no row)
+  assert.deepStrictEqual(rows('', '2001:300::,2001:200::,JP\n2001:400::,2001:400::ffff,SG\n').rows6.map(r => r.cc), ['SG']);
+});
+
 test('the robot\'s run: tables in a folder go in, a table, its note and the credits come out; a bad run leaves nothing to publish', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bv-geo-'));
   try {
