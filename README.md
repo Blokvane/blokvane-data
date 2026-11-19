@@ -200,9 +200,19 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   `play/dom-ph.js` (the phones: the table is on the TV only, so a phone shows the score, whose turn
   it is and its player's own tiles, to tap or to drag; the host's look sheet with its live preview,
   the computer players' names and faces, the moves of the round, and the winners' picture to share).
-  `play/dom.css` is its lobby, `play/fonts/dm-*.woff2` its two fonts, and `play/sounds/d-*.mp3` its
+  `play/dom.css` is its lobby, `play/fonts/dm-*.woff2` its fonts, and `play/sounds/d-*.mp3` its
   music; the tile sounds are made in the browser. The table, the tiles and the border can be changed
   in the middle of a match (a setting marked `live` in a game's list may change while it is played).
+  The winners' screen is one of five designs (Trophy in the spotlight, Royal crest, Gold medals,
+  Stained glass window, Certificate with gold seal), drawn exactly as they were designed in
+  `Games/Dominoes 151`; the host picks one ("Winner screen", the trophy unless they say otherwise).
+  `play/dom-core.js` holds their drawings once, as lists of shapes, and draws them twice: as the
+  TV's screen (1920 x 1080, sized to the screen) and, stood upright with Blokvane's mark at the
+  foot, as the picture every phone shares (1080 x 1920, on a canvas, in that phone's own language).
+  Their typefaces come with the game: Playfair Display, Cinzel and Pinyon Script
+  (`fonts/OFL-PlayfairDisplay.txt`, `OFL-Cinzel.txt`, `OFL-PinyonScript.txt`). The Playfair files
+  are a changed copy (its figures that stand on the line are the ones it draws by itself), so they
+  carry another name inside, as its license asks.
   Its own screens show no emoji. Instead a player sends one of the game's own stickers from their phone (one
   button opens them all; a tap sends one; one every four seconds at the most), and it shows on the TV
   only, by that player's seat, every sticker the same size. `play/stickers/ar/` is the Arabic pack

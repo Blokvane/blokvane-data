@@ -448,7 +448,7 @@ var BVDOM = (() => {
 
   // ---------- the look every Dominoes screen shares: its two typefaces, the tables, the moves ----------
   const NOISE = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .35 0 0 0 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E\")";
-  const FONT = (fam, w, file, range) => "@font-face{font-family:'" + fam + "';font-style:normal;font-weight:" + w + ";font-display:swap;src:url(" + BASE + 'fonts/' + file + ") format('woff2');unicode-range:" + range + '}';
+  const FONT = (fam, w, file, range, style) => "@font-face{font-family:'" + fam + "';font-style:" + (style || 'normal') + ";font-weight:" + w + ";font-display:swap;src:url(" + BASE + 'fonts/' + file + ") format('woff2');unicode-range:" + range + '}';
   const U_AR = 'U+0600-06FF,U+0750-077F,U+0870-088E,U+0890-0891,U+0898-08E1,U+08E3-08FF,U+200C-200E,U+2010-2011,U+204F,U+2E41,U+FB50-FDFF,U+FE70-FE74,U+FE76-FEFC';
   const U_LA = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
   const CSS = [
@@ -456,6 +456,20 @@ var BVDOM = (() => {
     FONT('IBM Plex Sans Arabic', 400, 'dm-plex-latin-400.woff2', U_LA), FONT('IBM Plex Sans Arabic', 400, 'dm-plex-arabic-400.woff2', U_AR),
     FONT('IBM Plex Sans Arabic', 500, 'dm-plex-latin-500.woff2', U_LA), FONT('IBM Plex Sans Arabic', 500, 'dm-plex-arabic-500.woff2', U_AR),
     FONT('IBM Plex Sans Arabic', 600, 'dm-plex-latin-600.woff2', U_LA), FONT('IBM Plex Sans Arabic', 600, 'dm-plex-arabic-600.woff2', U_AR),
+    // (the winners' screens and the lobby's looks: Playfair Display, Cinzel and Pinyon Script for Latin letters; Arabic
+    // keeps the game's own two typefaces. Each is fetched only when a screen that wears it is shown. The Playfair
+    // files are a changed copy: its figures that stand on the line, 151 and not the old-style ones, are the ones it
+    // draws by itself, so a canvas draws them too. A changed copy carries another name inside, as its license asks.)
+    FONT('DM Playfair', 700, 'dm-playfair-latin-700.woff2', U_LA), FONT('DM Playfair', 900, 'dm-playfair-latin-900.woff2', U_LA), FONT('DM Playfair', 700, 'dm-playfair-latin-700i.woff2', U_LA, 'italic'),
+    FONT('DM Cinzel', 700, 'dm-cinzel-latin-700.woff2', U_LA), FONT('DM Cinzel', 900, 'dm-cinzel-latin-900.woff2', U_LA), FONT('DM Pinyon', 400, 'dm-pinyon-latin-400.woff2', U_LA),
+    FONT('DM Nunito', '200 1000', 'imp-nunito-latin.woff2', U_LA),
+    '@keyframes dwBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}',
+    '@keyframes dwTw{0%,100%{opacity:.35;transform:scale(.7)}50%{opacity:1;transform:scale(1.15)}}',
+    '@keyframes dwSway{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}',
+    '@keyframes dwSweep{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(5deg)}}',
+    '@keyframes dwGlint{0%,100%{opacity:.55}50%{opacity:1}}',
+    '@keyframes dwFall{0%{transform:translateY(-40px) rotate(0)}100%{transform:translateY(1160px) rotate(540deg)}}',
+    '@keyframes dwIn{from{opacity:0;transform:translateY(18px)}}',
     '@keyframes dmTurn{50%{transform:scale(1.19);opacity:.25}}',
     '@keyframes dmLkDrop{0%{opacity:0;transform:translateY(-18px)}25%,55%{opacity:1;transform:translateY(-18px)}78%{opacity:1;transform:translateY(2px)}100%{opacity:1;transform:none}}',
     '@keyframes dmLkSlam{0%{transform:translateY(-170px);opacity:0}60%{transform:translateY(6px);opacity:1}80%{transform:translateY(-4px);opacity:1}100%{transform:none;opacity:1}}',
@@ -546,6 +560,587 @@ var BVDOM = (() => {
     const k = u / STICKERS[pack].unit, im = h('img', 'display:block;width:' + (o.w * k).toFixed(1) + 'px;height:' + (o.h * k).toFixed(1) + 'px;max-width:none;-webkit-user-select:none;user-select:none;pointer-events:none', parent);
     im.alt = o.text; im.draggable = false; im.decoding = 'async';
     return { im, o, w: o.w * k, h: o.h * k };
+  }
+  // =====================================================================
+  // The winners' screens: their drawings
+  // =====================================================================
+  // Five designs; the host picks one ("Winner screen": the trophy unless they say otherwise). The TV shows it
+  // (winScene below, from dom-game.js) and every phone draws the same one as the picture to share (winPoster, from
+  // dom-ph.js). The drawings are kept here
+  // once, each as a list of shapes, so both draw the very same trophy, wreath, shield, medal, windows and seal:
+  // artSvg() writes a list out as an SVG picture (the TV), artDraw() paints it on a canvas (the picture to share).
+  //   ['L', id, x1, y1, x2, y2, stops] and ['R', id, cx, cy, r, stops]: a color that runs from one into the other
+  //   ['p', path, fill, stroke, width, more], ['c', cx, cy, r, fill, stroke, width, dashes], ['e', cx, cy, rx, ry, fill, turn],
+  //   ['r', x, y, w, h, corner, fill, stroke, width], ['g', points, fill], ['clip', path, shapes]
+  // A fill or a stroke is a color, '' for none, or '@id' for one of the running colors.
+  const WINS = [['trophy', 'Trophy in the spotlight'], ['crest', 'Royal crest'], ['medals', 'Gold medals'], ['glass', 'Stained glass window'], ['cert', 'Certificate with gold seal']];
+  const WF = { serif: "'DM Playfair','Reem Kufi',serif", caps: "'DM Cinzel','Reem Kufi',serif", script: "'DM Pinyon','Reem Kufi',cursive", sans: "'DM Nunito','IBM Plex Sans Arabic',sans-serif" };
+  const ART = (() => {
+    const TG = [[0, '#a87a22'], [0.3, '#fff0b8'], [0.6, '#e8c36a'], [1, '#8a6410']], A = {};
+    const burst = (cx, cy, n, r1, r2) => { const p = []; for (let i = 0; i < n * 2; i++) { const a = i * Math.PI / n, r = i % 2 ? r2 : r1; p.push(+(cx + r * Math.cos(a)).toFixed(1), +(cy + r * Math.sin(a)).toFixed(1)); } return p; };
+    A.trophy = { w: 360, h: 450, s: [['L', 'a', 4, 0, 356, 0, TG], ['L', 'b', 66, 0, 294, 0, TG], ['L', 'c', 164, 0, 196, 0, TG], ['L', 'd', 146, 0, 214, 0, TG], ['L', 'e', 88, 0, 272, 0, TG],
+      ['p', 'M74 70C4 70 10 200 106 214M286 70C356 70 350 200 254 214', '', '@a', 16, { cap: 1 }], ['p', 'M66 40H294C294 190 256 272 180 284C104 272 66 190 66 40Z', '@b'],
+      ['e', 180, 40, 114, 16, '#fff0b8'], ['e', 180, 42, 98, 10, '#8a6410'], ['r', 164, 280, 32, 70, 0, '@c'], ['e', 180, 300, 34, 12, '@d'], ['p', 'M112 350H248L272 404H88Z', '@e'], ['r', 66, 404, 228, 42, 8, '@b'],
+      ['r', 150, 88, 60, 126, 10, '#7a5a18'], ['p', 'M158 151H202', '', '#fff0b8', 2]].concat([104, 120, 136, 166, 182, 198].reduce((o, y) => o.concat([['c', 166, y, 5, '#fff0b8'], ['c', 194, y, 5, '#fff0b8']]), []),
+      [['p', 'M92 60C96 150 116 220 150 250', '', '#fff', 7, { cap: 1, op: 0.55 }]]) };
+    A.laurel = { w: 520, h: 520, s: [[207, 478, -63], [163, 462, -50], [124, 436, -38], [91, 403, -26], [66, 363, -13], [51, 319, 0], [45, 273, 12], [50, 226, 24], [64, 181, 37], [88, 141, 50], [120, 107, 62], [158, 80, 74], [202, 63, 87]]
+      .reduce((o, x) => o.concat([['e', x[0], x[1], 15, 40, '#e8c36a', x[2]], ['e', 520 - x[0], x[1], 15, 40, '#e8c36a', -x[2]]]), []) };
+    A.crown = { w: 100, h: 70, s: [['p', 'M8 62L4 18L30 38L50 8L70 38L96 18L92 62Z', '#e8c36a'], ['c', 50, 10, 7, '#e8c36a'], ['c', 5, 18, 6, '#e8c36a'], ['c', 95, 18, 6, '#e8c36a'], ['r', 8, 56, 84, 10, 3, '#b8892e']] };
+    A.shield = { w: 400, h: 460, s: [['L', 'a', 20, 20, 380, 450, [[0, '#8a1a36'], [1, '#3a0817']]], ['p', 'M20 20H380V240C380 350 296 420 200 450C104 420 20 350 20 240Z', '@a', '#e8c36a', 12, { join: 1 }],
+      ['p', 'M46 46H354V238C354 330 284 392 200 420C116 392 46 330 46 238Z', '', '#e8c36a', 2.5], ['p', 'M200 46V130M46 150H120M354 150H280', '', '#e8c36a', 2.5]] };
+    A.banner = { w: 760, h: 130, s: [['p', 'M110 40L10 40L46 80L10 120L130 120Z', '#b8892e'], ['p', 'M650 40L750 40L714 80L750 120L630 120Z', '#b8892e'], ['p', 'M110 40L130 120L130 100L110 20Z', '#7a5a18'], ['p', 'M650 40L630 120L630 100L650 20Z', '#7a5a18'],
+      ['r', 110, 10, 540, 90, 6, '#e8c36a'], ['r', 122, 20, 516, 70, 3, '', '#7a5a18', 2]] };
+    A.medal = { w: 320, h: 320, s: [['R', 'a', 116, 97, 253, [[0, '#fff5c8'], [0.5, '#e8c36a'], [1, '#9a6e1c']]], ['g', burst(160, 160, 24, 158, 146), '@a'], ['c', 160, 160, 124, '', '#8a6410', 4], ['c', 160, 160, 114, '', '#8a6410', 1.5, [3, 7]],
+      ['p', 'M60 110A112 112 0 0 1 130 54', '', '#fff', 8, { cap: 1, op: 0.6 }]] };
+    A.seal = { w: 250, h: 330, s: [['R', 'a', 96, 81, 183, [[0, '#fff0b8'], [0.55, '#e8c36a'], [1, '#a87a22']]], ['p', 'M80 190L60 325L100 295L125 325V190Z', '#b3202e'], ['p', 'M170 190L190 325L150 295L125 325V190Z', '#8e1823'],
+      ['g', burst(125, 125, 20, 122, 108), '@a'], ['c', 125, 125, 88, '', '#8a6410', 3], ['c', 125, 125, 80, '', '#8a6410', 1.5, [3, 6]]] };
+    A.rose = { w: 600, h: 600, s: (() => {
+      const C = ['#c0263b', '#2456c9', '#e8a93a', '#1f9d6b', '#7b3fc4', '#2a8fb0'], C2 = ['#e8a93a', '#1f9d6b', '#7b3fc4', '#2a8fb0', '#c0263b', '#2456c9'], out = [['c', 300, 300, 292, '#0b0910', '#e8c36a', 6]];
+      const pt = (r, a) => (300 + r * Math.cos(a)).toFixed(1) + ' ' + (300 + r * Math.sin(a)).toFixed(1);
+      for (let i = 0; i < 12; i++) {
+        const a0 = -Math.PI / 2 + i * Math.PI / 6, a1 = a0 + Math.PI / 6, am = (a0 + a1) / 2, x = +(300 + 214 * Math.cos(am)).toFixed(1), y = +(300 + 214 * Math.sin(am)).toFixed(1);
+        out.push(['p', 'M' + pt(150, a0) + 'L' + pt(278, a0) + 'A278 278 0 0 1 ' + pt(278, a1) + 'L' + pt(150, a1) + 'A150 150 0 0 0 ' + pt(150, a0) + 'Z', C[i % 6], '#0b0910', 7, { join: 1 }], ['c', x, y, 30, C2[i % 6], '#0b0910', 6], ['c', x, y, 9, '#fff0b8']);
+      }
+      return out.concat([['c', 300, 300, 146, '#ffe9a8', '#0b0910', 8], ['c', 300, 300, 128, '', '#b8892e', 3]]);
+    })() };
+    const lancet = c => ({ w: 270, h: 450, s: [['clip', 'M12 438V150C12 62 135 12 135 12C135 12 258 62 258 150V438Z', [['r', 0, 0, 135, 160, 0, c[0], '#0b0910', 7], ['r', 135, 0, 135, 160, 0, c[1], '#0b0910', 7], ['r', 0, 160, 135, 150, 0, c[2], '#0b0910', 7],
+      ['r', 135, 160, 135, 150, 0, c[3], '#0b0910', 7], ['r', 0, 310, 135, 140, 0, c[4], '#0b0910', 7], ['r', 135, 310, 135, 140, 0, c[5], '#0b0910', 7], ['c', 135, 235, 92, '#ffe9a8', '#0b0910', 7]]],
+      ['p', 'M12 438V150C12 62 135 12 135 12C135 12 258 62 258 150V438Z', '', '#e8c36a', 7]] });
+    A.lancetA = lancet(['#c0263b', '#2456c9', '#1f9d6b', '#7b3fc4', '#2456c9', '#c0263b']);
+    A.lancetB = lancet(['#2456c9', '#c0263b', '#7b3fc4', '#1f9d6b', '#c0263b', '#2456c9']);
+    A.corner = { w: 110, h: 110, s: [['p', 'M6 104V30Q6 6 30 6H104', '', '#b8892e', 4], ['p', 'M20 104V40Q20 20 40 20H104', '', '#b8892e', 1.5], ['c', 34, 34, 7, '#b8892e']] };
+    A.spark = { w: 40, h: 40, s: [['p', 'M20 0L24 16L40 20L24 24L20 40L16 24L0 20L16 16Z', '#fff0b8']] };
+    // (a crown for the one seat of a champion who won alone, in the ink of the window's and the medal's letters)
+    A.crownInk = c => ({ w: 100, h: 70, s: [['p', 'M8 62L4 18L30 38L50 8L70 38L96 18L92 62Z', c], ['c', 50, 10, 7, c], ['c', 5, 18, 6, c], ['c', 95, 18, 6, c]] });
+    // an ivory tile of the designs, standing (a over b) or lying (a beside b)
+    const PIPS = [[], [[0, 0]], [[-1, -1], [1, 1]], [[-1, -1], [0, 0], [1, 1]], [[-1, -1], [1, -1], [-1, 1], [1, 1]], [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]]];
+    A.tile = (a, b) => { const s = [['r', 2, 10, 96, 196, 15, '#b9a27a'], ['r', 2, 2, 96, 196, 15, '#fbf5e6', '#d9c79f', 2], ['p', 'M14 100H86', '', '#8c7a55', 3, { cap: 1 }], ['c', 50, 100, 5, '#c9a44c']];
+      [[a, 50], [b, 148]].forEach(v => { const dy = v[0] === 6 ? 25 : 22; for (const q of PIPS[v[0]]) s.push(['c', 50 + q[0] * 22, v[1] + q[1] * dy, 8, '#1d1a16']); });
+      return { w: 100, h: 208, s }; };
+    A.tileH = (a, b) => { const s = [['r', 2, 10, 196, 96, 15, '#b9a27a'], ['r', 2, 2, 196, 96, 15, '#fbf5e6', '#d9c79f', 2], ['p', 'M100 14V86', '', '#8c7a55', 3, { cap: 1 }], ['c', 100, 50, 5, '#c9a44c']];
+      [[a, 50], [b, 148]].forEach(v => { const dx = v[0] === 6 ? 25 : 22; for (const q of PIPS[v[0]]) s.push(['c', v[1] + q[1] * dx, 50 - q[0] * 22, 8, '#1d1a16']); });
+      return { w: 200, h: 108, s }; };
+    return A;
+  })();
+  // a drawing as an SVG picture, `w` screen dots wide (its height follows)
+  let ARTN = 0;
+  function artSvg(a, w, css) {
+    const u = 'dw' + (++ARTN) + '-', col = v => (!v ? 'none' : v[0] === '@' ? 'url(#' + u + v.slice(1) + ')' : v);
+    const stops = s => s.map(x => '<stop offset="' + x[0] + '" stop-color="' + x[1] + '"/>').join('');
+    let defs = '';
+    const paint = x => ' fill="' + col(x.f) + '"' + (x.s ? ' stroke="' + col(x.s) + '" stroke-width="' + (x.w || 1) + '"' : '');
+    const one = x => {
+      const k = x[0];
+      if (k === 'L') { defs += '<linearGradient id="' + u + x[1] + '" gradientUnits="userSpaceOnUse" x1="' + x[2] + '" y1="' + x[3] + '" x2="' + x[4] + '" y2="' + x[5] + '">' + stops(x[6]) + '</linearGradient>'; return ''; }
+      if (k === 'R') { defs += '<radialGradient id="' + u + x[1] + '" gradientUnits="userSpaceOnUse" cx="' + x[2] + '" cy="' + x[3] + '" r="' + x[4] + '">' + stops(x[5]) + '</radialGradient>'; return ''; }
+      if (k === 'p') { const m = x[5] || {}; return '<path d="' + x[1] + '"' + paint({ f: x[2], s: x[3], w: x[4] }) + (m.cap ? ' stroke-linecap="round"' : '') + (m.join ? ' stroke-linejoin="round"' : '') + (m.op ? ' opacity="' + m.op + '"' : '') + '/>'; }
+      if (k === 'c') return '<circle cx="' + x[1] + '" cy="' + x[2] + '" r="' + x[3] + '"' + paint({ f: x[4], s: x[5], w: x[6] }) + (x[7] ? ' stroke-dasharray="' + x[7].join(' ') + '"' : '') + '/>';
+      if (k === 'e') return '<ellipse cx="' + x[1] + '" cy="' + x[2] + '" rx="' + x[3] + '" ry="' + x[4] + '"' + paint({ f: x[5] }) + (x[6] ? ' transform="rotate(' + x[6] + ' ' + x[1] + ' ' + x[2] + ')"' : '') + '/>';
+      if (k === 'r') return '<rect x="' + x[1] + '" y="' + x[2] + '" width="' + x[3] + '" height="' + x[4] + '"' + (x[5] ? ' rx="' + x[5] + '"' : '') + paint({ f: x[6], s: x[7], w: x[8] }) + '/>';
+      if (k === 'g') return '<polygon points="' + x[1].join(' ') + '"' + paint({ f: x[2] }) + '/>';
+      if (k === 'clip') { defs += '<clipPath id="' + u + 'k"><path d="' + x[1] + '"/></clipPath>'; return '<g clip-path="url(#' + u + 'k)">' + x[2].map(one).join('') + '</g>'; }
+      return '';
+    };
+    const body = a.s.map(one).join('');
+    return '<svg xmlns="http://www.w3.org/2000/svg" width="' + w + '" height="' + (w * a.h / a.w).toFixed(1) + '" viewBox="0 0 ' + a.w + ' ' + a.h + '" aria-hidden="true" style="display:block;overflow:visible;' + (css || '') + '">' + (defs ? '<defs>' + defs + '</defs>' : '') + body + '</svg>';
+  }
+  // the same drawing on a canvas: its top left corner at (x, y), `w` dots wide
+  function artDraw(g, a, x, y, w) {
+    const k = w / a.w, G = {};
+    const col = v => (v[0] === '@' ? G[v.slice(1)] : v);
+    const grad = (gr, st) => { for (const s of st) gr.addColorStop(s[0], s[1]); return gr; };
+    const paint = (f, s, sw, dash, m) => {
+      m = m || {};
+      if (m.op) g.globalAlpha = m.op;
+      if (f) { g.fillStyle = col(f); g.fill(); }
+      if (s) { g.strokeStyle = col(s); g.lineWidth = sw || 1; g.lineCap = m.cap ? 'round' : 'butt'; g.lineJoin = m.join ? 'round' : 'miter'; g.setLineDash(dash || []); g.stroke(); g.setLineDash([]); }
+      g.globalAlpha = 1;
+    };
+    const rr = (x0, y0, w0, h0, r) => { g.beginPath(); if (!r) { g.rect(x0, y0, w0, h0); return; } g.moveTo(x0 + r, y0); g.arcTo(x0 + w0, y0, x0 + w0, y0 + h0, r); g.arcTo(x0 + w0, y0 + h0, x0, y0 + h0, r); g.arcTo(x0, y0 + h0, x0, y0, r); g.arcTo(x0, y0, x0 + w0, y0, r); g.closePath(); };
+    const one = q => {
+      const t = q[0];
+      if (t === 'L') G[q[1]] = grad(g.createLinearGradient(q[2], q[3], q[4], q[5]), q[6]);
+      else if (t === 'R') G[q[1]] = grad(g.createRadialGradient(q[2], q[3], 0, q[2], q[3], q[4]), q[5]);
+      else if (t === 'p') { const P2 = new Path2D(q[1]), m = q[5] || {}; if (m.op) g.globalAlpha = m.op; if (q[2]) { g.fillStyle = col(q[2]); g.fill(P2); } if (q[3]) { g.strokeStyle = col(q[3]); g.lineWidth = q[4] || 1; g.lineCap = m.cap ? 'round' : 'butt'; g.lineJoin = m.join ? 'round' : 'miter'; g.stroke(P2); } g.globalAlpha = 1; }
+      else if (t === 'c') { g.beginPath(); g.arc(q[1], q[2], q[3], 0, Math.PI * 2); paint(q[4], q[5], q[6], q[7]); }
+      else if (t === 'e') { g.beginPath(); g.ellipse(q[1], q[2], q[3], q[4], (q[6] || 0) * Math.PI / 180, 0, Math.PI * 2); paint(q[5]); }
+      else if (t === 'r') { rr(q[1], q[2], q[3], q[4], q[5]); paint(q[6], q[7], q[8]); }
+      else if (t === 'g') { g.beginPath(); for (let i = 0; i < q[1].length; i += 2) { if (i) g.lineTo(q[1][i], q[1][i + 1]); else g.moveTo(q[1][i], q[1][i + 1]); } g.closePath(); paint(q[2]); }
+      else if (t === 'clip') { g.save(); g.clip(new Path2D(q[1])); q[2].forEach(one); g.restore(); }
+    };
+    g.save(); g.translate(x, y); g.scale(k, k);
+    a.s.forEach(one);
+    g.restore();
+  }
+  // Blokvane's own mark for the winners' screens: its icon (Boo) and its name
+  const BRAND = BASE + '../go/icon-192.png';
+  // =====================================================================
+  // The winners' screens: the screen itself
+  // =====================================================================
+  // One of the five designs, drawn 1920 x 1080 (the TV sizes it to its screen; the host's phone shows it small, as the
+  // preview of "Winner screen"). W says what is on it:
+  //   { fx, rtl, who: [the winners' names], target, sa (the winners' points), sb (the best of the others), won, rounds,
+  //     big, runners, many (more than one player came after them) }
+  // A winner's place shows the first letter of their name, as the designs do.
+  // Returns { el, fit }: the screen, and what brings long names down to the room they have (once it is on the page).
+  const winFaces = fx => ['900 60px "DM Playfair"', '700 40px "DM Playfair"', 'italic 700 40px "DM Playfair"', '800 22px "DM Nunito"'].concat(fx === 'glass' || fx === 'cert' || fx === 'crest' || fx === 'medals' ? ['900 40px "DM Cinzel"', '700 30px "DM Cinzel"'] : [], fx === 'cert' ? ['400 60px "DM Pinyon"'] : []);
+  // (its typefaces, fetched before it shows: a screen never opens in the wrong letters. It never waits long.)
+  function winFonts(fx, sample) {
+    css();
+    const faces = winFaces(fx).concat(['700 40px "Reem Kufi"', '600 30px "IBM Plex Sans Arabic"']), text = 'Aa1' + (sample || '');
+    const all = Promise.all(faces.map(f => { try { return document.fonts.load(f, text).catch(() => 0); } catch (e) { return 0; } }));
+    return Promise.race([all, new Promise(r => setTimeout(r, 2500))]);
+  }
+  function winScene(W) {
+    css();
+    const F = WF, rtl = !!W.rtl, two = W.who.length > 1, names = W.who.join(' + '), ini = W.who.map(n => (String(n).trim()[0] || '?').toUpperCase());
+    const fx = WINS.some(x => x[0] === W.fx) ? W.fx : 'trophy';
+    const BG = {
+      trophy: ['#010f10', 'radial-gradient(ellipse 50% 55% at 50% 38%,#0f5a55,rgba(15,90,85,0) 75%),linear-gradient(180deg,#04282a,#010f10)'],
+      crest: ['#22050e', 'radial-gradient(ellipse 65% 60% at 50% 40%,#8a1a36,rgba(138,26,54,0) 75%),linear-gradient(180deg,#4a0b1e,#22050e)'],
+      medals: ['#050916', 'radial-gradient(ellipse 60% 55% at 50% 38%,#24408a,rgba(36,64,138,0) 75%),linear-gradient(180deg,#0e1838,#050916)'],
+      glass: ['#0d0a14', 'radial-gradient(ellipse 60% 55% at 50% 32%,#3a2a55,rgba(58,42,85,0) 75%),repeating-linear-gradient(0deg,rgba(255,255,255,.025) 0px,rgba(255,255,255,.025) 2px,rgba(255,255,255,0) 2px,rgba(255,255,255,0) 90px),repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0px,rgba(255,255,255,.025) 2px,rgba(255,255,255,0) 2px,rgba(255,255,255,0) 180px),#0d0a14'],
+      cert: ['#03201e', 'radial-gradient(ellipse 65% 60% at 50% 45%,#0f6a60,rgba(15,106,96,0) 75%),linear-gradient(180deg,#073a36,#03201e)']
+    }[fx];
+    const st = h('div', 'position:absolute;left:0;top:0;width:1920px;height:1080px;overflow:hidden;direction:ltr;font-variant-numeric:lining-nums;font-family:' + F.sans + ';color:#fff;background:' + BG[1]);
+    st.className = 'dmn-win'; st.dataset.fx = fx; st.dataset.bg = BG[0];
+    const fits = [];
+    const at = (x, y, c, parent) => h('div', 'position:absolute;left:' + x + 'px;top:' + y + 'px;' + (c || ''), parent || st);
+    // (a line of words; `max` is the room it has: a longer one is set smaller until it fits. A name says by itself
+    // which way it reads.)
+    const txt = (parent, c, text, max, name) => {
+      const e = h('div', c, parent), s = max ? h('span', 'display:inline-block;white-space:nowrap', e, text) : e;
+      if (!max) e.textContent = text;
+      if (name) s.dir = 'auto'; else if (rtl) s.style.direction = 'rtl';
+      if (max) fits.push([e, s, max]);
+      return e;
+    };
+    const art = (parent, a, w, c) => { const e = h('div', c || '', parent); e.innerHTML = artSvg(a, w); return e; };
+    const shade = v => '-webkit-filter:' + v + ';filter:' + v;
+    // (capital letters, spaced out, for the Latin alphabet only: Arabic letters join, and have no capitals)
+    const caps = v => (rtl ? '' : ';text-transform:uppercase;letter-spacing:' + v);
+    const lbl = px2 => 'font-size:' + (rtl ? Math.round(px2 * 1.3) : px2) + 'px;line-height:1.25;font-weight:800';
+    const serif = (w, s, more) => 'font-family:' + F.serif + ';font-weight:' + w + ';font-size:' + s + 'px;' + (more || '');
+    const ital = rtl ? '' : 'font-style:italic;';
+    const tw = (x, y, s, dur, del) => art(at(x, y), ART.spark, s, 'animation:dwTw ' + dur + 's ease-in-out ' + del + 's infinite');
+    const frame = a => at(22, 22, 'width:1872px;height:1032px;border:2px solid rgba(232,195,106,' + a + ');border-radius:18px;pointer-events:none');
+    // (`on`: the line stands on the frame's own line, which stops on both sides of it, the way a title sits in a frame)
+    const foot = (y, color, on) => { const e = txt(at(0, y, 'width:1920px;text-align:center'), 'font-size:26px;font-weight:700;color:' + color, t('The host can start a new game from their phone.'), 1500); if (on) { e.firstChild.style.padding = '0 18px'; e.firstChild.style.background = on; } return e; };
+    // Blokvane's mark, in the top corner of every design
+    const brand = (color, x, y) => { const b = at(x == null ? 56 : x, y == null ? 46 : y, 'display:flex;align-items:center;direction:ltr'); const im = h('img', 'display:block;width:46px;height:46px;border-radius:11px;box-shadow:0 4px 10px rgba(0,0,0,.35)', b); im.alt = ''; im.src = BRAND; h('div', 'margin-left:14px;font-family:' + F.sans + ';font-weight:800;font-size:30px;line-height:1;color:' + color, b, 'Blokvane'); return b; };
+    // the three facts at the bottom
+    const FACT = {
+      first: () => [t('First to'), String(W.target)], score: () => [t('Final score'), t('{a} to {b}', { a: W.sa, b: W.sb })], rounds: () => [t('Rounds won'), t('{a} of {b}', { a: W.won, b: W.rounds })],
+      big: () => [t('Biggest round'), t('{n} points', { n: W.big })], runners: () => [t(W.many ? 'Runners up' : 'Runner up'), W.runners, 1]
+    };
+    const bar = (y, bg, keys) => {
+      const b = at(360, y, 'width:1200px;height:112px;box-sizing:border-box;border-radius:20px;background:' + bg + ';border:2px solid #e8c36a;display:flex;align-items:center;flex-direction:' + (rtl ? 'row-reverse' : 'row'));
+      keys.forEach((k, i) => {
+        const c = FACT[k]();
+        if (i) h('div', 'flex:none;width:2px;height:66px;background:rgba(232,195,106,.5)', b);
+        const cell = h('div', 'flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center', b);
+        txt(cell, lbl(22) + ';color:#e8c36a' + caps('.2em'), c[0], 360);
+        txt(cell, serif(700, 40, 'line-height:1.25;color:#fff6e0'), c[1], 360, c[2]);
+      });
+    };
+    // a winner's place: the first letter of their name, or, when one player won alone, the crown in the second place
+    const AR_LETTER = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFC]/;
+    const letterOf = (box, c, ch) => { const e = h('div', c, box, ch); if (AR_LETTER.test(ch)) { e.style.lineHeight = '1.3'; e.style.marginTop = '-0.36em'; } return e; };
+    const seat = (box, i, size, letter, ink) => {
+      if (i >= W.who.length) art(box, ink ? ART.crownInk(ink) : ART.crown, Math.round(size * 0.62));
+      else letterOf(box, letter, ini[i]);
+    };
+    const who = i => (i < W.who.length ? W.who[i] : t('Champion'));
+    // a picture in a gold ring, inside a wreath, with the name under it
+    const wreath = (x, y, size, ring, bw, bgc, i, nameCss) => {
+      const b = at(x, y, 'width:' + size + 'px');
+      const box = h('div', 'position:relative;width:' + size + 'px;height:' + size + 'px', b);
+      art(box, ART.laurel, size, 'position:absolute;left:0;top:0;' + shade('drop-shadow(0 6px 10px rgba(0,0,0,.4))'));
+      const c = h('div', 'position:absolute;left:50%;top:50%;width:' + ring + 'px;height:' + ring + 'px;margin:' + (-ring / 2) + 'px 0 0 ' + (-ring / 2) + 'px;border-radius:50%;background:' + bgc + ';box-sizing:border-box;border:' + bw + 'px solid #e8c36a;display:flex;align-items:center;justify-content:center;overflow:hidden', box);
+      seat(c, i, ring - 2 * bw, serif(700, Math.round(ring / 2), 'line-height:1;color:#fff6e0'));
+      txt(b, nameCss + ';text-align:center', who(i), size, i < W.who.length);
+    };
+
+    if (fx === 'trophy') {
+      // ---------- the trophy in the spotlight ----------
+      [[520, 7], [1400, 8]].forEach(x => at(x[0], -60, 'width:520px;height:1100px;margin-left:-260px;background:linear-gradient(180deg,rgba(255,244,200,.34),rgba(255,244,200,0) 85%);-webkit-clip-path:polygon(44% 0,56% 0,100% 100%,0 100%);clip-path:polygon(44% 0,56% 0,100% 100%,0 100%);transform-origin:50% 0;animation:dwSweep ' + x[1] + 's ease-in-out infinite;pointer-events:none'));
+      frame(0.4);
+      txt(at(0, 44, 'width:1920px;text-align:center'), serif(700, 62, ital + 'color:#e8c36a'), t(two ? 'Champions of the table' : 'Champion of the table'), 1300);
+      art(at(760, 130, 'animation:dwBob 4s ease-in-out infinite'), ART.trophy, 400, shade('drop-shadow(0 0 40px rgba(232,195,106,.45))'));
+      [[720, 170, 46, 0], [1150, 140, 34, 0.7], [1180, 420, 42, 1.3], [700, 460, 30, 0.4], [930, 110, 26, 1.8]].forEach(x => tw(x[0], x[1], x[2], 2.4, x[3]));
+      const pl = at(610, 626, 'width:700px;height:150px;box-sizing:border-box;border-radius:10px 10px 0 0;background:linear-gradient(180deg,#143c3e,#062022);border:2px solid rgba(232,195,106,.5);border-bottom:none;display:flex;align-items:center;justify-content:center;box-shadow:0 30px 50px rgba(0,0,0,.5)');
+      txt(h('div', 'max-width:640px;box-sizing:border-box;padding:6px 40px;border-radius:8px;background:linear-gradient(180deg,#fff0b8,#e8c36a 55%,#b8892e)', pl), serif(900, 66, 'line-height:1.2;color:#1d1a16'), names, 560, 1);
+      at(570, 776, 'width:780px;height:16px;border-radius:4px;background:linear-gradient(180deg,#e8c36a,#8a6410)');
+      wreath(190, 230, 340, 196, 8, '#04282a', 0, serif(900, 62, 'line-height:1.05;color:#fff6e0'));
+      wreath(1390, 230, 340, 196, 8, '#04282a', 1, serif(900, 62, 'line-height:1.05;color:#fff6e0'));
+      const sc = h('div', serif(900, 84, 'line-height:1.2;color:#fff6e0;white-space:nowrap' + (rtl ? ';direction:rtl' : '')), at(0, 800, 'width:1920px;text-align:center'));
+      h('span', '', sc, String(W.sa)); h('span', ital + 'font-weight:700;font-size:52px;color:#e8c36a;margin:0 22px', sc, t('to')); h('span', '', sc, String(W.sb));
+      bar(912, 'rgba(2,20,22,.7)', ['first', 'rounds', 'runners']);
+      foot(1036, '#cfe6de', '#010f10');
+      brand('#fff6e0');
+    } else if (fx === 'crest') {
+      // ---------- the royal crest ----------
+      h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;background:radial-gradient(rgba(255,255,255,.04) 1px,rgba(255,255,255,0) 1px);background-size:6px 6px;pointer-events:none', st);
+      // (gold paper falling, the same every time: a fixed row of numbers, not chance)
+      const cf = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;pointer-events:none', st), CC = ['#fff6e0', '#f3dc9c', '#e8c36a', '#b8892e'];
+      let r = 7;
+      const rnd = () => { r = (r * 16807) % 2147483647; return r / 2147483647; };
+      for (let i = 0; i < 44; i++) h('span', 'position:absolute;left:' + Math.round(rnd() * 1880) + 'px;top:-40px;width:' + [14, 18, 22][Math.floor(rnd() * 3)] + 'px;height:' + (rnd() < 0.5 ? 10 : 26) + 'px;border-radius:' + (rnd() < 0.4 ? 50 : 2) + 'px;background:' + CC[Math.floor(rnd() * 4)] + ';animation:dwFall ' + (5.2 + rnd() * 4.6).toFixed(1) + 's linear ' + (-rnd() * 9.5).toFixed(1) + 's infinite', cf);
+      frame(0.45);
+      art(at(644, 196, 'transform:rotate(-16deg)'), ART.tile(6, 6), 92);
+      art(at(1184, 196, 'transform:rotate(16deg)'), ART.tile(5, 5), 92);
+      art(at(760, 130), ART.shield, 400, shade('drop-shadow(0 20px 30px rgba(0,0,0,.5))'));
+      art(at(888, 52, 'animation:dwBob 3s ease-in-out infinite'), ART.crown, 144, shade('drop-shadow(0 4px 6px rgba(0,0,0,.4))'));
+      const sh = at(760, 236, 'width:400px;text-align:center');
+      txt(sh, lbl(22) + ';color:#f3dc9c' + caps('.3em'), t('First to'), 300);
+      txt(sh, serif(900, 150, 'line-height:1.05;color:#e8c36a;text-shadow:0 5px 0 rgba(0,0,0,.4)'), String(W.target), 290);
+      art(at(580, 508), ART.banner, 760, shade('drop-shadow(0 10px 14px rgba(0,0,0,.45))'));
+      txt(at(580, 524, 'width:760px;text-align:center'), 'font-family:' + F.caps + ';font-weight:900;font-size:58px;color:#3a0817' + caps('.16em'), t(two ? 'Champions' : 'Champion'), 500);
+      wreath(250, 230, 300, 170, 7, '#3a0817', 0, serif(900, 60, 'line-height:1.1;color:#fff6e0'));
+      wreath(1370, 230, 300, 170, 7, '#3a0817', 1, serif(900, 60, 'line-height:1.1;color:#fff6e0'));
+      const nm = at(0, 650, 'width:1920px;text-align:center');
+      txt(nm, serif(900, 116, 'line-height:1.1;color:#fff6e0;text-shadow:0 5px 0 rgba(0,0,0,.4)'), names, 1500, 1);
+      txt(nm, serif(700, 46, ital + 'color:#e8c36a'), t(two ? 'rule the table' : 'rules the table'), 1200);
+      bar(880, 'rgba(0,0,0,.35)', ['score', 'rounds', 'runners']);
+      foot(1008, '#e9dcc0');
+      brand('#fff6e0');
+    } else if (fx === 'medals') {
+      // ---------- the gold medals ----------
+      [[1315, 301, 30, 2.7, 2.1], [1763, 582, 16, 3.7, 2.3], [550, 93, 16, 2.2, 1.4], [544, 429, 30, 2.2, 0.7], [1537, 261, 22, 2.6, 2.7], [1608, 438, 16, 3.5, 0.2], [1305, 495, 16, 2.3, 2.9], [50, 254, 16, 3.9, 0.5], [380, 336, 22, 3.9, 1.6], [1428, 249, 16, 3.9, 2.1], [1870, 432, 22, 2, 1.2],
+        [338, 310, 16, 2.7, 2.5], [1240, 43, 30, 3.4, 1], [674, 403, 22, 3, 0.9], [1025, 523, 30, 2.4, 0.8], [86, 406, 22, 2, 2.4], [789, 425, 30, 3.7, 1.4], [1489, 225, 30, 3.9, 0.6], [1587, 291, 22, 2.7, 1.1], [1114, 296, 22, 2.2, 2.2], [1672, 416, 22, 2.1, 2.8], [226, 253, 22, 3, 1.1]].forEach(x => tw(x[0], x[1], x[2], x[3], x[4]));
+      frame(0.4);
+      const RIB = c => 'linear-gradient(90deg,' + c[0] + ' 0%,' + c[0] + ' 22%,#fff6e0 22%,#fff6e0 30%,' + c[1] + ' 30%,' + c[1] + ' 70%,#fff6e0 70%,#fff6e0 78%,' + c[0] + ' 78%,' + c[0] + ' 100%)';
+      const medal = (x, i, cols, dur) => {
+        const m = at(x, -20, 'width:320px;display:flex;flex-direction:column;align-items:center;transform-origin:50% 0;animation:dwSway ' + dur + 's ease-in-out infinite');
+        h('div', 'width:140px;height:330px;background:' + RIB(cols) + ';box-shadow:0 10px 20px rgba(0,0,0,.4)', m);
+        h('div', 'width:76px;height:44px;margin-top:-6px;border:10px solid #e8c36a;border-radius:14px;box-sizing:border-box', m);
+        const d = h('div', 'position:relative;width:320px;height:320px;margin-top:-16px;' + shade('drop-shadow(0 20px 26px rgba(0,0,0,.55))'), m);
+        art(d, ART.medal, 320, 'position:absolute;left:0;top:0');
+        const f = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center', d);
+        letterOf(f, serif(900, 150, 'line-height:1;color:#6b4c0e;text-shadow:0 2px 0 #fff0b8'), ini[i]);
+        txt(f, 'font-family:' + F.caps + ';font-weight:900;font-size:22px;color:#6b4c0e' + caps('.2em'), t('Champion'), 190);
+        txt(m, serif(900, 58, 'margin-top:14px;line-height:1.1;color:#fff6e0'), W.who[i], 400, 1);
+      };
+      if (two) { medal(520, 0, ['#b3202e', '#7a1220'], 5); medal(1080, 1, ['#1f8a85', '#0d4f4c'], 6); txt(at(900, 400, 'width:120px;text-align:center'), serif(900, 120, 'line-height:1;color:#e8c36a'), '+'); }
+      else medal(800, 0, ['#b3202e', '#7a1220'], 5);
+      const l = at(110, 250, 'width:330px;text-align:center');
+      txt(l, lbl(22) + ';color:#c9d4f5' + caps('.3em'), t('First to'), 330);
+      txt(l, serif(900, 150, 'line-height:1.05;color:#e8c36a;text-shadow:0 5px 0 rgba(0,0,0,.4)'), String(W.target), 330);
+      h('div', 'margin:6px auto 0;width:160px;height:3px;background:#e8c36a', l);
+      const rr = at(1480, 250, 'width:330px;text-align:center');
+      txt(rr, lbl(22) + ';color:#c9d4f5' + caps('.3em'), t('Final score'), 330);
+      txt(rr, serif(900, 150, 'line-height:1.05;color:#fff6e0;text-shadow:0 5px 0 rgba(0,0,0,.4)'), String(W.sa), 330);
+      txt(rr, serif(700, 48, ital + 'color:#e8c36a'), t('to') + ' ' + W.sb, 330);
+      txt(at(0, 744, 'width:1920px;text-align:center'), serif(900, 104, 'line-height:1.15;color:#fff6e0;text-shadow:0 5px 0 rgba(0,0,0,.4)'), t('Gold for {names}', { names }), 1700, 1);
+      bar(888, 'rgba(5,9,24,.7)', ['rounds', 'big', 'runners']);
+      foot(1014, '#c9d4f5');
+      brand('#fff6e0');
+    } else if (fx === 'glass') {
+      // ---------- the stained glass window ----------
+      frame(0.4);
+      const rose = at(660, 50, 'width:600px;height:600px');
+      h('div', 'position:absolute;left:40px;top:40px;right:40px;bottom:40px;border-radius:50%;background:radial-gradient(#7b3fc4,#2456c9 45%,#c0263b 75%);background:conic-gradient(#c0263b,#e8a93a,#1f9d6b,#2456c9,#7b3fc4,#c0263b);' + shade('blur(60px)') + ';opacity:.7;animation:dwGlint 5s ease-in-out infinite', rose);
+      art(rose, ART.rose, 600, 'position:absolute;left:0;top:0');
+      const mid = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center', rose);
+      txt(mid, 'font-family:' + F.caps + ';font-weight:700;font-size:22px;color:#5a3d08' + caps('.3em'), t('First to'), 230);
+      txt(mid, 'font-family:' + F.caps + ';font-weight:900;font-size:112px;line-height:1.05;color:#3a2606', String(W.target), 240);
+      const lancet = (x, i, a, glow) => {
+        const b = at(x, 150, 'width:270px');
+        const box = h('div', 'position:relative;width:270px;height:450px', b);
+        art(box, a, 270, shade('drop-shadow(0 0 30px ' + glow + ')'));
+        const c = h('div', 'position:absolute;left:43px;top:143px;width:184px;height:184px;border-radius:50%;display:flex;align-items:center;justify-content:center', box);
+        seat(c, i, 150, 'font-family:' + F.caps + ';font-weight:900;font-size:130px;line-height:1;color:#3a2606', '#3a2606');
+        txt(b, 'margin-top:10px;text-align:center;font-family:' + F.caps + ';font-weight:900;font-size:50px;line-height:1.1;color:#fff6e0' + caps('.08em'), who(i), 330, i < W.who.length);
+      };
+      lancet(270, 0, ART.lancetA, '#c0263b'); lancet(1380, 1, ART.lancetB, '#2456c9');
+      const nm = at(0, 668, 'width:1920px;text-align:center');
+      txt(nm, 'font-family:' + F.caps + ';font-weight:700;font-size:34px;color:#e8c36a' + caps('.42em'), t(two ? 'The champions' : 'The champion'), 1400);
+      txt(nm, serif(900, 112, 'line-height:1.15;color:#fff6e0;text-shadow:0 5px 0 rgba(0,0,0,.5)'), names, 1500, 1);
+      bar(876, 'rgba(11,9,16,.75)', ['score', 'rounds', 'runners']);
+      foot(1006, '#e9dcc0');
+      brand('#fff6e0');
+    } else {
+      // ---------- the certificate with the gold seal ----------
+      h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;background:radial-gradient(rgba(255,255,255,.035) 1px,rgba(255,255,255,0) 1px);background-size:6px 6px;pointer-events:none', st);
+      const tsh = shade('drop-shadow(0 16px 14px rgba(0,0,0,.45))');
+      art(at(60, 700, 'transform:rotate(-24deg);' + tsh), ART.tile(6, 4), 96);
+      art(at(1730, 90, 'transform:rotate(20deg);' + tsh), ART.tile(5, 5), 96);
+      art(at(1700, 640, 'transform:rotate(-12deg);' + tsh), ART.tileH(1, 5), 192);
+      const pp = at(250, 40, 'width:1420px;height:950px;box-sizing:border-box;background:radial-gradient(ellipse at 50% 30%,#fffaf0,#f3e7c8);border-radius:10px;box-shadow:0 40px 80px rgba(0,0,0,.55);transform:rotate(-1deg)');
+      h('div', 'position:absolute;left:26px;top:26px;right:26px;bottom:26px;border:3px solid #b8892e', pp);
+      h('div', 'position:absolute;left:36px;top:36px;right:36px;bottom:36px;border:1px solid #b8892e', pp);
+      [['left:44px;top:44px', 0], ['right:44px;top:44px', 90], ['right:44px;bottom:44px', 180], ['left:44px;bottom:44px', 270]].forEach(x => art(pp, ART.corner, 110, 'position:absolute;' + x[0] + ';transform:rotate(' + x[1] + 'deg)'));
+      const col = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;padding-top:76px;color:#1d1a16', pp);
+      txt(col, 'font-family:' + F.caps + ';font-weight:900;font-size:50px;color:#8a6410' + caps('.2em'), t('Certificate of victory'), 1100);
+      txt(col, serif(700, 36, ital + 'margin-top:4px'), t('Dominoes 151'), 700);
+      txt(col, 'margin-top:26px;font-size:28px;font-weight:700;color:#5c5340', t('This certifies that'), 900);
+      txt(col, 'font-family:' + F.script + ';font-size:170px;line-height:1.1;padding:0 30px', names, 1180, 1);
+      h('div', 'flex:none;width:780px;height:3px;background:linear-gradient(90deg,rgba(184,137,46,0),#b8892e,rgba(184,137,46,0))', col);
+      h('div', serif(700, 38, 'margin-top:22px;width:1000px;text-align:center;line-height:1.35' + (rtl ? ';direction:rtl' : '')), col, t(two ? 'are the champions of the table, first to {n}, with a final score of {a} to {b}.' : 'is the champion of the table, first to {n}, with a final score of {a} to {b}.', { n: W.target, a: W.sa, b: W.sb }));
+      const row = h('div', 'margin-top:34px;width:1180px;display:flex;align-items:flex-start;justify-content:space-between;flex-direction:' + (rtl ? 'row-reverse' : 'row'), col);
+      const sig = (big, small, name) => {
+        const b = h('div', 'width:380px;text-align:center', row);
+        txt(b, 'font-family:' + F.script + ';font-size:66px;line-height:1.1;color:#1d1a16', big, 372, name);
+        h('div', 'margin:2px auto 8px;width:340px;height:2px;background:#1d1a16', b);
+        h('div', lbl(22) + ';color:#6b5a2a' + caps('.06em') + (rtl ? ';direction:rtl' : ''), b, small);
+      };
+      sig(W.runners, t(W.many ? 'Witnessed by the runners up, {n}' : 'Witnessed by the runner up, {n}', { n: W.sb }), 1);
+      const sl = h('div', 'position:relative;margin-top:-16px;flex:none', row);
+      art(sl, ART.seal, 250, shade('drop-shadow(0 10px 12px rgba(0,0,0,.3))'));
+      txt(h('div', 'position:absolute;left:0;top:76px;width:250px;text-align:center', sl), serif(900, 78, 'line-height:1.2;color:#6b4c0e'), String(W.target), 150);
+      sig(t('{a} of {b} rounds', { a: W.won, b: W.rounds }), t('Biggest round: {n} points', { n: W.big }));
+      const disc = (x, y, rot, i) => { const d = at(x, y, 'width:150px;height:150px;border-radius:50%;background:#0a4640;border:6px solid #e8c36a;box-sizing:border-box;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 10px 20px rgba(0,0,0,.35);transform:rotate(' + rot + 'deg)'); seat(d, i, 138, serif(700, 75, 'line-height:1;color:#fff6e0')); };
+      disc(336, 150, -6, 0); disc(1434, 128, 5, 1);
+      foot(1036, '#cfe6de');
+      brand('#fff6e0', 56, 1004);
+    }
+    // (a long name, or a long line in another language: smaller, until it has the room it was given)
+    const fit = () => {
+      for (const x of fits) {
+        const e = x[0];
+        if (!e.dataset.fs) e.dataset.fs = String(parseFloat(e.style.fontSize) || parseFloat(getComputedStyle(e).fontSize) || 0);
+        const base = +e.dataset.fs;
+        if (!base) continue;
+        e.style.fontSize = base + 'px';
+        const w = x[1].offsetWidth;
+        if (w > x[2]) e.style.fontSize = Math.max(12, Math.floor(base * x[2] / w)) + 'px';
+      }
+    };
+    return { el: st, fit, bg: BG[0] };
+  }
+  // =====================================================================
+  // The winners' screens: the picture a phone shares
+  // =====================================================================
+  // The same five designs, stood upright for a phone (1080 x 1920, on a canvas): the same drawings, colors and
+  // typefaces, with the game's name and Blokvane's mark at the foot. g: the canvas's own 2D context; W: as for
+  // winScene; icon: Blokvane's icon as a loaded picture (or nothing: then only the name is written).
+  function winPoster(g, W, icon) {
+    const CW = 1080, CH = 1920, F = WF, rtl = !!W.rtl, two = W.who.length > 1, names = W.who.join(' + ');
+    const fx = WINS.some(x => x[0] === W.fx) ? W.fx : 'trophy';
+    const AR_CH = /[؀-ۿݐ-ݿﭐ-﷿ﹰ-ﻼ]/;
+    const ini = W.who.map(n => (String(n).trim()[0] || '?').toUpperCase());
+    const font = (fam, wt, px2, it) => (it && !rtl ? 'italic ' : '') + wt + ' ' + px2 + 'px ' + fam;
+    const serif = (wt, px2, it) => font(F.serif, wt, px2, it), caps = (wt, px2) => font(F.caps, wt, px2), sans = (wt, px2) => font(F.sans, wt, px2), script = px2 => font(F.script, 400, px2);
+    try { g.direction = rtl ? 'rtl' : 'ltr'; } catch (e) {}
+    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+    const rr = (x, y, w, h2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h2, r); g.arcTo(x + w, y + h2, x, y + h2, r); g.arcTo(x, y + h2, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); };
+    const lin = (x0, y0, x1, y1, st) => { const gr = g.createLinearGradient(x0, y0, x1, y1); for (const s of st) gr.addColorStop(s[0], s[1]); return gr; };
+    // (a soft light, widest at its middle: the glow behind the middle of each design)
+    const glow = (cx, cy, rx, ry, c0, c1) => { g.save(); g.translate(cx, cy); g.scale(1, ry / rx); const gr = g.createRadialGradient(0, 0, 0, 0, 0, rx); gr.addColorStop(0, c0); gr.addColorStop(0.75, c1); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(-rx, -rx, 2 * rx, 2 * rx); g.restore(); };
+    const back = (c0, c1) => { g.fillStyle = lin(0, 0, 0, CH, [[0, c0], [1, c1]]); g.fillRect(0, 0, CW, CH); };
+    const dots = a => { g.fillStyle = 'rgba(255,255,255,' + a + ')'; for (let y = 3; y < CH; y += 7) for (let x = 3 + (y % 2); x < CW; x += 7) g.fillRect(x, y, 1.4, 1.4); };
+    const frame = a => { rr(26, 26, CW - 52, CH - 52, 22); g.strokeStyle = 'rgba(232,195,106,' + a + ')'; g.lineWidth = 2.5; g.stroke(); };
+    // a line of words, in the middle of x: `max` is its room (a longer one is set smaller); o: { shade: a dark copy
+    // under it, as the designs' big names have }
+    const fitFont = (text, max, px2, mk) => { let s = px2; g.font = mk(s); while (max && s > 14 && g.measureText(text).width > max) { s -= 2; g.font = mk(s); } return s; };
+    const line = (text, x, y, max, px2, mk, color, o) => {
+      text = String(text);
+      const s = fitFont(text, max, px2, mk);
+      if (o && o.shade) { g.fillStyle = o.shade; g.fillText(text, x, y + Math.max(3, s * 0.045)); }
+      g.fillStyle = color; g.fillText(text, x, y);
+      return s;
+    };
+    // a small label: capital letters set apart (Latin), or a size bigger (Arabic, which has neither)
+    const label = (text, x, y, px2, color, gap, max, mk) => {
+      text = String(text); mk = mk || (s => sans(800, s));
+      if (rtl || AR_CH.test(text)) { line(text, x, y, max, Math.round(px2 * 1.3), mk, color); return; }
+      text = text.toUpperCase();
+      let s = px2, sp, w;
+      const measure = () => { g.font = mk(s); sp = s * gap; w = -sp; for (const ch of text) w += g.measureText(ch).width + sp; };
+      measure();
+      while (max && w > max && s > 12) { s -= 1; measure(); }
+      g.fillStyle = color; g.textAlign = 'left';
+      let cx = x - w / 2;
+      for (const ch of text) { g.fillText(ch, cx, y); cx += g.measureText(ch).width + sp; }
+      g.textAlign = 'center';
+    };
+    const wrap = (text, max) => { const out = []; let cur = ''; for (const wd of String(text).split(/\s+/)) { const tr = cur ? cur + ' ' + wd : wd; if (cur && g.measureText(tr).width > max) { out.push(cur); cur = wd; } else cur = tr; } if (cur) out.push(cur); return out; };
+    // the lone letter of a name, in the middle of (x, y)
+    const letter = (ch, x, y, px2, mk, color, hi) => {
+      const ar = AR_CH.test(ch);
+      g.font = mk(ar ? Math.round(px2 * 0.9) : px2); g.textBaseline = 'middle';
+      const yy = y + (ar ? -px2 * 0.1 : px2 * 0.04);
+      if (hi) { g.fillStyle = hi; g.fillText(ch, x, yy + 2.5); }
+      g.fillStyle = color; g.fillText(ch, x, yy);
+      g.textBaseline = 'alphabetic';
+    };
+    const art = (a, x, y, w, rot) => { if (!rot) return artDraw(g, a, x, y, w); const hh = w * a.h / a.w; g.save(); g.translate(x + w / 2, y + hh / 2); g.rotate(rot * Math.PI / 180); artDraw(g, a, -w / 2, -hh / 2, w); g.restore(); };
+    const spark = (x, y, s, a) => { g.save(); g.globalAlpha = a; artDraw(g, ART.spark, x - s / 2, y - s / 2, s); g.restore(); };
+    let seed = 11;
+    const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    // the three facts in their gold box
+    const FACT = {
+      first: () => [t('First to'), String(W.target)], score: () => [t('Final score'), t('{a} to {b}', { a: W.sa, b: W.sb })],
+      rounds: () => (W.won == null ? [t('Round {n}', { n: W.rounds }).replace(/\s*\d+\s*/, '') || t('Round end'), String(W.rounds)] : [t('Rounds won'), t('{a} of {b}', { a: W.won, b: W.rounds })]),
+      big: () => (W.big == null ? FACT.first() : [t('Biggest round'), t('{n} points', { n: W.big })]), runners: () => [t(W.many ? 'Runners up' : 'Runner up'), W.runners]
+    };
+    const bar = (y, bg, keys) => {
+      const x = 60, w = CW - 120, hh = 150;
+      rr(x, y, w, hh, 24); g.fillStyle = bg; g.fill(); g.strokeStyle = '#e8c36a'; g.lineWidth = 2.5; g.stroke();
+      keys.forEach((k, i) => {
+        const c = FACT[k](), at = rtl ? keys.length - 1 - i : i, cx = x + w / keys.length * (at + 0.5);
+        if (at) { g.fillStyle = 'rgba(232,195,106,.5)'; g.fillRect(x + w / keys.length * at - 1, y + 34, 2, hh - 68); }
+        label(c[0], cx, y + 58, 21, '#e8c36a', 0.2, w / keys.length - 30);
+        line(c[1], cx, y + 112, w / keys.length - 36, 42, s => serif(700, s), '#fff6e0');
+      });
+    };
+    // Blokvane's mark, at the foot: its icon and its name, and where the game is played
+    const brand = (y, color, dim) => {
+      g.font = sans(800, 50);
+      const tw = g.measureText('Blokvane').width, iw = icon ? 68 : 0, gap = icon ? 18 : 0, x0 = (CW - iw - gap - tw) / 2;
+      if (icon) { g.save(); rr(x0, y, 68, 68, 16); g.clip(); try { g.drawImage(icon, x0, y, 68, 68); } catch (e) {} g.restore(); }
+      const d0 = g.direction; try { g.direction = 'ltr'; } catch (e) {}
+      g.textAlign = 'left'; g.fillStyle = color; g.fillText('Blokvane', x0 + iw + gap, y + 52); g.textAlign = 'center';
+      try { g.direction = d0; } catch (e) {}
+      line(t('Play it at blokvane.com'), CW / 2, y + 112, 900, 30, s => sans(700, s), dim);
+    };
+    const game = (y, color) => label(t('Dominoes 151'), CW / 2, y, 30, color, 0.3, 800);
+    // the winners' places: a wreath, a gold ring and the first letter of the name, with the name under it
+    const wreaths = (y, size, ring, bgc) => {
+      const xs = two ? [CW / 2 - size * 0.98, CW / 2 + size * 0.98] : [CW / 2];
+      xs.forEach((cx, i) => {
+        artDraw(g, ART.laurel, cx - size / 2, y, size);
+        g.beginPath(); g.arc(cx, y + size / 2, ring / 2, 0, Math.PI * 2); g.fillStyle = bgc; g.fill(); g.strokeStyle = '#e8c36a'; g.lineWidth = ring * 0.042; g.stroke();
+        letter(ini[i], cx, y + size / 2, ring * 0.5, s => serif(700, s), '#fff6e0');
+        line(W.who[i], cx, y + size + 54, two ? 420 : 900, 56, s => serif(900, s), '#fff6e0');
+      });
+    };
+    const score = (y, big, small) => {
+      const parts = [[String(W.sa), serif(900, big), '#fff6e0'], [t('to'), serif(700, small, 1), '#e8c36a'], [String(W.sb), serif(900, big), '#fff6e0']];
+      if (rtl) parts.reverse();
+      let w = 0; const gap = small * 0.42;
+      for (const p of parts) { g.font = p[1]; p[3] = g.measureText(p[0]).width; w += p[3]; }
+      w += gap * 2;
+      let x = (CW - w) / 2; g.textAlign = 'left';
+      const d0 = g.direction; try { g.direction = 'ltr'; } catch (e) {}
+      for (const p of parts) { g.font = p[1]; g.fillStyle = p[2]; g.fillText(p[0], x, y); x += p[3] + gap; }
+      try { g.direction = d0; } catch (e) {}
+      g.textAlign = 'center';
+    };
+
+    if (fx === 'trophy') {
+      back('#04282a', '#010f10'); glow(540, 640, 640, 800, 'rgba(15,90,85,1)', 'rgba(15,90,85,0)');
+      // (the two spotlights)
+      [[250, 7], [830, -7]].forEach(b => { g.save(); g.translate(b[0], -70); g.rotate(b[1] * Math.PI / 180); g.beginPath(); g.moveTo(-34, 0); g.lineTo(34, 0); g.lineTo(330, 1500); g.lineTo(-330, 1500); g.closePath(); g.fillStyle = lin(0, 0, 0, 1500, [[0, 'rgba(255,244,200,.34)'], [0.85, 'rgba(255,244,200,0)'], [1, 'rgba(255,244,200,0)']]); g.fill(); g.restore(); });
+      frame(0.4);
+      game(132, '#e8c36a');
+      line(t(two ? 'Champions of the table' : 'Champion of the table'), 540, 236, 940, 78, s => serif(700, s, 1), '#e8c36a');
+      glow(540, 590, 360, 360, 'rgba(232,195,106,.30)', 'rgba(232,195,106,0)');
+      artDraw(g, ART.trophy, 305, 296, 470);
+      [[246, 372, 52, 0.95], [812, 338, 40, 0.8], [852, 660, 48, 0.9], [226, 700, 36, 0.6], [528, 284, 30, 0.7]].forEach(s => spark(s[0], s[1], s[2], s[3]));
+      // (the stand, with the winners' names on its gold plate)
+      rr(190, 892, 700, 150, 10); g.fillStyle = lin(0, 892, 0, 1042, [[0, '#143c3e'], [1, '#062022']]); g.fill(); g.strokeStyle = 'rgba(232,195,106,.5)'; g.lineWidth = 2; g.stroke();
+      const s = fitFont(names, 580, 68, z => serif(900, z)), nw = g.measureText(names).width + 84;
+      rr(540 - nw / 2, 920, nw, 96, 9); g.fillStyle = lin(0, 920, 0, 1016, [[0, '#fff0b8'], [0.55, '#e8c36a'], [1, '#b8892e']]); g.fill();
+      g.fillStyle = '#1d1a16'; g.fillText(names, 540, 968 + s * 0.36);
+      rr(150, 1042, 780, 16, 4); g.fillStyle = lin(0, 1042, 0, 1058, [[0, '#e8c36a'], [1, '#8a6410']]); g.fill();
+      wreaths(1088, 250, 144, '#04282a');
+      score(1512, 96, 60);
+      bar(1566, 'rgba(2,20,22,.7)', ['first', 'rounds', 'runners']);
+      brand(1746, '#fff6e0', '#cfe6de');
+    } else if (fx === 'crest') {
+      back('#4a0b1e', '#22050e'); glow(540, 720, 700, 880, 'rgba(138,26,54,1)', 'rgba(138,26,54,0)'); dots(0.04);
+      // (the gold paper that falls on the TV, caught in mid air: it keeps clear of the names)
+      const CC = ['#fff6e0', '#f3dc9c', '#e8c36a', '#b8892e'];
+      for (let i = 0; i < 46; i++) { const x = 50 + rnd() * 980, y = 60 + rnd() * 1800, w = [14, 18, 22][Math.floor(rnd() * 3)], hh = rnd() < 0.5 ? 10 : 26, round = rnd() < 0.4, c = CC[Math.floor(rnd() * 4)], a = rnd() * 6.3; if (x > 150 && x < 930 && y > 240) continue; g.save(); g.translate(x, y); g.rotate(a); g.fillStyle = c; rr(-w / 2, -hh / 2, w, hh, round ? Math.min(w, hh) / 2 : 2); g.fill(); g.restore(); }
+      frame(0.45);
+      game(126, '#f3dc9c');
+      art(ART.tile(6, 6), 116, 372, 104, -16); art(ART.tile(5, 5), 860, 372, 104, 16);
+      artDraw(g, ART.shield, 310, 262, 460);
+      artDraw(g, ART.crown, 455, 172, 170);
+      label(t('First to'), 540, 418, 25, '#f3dc9c', 0.3, 300);
+      line(String(W.target), 540, 572, 320, 172, s => serif(900, s), '#e8c36a', { shade: 'rgba(0,0,0,.4)' });
+      artDraw(g, ART.banner, 90, 752, 900);
+      label(t(two ? 'Champions' : 'Champion'), 540, 842, 66, '#3a0817', 0.16, 580, s => caps(900, s));
+      wreaths(928, 240, 136, '#3a0817');
+      line(names, 540, 1392, 980, 112, s => serif(900, s), '#fff6e0', { shade: 'rgba(0,0,0,.4)' });
+      line(t(two ? 'rule the table' : 'rules the table'), 540, 1460, 900, 50, s => serif(700, s, 1), '#e8c36a');
+      bar(1524, 'rgba(0,0,0,.35)', ['score', 'rounds', 'runners']);
+      brand(1722, '#fff6e0', '#e9dcc0');
+    } else if (fx === 'medals') {
+      back('#0e1838', '#050916'); glow(540, 660, 700, 840, 'rgba(36,64,138,1)', 'rgba(36,64,138,0)');
+      for (let i = 0; i < 30; i++) { const x = 50 + rnd() * 980, y = 60 + rnd() * 1500, s = [16, 22, 30][Math.floor(rnd() * 3)]; spark(x, y, s, 0.35 + rnd() * 0.6); }
+      frame(0.4);
+      const RIB = (x, w, c) => { const st = [[0, c[0]], [0.22, c[0]], [0.22, '#fff6e0'], [0.3, '#fff6e0'], [0.3, c[1]], [0.7, c[1]], [0.7, '#fff6e0'], [0.78, '#fff6e0'], [0.78, c[0]], [1, c[0]]]; g.save(); g.shadowColor = 'rgba(0,0,0,.4)'; g.shadowBlur = 20; g.shadowOffsetY = 10; g.fillStyle = lin(x - w / 2, 0, x + w / 2, 0, st); g.fillRect(x - w / 2, -20, w, 340); g.restore(); };
+      const medal = (cx, d, c, i) => {
+        RIB(cx, d * 0.4, c);
+        g.lineWidth = 10; g.strokeStyle = '#e8c36a'; rr(cx - 38, 312, 76, 44, 14); g.stroke();
+        g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 26; g.shadowOffsetY = 20; g.beginPath(); g.arc(cx, 344 + d / 2, d * 0.46, 0, Math.PI * 2); g.fillStyle = '#9a6e1c'; g.fill(); g.restore();
+        artDraw(g, ART.medal, cx - d / 2, 344, d);
+        letter(ini[i], cx, 344 + d * 0.45, d * 0.46, s => serif(900, s), '#6b4c0e', '#fff0b8');
+        label(t('Champion'), cx, 344 + d * 0.79, d * 0.066, '#6b4c0e', 0.2, d * 0.58, s => caps(900, s));
+        line(W.who[i], cx, 344 + d + 78, two ? 440 : 900, 60, s => serif(900, s), '#fff6e0');
+      };
+      if (two) { medal(292, 380, ['#b3202e', '#7a1220'], 0); medal(788, 380, ['#1f8a85', '#0d4f4c'], 1); line('+', 540, 574, 0, 104, s => serif(900, s), '#e8c36a'); }
+      else medal(540, 420, ['#b3202e', '#7a1220'], 0);
+      const y0 = two ? 30 : 64;
+      label(t('First to'), 290, 936 + y0, 24, '#c9d4f5', 0.3, 400);
+      line(String(W.target), 290, 1084 + y0, 400, 156, s => serif(900, s), '#e8c36a', { shade: 'rgba(0,0,0,.4)' });
+      g.fillStyle = '#e8c36a'; g.fillRect(210, 1110 + y0, 160, 3);
+      label(t('Final score'), 790, 936 + y0, 24, '#c9d4f5', 0.3, 400);
+      line(String(W.sa), 790, 1084 + y0, 400, 156, s => serif(900, s), '#fff6e0', { shade: 'rgba(0,0,0,.4)' });
+      line(t('to') + ' ' + W.sb, 790, 1152 + y0, 400, 52, s => serif(700, s, 1), '#e8c36a');
+      game(1296, '#e8c36a');
+      line(t('Gold for {names}', { names }), 540, 1420, 980, 104, s => serif(900, s), '#fff6e0', { shade: 'rgba(0,0,0,.4)' });
+      bar(1500, 'rgba(5,9,24,.7)', ['rounds', 'big', 'runners']);
+      brand(1722, '#fff6e0', '#c9d4f5');
+    } else if (fx === 'glass') {
+      g.fillStyle = '#0d0a14'; g.fillRect(0, 0, CW, CH); glow(540, 560, 640, 760, 'rgba(58,42,85,1)', 'rgba(58,42,85,0)');
+      g.fillStyle = 'rgba(255,255,255,.025)'; for (let y = 0; y < CH; y += 90) g.fillRect(0, y, CW, 2); for (let x = 0; x < CW; x += 180) g.fillRect(x, 0, 2, CH);
+      frame(0.4);
+      game(124, '#e8c36a');
+      // (the light of the round window: every color of its glass, softly)
+      [['rgba(192,38,59,.42)', 420, 330], ['rgba(232,169,58,.36)', 680, 350], ['rgba(31,157,107,.34)', 700, 600], ['rgba(36,86,201,.42)', 420, 640], ['rgba(123,63,196,.40)', 540, 470]].forEach(c => glow(c[1], c[2], 300, 300, c[0], c[0].replace(/[\d.]+\)$/, '0)')));
+      artDraw(g, ART.rose, 220, 156, 640);
+      label(t('First to'), 540, 428, 24, '#5a3d08', 0.3, 250, s => caps(700, s));
+      line(String(W.target), 540, 536, 270, 122, s => caps(900, s), '#3a2606');
+      const xs = two ? [322, 758] : [540];
+      xs.forEach((cx, i) => {
+        glow(cx, 1036, 230, 280, i ? 'rgba(36,86,201,.42)' : 'rgba(192,38,59,.42)', i ? 'rgba(36,86,201,0)' : 'rgba(192,38,59,0)');
+        artDraw(g, i ? ART.lancetB : ART.lancetA, cx - 118, 838, 236);
+        letter(ini[i], cx, 838 + 205, 112, s => caps(900, s), '#3a2606');
+        label(W.who[i], cx, 1294, 46, '#fff6e0', 0.08, two ? 400 : 900, s => caps(900, s));
+      });
+      label(t(two ? 'The champions' : 'The champion'), 540, 1388, 34, '#e8c36a', 0.42, 960, s => caps(700, s));
+      line(names, 540, 1496, 980, 108, s => serif(900, s), '#fff6e0', { shade: 'rgba(0,0,0,.5)' });
+      bar(1546, 'rgba(11,9,16,.75)', ['score', 'rounds', 'runners']);
+      brand(1740, '#fff6e0', '#e9dcc0');
+    } else {
+      back('#073a36', '#03201e'); glow(540, 880, 700, 1000, 'rgba(15,106,96,1)', 'rgba(15,106,96,0)'); dots(0.035);
+      art(ART.tile(6, 4), 8, 1560, 118, -24); art(ART.tile(5, 5), 956, 64, 118, 20); art(ART.tileH(1, 5), 850, 1602, 216, -12);
+      // (the certificate itself, a little askew as on the TV)
+      g.save(); g.translate(540, 870); g.rotate(-Math.PI / 180); g.translate(-540, -870);
+      g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 80; g.shadowOffsetY = 40; rr(70, 120, 940, 1500, 10); g.fillStyle = '#f3e7c8'; g.fill(); g.restore();
+      const pg = g.createRadialGradient(540, 570, 0, 540, 570, 1050); pg.addColorStop(0, '#fffaf0'); pg.addColorStop(1, '#f3e7c8');
+      rr(70, 120, 940, 1500, 10); g.fillStyle = pg; g.fill();
+      g.strokeStyle = '#b8892e'; g.lineWidth = 3; g.strokeRect(96, 146, 888, 1448); g.lineWidth = 1; g.strokeRect(106, 156, 868, 1428);
+      [[114, 164, 0], [856, 164, 90], [856, 1466, 180], [114, 1466, 270]].forEach(c => art(ART.corner, c[0], c[1], 110, c[2]));
+      label(t('Certificate of victory'), 540, 292, 44, '#8a6410', 0.2, 560, s => caps(900, s));
+      line(t('Dominoes 151'), 540, 350, 700, 40, s => serif(700, s, 1), '#1d1a16');
+      line(t('This certifies that'), 540, 428, 800, 30, s => sans(700, s), '#5c5340');
+      line(names, 540, 590, 800, 178, s => script(s), '#1d1a16');
+      g.fillStyle = lin(220, 0, 860, 0, [[0, 'rgba(184,137,46,0)'], [0.5, '#b8892e'], [1, 'rgba(184,137,46,0)']]); g.fillRect(220, 636, 640, 3);
+      g.font = serif(700, 46); g.fillStyle = '#1d1a16';
+      const ls = wrap(t(two ? 'are the champions of the table, first to {n}, with a final score of {a} to {b}.' : 'is the champion of the table, first to {n}, with a final score of {a} to {b}.', { n: W.target, a: W.sa, b: W.sb }), 780);
+      ls.forEach((l, i) => g.fillText(l, 540, 722 + i * 62));
+      const sy = Math.max(916, 722 + ls.length * 62 - 16);
+      g.save(); g.shadowColor = 'rgba(0,0,0,.3)'; g.shadowBlur = 12; g.shadowOffsetY = 10; g.beginPath(); g.arc(540, sy + 160, 136, 0, Math.PI * 2); g.fillStyle = '#a87a22'; g.fill(); g.restore();
+      artDraw(g, ART.seal, 380, sy, 320);
+      line(String(W.target), 540, sy + 194, 200, 98, s => serif(900, s), '#6b4c0e');
+      const sig = (cx, big, small) => {
+        line(big, cx, sy + 506, 390, 68, s => script(s), '#1d1a16');
+        g.fillStyle = '#1d1a16'; g.fillRect(cx - 170, sy + 524, 340, 2);
+        g.font = sans(800, rtl ? 28 : 22);
+        const up = rtl ? String(small) : String(small).toUpperCase(), wl = wrap(up, 330);
+        wl.slice(0, 2).forEach((l, i) => label(l, cx, sy + 562 + i * 30, 21, '#6b5a2a', 0.06, 400));
+      };
+      const L = [W.runners, t(W.many ? 'Witnessed by the runners up, {n}' : 'Witnessed by the runner up, {n}', { n: W.sb })], R = W.won == null ? [t('First to {n}', { n: W.target }), t('Final score')] : [t('{a} of {b} rounds', { a: W.won, b: W.rounds }), W.big == null ? t('First to {n}', { n: W.target }) : t('Biggest round: {n} points', { n: W.big })];
+      sig(rtl ? 780 : 300, L[0], L[1]); sig(rtl ? 300 : 780, R[0], R[1]);
+      // (the winners' letters on their green seals, at the top corners)
+      (two ? [[152, 212, 0], [928, 200, 1]] : [[152, 212, 0]]).forEach(d => { g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 20; g.shadowOffsetY = 10; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.fillStyle = '#0a4640'; g.fill(); g.restore(); g.strokeStyle = '#e8c36a'; g.lineWidth = 6; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.stroke(); letter(ini[d[2]], d[0], d[1], 64, s => serif(700, s), '#fff6e0'); });
+      g.restore();
+      brand(1724, '#fff6e0', '#cfe6de');
+    }
   }
   // a little crown, drawn (the winners wear it)
   function crown(size) {
@@ -666,7 +1261,7 @@ var BVDOM = (() => {
     "{name} starts.": "{name} يبدي.",
     "You hold the {a}–{a}. Play it to start.": "دبل {a} يمّك. ذبّه وابدي.",
     "You start. Play any tile.": "إنت تبدي. ذب أي حجر.",
-    "Play on {n}": "عالـ {n}",
+    "Play on {n}": "على {n}",
     "Draw a tile": "اسحب حجر",
     "Misdeal: {name} holds {n} doubles. Dealing again.": "توزيعة ما تصير: {name} بيده {n} دبل. نعيد التوزيع.",
     "Misdeal: {name} holds {n} tiles with a {k}. Dealing again.": "توزيعة ما تصير: {name} بيده {n} دومنة بيها {k}. نعيد التوزيع.",
@@ -786,7 +1381,43 @@ var BVDOM = (() => {
     "Say something": "گول شي",
     "Tap a line and it shows by your name on the TV.": "دوس على جملة وتطلع يم اسمك عالتلفزيون.",
     "Close": "سدّ",
-    "It is your turn": "دورك"
+    "It is your turn": "دورك",
+    "Winner screen": "شاشة الفايز",
+    "Trophy in the spotlight": "الكاس تحت الضوا",
+    "Royal crest": "الشعار الملكي",
+    "Gold medals": "ميداليات ذهب",
+    "Stained glass window": "شباك زجاج ملوّن",
+    "Certificate with gold seal": "شهادة بختم ذهب",
+    "The screen the TV shows when the match is won. It is also the picture a phone shares.": "الشاشة اللي تطلع عالتلفزيون من تخلص اللعبة، وهي هم الصورة اللي يشاركها الموبايل.",
+    "First to": "اللعب على",
+    "Final score": "النتيجة النهائية",
+    "{a} to {b}": "{a} گبال {b}",
+    "to": "گبال",
+    "Rounds won": "جولات الفوز",
+    "{a} of {b}": "{a} من {b}",
+    "Biggest round": "أكبر جولة",
+    "{n} points": "{n} نقطة",
+    "Runners up": "المركز الثاني",
+    "Runner up": "المركز الثاني",
+    "Champions of the table": "أبطال الميز",
+    "Champion of the table": "بطل الميز",
+    "Champions": "الأبطال",
+    "Champion": "البطل",
+    "The champions": "الأبطال",
+    "The champion": "البطل",
+    "rule the table": "ملوك الميز",
+    "rules the table": "ملك الميز",
+    "Gold for {names}": "الذهب لـ {names}",
+    "Certificate of victory": "شهادة فوز",
+    "This certifies that": "هاي الشهادة تثبت إنو",
+    "are the champions of the table, first to {n}, with a final score of {a} to {b}.": "أبطال الميز: وصلوا {n} أول شي، والنتيجة النهائية {a} گبال {b}.",
+    "is the champion of the table, first to {n}, with a final score of {a} to {b}.": "بطل الميز: وصل {n} أول شي، والنتيجة النهائية {a} گبال {b}.",
+    "Witnessed by the runners up, {n}": "شهد عليها المركز الثاني، {n}",
+    "Witnessed by the runner up, {n}": "شهد عليها المركز الثاني، {n}",
+    "{a} of {b} rounds": "{a} من {b} جولات",
+    "Biggest round: {n} points": "أكبر جولة: {n} نقطة",
+    "The host can start a new game from their phone.": "المضيف يگدر يبدي لعبة جديدة من موبايله.",
+    "Play it at blokvane.com": "العبها على blokvane.com"
   };
   let lang = 'en';
   const setLang = l => { lang = l === 'ar' ? 'ar' : 'en'; };
@@ -850,5 +1481,5 @@ var BVDOM = (() => {
 
   return { BASE, GOLD, CREAM, INK, KUFI, PLEX, h, px, CFG, cfg, newMatch, deal, legal, pts, teamOf, play, pass, draw, stuck, blocked, misdeal, ai, sidesFor,
     cells, SETS, setOf, TILE_SETS, TABLES, BORDERS, DEALS, ENDS, LOCKS, RIMS, rim, clip, scalePx, SIZES, chainSize, tile, half, back, BACK, BACK_SH, DEAL_BG, layout, drawChain, lockScene, fxScene, drawScene, previewDeal, dealPlan, keyframes,
-    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, STICKERS, stickerPack, stickerOf, stickerImg, crown, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
+    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, STICKERS, stickerPack, stickerOf, stickerImg, WINS, WF, ART, artSvg, artDraw, BRAND, winScene, winFonts, winPoster, crown, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
 })();

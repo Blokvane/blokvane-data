@@ -646,9 +646,11 @@ html.g-dom .pt-howto li:nth-child(n+6) i { background-image: radial-gradient(cir
   const rxOn = () => !!X.pub && !!X.pub.opt.rx && myP() >= 0;
   const packNow = () => (X.pub ? D.stickerPack(X.pub.opt.sk || '') : '');
   const coolLeft = () => Math.max(0, COOL - (Date.now() - (X.skAt || 0)));
+  // (the last ones a player sent: ten of them, kept apart for each pack, the Arabic one and the English one)
+  const RECENT = 10;
   const recentKey = pack => 'bv-dom-stk-' + pack;
-  function recents(pack) { try { const a = JSON.parse(localStorage.getItem(recentKey(pack)) || '[]'); return Array.isArray(a) ? a.filter(n => D.stickerOf(pack, n)).slice(0, 8) : []; } catch (e) { return []; } }
-  function remember(pack, n) { try { localStorage.setItem(recentKey(pack), JSON.stringify([n].concat(recents(pack).filter(x => x !== n)).slice(0, 8))); } catch (e) {} }
+  function recents(pack) { try { const a = JSON.parse(localStorage.getItem(recentKey(pack)) || '[]'); return Array.isArray(a) ? a.filter(n => D.stickerOf(pack, n)).slice(0, RECENT) : []; } catch (e) { return []; } }
+  function remember(pack, n) { try { localStorage.setItem(recentKey(pack), JSON.stringify([n].concat(recents(pack).filter(x => x !== n)).slice(0, RECENT))); } catch (e) {} }
   function reactions() {
     const e = X.ui.rx, pack = packNow(), on = rxOn(), cool = coolLeft() > 0;
     if (!on && X.skClose) { try { X.skClose(); } catch (er) {} }
@@ -951,86 +953,23 @@ html.g-dom .pt-howto li:nth-child(n+6) i { background-image: radial-gradient(cir
     return true;
   }
   const winName = () => (X.pub && X.pub.win ? String(X.pub.win.names[X.pub.win.side]) : '');
-  // the picture to share: the table, the winners in gold, the score in ivory pips and a few tiles (1080 x 1920)
-  async function share(g, o) {
-    const P = X.pub, w = P && P.win; if (!w) return false;
+  // What the winners' screen says. The TV sends it (win.w); a TV page from before the five designs sends only the
+  // names and the points, and then the picture is the trophy with what is known.
+  function winOf(P) {
+    const w = P.win, o1 = w.order[1], plus = v => String(v).split(' & ');
+    const W = w.w && Array.isArray(w.w.who) ? w.w : { fx: 'trophy', who: plus(w.names[w.side]), target: P.tg, sa: w.sc[w.side], sb: o1 == null ? 0 : w.sc[o1], won: null, rounds: w.rounds, big: null, runners: o1 == null ? '' : plus(w.names[o1]).join(' + '), many: !!P.tm };
+    return Object.assign({}, W, { who: W.who.map(x => String(x)), runners: String(W.runners || ''), rtl: rtl() });
+  }
+  // the picture to share (1080 x 1920): the winners' screen the host picked, stood upright for a phone, in this
+  // phone's own language, with Blokvane's mark at the foot. dom-core.js draws it, with the very drawings of the TV's.
+  async function share(g) {
+    const P = X.pub; if (!P || !P.win) return false;
     lang();
-    const W = 1080, H = 1920, L = P.look || {};
-    try { await Promise.all(['700 80px "Reem Kufi"', '600 40px "IBM Plex Sans Arabic"'].map(f => document.fonts.load(f))); } catch (e) {}
-    const felt = { teal: ['#156864', '#003336'], green: ['#21763c', '#003616'], burgundy: ['#892931', '#3d090e'], walnut: ['#8c5d34', '#5a3a1f'] }[L.table] || ['#156864', '#003336'];
-    g.fillStyle = '#081717'; g.fillRect(0, 0, W, H);
-    const rr = (x, y, w2, h2, r) => { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w2, y, x + w2, y + h2, r); g.arcTo(x + w2, y + h2, x, y + h2, r); g.arcTo(x, y + h2, x, y, r); g.arcTo(x, y, x + w2, y, r); g.closePath(); };
-    // the table and its border, the one the table wears: wood, a light line, floating with none, or stitched leather
-    const bd = L.border || 'wood', fx = bd === 'leather' ? 104 : bd === 'float' ? 62 : 76, fr = bd === 'leather' ? 64 : bd === 'float' ? 70 : 46;
-    if (bd === 'wood') {
-      rr(40, 40, W - 80, H - 80, 70); g.fillStyle = '#5b3a1f'; g.fill();
-      rr(46, 46, W - 92, H - 92, 66); g.strokeStyle = '#2a180b'; g.lineWidth = 6; g.stroke();
-    } else if (bd === 'light') {
-      rr(40, 40, W - 80, H - 80, 70); g.fillStyle = '#0d0e11'; g.fill();
-    } else if (bd === 'leather') {
-      const lg = g.createLinearGradient(0, 40, 0, H - 40); lg.addColorStop(0, '#6f4329'); lg.addColorStop(0.5, '#4a2a18'); lg.addColorStop(1, '#2e190d');
-      rr(40, 40, W - 80, H - 80, 110); g.fillStyle = lg; g.fill();
-      rr(43, 43, W - 86, H - 86, 108); g.strokeStyle = '#1c0e06'; g.lineWidth = 6; g.stroke();
-    }
-    const gr = g.createRadialGradient(W / 2, H * 0.4, 60, W / 2, H * 0.4, H * 0.75); gr.addColorStop(0, felt[0]); gr.addColorStop(1, felt[1]);
-    g.save(); if (bd === 'float') { g.shadowColor = 'rgba(0,0,0,.75)'; g.shadowBlur = 70; g.shadowOffsetY = 34; }
-    rr(fx, fx, W - 2 * fx, H - 2 * fx, fr); g.fillStyle = gr; g.fill(); g.restore();
-    g.save(); rr(fx, fx, W - 2 * fx, H - 2 * fx, fr); g.clip(); const vg = g.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.62); vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,.5)'); g.fillStyle = vg; g.fillRect(0, 0, W, H); g.restore();
-    if (bd === 'light') { g.save(); g.shadowColor = 'rgba(255,200,90,.85)'; g.shadowBlur = 36; rr(fx + 3, fx + 3, W - 2 * fx - 6, H - 2 * fx - 6, fr - 3); g.strokeStyle = '#ffd978'; g.lineWidth = 6; g.stroke(); g.restore(); }
-    else if (bd === 'float') { rr(fx + 1.5, fx + 1.5, W - 2 * fx - 3, H - 2 * fx - 3, fr - 1); g.strokeStyle = 'rgba(255,255,255,.2)'; g.lineWidth = 3; g.stroke(); }
-    else if (bd === 'leather') {
-      rr(fx - 4, fx - 4, W - 2 * fx + 8, H - 2 * fx + 8, fr + 4); g.strokeStyle = '#1c0e06'; g.lineWidth = 8; g.stroke();
-      g.save(); g.setLineDash([24, 15]); rr(70, 70, W - 140, H - 140, 88); g.strokeStyle = 'rgba(235,205,160,.7)'; g.lineWidth = 5; g.stroke(); g.restore();
-    }
-    g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-    const fit = (text, maxW, px0, min, f) => { let s = px0; g.font = f(s); while (g.measureText(text).width > maxW && s > min) { s -= 4; g.font = f(s); } return s; };
-    const kufi = s => '700 ' + s + 'px "Reem Kufi", sans-serif', plex = (s, wt) => (wt || 500) + ' ' + s + 'px "IBM Plex Sans Arabic", sans-serif';
-    g.fillStyle = '#deb866'; g.font = kufi(84); g.fillText(T('Dominoes 151'), W / 2, 250);
-    // a tile, drawn in the set the table wears: ivory, color dots, bone, ebony or maple
-    const SK = {
-      classic: { body: ['#fffdf7', '#f4ecd9', '#e0d3b6'], pip: () => ['#55504a', '#0d0c0b'], line: 'rgba(70,52,22,.55)', pin: 1 },
-      color: { body: ['#ffffff', '#f7f8fa', '#dde1e7'], pip: n => [D.HUE_W45[n], D.HUE[n]], line: '#16181c', bar: 1 },
-      boneColor: { body: ['#fffdf7', '#f1e8d2', '#dccfae'], pip: n => [D.HUE_W45[n], D.HUE[n]], line: 'rgba(70,52,22,.6)', pin: 1, edge: '#121214' },
-      ebony: { body: ['#3d4046', '#1c1e21', '#0a0b0c'], pip: () => ['#ffffff', '#e4d9bd'], line: 'rgba(255,255,255,.2)', pin: 1 },
-      maple: { body: ['#ecc68c', '#d9a868', '#c18e52'], pip: () => ['#4a2e16', '#1c0f05'], line: 'rgba(70,35,10,.7)' }
-    };
-    const sk = SK[L.tiles] || SK.classic;
-    const tile = (cx, cy, a, b, s, rot) => {
-      g.save(); g.translate(cx, cy); g.rotate(rot || 0);
-      const w2 = s, h2 = s * 2 + 4;
-      g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 26; g.shadowOffsetY = 16;
-      if (sk.edge) { rr(-w2 / 2, -h2 / 2 + 7, w2, h2, s * 0.2); g.fillStyle = sk.edge; g.fill(); g.shadowColor = 'transparent'; }
-      rr(-w2 / 2, -h2 / 2, w2, h2, s * 0.2); const tg = g.createLinearGradient(-w2 / 2, -h2 / 2, w2 / 2, h2 / 2); tg.addColorStop(0, sk.body[0]); tg.addColorStop(0.5, sk.body[1]); tg.addColorStop(1, sk.body[2]); g.fillStyle = tg; g.fill();
-      g.shadowColor = 'transparent';
-      g.fillStyle = sk.line; if (sk.bar) g.fillRect(-s * 0.42, -3, s * 0.84, 6); else g.fillRect(-s * 0.39, -1.5, s * 0.78, 3);
-      if (sk.pin) { const pg = g.createRadialGradient(-2, -3, 1, 0, 0, s * 0.1); pg.addColorStop(0, '#f6e3a1'); pg.addColorStop(1, '#a67c2e'); g.fillStyle = pg; g.beginPath(); g.arc(0, 0, s * 0.075, 0, 6.3); g.fill(); }
-      const half = (n, oy) => { const pad = s * 0.14, tr = (s - 2 * pad) / 3, pc = sk.pip(n); for (const c of D.cells(n, false)) { const x = -s / 2 + pad + tr * (c % 3 + 0.5), y = oy + pad + tr * (Math.floor(c / 3) + 0.5), r = s * 0.1; const pg = g.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.1, x, y, r); pg.addColorStop(0, pc[0]); pg.addColorStop(0.7, pc[1]); pg.addColorStop(1, pc[1]); g.fillStyle = pg; g.beginPath(); g.arc(x, y, r, 0, 6.3); g.fill(); } };
-      half(a, -h2 / 2); half(b, 2);
-      g.restore();
-    };
-    // the winners
-    g.fillStyle = '#f3ead6'; g.font = plex(44, 500); g.fillText(T('The winners'), W / 2, 420);
-    const name = String(w.names[w.side]);
-    fit(name, W - 2 * fx - 110, 120, 52, kufi); g.fillStyle = '#deb866';
-    g.save(); g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 24; g.shadowOffsetY = 8; g.fillText(name, W / 2, 570); g.restore();
-    // the winning score, in pips
-    const F = { 0: ['.##.', '#..#', '#..#', '#..#', '.##.'], 1: ['..#.', '.##.', '..#.', '..#.', '.###'], 2: ['###.', '...#', '.##.', '#...', '####'], 3: ['###.', '...#', '.##.', '...#', '###.'], 4: ['#..#', '#..#', '####', '...#', '...#'], 5: ['####', '#...', '###.', '...#', '###.'], 6: ['.##.', '#...', '###.', '#..#', '.##.'], 7: ['####', '...#', '..#.', '.#..', '.#..'], 8: ['.##.', '#..#', '.##.', '#..#', '.##.'], 9: ['.##.', '#..#', '.###', '...#', '.##.'] };
-    const digits = String(w.sc[w.side]).split(''), cell = 52, dw = 4 * cell, gapD = 56, tot = digits.length * dw + (digits.length - 1) * gapD - 16;
-    digits.forEach((dg, k) => F[dg].forEach((row, rr2) => row.split('').forEach((chh, c) => { if (chh !== '#') return; const x = W / 2 - tot / 2 + k * (dw + gapD) + c * cell + 18, y = 700 + rr2 * cell; const pg = g.createRadialGradient(x - 5, y - 6, 2, x, y, 20); pg.addColorStop(0, '#fffdf7'); pg.addColorStop(1, '#d9cba9'); g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 8; g.shadowOffsetY = 4; g.fillStyle = pg; g.beginPath(); g.arc(x, y, 19, 0, 6.3); g.fill(); g.restore(); })));
-    // everyone else
-    let y = 1080;
-    for (const i of w.order) {
-      if (i === w.side) continue;
-      rr(170, y - 62, W - 340, 96, 48); g.fillStyle = 'rgba(0,0,0,.32)'; g.fill();
-      g.textAlign = o.rtl ? 'right' : 'left'; const nm = String(w.names[i]); fit(nm, 520, 44, 26, s => plex(s, 600)); g.fillStyle = '#f3ead6'; g.fillText(nm, o.rtl ? W - 220 : 220, y);
-      g.textAlign = o.rtl ? 'left' : 'right'; g.font = kufi(56); g.fillText(String(w.sc[i]), o.rtl ? 220 : W - 220, y + 6);
-      y += 118;
-    }
-    g.textAlign = 'center';
-    g.fillStyle = '#bbd7d9'; g.font = plex(36, 500); g.fillText(T(w.rounds === 1 ? 'In 1 round' : 'In {n} rounds', { n: w.rounds }) + '  ·  ' + T('First to {n}', { n: P.tg }), W / 2, Math.max(y + 30, 1360));
-    // a few tiles, the double six among them
-    tile(250, 1560, 6, 6, 120, -0.2); tile(430, 1590, 5, 1, 120, 0.08); tile(650, 1590, 1, 1, 120, -0.06); tile(830, 1560, 6, 5, 120, 0.2);
-    g.fillStyle = '#deb866'; g.font = plex(40, 600); g.fillText('blokvane.com', W / 2, H - 120);
+    const W = winOf(P);
+    try { await D.winFonts(W.fx, W.who.join('') + W.runners + D.t('Dominoes 151') + D.t('Champion')); } catch (e) {}
+    // (Blokvane's icon: a moment for it and no longer, the picture is made without it if it does not come)
+    const icon = await new Promise(res => { const im = new Image(); let done = false; const end = v => { if (!done) { done = true; res(v); } }; im.onload = () => end(im); im.onerror = () => end(null); setTimeout(() => end(null), 2500); im.src = D.BRAND; });
+    D.winPoster(g, W, icon);
     return true;
   }
 

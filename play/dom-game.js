@@ -126,7 +126,7 @@
     rules: s => ['Your tiles are on your phone. On your turn, play one that matches either open end of the chain on the TV.', 'Can\'t play? Draw from the pile until you can. With no pile, you pass.',
       'Go out first and score the pips left in your opponents\' hands.', 'If nobody can play, the game is locked: the fewest pips win.'],
     steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'The match', s: 'Match', keys: ['target', 'level', 'speed'] }, { t: 'Turns', s: 'Turns', keys: ['turnSec', 'autoPass', 'autoNext', 'hints', 'reactions'] },
-      { t: 'The table', s: 'Look', keys: ['table', 'tiles', 'dealFx', 'endFx', 'lockFx', 'border', 'bots'] }],
+      { t: 'The table', s: 'Look', keys: ['table', 'tiles', 'dealFx', 'endFx', 'lockFx', 'border', 'winFx', 'bots'] }],
     spot: s => {
       const m = MODES.find(x => x[0] === s.mode) || MODES[0];
       // (no emoji anywhere in this game: the mode's mark is drawn, and each line gets a pip from the game's style sheet.
@@ -152,6 +152,8 @@
       { key: 'endFx', label: 'Round end style', type: 'seg', options: D.ENDS, default: 'sweep', live: 1 },
       { key: 'lockFx', label: 'Lock animation', type: 'seg', options: D.LOCKS, default: 'padlock', live: 1 },
       { key: 'border', label: 'Table border', type: 'seg', options: D.BORDERS, default: 'wood', live: 1 },
+      // (the winners' screen: one of five designs, the trophy unless the host picks another)
+      { key: 'winFx', label: 'Winner screen', type: 'seg', options: D.WINS.map(x => [x[0], x[1]]), default: 'trophy', desc: 'The screen the TV shows when the match is won. It is also the picture a phone shares.' },
       // (the computer players' names, colors and faces, one line each: "name|color|face". The host's phone has its own
       // page for it, "Computer players", so this one never shows as a plain box: its "when" is never true.)
       { key: 'bots', label: 'Names of the computer players', type: 'text', default: '', live: 1, when: ['mode', '-'], desc: 'Give each one a name, a color and a face. Leave a name empty and it gets an everyday American one.' }
@@ -495,12 +497,14 @@
         return { kind, tie, points: r.points, title: w.title, who: tie ? T('Tie') : S.sideName(r.team), parts, calc: tie ? T('No points this round') : D.calcOf(g.hands, r.team, g.teams),
           scoreLine: g.scores.map((sc, i) => S.sideName(i) + ' ' + sc).join('   ·   '), upper: !rtl(), t: { tie: T('Tie'), noPoints: T('no points') } };
       }
-      // (under a result: what happens next. A count down to the next round, or whose phone starts it.)
+      // (under a result: what happens next. A count down to the next round, or who plays first in it: the player who
+      // went out, or after a locked game the one who locked it. Never the host's name because they are the host: the
+      // "Next round" button is on the host's own phone, and every other phone says the host starts it.)
       function nextWords() {
         if (g.phase === 'match') return '';
         if (V.count != null) return T('Next round ({n})', { n: V.count });
-        const hp = K.player(K.hostId());
-        return hp ? T('{name} starts the next round', { name: hp.name }) : T('Next round');
+        const p = g.nextStarter;
+        return p != null && p >= 0 && p < g.n && seats[p] ? T('{name} starts the next round', { name: S.name(p) }) : T('Next round');
       }
       function drawFx() {
         if (fxEl) { fxEl.remove(); fxEl = null; }
@@ -964,14 +968,20 @@
       // (the host ended the match early: the kit shows its own winners, with the scores so far)
       if (K.over()) { document.body.classList.remove('dmn-on'); return null; }
 
-      // ---------- the winners: on the table itself, with the score in ivory pips and the winners' pictures in gold ----------
+      // ---------- the winners: one of the game's five winners' screens (the host's "Winner screen"). dom-core.js
+      // draws it; every phone draws the same one, stood upright, as its picture to share (the TV tells them what is
+      // on it: `w`). ----------
       const wi = g.scores.findIndex(x => x >= target);
       const order = g.scores.map((sc, i) => i).sort((a, b) => (b === wi) - (a === wi) || g.scores[b] - g.scores[a]);
+      const sideOf = i => (g.teams ? [i, i + 2] : [i]).map(p => S.name(p));
+      const o1 = order[1], theirs = (g.history || []).filter(x => x.team === wi);
+      const W = { fx: D.WINS.some(x => x[0] === s.winFx) ? s.winFx : 'trophy', who: sideOf(wi), target, sa: g.scores[wi], sb: o1 == null ? 0 : g.scores[o1], won: theirs.length, rounds: g.round,
+        big: theirs.reduce((m, x) => Math.max(m, x.points || 0), 0), runners: o1 == null ? '' : sideOf(o1).join(' + '), many: !!g.teams };
       V.final = true;
-      V.win = { side: wi, order, sc: g.scores, names: g.scores.map((x, i) => S.sideName(i)), rounds: g.round };
+      V.win = { side: wi, order, sc: g.scores, names: g.scores.map((x, i) => S.sideName(i)), rounds: g.round, w: W };
       sayPub();
       K.snd.music('dWin' + (Math.random() < 0.5 ? 1 : 2), { fadeOut: 1.2, fadeIn: 0.3 });
-      const refit = winners(K, { g, S, target, wi, order, cv, look: look(), avatar, rtl: rtl(), fitted: V });
+      const refit = await winners({ W: Object.assign({ rtl: rtl() }, W), scr, cv });
       // (the kit tells every phone how it did: a winner's place is 1, on a team too)
       const rank = [];
       rank.places = new Map(); rank.of = order.length;
@@ -979,61 +989,39 @@
       // (someone who only watched: after everyone who played)
       for (const pl of K.players()) if (!rank.includes(pl)) { pl.score = 0; rank.push(pl); rank.places.set(pl.id, order.length); }
       rank.own = true;
-      // (the table stays on the screen for the winners; the kit takes it away when the host starts something else)
-      const off = setInterval(() => { if (!scr.isConnected) { clearInterval(off); document.body.classList.remove('dmn-on'); return; } if (fit()) refit(); }, 1500);
+      // (the winners' screen stays on; the kit takes it away when the host starts something else. Until then it
+      // follows the screen's size.)
+      let wsig = innerWidth + 'x' + innerHeight;
+      const off = setInterval(() => {
+        if (!scr.isConnected) { clearInterval(off); document.body.classList.remove('dmn-on'); return; }
+        let z = '1'; try { z = getComputedStyle(document.documentElement).getPropertyValue('--z'); } catch (e) {}
+        const sig = innerWidth + 'x' + innerHeight + 'x' + z;
+        if (sig !== wsig) { wsig = sig; refit(); }
+      }, 700);
       return rank;
     }
   });
 
-  // the winners' screen. Everything is the game's own: its felt and border, its gold, its tiles; the winning score is
-  // written in ivory pips, the way the "Pips" round ending writes its numbers.
-  function winners(K, o) {
-    const g = o.g, S = o.S, cv = o.cv, L = o.look;
-    cv.textContent = '';
-    const outer = h('main', 'flex:1;min-height:0;position:relative', cv);
-    outer.className = 'dmn-felt'; outer.dataset.table = L.table;
-    const felt = D.clip(outer);
-    felt.style.display = 'flex'; felt.style.flexDirection = 'column'; felt.style.alignItems = 'center'; felt.style.justifyContent = 'center';
-    D.rim(outer, L.border, false);
-    outer.style.margin = '10px';
-    const box = h('div', 'position:relative;display:flex;flex-direction:column;align-items:center;max-width:92%;' + (o.rtl ? 'direction:rtl' : ''), felt);
-    h('div', 'font-family:' + KUFI + ';font-weight:700;font-size:22px;color:' + GOLD + ';opacity:.9;animation:dmFxFade .6s both', box, T('Dominoes 151'));
-    const wps = g.teams ? [o.wi, o.wi + 2] : [o.wi];
-    const avs = h('div', 'display:flex;margin-top:48px;direction:ltr', box);
-    wps.forEach((p, j) => {
-      const w = h('div', 'position:relative;margin:0 14px;animation:dmFxPop .6s ' + (0.2 + j * 0.2) + 's both', avs);
-      const a = o.avatar(p, 112, 46);
-      a.style.boxShadow = '0 0 0 4px ' + GOLD + ',0 0 34px rgba(222,184,102,.75),0 10px 24px rgba(0,0,0,.5)';
-      w.appendChild(a);
-      h('div', 'position:absolute;left:50%;top:-33px;margin-left:-22px;width:44px;-webkit-filter:drop-shadow(0 3px 4px rgba(0,0,0,.45));filter:drop-shadow(0 3px 4px rgba(0,0,0,.45))', w).appendChild(D.crown(44));
-    });
-    h('div', 'margin-top:16px;font-family:' + KUFI + ';font-weight:700;font-size:50px;line-height:1.15;color:' + GOLD + ';text-align:center;text-shadow:0 4px 16px rgba(0,0,0,.5);animation:dmFxPop .6s .5s both', box, S.sideName(o.wi));
-    h('div', 'margin-top:2px;font-size:20px;color:' + CREAM + ';animation:dmFxFade .6s .9s both', box, g.teams ? T('win the match!') : T('wins the match!'));
-    // the winning score, in pips
-    const F = { 0: ['.##.', '#..#', '#..#', '#..#', '.##.'], 1: ['..#.', '.##.', '..#.', '..#.', '.###'], 2: ['###.', '...#', '.##.', '#...', '####'], 3: ['###.', '...#', '.##.', '...#', '###.'], 4: ['#..#', '#..#', '####', '...#', '...#'], 5: ['####', '#...', '###.', '...#', '###.'], 6: ['.##.', '#...', '###.', '#..#', '.##.'], 7: ['####', '...#', '..#.', '.#..', '.#..'], 8: ['.##.', '#..#', '.##.', '#..#', '.##.'], 9: ['.##.', '#..#', '.###', '...#', '.##.'] };
-    const digits = String(g.scores[o.wi]).split(''), tot = digits.length * 62 + (digits.length - 1) * 18;
-    const pips = h('div', 'position:relative;margin-top:16px;width:' + tot + 'px;height:78px;direction:ltr', box);
-    let di = 0;
-    for (let rr = 0; rr < 5; rr++) digits.forEach((dg, k) => F[dg][rr].split('').forEach((ch, c) => { if (ch !== '#') return; const i = di++; h('div', 'position:absolute;left:' + (k * 80 + c * 16) + 'px;top:' + (rr * 16) + 'px;width:12px;height:12px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fffdf7,#d9cba9);box-shadow:0 2px 3px rgba(0,0,0,.55);animation:' + (i % 2 ? 'dmFxR' : 'dmFxL') + ' .6s ' + (1 + i * 0.03).toFixed(2) + 's both', pips); }));
-    // everyone else, and how the match went
-    const rest = h('div', 'margin-top:20px;display:flex;flex-wrap:wrap;justify-content:center;animation:dmFxFade .6s 2s both', box);
-    for (const i of o.order) {
-      if (i === o.wi) continue;
-      const c = h('div', 'display:flex;align-items:center;margin:4px 8px;padding:6px 14px;border-radius:20px;background:rgba(0,0,0,.3);box-shadow:inset 0 0 0 1px rgba(243,234,214,.18)', rest);
-      const ps = g.teams ? [i, i + 2] : [i];
-      ps.forEach((p, j) => { const a = o.avatar(p, 30, 13); if (j) a.style.marginLeft = '-9px'; c.appendChild(a); });
-      h('span', 'margin:0 10px;font-size:16px;font-weight:600;white-space:nowrap', c, S.sideName(i));
-      h('span', 'font-family:' + KUFI + ';font-weight:700;font-size:22px;color:' + CREAM, c, String(g.scores[i]));
-    }
-    h('div', 'margin-top:14px;font-size:15px;color:#bbd7d9;animation:dmFxFade .6s 2.3s both', box, T(g.round === 1 ? 'In 1 round' : 'In {n} rounds', { n: g.round }) + ' · ' + T('First to {n}', { n: o.target }));
-    h('div', 'position:absolute;left:0;right:0;bottom:14px;text-align:center;font-size:14px;color:#bbd7d9;animation:dmFxFade .6s 3s both' + (o.rtl ? ';direction:rtl' : ''), felt, T('The host can play again, or pick another game.'));
-    // (a row of tiles along the bottom corners, the double six among them)
-    [[6, 6], [5, 1], [1, 1]].forEach((t, i) => { const e = D.tile(t, { set: L.tiles, size: 'hand', vert: true, k: 0.8 }); e.style.position = 'absolute'; e.style.left = (26 + i * 54) + 'px'; e.style.bottom = '34px'; e.style.transform = 'rotate(' + [-10, 3, 12][i] + 'deg)'; e.style.animation = 'dmDropA .5s ' + (2.4 + i * 0.15) + 's both'; felt.appendChild(e); });
-    [[6, 5], [4, 4], [3, 2]].forEach((t, i) => { const e = D.tile(t, { set: L.tiles, size: 'hand', vert: true, k: 0.8 }); e.style.position = 'absolute'; e.style.right = (26 + i * 54) + 'px'; e.style.bottom = '34px'; e.style.transform = 'rotate(' + [10, -3, -12][i] + 'deg)'; e.style.animation = 'dmDropA .5s ' + (2.4 + i * 0.15) + 's both'; felt.appendChild(e); });
-    // (it has to fit a small or a very wide screen whole)
-    const refit = () => { box.style.transform = ''; const ah = felt.clientHeight - 60, bh = box.offsetHeight; if (bh > ah) box.style.transform = 'scale(' + Math.max(0.5, ah / bh).toFixed(3) + ')'; };
-    refit();
-    try { K.P.confetti(200); } catch (e) {}
+  // the winners' screen: one of the game's five designs, drawn 1920 x 1080 by dom-core.js and sized to this screen
+  // (the bars a screen of another shape leaves are the design's own dark color). The table is taken away first.
+  async function winners(o) {
+    const scr = o.scr;
+    o.cv.textContent = ''; o.cv.style.display = 'none';
+    try { await D.winFonts(o.W.fx, o.W.who.join('') + o.W.runners); } catch (e) {}
+    const sc = D.winScene(o.W);
+    const hold = h('div', 'position:absolute;left:0;top:0;width:1920px;height:1080px;transform-origin:0 0;animation:dmFxFade .7s both', scr);
+    hold.appendChild(sc.el);
+    scr.style.background = sc.bg;
+    // (it follows the screen's size, and the kit's "screen size" setting, like the table did)
+    const refit = () => {
+      let z = 1;
+      try { z = Math.max(0.6, Math.min(1, parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1)); } catch (e) {}
+      const W = innerWidth, H = innerHeight, k = Math.min(W / 1920, H / 1080) * z;
+      hold.style.transform = 'translate(' + ((W - 1920 * k) / 2).toFixed(1) + 'px,' + ((H - 1080 * k) / 2).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')';
+    };
+    refit(); sc.fit();
+    // (a typeface that came late: the names are measured again)
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (hold.isConnected) sc.fit(); }).catch(() => {}); } catch (e) {}
     return refit;
   }
 })();

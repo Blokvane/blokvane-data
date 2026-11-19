@@ -30,8 +30,8 @@
     'imp-game.js?v=17',
     'emoji-tpl.js?v=16',
     'emoji-game.js?v=17',
-    'dom-core.js?v=4',
-    'dom-game.js?v=3'];
+    'dom-core.js?v=5',
+    'dom-game.js?v=4'];
   for (var i = 0; i < list.length; i++) {
     var src = list[i], name = src.split('?')[0].split('/').pop().replace(/\.js$/, '');
     if (old && hasOld[name]) src = src.replace(/\.js\?/, '.old.js?');
