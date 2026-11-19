@@ -92,6 +92,9 @@ test('the first build makes a whole list the extension accepts', async () => {
   assert.match(fs.readFileSync(path.join(out, 'CREDITS.txt'), 'utf8'), /EasyList[\s\S]*Phishing\.Database[\s\S]*MIT[\s\S]*MetaMask[\s\S]*polkadot[\s\S]*Apache[\s\S]*TweetFeed/);
   // the licenses that ask to be passed on go with the list
   for (const f of ['Phishing.Database-LICENSE.txt', 'MetaMask-eth-phishing-detect-LICENSE.txt', 'polkadot-js-phishing-LICENSE.txt']) assert.ok(fs.statSync(path.join(out, 'licenses', f)).size > 500, f);
+  // ... and so does the GPL's own text, for the lists that are under it (EasyList, uBlock Origin, AdGuard)
+  const gpl = fs.readFileSync(path.join(out, 'licenses', 'GPL-3.0.txt'), 'utf8');
+  assert.ok(/^\s*GNU GENERAL PUBLIC LICENSE\s+Version 3, 29 June 2007/.test(gpl) && gpl.length > 30000, 'the GPL goes with the list, whole');
 });
 
 test('the newer scam lists are read: fake crypto sites, and whole scam sites reported this month', async () => {

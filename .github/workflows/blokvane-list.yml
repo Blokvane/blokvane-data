@@ -60,31 +60,48 @@ jobs:
           git commit -q -m "Blokvane's list, $(date -u '+%Y-%m-%d %H:%M') UTC"
           git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" lists
 
-      # The list's second home: Cloudflare Pages (lists.blokvane.com), which copies ask first, with GitHub as the backup.
-      # It needs two settings in this repo (Settings, Secrets and variables, Actions): CLOUDFLARE_API_TOKEN (a key that
-      # may only update Cloudflare Pages) and CLOUDFLARE_ACCOUNT_ID. Until they are there, this step does nothing.
-      - name: Publish it on Cloudflare too
-        if: always()
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "Cloudflare is not set up yet: GitHub carries the list alone."; exit 0; fi
-          dir="$RUNNER_TEMP/out"
-          # (nothing new this hour: Cloudflare still gets the list GitHub has, when it doesn't have it yet, like the
-          # first time or after a failed upload)
-          if [ ! -f "$RUNNER_TEMP/changed" ]; then
-            if [ ! -f "$RUNNER_TEMP/prev/meta.json" ]; then echo "No list yet."; exit 0; fi
-            if curl -sf --max-time 20 https://lists.blokvane.com/meta.json -o "$RUNNER_TEMP/cf-meta.json" && cmp -s "$RUNNER_TEMP/cf-meta.json" "$RUNNER_TEMP/prev/meta.json"; then echo "Cloudflare already has this list."; exit 0; fi
-            echo "Cloudflare does not have this list yet: sending it."
-            dir="$RUNNER_TEMP/prev"
-          fi
-          rm -rf "$dir/.git"
-          npx --yes wrangler@4.152.0 pages deploy "$dir" --project-name blokvane-lists --branch main --commit-dirty=true
-
       # (GitHub switches a schedule off after 60 days without changes to the repository; this keeps it on)
       - name: Keep the schedule on
         if: always()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/blokvane-list.yml/enable" >/dev/null 2>&1 || true
+
+  # The list's second home: Cloudflare Pages (lists.blokvane.com), which copies ask first, with GitHub as the backup.
+  # It needs two settings in this repo (Settings, Secrets and variables, Actions): CLOUDFLARE_API_TOKEN (a key that
+  # may only update Cloudflare Pages) and CLOUDFLARE_ACCOUNT_ID. Until they are there, this job does nothing.
+  #
+  # Its own job on purpose. The upload tool (wrangler) and the many packages it brings along are downloaded from the
+  # public package registry each time. So they run here, where there is no key that can change this repository (the
+  # phone, game and TV pages are in it): this job may change nothing on GitHub, and the only key it holds is
+  # Cloudflare's, which can only update the list's copy there. It sends the list exactly as GitHub has it.
+  cloudflare:
+    needs: build
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+
+      - name: Publish the list on Cloudflare too
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then echo "Cloudflare is not set up yet: GitHub carries the list alone."; exit 0; fi
+          repo="https://github.com/${GITHUB_REPOSITORY}.git"
+          dir="$RUNNER_TEMP/list"
+          mkdir -p "$dir" "$RUNNER_TEMP/repo"
+          # the list as GitHub has it now (the job before this one has just published it there, when there was a new one)
+          if ! git ls-remote --exit-code --heads "$repo" lists >/dev/null 2>&1; then echo "No list yet."; exit 0; fi
+          git init -q "$RUNNER_TEMP/repo"
+          git -C "$RUNNER_TEMP/repo" fetch -q --depth 1 "$repo" lists
+          git -C "$RUNNER_TEMP/repo" archive FETCH_HEAD | tar -x -C "$dir"
+          if [ ! -f "$dir/meta.json" ]; then echo "No list yet."; exit 0; fi
+          # (Cloudflare has this very list already: nothing to send)
+          if curl -sf --max-time 20 https://lists.blokvane.com/meta.json -o "$RUNNER_TEMP/cf-meta.json" && cmp -s "$RUNNER_TEMP/cf-meta.json" "$dir/meta.json"; then echo "Cloudflare already has this list."; exit 0; fi
+          echo "Cloudflare does not have this list yet: sending it."
+          npx --yes wrangler@4.152.0 pages deploy "$dir" --project-name blokvane-lists --branch main --commit-dirty=true
