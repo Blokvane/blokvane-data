@@ -967,9 +967,13 @@ html.g-dom .pt-howto li:nth-child(n+6) i { background-image: radial-gradient(cir
     lang();
     const W = winOf(P);
     try { await D.winFonts(W.fx, W.who.join('') + W.runners + D.t('Dominoes 151') + D.t('Champion')); } catch (e) {}
-    // (Blokvane's icon: a moment for it and no longer, the picture is made without it if it does not come)
-    const icon = await new Promise(res => { const im = new Image(); let done = false; const end = v => { if (!done) { done = true; res(v); } }; im.onload = () => end(im); im.onerror = () => end(null); setTimeout(() => end(null), 2500); im.src = D.BRAND; });
-    D.winPoster(g, W, icon);
+    // (a picture gets a moment and no longer: the poster is made without it if it does not come)
+    const load = src => new Promise(res => { if (!src) return res(null); const im = new Image(); let done = false; const end = v => { if (!done) { done = true; res(v); } }; im.onload = () => end(im); im.onerror = () => end(null); setTimeout(() => end(null), 2500); im.src = src; });
+    // the winners' faces, as this phone knows them: their Boo, and this player's own photo (only the TV has the others')
+    const side = P.win.side, faces = (P.tm ? [side, side + 2] : [side]).map(p => { const s = P.seats[p] || {}; return s.bot ? A.booUri(s.av || D.botBoo(s.nm)) : (s.id === A.G.id ? A.myPic() : A.booUri(s.av || 'boo:hi')); });
+    const got = await Promise.all([load(D.BRAND)].concat(faces.map(load)));
+    W.pics = got.slice(1);
+    D.winPoster(g, W, got[0]);
     return true;
   }
 

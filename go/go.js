@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '35';
+  const VERSION = '36';
   const $ = id => document.getElementById(id);
   const app = $('app');
 

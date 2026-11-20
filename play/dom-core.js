@@ -610,6 +610,8 @@ var BVDOM = (() => {
     A.lancetB = lancet(['#2456c9', '#c0263b', '#7b3fc4', '#1f9d6b', '#c0263b', '#2456c9']);
     A.corner = { w: 110, h: 110, s: [['p', 'M6 104V30Q6 6 30 6H104', '', '#b8892e', 4], ['p', 'M20 104V40Q20 20 40 20H104', '', '#b8892e', 1.5], ['c', 34, 34, 7, '#b8892e']] };
     A.spark = { w: 40, h: 40, s: [['p', 'M20 0L24 16L40 20L24 24L20 40L16 24L0 20L16 16Z', '#fff0b8']] };
+    // (the moon of the lobby's Starry night look)
+    A.moon = { w: 100, h: 100, s: [['p', 'M68 8A44 44 0 1 0 92 70A36 36 0 1 1 68 8Z', '#e8c36a']] };
     // (a crown for the one seat of a champion who won alone, in the ink of the window's and the medal's letters)
     A.crownInk = c => ({ w: 100, h: 70, s: [['p', 'M8 62L4 18L30 38L50 8L70 38L96 18L92 62Z', c], ['c', 50, 10, 7, c], ['c', 5, 18, 6, c], ['c', 95, 18, 6, c]] });
     // an ivory tile of the designs, standing (a over b) or lying (a beside b)
@@ -679,10 +681,16 @@ var BVDOM = (() => {
   // =====================================================================
   // One of the five designs, drawn 1920 x 1080 (the TV sizes it to its screen; the host's phone shows it small, as the
   // preview of "Winner screen"). W says what is on it:
-  //   { fx, rtl, who: [the winners' names], target, sa (the winners' points), sb (the best of the others), won, rounds,
-  //     big, runners, many (more than one player came after them) }
-  // A winner's place shows the first letter of their name, as the designs do.
+  //   { fx, rtl, who: [the winners' names], pics: [their pictures, as addresses: a photo, or their Boo (a computer
+  //     player the host gave none gets one of its own: botBoo)], target, sa (the winners' points), sb (the best of the
+  //     others), won, rounds, big, runners, many (more than one player came after them) }
+  // A winner's place shows their picture; the first letter of their name stands in only if a picture is missing.
   // Returns { el, fit }: the screen, and what brings long names down to the room they have (once it is on the page).
+  const BOO_PIC = /^data:image\/svg/;
+  // (a computer player the host gave no Boo still gets one in the winners' rings: always the same one for the same
+  // name, so the TV and the picture a phone shares agree. One of the eight a host can give it.)
+  const BOT_BOOS = ['boo:hi', 'boo:laugh', 'boo:cool', 'boo:love', 'boo:wow', 'boo:party', 'boo:hero', 'boo:legend'];
+  const botBoo = name => { let n = 0; const s = String(name == null ? '' : name); for (let i = 0; i < s.length; i++) n = (n * 31 + s.charCodeAt(i)) >>> 0; return BOT_BOOS[n % BOT_BOOS.length]; };
   const winFaces = fx => ['900 60px "DM Playfair"', '700 40px "DM Playfair"', 'italic 700 40px "DM Playfair"', '800 22px "DM Nunito"'].concat(fx === 'glass' || fx === 'cert' || fx === 'crest' || fx === 'medals' ? ['900 40px "DM Cinzel"', '700 30px "DM Cinzel"'] : [], fx === 'cert' ? ['400 60px "DM Pinyon"'] : []);
   // (its typefaces, fetched before it shows: a screen never opens in the wrong letters. It never waits long.)
   function winFonts(fx, sample) {
@@ -743,12 +751,20 @@ var BVDOM = (() => {
         txt(cell, serif(700, 40, 'line-height:1.25;color:#fff6e0'), c[1], 360, c[2]);
       });
     };
-    // a winner's place: the first letter of their name, or, when one player won alone, the crown in the second place
+    // a winner's place: their picture, `size` across (a photo, or their Boo), or the first letter of their name when
+    // they have none; when one player won alone, the crown in the second place
     const AR_LETTER = /[\u0600-\u06FF\u0750-\u077F\uFB50-\uFDFF\uFE70-\uFEFC]/;
     const letterOf = (box, c, ch) => { const e = h('div', c, box, ch); if (AR_LETTER.test(ch)) { e.style.lineHeight = '1.3'; e.style.marginTop = '-0.36em'; } return e; };
+    const picOf = i => (W.pics && typeof W.pics[i] === 'string' ? W.pics[i] : '');
     const seat = (box, i, size, letter, ink) => {
-      if (i >= W.who.length) art(box, ink ? ART.crownInk(ink) : ART.crown, Math.round(size * 0.62));
-      else letterOf(box, letter, ini[i]);
+      if (i >= W.who.length) { art(box, ink ? ART.crownInk(ink) : ART.crown, Math.round(size * 0.62)); return; }
+      const src = picOf(i);
+      if (!src) { letterOf(box, letter, ini[i]); return; }
+      // (a photo fills its round place; a Boo is a small figure in the middle of its picture, so it is shown a
+      // little bigger and brought to the middle)
+      const wrap = h('div', 'flex:none;width:' + size + 'px;height:' + size + 'px;border-radius:50%;overflow:hidden', box);
+      const im = h('img', BOO_PIC.test(src) ? 'display:block;width:128%;height:128%;max-width:none;margin:-2% 0 0 -8%' : 'display:block;width:100%;height:100%;object-fit:cover', wrap);
+      im.alt = ''; im.src = src;
     };
     const who = i => (i < W.who.length ? W.who[i] : t('Champion'));
     // a picture in a gold ring, inside a wreath, with the name under it
@@ -817,7 +833,8 @@ var BVDOM = (() => {
         const d = h('div', 'position:relative;width:320px;height:320px;margin-top:-16px;' + shade('drop-shadow(0 20px 26px rgba(0,0,0,.55))'), m);
         art(d, ART.medal, 320, 'position:absolute;left:0;top:0');
         const f = h('div', 'position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center', d);
-        letterOf(f, serif(900, 150, 'line-height:1;color:#6b4c0e;text-shadow:0 2px 0 #fff0b8'), ini[i]);
+        if (picOf(i)) { const ring = h('div', 'flex:none;margin:6px 0 8px;width:148px;height:148px;border-radius:50%;box-sizing:border-box;border:4px solid #8a6410;background:#fff5c8;overflow:hidden;box-shadow:0 2px 0 #fff0b8', f); seat(ring, i, 140, ''); }
+        else letterOf(f, serif(900, 150, 'line-height:1;color:#6b4c0e;text-shadow:0 2px 0 #fff0b8'), ini[i]);
         txt(f, 'font-family:' + F.caps + ';font-weight:900;font-size:22px;color:#6b4c0e' + caps('.2em'), t('Champion'), 190);
         txt(m, serif(900, 58, 'margin-top:14px;line-height:1.1;color:#fff6e0'), W.who[i], 400, 1);
       };
@@ -849,7 +866,7 @@ var BVDOM = (() => {
         const box = h('div', 'position:relative;width:270px;height:450px', b);
         art(box, a, 270, shade('drop-shadow(0 0 30px ' + glow + ')'));
         const c = h('div', 'position:absolute;left:43px;top:143px;width:184px;height:184px;border-radius:50%;display:flex;align-items:center;justify-content:center', box);
-        seat(c, i, 150, 'font-family:' + F.caps + ';font-weight:900;font-size:130px;line-height:1;color:#3a2606', '#3a2606');
+        seat(c, i, 156, 'font-family:' + F.caps + ';font-weight:900;font-size:130px;line-height:1;color:#3a2606', '#3a2606');
         txt(b, 'margin-top:10px;text-align:center;font-family:' + F.caps + ';font-weight:900;font-size:50px;line-height:1.1;color:#fff6e0' + caps('.08em'), who(i), 330, i < W.who.length);
       };
       lancet(270, 0, ART.lancetA, '#c0263b'); lancet(1380, 1, ART.lancetB, '#2456c9');
@@ -913,7 +930,8 @@ var BVDOM = (() => {
   // =====================================================================
   // The same five designs, stood upright for a phone (1080 x 1920, on a canvas): the same drawings, colors and
   // typefaces, with the game's name and Blokvane's mark at the foot. g: the canvas's own 2D context; W: as for
-  // winScene; icon: Blokvane's icon as a loaded picture (or nothing: then only the name is written).
+  // winScene, but its `pics` are loaded pictures (or nothing: then the first letter of the name is drawn); icon:
+  // Blokvane's icon as a loaded picture (or nothing: then only the name is written).
   function winPoster(g, W, icon) {
     const CW = 1080, CH = 1920, F = WF, rtl = !!W.rtl, two = W.who.length > 1, names = W.who.join(' + ');
     const fx = WINS.some(x => x[0] === W.fx) ? W.fx : 'trophy';
@@ -964,6 +982,19 @@ var BVDOM = (() => {
       g.fillStyle = color; g.fillText(ch, x, yy);
       g.textBaseline = 'alphabetic';
     };
+    // a winner's picture in a round place `d` across (a photo, or their Boo), or their letter when there is none
+    const face = (i, cx, cy, d, noPic) => {
+      const im = W.pics && W.pics[i], iw = im ? im.naturalWidth || im.width : 0, ih = im ? im.naturalHeight || im.height : 0;
+      if (!im || !iw || !ih) return noPic();
+      const k = d / Math.min(iw, ih);
+      g.save(); g.beginPath(); g.arc(cx, cy, d / 2, 0, Math.PI * 2); g.clip();
+      try {
+        // (a Boo: a little bigger and brought to the middle, as on the TV)
+        if (BOO_PIC.test(im.src || '')) g.drawImage(im, cx - d / 2 - d * 0.08, cy - d / 2 - d * 0.02, d * 1.28, d * 1.28);
+        else g.drawImage(im, cx - iw * k / 2, cy - ih * k / 2, iw * k, ih * k);
+      } catch (e) {}
+      g.restore();
+    };
     const art = (a, x, y, w, rot) => { if (!rot) return artDraw(g, a, x, y, w); const hh = w * a.h / a.w; g.save(); g.translate(x + w / 2, y + hh / 2); g.rotate(rot * Math.PI / 180); artDraw(g, a, -w / 2, -hh / 2, w); g.restore(); };
     const spark = (x, y, s, a) => { g.save(); g.globalAlpha = a; artDraw(g, ART.spark, x - s / 2, y - s / 2, s); g.restore(); };
     let seed = 11;
@@ -1001,7 +1032,7 @@ var BVDOM = (() => {
       xs.forEach((cx, i) => {
         artDraw(g, ART.laurel, cx - size / 2, y, size);
         g.beginPath(); g.arc(cx, y + size / 2, ring / 2, 0, Math.PI * 2); g.fillStyle = bgc; g.fill(); g.strokeStyle = '#e8c36a'; g.lineWidth = ring * 0.042; g.stroke();
-        letter(ini[i], cx, y + size / 2, ring * 0.5, s => serif(700, s), '#fff6e0');
+        face(i, cx, y + size / 2, ring * 0.93, () => letter(ini[i], cx, y + size / 2, ring * 0.5, s => serif(700, s), '#fff6e0'));
         line(W.who[i], cx, y + size + 54, two ? 420 : 900, 56, s => serif(900, s), '#fff6e0');
       });
     };
@@ -1067,7 +1098,9 @@ var BVDOM = (() => {
         g.lineWidth = 10; g.strokeStyle = '#e8c36a'; rr(cx - 38, 312, 76, 44, 14); g.stroke();
         g.save(); g.shadowColor = 'rgba(0,0,0,.55)'; g.shadowBlur = 26; g.shadowOffsetY = 20; g.beginPath(); g.arc(cx, 344 + d / 2, d * 0.46, 0, Math.PI * 2); g.fillStyle = '#9a6e1c'; g.fill(); g.restore();
         artDraw(g, ART.medal, cx - d / 2, 344, d);
-        letter(ini[i], cx, 344 + d * 0.45, d * 0.46, s => serif(900, s), '#6b4c0e', '#fff0b8');
+        if (W.pics && W.pics[i]) { g.beginPath(); g.arc(cx, 344 + d * 0.46, d * 0.225, 0, Math.PI * 2); g.fillStyle = '#fff5c8'; g.fill(); }
+        face(i, cx, 344 + d * 0.46, d * 0.44, () => letter(ini[i], cx, 344 + d * 0.45, d * 0.46, s => serif(900, s), '#6b4c0e', '#fff0b8'));
+        if (W.pics && W.pics[i]) { g.beginPath(); g.arc(cx, 344 + d * 0.46, d * 0.225, 0, Math.PI * 2); g.strokeStyle = '#8a6410'; g.lineWidth = d * 0.012; g.stroke(); }
         label(t('Champion'), cx, 344 + d * 0.79, d * 0.066, '#6b4c0e', 0.2, d * 0.58, s => caps(900, s));
         line(W.who[i], cx, 344 + d + 78, two ? 440 : 900, 60, s => serif(900, s), '#fff6e0');
       };
@@ -1098,7 +1131,7 @@ var BVDOM = (() => {
       xs.forEach((cx, i) => {
         glow(cx, 1036, 230, 280, i ? 'rgba(36,86,201,.42)' : 'rgba(192,38,59,.42)', i ? 'rgba(36,86,201,0)' : 'rgba(192,38,59,0)');
         artDraw(g, i ? ART.lancetB : ART.lancetA, cx - 118, 838, 236);
-        letter(ini[i], cx, 838 + 205, 112, s => caps(900, s), '#3a2606');
+        face(i, cx, 838 + 205, 136, () => letter(ini[i], cx, 838 + 205, 112, s => caps(900, s), '#3a2606'));
         label(W.who[i], cx, 1294, 46, '#fff6e0', 0.08, two ? 400 : 900, s => caps(900, s));
       });
       label(t(two ? 'The champions' : 'The champion'), 540, 1388, 34, '#e8c36a', 0.42, 960, s => caps(700, s));
@@ -1137,7 +1170,7 @@ var BVDOM = (() => {
       const L = [W.runners, t(W.many ? 'Witnessed by the runners up, {n}' : 'Witnessed by the runner up, {n}', { n: W.sb })], R = W.won == null ? [t('First to {n}', { n: W.target }), t('Final score')] : [t('{a} of {b} rounds', { a: W.won, b: W.rounds }), W.big == null ? t('First to {n}', { n: W.target }) : t('Biggest round: {n} points', { n: W.big })];
       sig(rtl ? 780 : 300, L[0], L[1]); sig(rtl ? 300 : 780, R[0], R[1]);
       // (the winners' letters on their green seals, at the top corners)
-      (two ? [[152, 212, 0], [928, 200, 1]] : [[152, 212, 0]]).forEach(d => { g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 20; g.shadowOffsetY = 10; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.fillStyle = '#0a4640'; g.fill(); g.restore(); g.strokeStyle = '#e8c36a'; g.lineWidth = 6; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.stroke(); letter(ini[d[2]], d[0], d[1], 64, s => serif(700, s), '#fff6e0'); });
+      (two ? [[152, 212, 0], [928, 200, 1]] : [[152, 212, 0]]).forEach(d => { g.save(); g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = 20; g.shadowOffsetY = 10; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.fillStyle = '#0a4640'; g.fill(); g.restore(); face(d[2], d[0], d[1], 118, () => letter(ini[d[2]], d[0], d[1], 64, s => serif(700, s), '#fff6e0')); g.strokeStyle = '#e8c36a'; g.lineWidth = 6; g.beginPath(); g.arc(d[0], d[1], 62, 0, Math.PI * 2); g.stroke(); });
       g.restore();
       brand(1724, '#fff6e0', '#cfe6de');
     }
@@ -1382,6 +1415,11 @@ var BVDOM = (() => {
     "Tap a line and it shows by your name on the TV.": "دوس على جملة وتطلع يم اسمك عالتلفزيون.",
     "Close": "سدّ",
     "It is your turn": "دورك",
+    "Lobby look": "شكل شاشة الانتظار",
+    "Royal velvet": "مخمل ملكي",
+    "Starry night medals": "ليلة نجوم وميداليات",
+    "Teal and gold": "تركوازي وذهبي",
+    "How the TV looks while everyone joins.": "شكل شاشة التلفزيون لحد ما الكل ينضم.",
     "Winner screen": "شاشة الفايز",
     "Trophy in the spotlight": "الكاس تحت الضوا",
     "Royal crest": "الشعار الملكي",
@@ -1481,5 +1519,5 @@ var BVDOM = (() => {
 
   return { BASE, GOLD, CREAM, INK, KUFI, PLEX, h, px, CFG, cfg, newMatch, deal, legal, pts, teamOf, play, pass, draw, stuck, blocked, misdeal, ai, sidesFor,
     cells, SETS, setOf, TILE_SETS, TABLES, BORDERS, DEALS, ENDS, LOCKS, RIMS, rim, clip, scalePx, SIZES, chainSize, tile, half, back, BACK, BACK_SH, DEAL_BG, layout, drawChain, lockScene, fxScene, drawScene, previewDeal, dealPlan, keyframes,
-    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, STICKERS, stickerPack, stickerOf, stickerImg, WINS, WF, ART, artSvg, artDraw, BRAND, winScene, winFonts, winPoster, crown, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
+    AV, TRAY, RING, PAL, grad, colOf, css, NAMES, REACTS, STICKERS, stickerPack, stickerOf, stickerImg, WINS, WF, ART, artSvg, artDraw, BRAND, botBoo, winScene, winFonts, winPoster, crown, AR, words, setLang, get lang() { return lang; }, t, num, resultWords, HUE, HUE_W45, plus, calcOf };
 })();

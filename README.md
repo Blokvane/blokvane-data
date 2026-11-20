@@ -200,8 +200,14 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   `play/dom-ph.js` (the phones: the table is on the TV only, so a phone shows the score, whose turn
   it is and its player's own tiles, to tap or to drag; the host's look sheet with its live preview,
   the computer players' names and faces, the moves of the round, and the winners' picture to share).
-  `play/dom.css` is its lobby, `play/fonts/dm-*.woff2` its fonts, and `play/sounds/d-*.mp3` its
-  music; the tile sounds are made in the browser. The table, the tiles and the border can be changed
+  `play/dom.css` is its first lobby, `play/fonts/dm-*.woff2` its fonts, and `play/sounds/d-*.mp3` its
+  music; the tile sounds are made in the browser. The lobby has three looks, and the host picks one
+  ("Lobby look"): Royal velvet (the one a new game starts with) and Starry night medals, drawn
+  exactly as they were designed in `Games/Dominoes 151`, and Teal and gold, the first lobby. The two
+  designed looks live in `play/dom-game.js` (`lobbyCss`, `lobbyDress`): the kit still builds the
+  lobby, and a look dresses it (its colors and typefaces, shield or medal seats, its emblem, its
+  tiles, the stars, the crown), in the designs' own sizes (a length of theirs is a share of the
+  screen's height, so a look fits any screen). The table, the tiles and the border can be changed
   in the middle of a match (a setting marked `live` in a game's list may change while it is played).
   The winners' screen is one of five designs (Trophy in the spotlight, Royal crest, Gold medals,
   Stained glass window, Certificate with gold seal), drawn exactly as they were designed in
@@ -209,6 +215,9 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   `play/dom-core.js` holds their drawings once, as lists of shapes, and draws them twice: as the
   TV's screen (1920 x 1080, sized to the screen) and, stood upright with Blokvane's mark at the
   foot, as the picture every phone shares (1080 x 1920, on a canvas, in that phone's own language).
+  A winner's place shows their photo or their Boo (a phone knows the others' Boos and its own
+  player's photo: the photos stay on the TV). A computer player the host gave no Boo gets one there
+  too, always the same one for the same name, so the TV and the phones agree.
   Their typefaces come with the game: Playfair Display, Cinzel and Pinyon Script
   (`fonts/OFL-PlayfairDisplay.txt`, `OFL-Cinzel.txt`, `OFL-PinyonScript.txt`). The Playfair files
   are a changed copy (its figures that stand on the line are the ones it draws by itself), so they

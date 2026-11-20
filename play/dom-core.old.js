@@ -925,6 +925,7 @@ var BVDOM = (() => {
     A.lancetB = lancet(["#2456c9", "#c0263b", "#7b3fc4", "#1f9d6b", "#c0263b", "#2456c9"]);
     A.corner = { w: 110, h: 110, s: [["p", "M6 104V30Q6 6 30 6H104", "", "#b8892e", 4], ["p", "M20 104V40Q20 20 40 20H104", "", "#b8892e", 1.5], ["c", 34, 34, 7, "#b8892e"]] };
     A.spark = { w: 40, h: 40, s: [["p", "M20 0L24 16L40 20L24 24L20 40L16 24L0 20L16 16Z", "#fff0b8"]] };
+    A.moon = { w: 100, h: 100, s: [["p", "M68 8A44 44 0 1 0 92 70A36 36 0 1 1 68 8Z", "#e8c36a"]] };
     A.crownInk = (c) => ({ w: 100, h: 70, s: [["p", "M8 62L4 18L30 38L50 8L70 38L96 18L92 62Z", c], ["c", 50, 10, 7, c], ["c", 5, 18, 6, c], ["c", 95, 18, 6, c]] });
     const PIPS2 = [[], [[0, 0]], [[-1, -1], [1, 1]], [[-1, -1], [0, 0], [1, 1]], [[-1, -1], [1, -1], [-1, 1], [1, 1]], [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]]];
     A.tile = (a, b) => {
@@ -1068,6 +1069,14 @@ var BVDOM = (() => {
     g.restore();
   }
   const BRAND = BASE + "../go/icon-192.png";
+  const BOO_PIC = /^data:image\/svg/;
+  const BOT_BOOS = ["boo:hi", "boo:laugh", "boo:cool", "boo:love", "boo:wow", "boo:party", "boo:hero", "boo:legend"];
+  const botBoo = (name) => {
+    let n = 0;
+    const s = String(name == null ? "" : name);
+    for (let i = 0; i < s.length; i++) n = n * 31 + s.charCodeAt(i) >>> 0;
+    return BOT_BOOS[n % BOT_BOOS.length];
+  };
   const winFaces = (fx) => ['900 60px "DM Playfair"', '700 40px "DM Playfair"', 'italic 700 40px "DM Playfair"', '800 22px "DM Nunito"'].concat(fx === "glass" || fx === "cert" || fx === "crest" || fx === "medals" ? ['900 40px "DM Cinzel"', '700 30px "DM Cinzel"'] : [], fx === "cert" ? ['400 60px "DM Pinyon"'] : []);
   function winFonts(fx, sample) {
     css();
@@ -1160,9 +1169,21 @@ var BVDOM = (() => {
       }
       return e;
     };
+    const picOf = (i) => W.pics && typeof W.pics[i] === "string" ? W.pics[i] : "";
     const seat = (box, i, size, letter, ink) => {
-      if (i >= W.who.length) art(box, ink ? ART.crownInk(ink) : ART.crown, Math.round(size * 0.62));
-      else letterOf(box, letter, ini[i]);
+      if (i >= W.who.length) {
+        art(box, ink ? ART.crownInk(ink) : ART.crown, Math.round(size * 0.62));
+        return;
+      }
+      const src = picOf(i);
+      if (!src) {
+        letterOf(box, letter, ini[i]);
+        return;
+      }
+      const wrap = h("div", "flex:none;width:" + size + "px;height:" + size + "px;border-radius:50%;overflow:hidden", box);
+      const im = h("img", BOO_PIC.test(src) ? "display:block;width:128%;height:128%;max-width:none;margin:-2% 0 0 -8%" : "display:block;width:100%;height:100%;object-fit:cover", wrap);
+      im.alt = "";
+      im.src = src;
     };
     const who = (i) => i < W.who.length ? W.who[i] : t("Champion");
     const wreath = (x, y, size, ring, bw, bgc, i, nameCss) => {
@@ -1252,7 +1273,10 @@ var BVDOM = (() => {
         const d = h("div", "position:relative;width:320px;height:320px;margin-top:-16px;" + shade("drop-shadow(0 20px 26px rgba(0,0,0,.55))"), m);
         art(d, ART.medal, 320, "position:absolute;left:0;top:0");
         const f = h("div", "position:absolute;left:0;top:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center", d);
-        letterOf(f, serif(900, 150, "line-height:1;color:#6b4c0e;text-shadow:0 2px 0 #fff0b8"), ini[i]);
+        if (picOf(i)) {
+          const ring = h("div", "flex:none;margin:6px 0 8px;width:148px;height:148px;border-radius:50%;box-sizing:border-box;border:4px solid #8a6410;background:#fff5c8;overflow:hidden;box-shadow:0 2px 0 #fff0b8", f);
+          seat(ring, i, 140, "");
+        } else letterOf(f, serif(900, 150, "line-height:1;color:#6b4c0e;text-shadow:0 2px 0 #fff0b8"), ini[i]);
         txt(f, "font-family:" + F.caps + ";font-weight:900;font-size:22px;color:#6b4c0e" + caps(".2em"), t("Champion"), 190);
         txt(m, serif(900, 58, "margin-top:14px;line-height:1.1;color:#fff6e0"), W.who[i], 400, 1);
       };
@@ -1286,7 +1310,7 @@ var BVDOM = (() => {
         const box = h("div", "position:relative;width:270px;height:450px", b);
         art(box, a, 270, shade("drop-shadow(0 0 30px " + glow + ")"));
         const c = h("div", "position:absolute;left:43px;top:143px;width:184px;height:184px;border-radius:50%;display:flex;align-items:center;justify-content:center", box);
-        seat(c, i, 150, "font-family:" + F.caps + ";font-weight:900;font-size:130px;line-height:1;color:#3a2606", "#3a2606");
+        seat(c, i, 156, "font-family:" + F.caps + ";font-weight:900;font-size:130px;line-height:1;color:#3a2606", "#3a2606");
         txt(b, "margin-top:10px;text-align:center;font-family:" + F.caps + ";font-weight:900;font-size:50px;line-height:1.1;color:#fff6e0" + caps(".08em"), who(i), 330, i < W.who.length);
       };
       lancet(270, 0, ART.lancetA, "#c0263b");
@@ -1476,6 +1500,21 @@ var BVDOM = (() => {
       g.fillText(ch, x, yy);
       g.textBaseline = "alphabetic";
     };
+    const face = (i, cx, cy, d, noPic) => {
+      const im = W.pics && W.pics[i], iw = im ? im.naturalWidth || im.width : 0, ih = im ? im.naturalHeight || im.height : 0;
+      if (!im || !iw || !ih) return noPic();
+      const k = d / Math.min(iw, ih);
+      g.save();
+      g.beginPath();
+      g.arc(cx, cy, d / 2, 0, Math.PI * 2);
+      g.clip();
+      try {
+        if (BOO_PIC.test(im.src || "")) g.drawImage(im, cx - d / 2 - d * 0.08, cy - d / 2 - d * 0.02, d * 1.28, d * 1.28);
+        else g.drawImage(im, cx - iw * k / 2, cy - ih * k / 2, iw * k, ih * k);
+      } catch (e) {
+      }
+      g.restore();
+    };
     const art = (a, x, y, w, rot) => {
       if (!rot) return artDraw(g, a, x, y, w);
       const hh = w * a.h / a.w;
@@ -1561,7 +1600,7 @@ var BVDOM = (() => {
         g.strokeStyle = "#e8c36a";
         g.lineWidth = ring * 0.042;
         g.stroke();
-        letter(ini[i], cx, y + size / 2, ring * 0.5, (s) => serif(700, s), "#fff6e0");
+        face(i, cx, y + size / 2, ring * 0.93, () => letter(ini[i], cx, y + size / 2, ring * 0.5, (s) => serif(700, s), "#fff6e0"));
         line(W.who[i], cx, y + size + 54, two ? 420 : 900, 56, (s) => serif(900, s), "#fff6e0");
       });
     };
@@ -1702,7 +1741,20 @@ var BVDOM = (() => {
         g.fill();
         g.restore();
         artDraw(g, ART.medal, cx - d / 2, 344, d);
-        letter(ini[i], cx, 344 + d * 0.45, d * 0.46, (s) => serif(900, s), "#6b4c0e", "#fff0b8");
+        if (W.pics && W.pics[i]) {
+          g.beginPath();
+          g.arc(cx, 344 + d * 0.46, d * 0.225, 0, Math.PI * 2);
+          g.fillStyle = "#fff5c8";
+          g.fill();
+        }
+        face(i, cx, 344 + d * 0.46, d * 0.44, () => letter(ini[i], cx, 344 + d * 0.45, d * 0.46, (s) => serif(900, s), "#6b4c0e", "#fff0b8"));
+        if (W.pics && W.pics[i]) {
+          g.beginPath();
+          g.arc(cx, 344 + d * 0.46, d * 0.225, 0, Math.PI * 2);
+          g.strokeStyle = "#8a6410";
+          g.lineWidth = d * 0.012;
+          g.stroke();
+        }
         label(t("Champion"), cx, 344 + d * 0.79, d * 0.066, "#6b4c0e", 0.2, d * 0.58, (s) => caps(900, s));
         line(W.who[i], cx, 344 + d + 78, two ? 440 : 900, 60, (s) => serif(900, s), "#fff6e0");
       };
@@ -1740,7 +1792,7 @@ var BVDOM = (() => {
       xs.forEach((cx, i) => {
         glow(cx, 1036, 230, 280, i ? "rgba(36,86,201,.42)" : "rgba(192,38,59,.42)", i ? "rgba(36,86,201,0)" : "rgba(192,38,59,0)");
         artDraw(g, i ? ART.lancetB : ART.lancetA, cx - 118, 838, 236);
-        letter(ini[i], cx, 838 + 205, 112, (s) => caps(900, s), "#3a2606");
+        face(i, cx, 838 + 205, 136, () => letter(ini[i], cx, 838 + 205, 112, (s) => caps(900, s), "#3a2606"));
         label(W.who[i], cx, 1294, 46, "#fff6e0", 0.08, two ? 400 : 900, (s) => caps(900, s));
       });
       label(t(two ? "The champions" : "The champion"), 540, 1388, 34, "#e8c36a", 0.42, 960, (s) => caps(700, s));
@@ -1821,12 +1873,12 @@ var BVDOM = (() => {
         g.fillStyle = "#0a4640";
         g.fill();
         g.restore();
+        face(d[2], d[0], d[1], 118, () => letter(ini[d[2]], d[0], d[1], 64, (s) => serif(700, s), "#fff6e0"));
         g.strokeStyle = "#e8c36a";
         g.lineWidth = 6;
         g.beginPath();
         g.arc(d[0], d[1], 62, 0, Math.PI * 2);
         g.stroke();
-        letter(ini[d[2]], d[0], d[1], 64, (s) => serif(700, s), "#fff6e0");
       });
       g.restore();
       brand(1724, "#fff6e0", "#cfe6de");
@@ -2074,6 +2126,11 @@ var BVDOM = (() => {
     "Tap a line and it shows by your name on the TV.": "دوس على جملة وتطلع يم اسمك عالتلفزيون.",
     "Close": "سدّ",
     "It is your turn": "دورك",
+    "Lobby look": "شكل شاشة الانتظار",
+    "Royal velvet": "مخمل ملكي",
+    "Starry night medals": "ليلة نجوم وميداليات",
+    "Teal and gold": "تركوازي وذهبي",
+    "How the TV looks while everyone joins.": "شكل شاشة التلفزيون لحد ما الكل ينضم.",
     "Winner screen": "شاشة الفايز",
     "Trophy in the spotlight": "الكاس تحت الضوا",
     "Royal crest": "الشعار الملكي",
@@ -2248,6 +2305,7 @@ var BVDOM = (() => {
     artSvg,
     artDraw,
     BRAND,
+    botBoo,
     winScene,
     winFonts,
     winPoster,
