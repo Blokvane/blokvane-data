@@ -99,7 +99,7 @@ html.no-flexgap .wq-rows > * + * { margin-top: calc(1 * var(--u)); }
   background: rgba(255, 255, 255, .05); border: calc(.15 * var(--u)) solid rgba(255, 255, 255, .11); transition: border-color .4s, background .4s, transform .4s; min-width: 0; }
 html.no-flexgap .wq-p > * + * { margin-left: calc(1.4 * var(--u)); }
 html.no-flexgap[dir="rtl"] .wq-p > * + * { margin-left: 0; margin-right: calc(1.4 * var(--u)); }
-.wq-p .av { width: calc(5.2 * var(--u)); height: calc(5.2 * var(--u)); border-radius: calc(1.3 * var(--u)); background: var(--pc, #ff6b5e); display: grid; align-items: center; justify-items: center; place-items: center; flex: none; overflow: hidden; }
+.wq-p .av { width: calc(5.2 * var(--u)); height: calc(5.2 * var(--u)); border-radius: calc(1.3 * var(--u)); background: var(--pc, #ff6b5e); display: grid; grid-template-columns: 100%; grid-template-rows: 100%; align-items: center; justify-items: center; place-items: center; flex: none; overflow: hidden; }
 .wq-p .av img { width: 86%; height: 86%; object-fit: cover; border-radius: calc(.9 * var(--u)); }
 .wq-p .nm { display: flex; flex-direction: column; min-width: 0; grid-gap: calc(.3 * var(--u)); gap: calc(.3 * var(--u)); }
 html.no-flexgap .wq-p .nm > * + * { margin-top: calc(.3 * var(--u)); }
@@ -151,6 +151,13 @@ html.no-flexgap .wq-p .nm > * + * { margin-top: calc(.3 * var(--u)); }
 @keyframes wplProp { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(.12); } }
 /* 3 and 4: drawn across the whole screen */
 .wpl-paper, .wpl-route { right: 0; bottom: 0; }
+/* (what flies over a full-screen flight: a box placed like the picture under it, and the small pictures in it that the
+   screen only slides and turns) */
+.wpl-sky { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; pointer-events: none; }
+.wpl-spr { position: absolute; will-change: transform; }
+/* (the flight tracker's glowing route: drawn once, shown through a window that slides with the plane) */
+.wpl-win { position: absolute; left: -760px; top: 0; width: 1000px; height: 1080px; overflow: hidden; will-change: transform; }
+.wpl-ink { position: absolute; left: 760px; top: 0; width: 1920px; height: 1080px; will-change: transform; }
 .wpl-full { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
 .wpl-paper.rtl .wpl-full, .wpl-route.rtl .wpl-full { transform: scaleX(-1); }
 .wpl-paper .wpl-fade { animation: wplFade 3.4s linear both; }
@@ -169,10 +176,17 @@ html.no-flexgap .wq-p .nm > * + * { margin-top: calc(.3 * var(--u)); }
 /* 1. a pin in rings (cities and sights) */
 .sc-pin .rings { position: relative; width: calc(46 * var(--u)); height: calc(46 * var(--u)); display: grid; align-items: center; justify-items: center; place-items: center; }
 .sc-pin .rings i { position: absolute; border-radius: 50%; border: calc(.18 * var(--u)) solid rgba(255, 255, 255, .09); background: radial-gradient(circle, rgba(124, 92, 255, .08), transparent 70%); animation: wRing 4s ease-in-out infinite; }
+/* (a ring's border brightens as it breathes: a second border over it that fades in and out, which the screen does by
+   itself, so a TV doesn't draw the rings again for every frame) */
+.sc-pin .rings i::after { content: ''; position: absolute; top: calc(-.18 * var(--u)); right: calc(-.18 * var(--u)); bottom: calc(-.18 * var(--u)); left: calc(-.18 * var(--u)); border-radius: 50%; border: calc(.18 * var(--u)) solid rgba(255, 255, 255, .077); opacity: 0; animation: wRingGlow 4s ease-in-out infinite; }
 .sc-pin .rings i:nth-child(1) { width: 52%; height: 52%; }
 .sc-pin .rings i:nth-child(2) { width: 76%; height: 76%; animation-delay: .5s; }
 .sc-pin .rings i:nth-child(3) { width: 100%; height: 100%; animation-delay: 1s; }
-@keyframes wRing { 50% { transform: scale(1.06); border-color: rgba(255, 255, 255, .16); } }
+.sc-pin .rings i:nth-child(2)::after { animation-delay: .5s; }
+.sc-pin .rings i:nth-child(3)::after { animation-delay: 1s; }
+/* (every step written out: the screen can then play them by itself) */
+@keyframes wRing { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+@keyframes wRingGlow { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 .sc-pin .stack { position: absolute; display: flex; flex-direction: column; align-items: center; grid-gap: calc(.6 * var(--u)); gap: calc(.6 * var(--u)); }
 html.no-flexgap .sc-pin .stack > * + * { margin-top: calc(.6 * var(--u)); }
 /* 2. radar */
@@ -204,8 +218,10 @@ html.no-flexgap .sc-pin .stack > * + * { margin-top: calc(.6 * var(--u)); }
 .sc-globe .wrap { position: relative; display: flex; flex-direction: column; align-items: center; }
 .sc-globe .ball { position: relative; width: calc(38 * var(--u)); height: calc(38 * var(--u)); border-radius: 50%; overflow: hidden; background: #2d5fd0;
   box-shadow: 0 0 calc(8 * var(--u)) rgba(80, 140, 255, .4), inset 0 0 0 calc(.3 * var(--u)) rgba(160, 200, 255, .5); animation: wPop .8s ease both; margin-top: calc(-2.2 * var(--u)); }
-.sc-globe .tex { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; background: var(--map) 0 50% / auto 130% repeat-x; animation: wGlobe 22s linear infinite; opacity: .95; filter: saturate(1.15) brightness(1.25); }
-@keyframes wGlobe { to { background-position: calc(-122.5 * var(--u)) 50%; } }
+/* (the map on the globe is a strip two turns long that slides one turn: the screen only moves it, instead of drawing the
+   map again for every frame, which a TV's processor feels) */
+.sc-globe .tex { position: absolute; top: 0; bottom: 0; left: 0; width: calc(245 * var(--u)); background: var(--map) 0 50% / auto 130% repeat-x; animation: wGlobe 22s linear infinite; opacity: .95; filter: saturate(1.15) brightness(1.25); }
+@keyframes wGlobe { to { transform: translateX(-50%); } }
 .sc-globe .grid { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; }
 .sc-globe .shade { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; border-radius: 50%; background: radial-gradient(circle at 34% 28%, rgba(255, 255, 255, .42), transparent 34%), radial-gradient(circle at 50% 50%, transparent 52%, rgba(5, 10, 50, .7) 100%); }
 .sc-globe .pinw { z-index: 2; }

@@ -183,7 +183,10 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
   Orbit, Passport and Vintage Atlas, made from the designs in `Games/Where in the World`),
   `play/world-tpl.js` (its four winner screens), `play/icons/wmap.svg` (the designs' world map) and
   `play/sounds/wv-*.mp3` (its music). The phones' pin screen fits one screen on any phone, and only
-  the map zooms (`go/m/party.js`).
+  the map zooms (`go/m/party.js`). The map (`play/map.js`, pictures in `play/map/`) moves as one layer
+  on the TV; a phone, an iPad or an iPhone draws each picture at its size on the screen instead
+  ("flat"), since an iPhone's browser keeps a big layer at its full size in memory even when it shows
+  small, and closes the page.
 - Boo Who? is `play/boowho-game.js` (the TV: five modes, Classic, Superstar, Face-off, Lightning and
   Kids; Boo's funny line after every question; the scores every five questions), `play/boowho-tpl.js`
   (its designed screens, made from the designs in `Games/Boo Who`: three how-to-play looks, seven
@@ -248,7 +251,21 @@ ones inside smart TVs from 2018 to 2020 (Chrome 53 to 69) and older phones:
 - Who may host (`go/pass.js`): the host signs in on their phone with a code Blokvane's server
   emails them, and the phone asks the server for a pass for that one game. The TV checks the
   server's signature with the public key written in `go/pass.js`, and that the pass names the phone
-  that shows it. Everyone else joins without signing in.
+  that shows it. Everyone else joins without signing in. The pass says the plan: the free games
+  (15 questions, the same ones each time; in Dominoes 151, 1 vs 1 to 51: a game's `free` fixes a
+  few of its choices, and the host's phone marks the others Pro) or the full games with Pro.
+- Handing the game over (`play/play.js`, `go/m/party.js`): the host can make any other player the
+  host, from the players list or as they leave ("Make someone else the host"; or "End the game for
+  everyone"). A Blokvane member with the same games or better simply becomes the host. Anyone else
+  borrows the host's games, the full ones with Pro or the free ones, until they leave: the host's
+  phone asks Blokvane's server for a pass for that hand-over (`/v1/games/lend`, it names both
+  phones' own ids in that game), and the TV checks it like a host's pass. The player it was handed
+  to can't pass it on, and the host who handed it over can take it back ("Take the host back").
+  When that player leaves (or is away longer than a host may be), a Blokvane member here takes over
+  with their own games, or the game is over. Each person has one hand-over at a time: the TV asks
+  the server every 5 minutes if it still stands (`/v1/games/lend/check`), a newer one ends it, and
+  so does an hour without reaching the server. The server keeps only a random id for each hand-over,
+  and forgets it when the TV says it ended (`/v1/games/lend/end`), or a day after the last check.
 - How the messages travel: sealed and signed on the devices, through the free public relays and,
   for a party game only, through Blokvane's own relay first (`wss://blokvane.com/relay`,
   `server/app/relay.py` in blokvane-app: it passes the sealed bytes on and keeps nothing). The TV

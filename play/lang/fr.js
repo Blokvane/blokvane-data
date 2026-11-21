@@ -1398,3 +1398,28 @@ BVI18N.add("fr", {
 "The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "La table est sur la télé, tes dominos sur ton téléphone. En équipes, à un contre un ou chacun pour soi. En anglais et en arabe.",
 "The table is on the TV. Your tiles are on your phone.": "La table est sur la télé. Tes dominos sont sur ton téléphone."
 });
+// (handing a party game over to another player)
+BVI18N.add("fr", {
+"Thanks for playing! A Blokvane member can scan the code to start a new one.": "Merci d'avoir joué ! Un membre Blokvane peut scanner le code pour en lancer une nouvelle.",
+"This game is over": "Cette partie est terminée",
+"Its host handed another game to someone else, and a host can hand over one game at a time. A Blokvane member can scan the code to start a new one.": "Son hôte a confié une autre partie à quelqu'un d'autre, et un hôte ne peut confier qu'une partie à la fois. Un membre Blokvane peut scanner le code pour en lancer une nouvelle.",
+"This TV couldn't reach Blokvane for an hour to check who hosts it. A Blokvane member can scan the code to start a new one.": "Cette télé n'a pas pu joindre Blokvane pendant une heure pour vérifier qui est l'hôte. Un membre Blokvane peut scanner le code pour en lancer une nouvelle.",
+"You're the host. Pick who hosts after you, or end the game for everyone.": "C'est toi l'hôte. Choisis qui sera l'hôte après toi, ou termine la partie pour tout le monde.",
+"Make someone else the host": "Faire de quelqu'un d'autre l'hôte",
+"End the game for everyone": "Terminer la partie pour tout le monde",
+"If you leave, {name} becomes the host.": "Si tu pars, {name} devient l'hôte.",
+"If you leave, the game ends for everyone.": "Si tu pars, la partie se termine pour tout le monde.",
+"Nobody else is in the game, so it ends when you leave.": "Il n'y a personne d'autre dans la partie, donc elle se termine quand tu pars.",
+"Who hosts after you?": "Qui sera l'hôte après toi ?",
+"They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.": "Cette personne sera l'hôte avec ton forfait jusqu'à ce qu'elle parte. Ensuite, un membre Blokvane présent prend le relais, ou la partie se termine.",
+"Handing the game over...": "Transfert de la partie...",
+"Its host handed another game to someone else, and a host can hand over one game at a time.": "Son hôte a confié une autre partie à quelqu'un d'autre, et un hôte ne peut confier qu'une partie à la fois.",
+"The TV couldn't reach Blokvane for an hour to check who hosts it.": "La télé n'a pas pu joindre Blokvane pendant une heure pour vérifier qui est l'hôte.",
+"Sign in again on this phone to hand the game over.": "Reconnecte-toi sur ce téléphone pour confier la partie.",
+"{name} took the host back.": "{name} a repris le rôle d'hôte.",
+"The host": "L'hôte",
+"The host handed another game to someone else, so you're not the host any more.": "L'hôte a confié une autre partie à quelqu'un d'autre, donc tu n'es plus l'hôte.",
+"The TV couldn't check with Blokvane, so you're not the host any more.": "La télé n'a pas pu vérifier avec Blokvane, donc tu n'es plus l'hôte.",
+"Take the host back": "Reprendre le rôle d'hôte",
+"A host with Blokvane Pro can pick this.": "Seul un hôte avec Blokvane Pro peut choisir ceci."
+});

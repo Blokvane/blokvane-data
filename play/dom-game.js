@@ -157,6 +157,8 @@
       B + ' .dl-chain .dl-last{-webkit-filter:drop-shadow(0 0 <14> #e8c36a);filter:drop-shadow(0 0 <14> #e8c36a);animation:dlBob 1.6s ease-in-out infinite}',
       B + ' .ph{min-height:<119>;align-items:flex-start;margin-top:<-4>;grid-gap:<10>;gap:<10>}', 'html.no-flexgap ' + B + ' .ph>*+*{margin-left:<10>}', 'html.no-flexgap[dir="rtl"] ' + B + ' .ph>*+*{margin-left:0;margin-right:<10>}',
       B + ' .ph h2{max-width:<320>;font:900 <54>/1.1 var(--fun);color:#fff6e0}',
+      // (in Arabic "{n} players" is longer: it gets the room it needs, so the number stays on its line)
+      'html[dir="rtl"] ' + B + ' .ph h2{max-width:<540>}',
       B + ' .ph .pill{flex:none;margin-top:<8>;padding:<14> <30>;font:700 <25>/1.3 var(--round);color:#fff6e0}',
       B + ' .ph .pill.wait-host{box-sizing:border-box;width:<506>;max-width:none;height:<100>;padding:0 <30>;display:flex;align-items:center;justify-content:center}',
       // (the seats)
@@ -310,7 +312,9 @@
     step: ['Play from your phone', 'Your tiles show on your phone. Tap one, or drag it up, when it is your turn.'],
     // its own music: one tune in the lobby, four that take turns all match long, and one of two for the winners
     sounds: [], music: { lobby: 'dLobby', again: 'dLobby', after: 'dLobby' },
-    freeNote: 'Free games: a short match, first to 51. A host with Blokvane Pro plays to 101, 151 or 201.',
+    // the free games: 1 vs 1, a short match to 51 (the kit fixes these two choices, and the host's phone marks the others Pro)
+    free: { mode: 'duel', target: 51 },
+    freeNote: 'Free games: 1 vs 1, first to 51. With Blokvane Pro, the host picks any mode and plays to 101, 151 or 201.',
     prep: () => { try { D.css(); D.words(); } catch (e) {} },
     // (the lobby's looks: see lobbyDress above. Their seats are the designs' own shape: 194 by 186, 20 apart.)
     lobbyDone: (stage, el, s) => { try { lobbyDress(stage, s); } catch (e) { console.warn('Blokvane play', e); } },
@@ -370,8 +374,8 @@
       // (the lobby's look stays in the lobby: the table and everything on it are the game's own)
       delete document.body.dataset.dlook;
       const s = K.settings;
-      const mode = D.CFG[s.mode] ? s.mode : 'teams';
-      // (the free games: a short match)
+      // (the free games: 1 vs 1, a short match)
+      const mode = K.free ? 'duel' : D.CFG[s.mode] ? s.mode : 'teams';
       const target = K.free ? 51 : ([51, 101, 151, 201].includes(+s.target) ? +s.target : 151);
       const lvl = ['easy', 'normal', 'hard'].includes(s.level) ? s.level : 'normal';
       const thinkMs = SPEED[s.speed] || SPEED.normal;

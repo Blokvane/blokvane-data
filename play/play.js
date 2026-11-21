@@ -60,6 +60,31 @@ var BVPLAY = (() => {
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
   const avatarUrl = p => p.photo || P.booUri(p.av) || P.booUri('boo:hi');
+  // (the check on a seat once that player is ready: drawn, so it is the same round mark on every TV, whatever its fonts)
+  const OK_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 12.6l4.1 4.1 8.7-9.2" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  // a player's photo, square: the middle of it, the way the game's frames show it. Phones send it square already; one
+  // from a phone with an older page could be taller or wider, which some TV browsers would draw as an oval.
+  function squarePic(d) {
+    return new Promise(res => {
+      try {
+        const im = new Image();
+        im.onload = () => {
+          try {
+            const w = im.naturalWidth, h = im.naturalHeight;
+            if (!w || !h || Math.abs(w / h - 1) < 0.02) { res(d); return; }
+            const m = Math.min(w, h), px = Math.min(m, 200), cv = document.createElement('canvas');
+            cv.width = cv.height = px;
+            cv.getContext('2d').drawImage(im, (w - m) / 2, (h - m) / 2, m, m, 0, 0, px, px);
+            const out = cv.toDataURL('image/jpeg', 0.85);
+            cv.width = cv.height = 0;
+            res(L.okPicture(out) && out.length < 60000 ? out : d);
+          } catch (e) { res(d); }
+        };
+        im.onerror = () => res(d);
+        im.src = d;
+      } catch (e) { res(d); }
+    });
+  }
   // (the host is ready by starting the game)
   const pub = p => ({ id: p.id, name: p.name, av: p.av, ph: !!p.photo, color: p.color, team: p.team, ready: !!p.ready || p.id === host, score: p.score, lives: p.lives, out: !!p.out, lg: p.lang || '' });
 
@@ -193,14 +218,31 @@ var BVPLAY = (() => {
   // over, and the host gets it back as soon as their phone is here again. Leaving the game, or handing it over from
   // the host's phone, passes it at once.
   // Only a Blokvane member can host (signed in on their phone: pass.js); everyone else joins once one is here.
+  // Handing the game over: the host can hand it to any other player (the host's phone asks Blokvane's server for a pass
+  // for it, pass.js). That player then hosts with the host's own games, the full ones with Pro or the free ones, until
+  // they leave: then a Blokvane member here takes over with their own, or the game is over. They can't pass it on, and
+  // the host who handed it over can take it back at any time. Each person has one hand-over at a time: this screen
+  // checks it with the server every few minutes, and it ends when that person has handed over another game since (or
+  // when the server can't be reached for an hour).
   let trueHost = '', hostT = 0;
-  const hostHere = () => [...players.values()].some(x => x.paid && !x.away && !x.left);
+  // (the hand-over: id, the player it was handed to; from, the host who handed it over; full, the full games; pass, its
+  // pass from the server; okAt, when the server last said it stands; askAt, when it was last asked)
+  let lend = null, goneWhy = '';
+  const lentTo = p => !!(lend && p && lend.id === p.id);
+  const mayHost = p => !!(p && (p.paid || lentTo(p)));
+  const hostHere = () => [...players.values()].some(x => mayHost(x) && !x.away && !x.left);
   const passed = new WeakSet();   // "join" messages whose host pass was checked here
   // The free games: a host without Blokvane Pro gets every game with 15 questions, the same ones each time (the pass
   // says which plan; the server signs it, so a phone can't change it). One host with Pro in the room: the full games.
   const fullPass = new WeakSet();  // ... and of those, the ones that carry the full games ('pro', 'guest')
   const FREE_N = 15;
-  const fullHere = () => [...players.values()].some(x => x.paid && x.full && !x.left);
+  const fullHere = () => [...players.values()].some(x => x.paid && x.full && !x.left) || !!(lend && lend.full && players.has(lend.id) && !players.get(lend.id).left);
+  // (the free games or not: in the lobby, who's here decides; a game that's on keeps what it started with)
+  let runFree = null;
+  const freeNow = () => !!game && (phase !== 'lobby' && runFree !== null ? runFree : !fullHere());
+  // (a game's free version can also fix a few choices, like Dominoes 151's: 1 vs 1, to 51. The host's own choices stay
+  // as they are, for a game with Pro)
+  const effSet = () => (game && game.free && freeNow() ? Object.assign({}, settings, game.free) : settings);
   // (a stable order for "the same ones each time": a small hash of each question's id, smallest first; with groups,
   // taken from each group in turn, so a mix of levels stays a mix)
   const hashId = s => { let h = 2166136261; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
@@ -220,30 +262,43 @@ var BVPLAY = (() => {
     const h = players.get(host);
     const grace = waitHost ? 15000 : 90000;
     clearTimeout(hostT);
-    if (!h || !h.paid || (h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace)))) {
+    let why = goneWhy;
+    goneWhy = '';
+    if (!h || !mayHost(h) || (h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace)))) {
+      // (the player the game was handed to is gone: the hand-over is over)
+      if (lend && (!h || lend.id === h.id)) endLend(why || 'left');
       const next = list().find(x => x.paid);
       host = next ? next.id : '';
-      if (!th || th.left) trueHost = host;
+      if (!th || th.left || !mayHost(th)) trueHost = host;
     } else if (h.away) hostT = setTimeout(() => { pickHost(); if (phase === 'lobby') lobby(); sayLobby(); }, grace + 500 - (Date.now() - (h.awayAt || 0)));
     if (!trueHost || !players.has(trueHost)) trueHost = host;
     // (both phones hear it straight away: the one that has the host's tools now, and the one that just lost them)
     if (was !== host) for (const id of [was, host]) { const x = players.get(id); if (x && !x.away) sayTo(id, { k: 'you', id, host: host === id, color: x.color }); }
     // (the host is gone for good and nobody else here can host: the game is over, once whatever called this is done)
-    if (was && !host && players.size && phase !== 'closed') setTimeout(hostGone, 0);
+    if (was && !host && players.size && phase !== 'closed') setTimeout(() => hostGone(false, why), 0);
   }
   // The host left (or didn't come back in time), and nobody else here is a Blokvane member who could take over: the
   // game is over. Every phone hears it (and how to host a game of its own), everyone is out, and the TV says so for a
   // few seconds, then shows its code again for the next host.
-  async function hostGone() {
-    if (host || hostHere() || !players.size || phase === 'closed') return;
+  // (force: the host ended the game for everyone, from their phone. why: 'end' that; 'lend', the game was handed over
+  // and its host has handed over another game since; 'lendoff', that hand-over couldn't be checked for an hour)
+  async function hostGone(force, why) {
+    if (!players.size || phase === 'closed' || (!force && (host || hostHere()))) return;
     abortGame();
-    say({ k: 'hostgone' });
+    endLend(why === 'lend' ? 'lend' : 'gone');
+    why = typeof why === 'string' ? why : '';
+    say({ k: 'hostgone', why });
     for (const id of players.keys()) ended.add(id);
     players.clear(); waitNext.clear(); seen.clear();
     host = ''; trueHost = ''; clearTimeout(hostT);
     phase = 'lobby';
     const my = ++lobbyRun;
-    const t = await Promise.all(['The host left', 'This game is over. A Blokvane member can scan the code to start a new one.'].map(x => P.tr(x)));
+    const after = 'A Blokvane member can scan the code to start a new one.';
+    const words = why === 'end' ? ['The host ended the game', 'Thanks for playing! ' + after]
+      : why === 'lend' ? ['This game is over', 'Its host handed another game to someone else, and a host can hand over one game at a time. ' + after]
+        : why === 'lendoff' ? ['This game is over', 'This TV couldn\'t reach Blokvane for an hour to check who hosts it. ' + after]
+          : ['The host left', 'This game is over. ' + after];
+    const t = await Promise.all(words.map(x => P.tr(x)));
     if (my !== lobbyRun || phase !== 'lobby') return;
     SND.music(null, { fadeOut: 1 });
     if (booEl) booEl.hidden = true;
@@ -255,6 +310,63 @@ var BVPLAY = (() => {
     el('p', '', box2, t[1]);
     setTimeout(() => { if (my === lobbyRun && phase === 'lobby') { if (booEl) booEl.hidden = false; lobby(); } }, 9000);
   }
+  // the host is someone else now: both phones hear it straight away
+  function setHost(id) {
+    const was = host;
+    host = id; trueHost = id;
+    clearTimeout(hostT);
+    for (const x of [players.get(was), players.get(id)]) if (x) sayTo(x.id, { k: 'you', id: x.id, host: host === x.id, color: x.color });
+    if (phase === 'lobby') lobby();
+    sayLobby();
+  }
+  // The hand-over is over (why: 'back', the host took the game back; 'left', the player left; 'lend', its host handed
+  // over another game; 'lendoff', it couldn't be checked; 'gone', the game ended; 'again', a new one). The server forgets
+  // it (unless it was the server that said so). Taken back: the player it was handed to hears who took it.
+  function endLend(why) {
+    if (!lend) return null;
+    const l = lend;
+    lend = null;
+    if (why !== 'lend' && typeof BVPASS !== 'undefined' && BVPASS.lendEnd) BVPASS.lendEnd(l.pass).catch(() => {});
+    const by = players.get(l.from);
+    if (why === 'back' && players.has(l.id)) sayTo(l.id, { k: 'lendover', why, name: by ? by.name : '' });
+    return l;
+  }
+  // (the server says the hand-over is over, or it couldn't be checked: a Blokvane member here takes over, and the
+  // player it was handed to hears why; or the game is over for everyone)
+  function lendGone(why) {
+    const l = endLend(why);
+    if (!l) return;
+    goneWhy = why;
+    pickHost();
+    goneWhy = '';
+    if (host && host !== l.id && players.has(l.id)) sayTo(l.id, { k: 'lendover', why });
+    if (phase === 'lobby') lobby();
+    sayLobby();
+  }
+  // every few minutes, while a game is handed over: does the hand-over still stand? (Asked again a minute later when
+  // the server can't be reached; after an hour without an answer, it is over.)
+  function checkLend(now) {
+    if (!lend || lend.asking || phase === 'closed' || typeof BVPASS === 'undefined' || !BVPASS.lendCheck) return;
+    const t = Date.now();
+    if (t - lend.okAt > 3600e3) { lendGone('lendoff'); return; }
+    if (!now && t - lend.askAt < (lend.failed ? 60e3 : 300e3)) return;
+    const l = lend;
+    l.asking = true; l.askAt = t;
+    BVPASS.lendCheck(l.pass).then(r => {
+      l.asking = false;
+      if (lend !== l) return;
+      if (r && r.lend) {
+        l.pass = r.lend; l.okAt = Date.now(); l.failed = false;
+        // (the host's Pro may have ended, or started: the next game follows it)
+        const full = r.plan !== 'free';
+        if (full !== l.full) { l.full = full; if (phase === 'lobby') lobby(); sayLobby(); }
+        return;
+      }
+      if (r && r.over) { lendGone('lend'); return; }
+      l.failed = true;
+    }, () => { l.asking = false; l.failed = true; });
+  }
+  setInterval(() => checkLend(), 15000);
   // the host takes someone out of the game: their phone hears it, and they can ask to join again
   function removePlayer(id) {
     if (!players.has(id)) return;
@@ -354,7 +466,7 @@ var BVPLAY = (() => {
         if (paid) { pl.paid = true; pl.full = fullPass.has(m); }
         pl.name = P.name(m.name); pl.av = P.AVATARS.includes(m.av) ? m.av : 'boo:hi'; pl.gone = false; pl.left = false; pl.at = Date.now(); pl.heard = Date.now();
         // (a new Boo picked in the middle of a game, instead of a selfie: the selfie goes)
-        if (m.nophoto) pl.photo = '';
+        if (m.nophoto) { pl.photo = ''; pl.phSeq = (pl.phSeq || 0) + 1; }
         if (!p) pl.away = false;
         // (a phone that answers "still there?" says so when it joins)
         pl.cap = +m.cap || 0;
@@ -380,7 +492,7 @@ var BVPLAY = (() => {
         if (phase === 'play') sayNow(m.f);
         return;
       }
-      case 'photo': if (p && m.boxed && L.okPicture(m.d) && m.d.length < 60000) { p.photo = m.d; if (phase === 'lobby') lobby(); } return;
+      case 'photo': if (p && m.boxed && L.okPicture(m.d) && m.d.length < 60000) { const n = p.phSeq = (p.phSeq || 0) + 1; squarePic(m.d).then(d => { if (p.phSeq !== n || players.get(p.id) !== p) return; p.photo = d; if (phase === 'lobby') lobby(); }); } return;
       case 'ready': if (p) { p.ready = !!m.on; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'team': if (p && P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).some(t => t[0] === m.team)) { p.team = m.team; if (phase === 'lobby') lobby(); sayLobby(); } return;
       case 'plang': if (p && setPlayerLang(p, m.v)) { if (phase === 'lobby') lobby(); sayLobby(); } return;
@@ -400,14 +512,29 @@ var BVPLAY = (() => {
       case 'kick': if (p && m.f === host && typeof m.id === 'string' && m.id !== host) removePlayer(m.id); return;
       case 'makehost': {
         const to = players.get(m.id);
-        if (!p || m.f !== host || !to || to.away || to.id === host) return;
-        if (!to.paid) { sayTo(m.f, { k: 'needpass', name: to.name }); return; }
-        host = to.id; trueHost = to.id;
-        for (const x of [p, to]) sayTo(x.id, { k: 'you', id: x.id, host: host === x.id, color: x.color });
-        if (phase === 'lobby') lobby();
-        sayLobby();
+        // (the player the game was handed to can't pass it on)
+        if (!p || m.f !== host || !to || to.away || to.id === host || lentTo(p)) return;
+        // (a Blokvane member with the same games or better: it's theirs from now on)
+        if (to.paid && (to.full || !p.full)) { setHost(to.id); return; }
+        // anyone else: the host's phone asks Blokvane's server for a pass for this hand-over (lendask), and sends it here
+        if (typeof m.lend !== 'string') { if (p.paid) sayTo(m.f, { k: 'lendask', id: to.id }); return; }
+        if (typeof BVPASS === 'undefined' || !BVPASS.okLend) { sayTo(m.f, { k: 'lendbad' }); return; }
+        const ps = m.lend, from = m.f, toId = to.id;
+        BVPASS.okLend(ps, from, toId).then(ok => {
+          const f = players.get(from), t2 = players.get(toId);
+          if (!ok) { if (f) sayTo(from, { k: 'lendbad' }); return; }
+          if (host !== from || !f || !t2 || t2.away || phase === 'closed') return;
+          if (lend) endLend('again');
+          const pl = BVPASS.read(ps);
+          lend = { id: toId, from, full: !!pl && pl.plan !== 'free', pass: ps, okAt: Date.now(), askAt: Date.now() };
+          setHost(toId);
+        }, () => { if (players.has(from)) sayTo(from, { k: 'lendbad' }); });
         return;
       }
+      // the host who handed the game over takes it back
+      case 'takeback': if (p && lend && lend.from === m.f && p.paid && !p.away && host !== m.f) { endLend('back'); setHost(m.f); } return;
+      // the host ends the game for everyone (from their phone, as they leave)
+      case 'endall': if (p && m.f === host && phase !== 'closed') hostGone(true, 'end'); return;
       case 'showjoin': if (p && m.f === host) showJoin(!!m.on); return;
       // (the TV's size from the host's phone, for a TV nobody can click on: bigger, smaller, or back to fitting by itself)
       case 'zoom': if (p && m.f === host) { const d = +m.d; zoomBy(d > 0 ? 1 : d < 0 ? -1 : 0); sayLobby(); } return;
@@ -454,7 +581,7 @@ var BVPLAY = (() => {
   }
   // teams: on when the game has them and the host turned them on (and the game mode allows them: a Trivia race is
   // everyone for themselves)
-  const teamsOn = () => !!(game && game.teams && (settings.teams || (game.teamsForce && game.teamsForce(settings))) && (!game.teamsOn || game.teamsOn(settings)));
+  const teamsOn = () => { const s = effSet(); return !!(game && game.teams && (s.teams || (game.teamsForce && game.teamsForce(s))) && (!game.teamsOn || game.teamsOn(s))); };
   // teams: everyone without one (or on a team that's not in the game) joins the smallest team
   function balanceTeams() {
     if (!teamsOn()) return;
@@ -489,11 +616,15 @@ var BVPLAY = (() => {
       // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
       langs: game && game.langs ? game.langs : null,
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null
+      howto: game && game.howto ? game.howto(effSet()) : null
     };
     const sj = JSON.stringify(setup);
     if (sj !== setupSig) { setupSig = sj; setupV = fnv(sj) + '.' + sj.length.toString(36); }
-    const dyn = { k: 'lobby', phase, game: game ? game.id : '', players: list().map(pub), host, settings, lang, rtl: P.RTL.has(lang),
+    const free = freeNow(), heir = list().find(x => x.paid && x.id !== host);
+    const dyn = { k: 'lobby', phase, game: game ? game.id : '', players: list().map(pub), host, settings: effSet(), lang, rtl: P.RTL.has(lang),
+      // (the free games, and the choices they fix (the others say Pro on the host's phone); a hand-over: who it was
+      // handed to and who handed it over; heir: the Blokvane member who takes over when the host leaves)
+      free: free ? 1 : 0, fixed: free && game.free ? game.free : null, lent: lend ? lend.id : '', owner: lend ? lend.from : '', heir: heir ? heir.id : '',
       mlang: !!(game && game.mlang), joinOn: !!joinEl, zoom: Math.round(zoom * 100), teams: teamsOn(),
       // (the question that's on: a phone that doesn't have it asks for it again)
       qn: phase === 'play' && cur.q ? cur.q.n : 0, paused: phase === 'play' && paused, gr: run,
@@ -849,6 +980,7 @@ var BVPLAY = (() => {
   async function closedScreen() {
     run++; lobbyRun++;
     unpause(); abandonTimers();
+    endLend('gone');
     phase = 'closed';
     nearOn();
     handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
@@ -872,7 +1004,8 @@ var BVPLAY = (() => {
     b.focus();
   }
   // (a page that closes any other way, like its tab or window: the phones hear it too, if there's time)
-  addEventListener('pagehide', e => { if (!e.persisted && R && !back.said && phase !== 'closed') { back.said = true; try { R.send({ k: 'closed' }).catch(() => {}); } catch (e2) {} } });
+  // (and a game that was handed over: the server forgets the hand-over, when there's time to tell it)
+  addEventListener('pagehide', e => { if (!e.persisted) endLend('gone'); if (!e.persisted && R && !back.said && phase !== 'closed') { back.said = true; try { R.send({ k: 'closed' }).catch(() => {}); } catch (e2) {} } });
   // (closing the tab, or reloading, while people play: the browser's own "Leave site?" first)
   addEventListener('beforeunload', e => { if (back.going || back.dlg || !busy()) return; e.preventDefault(); e.returnValue = ''; });
 
@@ -952,7 +1085,7 @@ var BVPLAY = (() => {
       seen.add(p.id);
       c.style.setProperty('--pc', p.color);
       const av = el('div', 'av', c); const im = el('img', '', av); im.src = avatarUrl(p); im.alt = '';
-      if (p.ready || p.id === host) { el('span', 'ok', av, '✓'); c.classList.add('rd'); }
+      if (p.ready || p.id === host) { el('span', 'ok', av).innerHTML = OK_MARK; c.classList.add('rd'); }
       // (a player whose phone shows the questions in their own language)
       if (p.lang && g && g.mlang) { const lg = el('span', 'lg', av, p.lang.toUpperCase()); lg.title = (I18N.LANGS.find(x => x[0] === p.lang) || [0, ''])[1]; }
       el('b', '', c, p.name);
@@ -964,7 +1097,7 @@ var BVPLAY = (() => {
     // what's special about this game: the mode the host picked, explained (Trivia), its helpers, or how it plays
     // (a game drawn without that card, like Guess It Right!'s design, gives all the right side to the seats)
     if (g && g.lobbyCard === false) { /* no card */ }
-    else if (g && g.spot) { body.classList.add('has-spot'); await spotCard(crowd ? left : right, g.spot(settings)); }
+    else if (g && g.spot) { body.classList.add('has-spot'); await spotCard(crowd ? left : right, g.spot(effSet())); }
     else if (g) {
       const ex = el('div', 'lob-x', crowd ? left : right);
       if (g.helpers) {
@@ -973,7 +1106,7 @@ var BVPLAY = (() => {
         for (const h of g.helpers) el('span', 'chip', chips, await T(h));
       } else if (g.rules && (typeof g.rules === 'function' || g.rules.length)) {
         // (a game's rules can follow the settings picked: Who's the Imposter?'s game modes)
-        const rl = typeof g.rules === 'function' ? g.rules(settings) : g.rules;
+        const rl = typeof g.rules === 'function' ? g.rules(effSet()) : g.rules;
         el('div', 'lbl', ex, await T('How to play'));
         const ol = el('ol', 'howto2', ex);
         for (const r of rl) el('li', '', ol, await T(r));
@@ -1035,7 +1168,7 @@ var BVPLAY = (() => {
     // (a game's own look for its lobby, like Trivia's four designs, and its winners' dressing, are gone until it puts them back)
     delete document.body.dataset.tlook; delete document.body.dataset.wlook; delete document.body.dataset.bwlook; document.body.classList.remove('tw-on');
     stage.append(...page.childNodes);
-    if (g && g.lobbyDone) { try { g.lobbyDone(stage, el, settings); } catch (e) { console.warn('Blokvane play', e); } }
+    if (g && g.lobbyDone) { try { g.lobbyDone(stage, el, effSet()); } catch (e) { console.warn('Blokvane play', e); } }
     if (sndOff) sndOff();
     sndOff = SND.onChange(paint);
     soundHint();
@@ -1279,6 +1412,8 @@ var BVPLAY = (() => {
     const my = ++run;
     lastRes.clear(); resN = 0;
     P.mute(false);
+    // (the free games or the full ones, for this whole game: who's here now decides)
+    runFree = !fullHere();
     phase = 'play';
     played = true;
     document.body.dataset.game = game.id;
@@ -1323,10 +1458,10 @@ var BVPLAY = (() => {
   // the host set. Every phone shows the same lines in its own language.
   async function kitRules(my) {
     const secs = Math.max(5, Math.min(120, Math.round(+settings.k_rulesSec) || 12));
-    const sp = game.spot ? game.spot(settings) : null;
+    const sp = game.spot ? game.spot(effSet()) : null;
     const lines = [];
     // (the mode's own lines know the settings picked, like no helpers: with them, only the game's first two lines)
-    const all = (typeof game.rules === 'function' ? game.rules(settings) : game.rules) || [];
+    const all = (typeof game.rules === 'function' ? game.rules(effSet()) : game.rules) || [];
     const rl = sp && Array.isArray(sp.bullets) && sp.bullets.length ? all.slice(0, 2) : all.slice(0, 6);
     // (a "plain" game shows no emoji: the marks are left empty, and its own style sheet draws them, like Dominoes 151's pips)
     const plain = !!game.plain;
@@ -1498,8 +1633,8 @@ var BVPLAY = (() => {
     const live = () => my === run && phase === 'play';
     const nop = () => {};
     // (the free games: at most 15 questions or rounds, from a fixed set of 15)
-    const free = !fullHere();
-    const freeSet = () => { const o = Object.assign({}, settings); for (const k of ['count', 'rounds', 'games']) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N); return o; };
+    const free = runFree !== null ? runFree : !fullHere();
+    const freeSet = () => { const o = Object.assign({}, settings, game && game.free ? game.free : {}); for (const k of ['count', 'rounds', 'games']) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N); return o; };
     return {
       players: list, alive, get settings() { return free ? freeSet() : settings; }, lang,
       free, freeN: FREE_N, freePick: (l, idOf, groupOf) => (free ? freePick(l, idOf, groupOf) : l), tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
@@ -1570,6 +1705,8 @@ var BVPLAY = (() => {
   try { if (navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); document.addEventListener('visibilitychange', () => { if (!document.hidden && navigator.wakeLock) navigator.wakeLock.request('screen').catch(() => {}); }); } catch (e) {}
   // (for testing only: with ?debug in the address, the console can see who's in and what's waiting)
   if (/[?&]debug\b/.test(location.search)) window.__bvplay = { players, pending, get host() { return host; }, get phase() { return phase; },
+    // (a game that was handed over: what this screen knows of it, and its check with the server, right now)
+    get lend() { return lend; }, get trueHost() { return trueHost; }, checkLend: () => checkLend(true), get free() { return freeNow(); },
     // (for checking the screens on this computer: made-up players join and get ready, and the winners show straight away)
     fake(names) { names.forEach((nm, i) => { const f = ('aaaaaaaaaaaaaaaa' + (i + 1).toString(16)).slice(-16); take({ k: 'join', f, name: nm, av: P.AVATARS[i % P.AVATARS.length] }); take({ k: 'ready', f, on: true }); }); },
     testWin(scores) { let i = 0; for (const p of players.values()) p.score = scores[i++] || 0; finish(null); },

@@ -9,6 +9,11 @@
 // else. The server gives a pass to everyone signed in: 'free' (the free games: 15 questions, the same ones each time)
 // or the full games ('pro', 'guest'); joining a game needs none.
 //
+// The host can also hand the game to another player, who then hosts it with the host's own games until they leave.
+// The host's phone asks the server for a pass for that (it names both phones' own ids in the game), and the TV checks it
+// the same way. Each person has one hand-over at a time: the TV asks the server every few minutes if it still stands,
+// and a newer one ends it.
+//
 // Written the old way on purpose (no arrow functions, no async): smart TVs from 2018 read this very file.
 var BVPASS = (function () {
   var te = new TextEncoder();
@@ -65,6 +70,19 @@ var BVPASS = (function () {
       }).then(function (good) { return good === true; }, function () { return false; });
     } catch (e) { return Promise.resolve(false); }
   }
+  // Is this a hand-over's pass from the host `mid` to the player `to`, both in this game? Signed by Blokvane's server and
+  // made for a hand-over. (Its time doesn't count here: the TV asks the server about it every few minutes.)
+  function okLend(pass, mid, to) {
+    try {
+      var p = read(pass);
+      if (!subtle || !p || p.v !== 1 || p.typ !== 'lend' || typeof p.n !== 'string' || typeof p.mid !== 'string' || typeof p.to !== 'string' ||
+        !/^[0-9a-f]{16}$/.test(p.mid) || p.mid !== mid || p.to !== to || p.mid === p.to) return Promise.resolve(false);
+      var parts = pass.split('.');
+      return key().then(function (k) {
+        return subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, k, unb64url(parts[1]), te.encode(parts[0]));
+      }).then(function (good) { return good === true; }, function () { return false; });
+    } catch (e) { return Promise.resolve(false); }
+  }
   // one request to Blokvane's server: { ok, status, data } (data.message is in plain words when it's a "no")
   function ask(path, body, session) {
     var headers = { 'Content-Type': 'application/json' };
@@ -104,6 +122,27 @@ var BVPASS = (function () {
       return { error: r.status ? (r.data.message || 'That didn\'t work. Try again in a minute.') : OFFLINE, code: r.status ? (r.data.error || 'error') : 'offline' };
     });
   }
+  // 4. the host hands the game to another player (mid: this phone's own id in the game, to: that player's).
+  //    -> { lend, plan }, or { error, code }
+  function lend(session, mid, to) {
+    if (!session) return Promise.resolve({ error: 'Sign in first.', code: 'signed_out' });
+    return ask('/v1/games/lend', { mid: mid, to: to }, session).then(function (r) {
+      if (r.ok && typeof r.data.lend === 'string') return { lend: r.data.lend, plan: String(r.data.plan || '') };
+      return { error: r.status ? (r.data.message || 'That didn\'t work. Try again in a minute.') : OFFLINE, code: r.status ? (r.data.error || 'error') : 'offline' };
+    });
+  }
+  // 5. the TV of a game that was handed over, every few minutes: does the hand-over still stand? -> { lend, plan } (a
+  //    new pass for it), { over: true } (its host has handed over another game since, or it ended), or { error } (the
+  //    server can't be reached, or is busy: ask again in a minute)
+  function lendCheck(pass) {
+    return ask('/v1/games/lend/check', { lend: pass }).then(function (r) {
+      if (r.ok && typeof r.data.lend === 'string') return { lend: r.data.lend, plan: String(r.data.plan || '') };
+      if (r.status === 410 || r.status === 400) return { over: true };
+      return { error: r.status || 'offline' };
+    });
+  }
+  // 6. ... and when it ends (the host took the game back, the player left, the game closed): the server forgets it
+  function lendEnd(pass) { return ask('/v1/games/lend/end', { lend: pass }).then(function () { return true; }); }
   function signOut(session) { return session ? ask('/v1/auth/logout', {}, session).then(function () { return true; }) : Promise.resolve(true); }
-  return { start: start, finish: finish, forGame: forGame, signOut: signOut, ok: ok, okScreen: okScreen, read: read, norm: norm, api: API };
+  return { start: start, finish: finish, forGame: forGame, lend: lend, lendCheck: lendCheck, lendEnd: lendEnd, signOut: signOut, ok: ok, okScreen: okScreen, okLend: okLend, read: read, norm: norm, api: API };
 })();

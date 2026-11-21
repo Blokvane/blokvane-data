@@ -1489,3 +1489,29 @@ BVI18N.add("ar", {
 "The table is on the TV. Your tiles are on your phone.": "الميز عالتلفزيون، الدومنة بموبايلك.",
 "Dominoes 151": "دومنة 151"
 });
+// (handing a party game over to another player)
+BVI18N.add("ar", {
+"Thanks for playing! A Blokvane member can scan the code to start a new one.": "شكرًا على اللعب! يمكن لأي عضو في Blokvane مسح الرمز لبدء لعبة جديدة.",
+"This game is over": "انتهت هذه اللعبة",
+"Its host handed another game to someone else, and a host can hand over one game at a time. A Blokvane member can scan the code to start a new one.": "سلّم مضيف هذه اللعبة لعبة أخرى لشخص آخر، ولا يمكن للمضيف أن يسلّم إلا لعبة واحدة في كل مرة. يمكن لأي عضو في Blokvane مسح الرمز لبدء لعبة جديدة.",
+"This TV couldn't reach Blokvane for an hour to check who hosts it. A Blokvane member can scan the code to start a new one.": "تعذّر على هذا التلفاز الوصول إلى Blokvane لمدة ساعة للتحقق ممن يستضيف اللعبة. يمكن لأي عضو في Blokvane مسح الرمز لبدء لعبة جديدة.",
+"You're the host. Pick who hosts after you, or end the game for everyone.": "أنت المضيف. اختر من يستضيف اللعبة بعدك، أو أنهِ اللعبة للجميع.",
+"Make someone else the host": "اجعل شخصًا آخر المضيف",
+"End the game for everyone": "أنهِ اللعبة للجميع",
+"If you leave, {name} becomes the host.": "إذا غادرت، يصبح {name} المضيف.",
+"If you leave, the game ends for everyone.": "إذا غادرت، تنتهي اللعبة للجميع.",
+"Nobody else is in the game, so it ends when you leave.": "لا يوجد أحد آخر في اللعبة، لذا ستنتهي عندما تغادر.",
+"Who hosts after you?": "من يستضيف اللعبة بعدك؟",
+"They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.": "سيستضيف اللعبة بخطتك حتى يغادر. بعدها يتولى الاستضافة عضو في Blokvane موجود هنا، أو تنتهي اللعبة.",
+"Handing the game over...": "جارٍ تسليم اللعبة...",
+"Its host handed another game to someone else, and a host can hand over one game at a time.": "سلّم مضيف هذه اللعبة لعبة أخرى لشخص آخر، ولا يمكن للمضيف أن يسلّم إلا لعبة واحدة في كل مرة.",
+"The TV couldn't reach Blokvane for an hour to check who hosts it.": "تعذّر على التلفاز الوصول إلى Blokvane لمدة ساعة للتحقق ممن يستضيف اللعبة.",
+"Sign in again on this phone to hand the game over.": "سجّل الدخول مرة أخرى على هذا الهاتف لتسليم اللعبة.",
+"{name} took the host back.": "استعاد {name} دور المضيف.",
+"The host": "المضيف",
+"The host handed another game to someone else, so you're not the host any more.": "سلّم المضيف لعبة أخرى لشخص آخر، لذا لم تعد المضيف.",
+"The TV couldn't check with Blokvane, so you're not the host any more.": "تعذّر على التلفاز التحقق مع Blokvane، لذا لم تعد المضيف.",
+"Take the host back": "استعد دور المضيف",
+"A host with Blokvane Pro can pick this.": "يمكن للمضيف الذي لديه Blokvane Pro فقط اختيار هذا.",
+"Sign in on this phone with your email to host free games with friends and family. Free Dominoes 151 is 1 vs 1, first to 51, and Blokvane Pro gives you every mode. Everyone who joins plays for free.": "سجّل الدخول على هذا الهاتف ببريدك الإلكتروني لتستضيف ألعابًا مجانية مع الأصدقاء والعائلة. دومنة 151 المجانية واحد ضد واحد حتى 51، ومع Blokvane Pro تحصل على كل طرق اللعب. كل من ينضم يلعب مجانًا."
+});

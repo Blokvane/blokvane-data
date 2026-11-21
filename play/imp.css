@@ -33,7 +33,7 @@
 .imp-cv bv-if { display: contents; }
 .imp-cv bv-if[hidden] { display: none; }
 .imp-cv .imp-face { display: block; object-fit: contain; flex: none; }
-.imp-cv .imp-face.ph { border-radius: 50%; object-fit: cover; }
+.imp-cv .imp-face.ph { border-radius: 50%; object-fit: cover; overflow: hidden; }
 /* (right-to-left languages: the design mirrored, as the lobby is; imp-game.js swaps the designs' left and right) */
 html[dir="rtl"] .imp-cv { direction: rtl; text-align: right; }
 html[dir="rtl"] .imp-cv [data-k="ringn"], html[dir="rtl"] .imp-cv [data-k="no"], html[dir="rtl"] .imp-cv [data-k="pl"] { direction: ltr; }

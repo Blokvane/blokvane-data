@@ -68,7 +68,7 @@ html.no-flexgap[dir="rtl"] .join > * + * { margin-left: 0; margin-right: calc(3 
 .players { display: grid; grid-template-columns: repeat(auto-fill, minmax(calc(17 * var(--u)), 1fr)); grid-gap: calc(2 * var(--u)); gap: calc(2 * var(--u)); align-content: start; }
 .player { position: relative; display: flex; flex-direction: column; align-items: center; grid-gap: calc(1 * var(--u)); gap: calc(1 * var(--u)); padding: calc(1.6 * var(--u)) calc(1 * var(--u)); border-radius: calc(2.4 * var(--u)); background: var(--panel); animation: popIn .5s cubic-bezier(.2, 1.4, .4, 1) both; }
 html.no-flexgap .player > * + * { margin-top: calc(1 * var(--u)); }
-.player .av { width: calc(11 * var(--u)); height: calc(11 * var(--u)); border-radius: 50%; overflow: hidden; background: var(--panel2); display: grid; align-items: center; justify-items: center; place-items: center; box-shadow: 0 0 0 calc(.5 * var(--u)) var(--pc, transparent); }
+.player .av { width: calc(11 * var(--u)); height: calc(11 * var(--u)); border-radius: 50%; overflow: hidden; background: var(--panel2); display: grid; grid-template-columns: 100%; grid-template-rows: 100%; align-items: center; justify-items: center; place-items: center; box-shadow: 0 0 0 calc(.5 * var(--u)) var(--pc, transparent); }
 .player .av img { width: 100%; height: 100%; object-fit: cover; }
 .player b { font-size: calc(2.6 * var(--u)); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .player .ok { position: absolute; top: calc(1 * var(--u)); inset-inline-end: calc(1.2 * var(--u)); width: calc(4.4 * var(--u)); height: calc(4.4 * var(--u)); border-radius: 50%; background: var(--ok); color: #082a1d; display: grid; align-items: center; justify-items: center; place-items: center; font-size: calc(2.8 * var(--u)); font-weight: 900; animation: popIn .4s cubic-bezier(.2, 1.6, .4, 1) both; }
@@ -223,7 +223,10 @@ html.no-flexgap[dir="rtl"] .ph > * + * { margin-left: 0; margin-right: calc(2 * 
 html.no-flexgap .seat > * + * { margin-top: calc(1.2 * var(--u)); }
 .seat .av { position: relative; width: 62%; aspect-ratio: 1; border-radius: 50%; background: rgba(255, 255, 255, .12); box-shadow: 0 0 0 calc(.5 * var(--u)) var(--pc, transparent); }
 .seat .av img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.seat .ok { position: absolute; right: -4%; bottom: -4%; width: 38%; aspect-ratio: 1; border-radius: 50%; background: var(--ok); color: #fff; display: grid; align-items: center; justify-items: center; place-items: center; font-size: calc(2.6 * var(--u)); font-weight: 900; box-shadow: 0 0 0 calc(.45 * var(--u)) #1d1440; animation: popIn .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+.seat .ok { position: absolute; right: -4%; bottom: -4%; width: 38%; height: 38%; border-radius: 50%; background: var(--ok); color: #fff; display: grid; align-items: center; justify-items: center; place-items: center; font-size: calc(2.6 * var(--u)); font-weight: 900; box-shadow: 0 0 0 calc(.45 * var(--u)) #1d1440; animation: popIn .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+/* (the check itself: drawn, a little smaller than its circle, the same on every TV; the circle is as tall as it is wide
+   because the face it sits on is square, also on TV browsers that don't know aspect-ratio) */
+.seat .ok svg { display: block; width: 66%; height: 66%; }
 .seat b { font: 700 calc(2.5 * var(--u))/1.15 var(--fun); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .seat .team { font-size: calc(1.8 * var(--u)); font-weight: 800; margin-top: calc(-.8 * var(--u)); }
 /* (a seat with a team: a smaller face, so the name and the team both fit) */
@@ -675,7 +678,7 @@ html.no-flexgap[dir="rtl"] .fs > * + * { margin-left: 0; margin-right: calc(.8 *
 [dir="rtl"] .lob .slots.fit.chips .seat { padding: 0 calc(var(--ch, 40px) * .1) 0 calc(var(--ch, 40px) * .32); }
 .lob .slots.fit.chips .seat .av { height: calc(var(--ch, 40px) * .8); width: calc(var(--ch, 40px) * .8); max-width: none; flex: none; box-shadow: 0 0 0 calc(var(--ch, 40px) * .05) var(--pc, transparent); box-shadow: 0 0 0 max(2px, calc(var(--ch, 40px) * .05)) var(--pc, transparent); }
 .lob .slots.fit.chips .seat b { flex: 1; font-size: calc(var(--ch, 40px) * .37); font-size: max(calc(1.3 * var(--u)), calc(var(--ch, 40px) * .37)); text-align: start; min-width: 0; }
-.lob .slots.fit.chips .seat .ok { width: 46%; font-size: calc(var(--ch, 40px) * .2); right: -12%; bottom: -12%; }
+.lob .slots.fit.chips .seat .ok { width: 46%; height: 46%; font-size: calc(var(--ch, 40px) * .2); right: -12%; bottom: -12%; }
 .lob .slots.fit.chips .seat .team { display: none; }
 .lob .slots.fit.chips .seat .lg { font-size: calc(var(--ch, 40px) * .2); left: -14%; top: -14%; }
 .lob .slots.fit.chips .seat.empty { justify-content: center; padding: 0; }
@@ -782,6 +785,9 @@ html.no-flexgap[dir="rtl"] .howto-list li > * + * { margin-left: 0; margin-right
 .howto-bar i { display: block; height: 100%; background: linear-gradient(90deg, #ffc93c, #ff5a8a); transform-origin: 0 50%; animation: howtoBar linear forwards; }
 html[dir="rtl"] .howto-bar i { transform-origin: 100% 50%; }
 @keyframes howtoBar { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+/* Arabic: its letters join, so they are never spaced apart, whatever a design asks for (older TV browsers pull joined
+   letters apart when there is letter-spacing; newer ones leave Arabic as it is, so the look stays the same there). */
+html[dir="rtl"] body *, html[dir="rtl"] body *::before, html[dir="rtl"] body *::after { letter-spacing: 0 !important; }
 /* A calm screen (the host's setting, and on by itself on a TV or any screen that draws slowly): the lights and moving
    parts go round once, then stand still; nothing keeps flashing. Glass that blurs what is behind it is plain there
    too: drawing that blur again for every frame is the most a small TV processor can be asked to do. */

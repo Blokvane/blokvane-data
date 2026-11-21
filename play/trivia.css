@@ -422,7 +422,7 @@ html.no-flexgap[dir="rtl"] .cover.win.tw .podium2 > * + * { margin-left: 0; marg
 .cover.win.tw .pc .who { grid-gap: calc(1.1112 * var(--u)); gap: calc(1.1112 * var(--u)); margin-bottom: calc(3.5186 * var(--u)); }
 html.no-flexgap .cover.win.tw .pc .who > * + * { margin-top: calc(1.1112 * var(--u)); }
 .cover.win.tw .pc .crown { position: relative; z-index: 1; font-size: calc(5.5556 * var(--u)); margin-bottom: calc(-2.2223 * var(--u)); filter: none; animation: crownIn .7s cubic-bezier(.2, 1.6, .4, 1) 2s both, t-bobW 3s ease-in-out 3s infinite; }
-.cover.win.tw .pc .av { box-sizing: border-box; width: calc(10.1852 * var(--u)); height: calc(10.1852 * var(--u)); padding: 0; overflow: hidden; display: grid; align-items: center; justify-items: center; place-items: center; }
+.cover.win.tw .pc .av { box-sizing: border-box; width: calc(10.1852 * var(--u)); height: calc(10.1852 * var(--u)); padding: 0; overflow: hidden; display: grid; grid-template-columns: 100%; grid-template-rows: 100%; align-items: center; justify-items: center; place-items: center; }
 .cover.win.tw .pc.one .av { width: calc(14.8149 * var(--u)); height: calc(14.8149 * var(--u)); animation: t-glowR 2.4s ease-in-out infinite, t-bobW 3s ease-in-out infinite; }
 .cover.win.tw .pc .av img { border: 0; background: none; border-radius: 50%; }
 .cover.win.tw .pc .av img[src^="data:image/svg"] { width: 56%; height: auto; border-radius: 0; object-fit: contain; }

@@ -1398,3 +1398,28 @@ BVI18N.add("es", {
 "The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "La mesa está en la tele y tus fichas en tu móvil. Por parejas, uno contra uno o cada quien por su cuenta. En inglés y árabe.",
 "The table is on the TV. Your tiles are on your phone.": "La mesa está en la tele. Tus fichas, en tu móvil."
 });
+// (handing a party game over to another player)
+BVI18N.add("es", {
+"Thanks for playing! A Blokvane member can scan the code to start a new one.": "¡Gracias por jugar! Un miembro de Blokvane puede escanear el código para empezar una nueva.",
+"This game is over": "Esta partida terminó",
+"Its host handed another game to someone else, and a host can hand over one game at a time. A Blokvane member can scan the code to start a new one.": "Su anfitrión le pasó otra partida a otra persona, y cada anfitrión solo puede pasar una partida a la vez. Un miembro de Blokvane puede escanear el código para empezar una nueva.",
+"This TV couldn't reach Blokvane for an hour to check who hosts it. A Blokvane member can scan the code to start a new one.": "Esta tele no pudo conectar con Blokvane durante una hora para comprobar quién dirige la partida. Un miembro de Blokvane puede escanear el código para empezar una nueva.",
+"You're the host. Pick who hosts after you, or end the game for everyone.": "Tú diriges la partida. Elige quién la dirige después de ti, o termínala para todos.",
+"Make someone else the host": "Hacer anfitrión a otra persona",
+"End the game for everyone": "Terminar la partida para todos",
+"If you leave, {name} becomes the host.": "Si te vas, {name} pasa a dirigir la partida.",
+"If you leave, the game ends for everyone.": "Si te vas, la partida termina para todos.",
+"Nobody else is in the game, so it ends when you leave.": "No hay nadie más en la partida, así que termina cuando te vayas.",
+"Who hosts after you?": "¿Quién la dirige después de ti?",
+"They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.": "Dirigirá la partida con tu plan hasta que se vaya. Luego la dirige un miembro de Blokvane que esté aquí, o la partida termina.",
+"Handing the game over...": "Pasando la partida...",
+"Its host handed another game to someone else, and a host can hand over one game at a time.": "Su anfitrión le pasó otra partida a otra persona, y cada anfitrión solo puede pasar una partida a la vez.",
+"The TV couldn't reach Blokvane for an hour to check who hosts it.": "La tele no pudo conectar con Blokvane durante una hora para comprobar quién dirige la partida.",
+"Sign in again on this phone to hand the game over.": "Vuelve a iniciar sesión en este móvil para pasar la partida.",
+"{name} took the host back.": "{name} volvió a dirigir la partida.",
+"The host": "El anfitrión",
+"The host handed another game to someone else, so you're not the host any more.": "El anfitrión le pasó otra partida a otra persona, así que ya no diriges esta.",
+"The TV couldn't check with Blokvane, so you're not the host any more.": "La tele no pudo comprobarlo con Blokvane, así que ya no diriges la partida.",
+"Take the host back": "Volver a dirigir la partida",
+"A host with Blokvane Pro can pick this.": "Solo un anfitrión con Blokvane Pro puede elegir esto."
+});

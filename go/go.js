@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '36';
+  const VERSION = '38';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -607,7 +607,8 @@
       const k = (t - t0) / 1000;
       ctx.clearRect(0, 0, cv.width, cv.height);
       for (const b of bits) { b.vy += .45 * dpr; b.vx *= .99; b.x += b.vx; b.y += b.vy; b.a += b.va; ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.a); ctx.fillStyle = b.c; ctx.globalAlpha = Math.max(0, 1 - k / 2.6); ctx.fillRect(-b.r, -b.r / 2, b.r * 2, b.r); ctx.restore(); }
-      if (k < 2.6) requestAnimationFrame(frame); else cv.remove();
+      // (emptied as it goes: an iPhone gives a canvas's memory back only then)
+      if (k < 2.6) requestAnimationFrame(frame); else { cv.width = cv.height = 0; cv.remove(); }
     })(t0);
   }
 
@@ -778,6 +779,18 @@
       if (r.code === 'signed_out') { store.del('games:acct'); store.del('games:passes'); }
       else if (r.code === 'no_plan' && a.plan) { a.plan = ''; pass.set(a); }
       if (r.code === 'offline' && old && old.exp * 1000 > Date.now()) return old.pass;
+      return null;
+    },
+    // A pass for handing this phone's game to another player (mid: this phone's own id in the game, to: that player's),
+    // or null: pass.why then says why not ('signed_out', 'offline', 'slow_down' or 'error')
+    async lend(mid, to) {
+      const a = pass.get();
+      pass.why = a ? '' : 'signed_out';
+      if (!a || typeof BVPASS === 'undefined' || !BVPASS.lend || !/^[0-9a-f]{16}$/.test(String(mid)) || !/^[0-9a-f]{16}$/.test(String(to))) return null;
+      const r = await BVPASS.lend(a.session, mid, to);
+      if (r.lend) return r.lend;
+      pass.why = r.code || 'error';
+      if (r.code === 'signed_out') { store.del('games:acct'); store.del('games:passes'); }
       return null;
     },
     // (does the server say this email may host, right now? 'pro', 'guest' or 'free'; '' when not; null when it can't be asked)
@@ -1331,7 +1344,7 @@
   // ---------- off we go ----------
   window.GO = { el, icon, boo, swBoo, lookRow, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
     computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, say: null, get pc() { return pc; },
-    games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir, swBoo };
+    games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
   addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });

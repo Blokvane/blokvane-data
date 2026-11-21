@@ -1189,7 +1189,7 @@ var BVDOM = (() => {
     "The table is on the TV. Your tiles are on your phone.": "الميز عالتلفزيون، و دومنة بموبايلك.",
     "Play from your phone": "العب من موبايلك",
     "Your tiles show on your phone. Tap one, or drag it up, when it is your turn.": "دومنة تطلع بموبايلك. من يجي دورك دوس على صاي، لو اسحبه لفوگ عالميز.",
-    "Free games: a short match, first to 51. A host with Blokvane Pro plays to 101, 151 or 201.": "الألعاب المجانية: لعبة قصيرة على 51. المضيف اللي عنده Blokvane Pro يلعب على 101 لو 151 لو 201.",
+    "Free games: 1 vs 1, first to 51. With Blokvane Pro, the host picks any mode and plays to 101, 151 or 201.": "الألعاب المجانية: واحد ضد واحد، على 51. ويا Blokvane Pro، المضيف يختار أي طريقة لعب ويلعب على 101 لو 151 لو 201.",
     "Your tiles are on your phone. On your turn, play one that matches either open end of the chain on the TV.": "دومنة بموبايلك. بدورك ذب دومنة يلي تنلعب على وحدة من الصفحتين المفتوحة عالتلفزيون.",
     "Can't play? Draw from the pile until you can. With no pile, you pass.": "ما عندك؟ اسحب من سحبة لحد ما تلكه صاي ينلعب. وإذا ماكو : ما عندي.",
     "Go out first and score the pips left in your opponents' hands.": "اللي يخلّص دومنة أول ياخذ نقاط دومنة اللي بقت بيد خصومه.",

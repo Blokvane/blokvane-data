@@ -505,6 +505,8 @@
   //   paper   a paper plane folded from a world map, Boo riding on top, a dotted route with a loop-the-loop
   //   route   a flight tracker: a glowing route draws itself across the map, the plane lands, the next stop's pin drops
   // In right-to-left languages they all fly the other way, and the words on them still read the right way round.
+  // A TV's small processor shows them as smoothly as a computer does: what flies is a small picture of its own (its blur
+  // and its glow drawn once) that the screen only slides and turns, never a whole screen drawn again for every frame.
   const PLANE_KINDS = ['jet', 'banner', 'paper', 'route'];
   // (how long each one is on the screen, and how long the game waits before the next round's screen comes in under it)
   const PLANE_T = { jet: [2700, 1500], banner: [3300, 2000], paper: [3400, 2100], route: [3600, 2600] };
@@ -513,7 +515,9 @@
     const esc = s => String(s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const BOO = (x, y, s, eye, extra) => `<g transform="translate(${x} ${y}) scale(${s})"><path d="M-10 8V-2C-10-9-5.5-13 0-13S10-9 10-2V8C8 10 7 7 5 9S2 8 0 10-3 11-5 9-8 10-10 8Z" fill="#fff"/>` +
       `<ellipse cx="-3.6" cy="-3" rx="1.7" ry="2.3" fill="${eye}"/><ellipse cx="3.6" cy="-3" rx="1.7" ry="2.3" fill="${eye}"/>${extra || ''}</g>`;
-    const FONT = 'font-family="\'BV Fun\', ui-rounded, \'Segoe UI Rounded\', sans-serif" font-weight="700"';
+    // (the words on the banner and the next stop's sign, in the game's own letters: Arabic, Hindi and Bengali too, on a
+    // TV that has no font of its own for them)
+    const FONT = 'font-family="\'BV Fun\', \'BV Script\', ui-rounded, \'Segoe UI Rounded\', sans-serif" font-weight="700"';
     // (a route's real length, so it draws itself the same on every browser, older TVs too)
     const lens = {};
     function lenOf(d) {
@@ -525,6 +529,60 @@
         L = p.getTotalLength(); s.remove();
       } catch (e) {}
       return (lens[d] = L > 0 ? Math.ceil(L) : 4000);
+    }
+    const NS = 'http://www.w3.org/2000/svg';
+    // (spots along a route, at these parts of its length (0 to 1), with the way it heads there in degrees; the angles run
+    // on without jumping from 180 to -180, so a turn between two spots always goes the way the route does)
+    function pointsOf(d, fr) {
+      const out = [];
+      try {
+        const s = document.createElementNS(NS, 'svg'), p = document.createElementNS(NS, 'path');
+        s.setAttribute('width', '0'); s.setAttribute('height', '0'); s.style.position = 'absolute'; p.setAttribute('d', d); s.appendChild(p); document.body.appendChild(s);
+        const L = p.getTotalLength();
+        let prev = null;
+        for (const f of fr) {
+          const at = Math.max(0, Math.min(1, f)) * L, a = p.getPointAtLength(Math.max(0, at - 1)), b = p.getPointAtLength(Math.min(L, at + 1)), c = p.getPointAtLength(at);
+          let ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+          if (prev != null) { while (ang - prev > 180) ang -= 360; while (ang - prev < -180) ang += 360; }
+          prev = ang;
+          out.push([c.x, c.y, ang]);
+        }
+        s.remove();
+      } catch (e) {}
+      return out;
+    }
+    // (how far along its route a plane is (0 to 1) at a moment of its flight (0 to 1): straight between the moments and
+    // the spots given, or along a cubic-bezier curve, the way SMIL's keyTimes, keyPoints and keySplines move a picture)
+    const lin = (kt, kp) => t => { for (let i = 1; i < kt.length; i++) if (t <= kt[i]) return kp[i - 1] + (kp[i] - kp[i - 1]) * (t - kt[i - 1]) / ((kt[i] - kt[i - 1]) || 1); return kp[kp.length - 1]; };
+    const bez = (x1, y1, x2, y2) => t => {
+      const B = (a, b, u) => 3 * a * u * (1 - u) * (1 - u) + 3 * b * u * u * (1 - u) + u * u * u;
+      let lo = 0, hi = 1, u = t;
+      for (let i = 0; i < 32; i++) { u = (lo + hi) / 2; if (B(x1, x2, u) < t) lo = u; else hi = u; }
+      return B(y1, y2, u);
+    };
+    // (the full-screen pictures are 1920 x 1080, covering the screen and cut at its edges; a box placed and sized the same
+    // way holds what flies over them, turned round for right to left like the picture under it)
+    function sky(wrap, rtl) {
+      const W = wrap.clientWidth || innerWidth || 1920, H = wrap.clientHeight || innerHeight || 1080;
+      const k = Math.max(W / 1920, H / 1080), ox = (W - 1920 * k) / 2, oy = (H - 1080 * k) / 2;
+      const b = document.createElement('div');
+      b.className = 'wpl-sky';
+      b.style.transform = rtl ? 'matrix(' + (-k).toFixed(5) + ',0,0,' + k.toFixed(5) + ',' + (W - ox).toFixed(2) + ',' + oy.toFixed(2) + ')' : 'matrix(' + k.toFixed(5) + ',0,0,' + k.toFixed(5) + ',' + ox.toFixed(2) + ',' + oy.toFixed(2) + ')';
+      wrap.appendChild(b);
+      return b;
+    }
+    // a small picture that flies along a route: its spot on the picture (box: where that spot is in it, and its size), and
+    // the moments of its flight (t from 0 to 1: x, y, the way it heads, its size), played by the screen itself
+    function sprite(at, svg, box, pts, ms, dy) {
+      const e = document.createElement('div');
+      e.className = 'wpl-spr';
+      e.innerHTML = svg;
+      e.style.cssText = 'left:' + (-box[0]) + 'px;top:' + (-box[1]) + 'px;width:' + box[2] + 'px;height:' + box[3] + 'px;transform-origin:' + box[0] + 'px ' + box[1] + 'px';
+      const tf = q => 'translate(' + q.x.toFixed(2) + 'px,' + (q.y + (dy || 0)).toFixed(2) + 'px) rotate(' + q.a.toFixed(2) + 'deg)' + (q.s != null ? ' scale(' + q.s.toFixed(4) + ')' : '');
+      e.style.transform = tf(pts[0]);
+      at.appendChild(e);
+      try { e.animate(pts.map(q => ({ offset: q.t, transform: tf(q) })), { duration: ms, easing: 'linear', fill: 'forwards' }); } catch (er) {}
+      return e;
     }
 
     // ---------- 1. the airliner ----------
@@ -571,19 +629,17 @@ ${win}
       const k = 'wb' + (++uid);
       const cloth = (a, b) => `M-40 ${64 + a}C-120 ${56 - a} -200 ${72 + a} -280 ${64 - a}C-340 ${58 + a} -392 ${68 - a} -420 ${64 + b}L-429 ${73 + b}-420 ${82 + b}-429 ${91 + b}-420 ${100 + b}-429 ${109 + b}-420 ${118 + b}-428 ${124 + b}` +
         `C-392 ${128 - a} -340 ${118 + a} -280 ${124 - a}C-200 ${132 + a} -120 ${118 - a} -40 ${124 + a}Z`;
-      // (the line the words follow, rippling with the cloth; turned round, it runs the other way so the words stay upright)
-      const mid = a => rtl ? `M50 ${101 + a * .3}C90 ${106 - a * .4} 150 ${97 + a * .4} 205 ${102 - a * .4}C270 ${108 + a * .5} 340 ${97 - a * .5} 404 ${103 + a * .4}`
-        : `M-404 ${103 + a * .4}C-340 ${97 - a * .5} -270 ${108 + a * .5} -205 ${102 - a * .4}C-150 ${97 + a * .4} -90 ${106 - a * .4} -50 ${101 + a * .3}`;
       const W = (a, b) => `${cloth(0, 0)};${cloth(a, b)};${cloth(-a * .8, -b * .7)};${cloth(0, 0)}`;
       const anim = `<animate attributeName="d" values="${W(5, 3)}" dur="1.3s" repeatCount="indefinite"/>`;
+      // (the words on it ride along with the cloth as plain words in the game's own letters, so every TV draws them the way
+      // it draws the rest of the game's words)
       const scarf = ['M116 60c-12-1-22-8-36-7-9 1-16-4-23-3l2 6c9-1 15 4 24 3 12-1 22 6 33 6z', 'M116 60c-12-3-22-4-36-7-9-2-16 1-23-2l2 6c9 2 15 0 24 3 12 3 22 3 33 5z', 'M116 60c-12 0-22-10-36-9-9 0-16-2-23-1l2 6c9 0 15 2 24 1 12 0 22 8 33 8z'];
-      return `<svg viewBox="${rtl ? '-300' : '-440'} 0 740 170" overflow="visible" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"><defs>
+      return `<svg viewBox="${rtl ? '-300' : '-440'} 0 740 170" overflow="visible" xmlns="http://www.w3.org/2000/svg"><defs>
 <linearGradient id="${k}c" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffdf7"/><stop offset=".55" stop-color="#f6e6c4"/><stop offset="1" stop-color="#e0bf88"/></linearGradient>
 <linearGradient id="${k}r" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7684"/><stop offset="1" stop-color="#cc2a40"/></linearGradient>
 <linearGradient id="${k}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#d9dde6"/><stop offset="1" stop-color="#8f96a8"/></linearGradient>
 <linearGradient id="${k}f" x1="0" y1="0" x2="1" y2="0" spreadMethod="repeat"><stop offset="0" stop-color="#4a2a10" stop-opacity=".1"/><stop offset=".25" stop-color="#4a2a10" stop-opacity="0"/><stop offset=".55" stop-color="#4a2a10" stop-opacity=".08"/><stop offset=".8" stop-color="#4a2a10" stop-opacity="0"/><stop offset="1" stop-color="#4a2a10" stop-opacity=".1"/>
 <animateTransform attributeName="gradientTransform" type="translate" values="0 0;.3 0;0 0" dur="1.3s" repeatCount="indefinite"/></linearGradient>
-<path id="${k}m" d="${mid(0)}"><animate attributeName="d" values="${mid(0)};${mid(5)};${mid(-4)};${mid(0)}" dur="1.3s" repeatCount="indefinite"/></path>
 </defs><g${rtl ? ' transform="scale(-1 1)"' : ''}>
 <path d="M38 92c-28 12-52 12-70 4" fill="none" stroke="#f3e6cf" stroke-width="1.8"/>
 <path d="M-32 96-36 64M-32 96l-4 26" stroke="#f3e6cf" stroke-width="1.2"/>
@@ -624,31 +680,20 @@ ${win}
 <path d="M198 128c0-9 10-12 20-10 9 2 10 11 4 15h-20c-3-1-4-3-4-5z" fill="url(#${k}c)" stroke="#e8434f" stroke-width="1.6"/>
 <circle cx="46" cy="97" r="4" fill="#2b2c36"/>
 </g>
-<text ${FONT} font-size="34" fill="#2a1d55" text-anchor="middle"><textPath href="#${k}m" xlink:href="#${k}m" startOffset="50%">${esc(label)}</textPath></text>
+<text x="${rtl ? 227 : -227}" y="103.5" ${FONT} font-size="34" fill="#2a1d55" text-anchor="middle"><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 1.6;0 0" dur="1.3s" repeatCount="indefinite"/>${esc(label)}</text>
 </svg>`;
     }
 
     // ---------- 3. the paper plane, folded from a world map ----------
     const R3 = 'M-180 790C140 720 400 560 640 540C830 524 960 450 930 340C902 240 770 222 720 296C670 370 750 470 920 470C1170 470 1520 330 2120 230';
-    function paper() {
-      const k = 'wp' + (++uid), L = lenOf(R3);
-      // (it slows down for the loop: the route's first 30% in 0.9 s, the loop (30% to 60%) in 1.1 s, then out)
-      const dur = '3s', kt = '0;.12;.3;.667;.85;1', kp = '0;.08;.3;.6;.82;1', off = [1, .92, .7, .4, .18, 0].map(f => Math.round(f * L)).join(';');
+    // (it slows down for the loop: the route's first 30% in 0.9 s, the loop (30% to 60%) in 1.1 s, then out)
+    const P3_T = [0, .12, .3, .667, .85, 1], P3_P = [0, .08, .3, .6, .82, 1], P3_MS = 3000;
+    // the plane, in its own units (1.9 of the picture's to one), with Boo riding on top
+    function paperPlane(k) {
       let grid = '';
       for (let x = -72; x <= 92; x += 13) grid += `<path d="M${x} -42V42"/>`;
       for (let y = -36; y <= 36; y += 10) grid += `<path d="M-80 ${y}H96"/>`;
-      const spark = (x, y, t, s) => `<g transform="translate(${x} ${y}) scale(${s})" opacity="0"><path d="M0-12C1-3 3-1 12 0 3 1 1 3 0 12-1 3-3 1-12 0-3-1-1-3 0-12z" fill="#ffe08a"/>` +
-        `<animate attributeName="opacity" values="0;1;0" begin="${t}s" dur=".7s" fill="freeze"/><animateTransform attributeName="transform" type="scale" additive="sum" values=".3;1.2;.5" begin="${t}s" dur=".7s" fill="freeze"/></g>`;
-      return `<svg class="wpl-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
-<mask id="${k}m" maskUnits="userSpaceOnUse" x="-300" y="-100" width="2600" height="1300"><path d="${R3}" fill="none" stroke="#fff" stroke-width="44" stroke-dasharray="${L} ${L}" stroke-dashoffset="${L}">
-<animate attributeName="stroke-dashoffset" values="${off}" keyTimes="${kt}" dur="${dur}" fill="freeze" calcMode="linear"/></path></mask>
-<clipPath id="${k}w"><path d="M92 0-70-38-48-6zM92 0-78 36-44 8z"/></clipPath>
-<filter id="${k}d" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="7"/><feOffset dy="12"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<g class="wpl-fade"><path d="${R3}" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-dasharray=".1 19" opacity=".85" mask="url(#${k}m)"/>
-${spark(990, 300, 1, 1)}${spark(800, 196, 1.35, 1.25)}${spark(680, 330, 1.7, .9)}</g>
-<g filter="url(#${k}d)"><g><animateMotion dur="${dur}" path="${R3}" rotate="auto" fill="freeze" keyPoints="${kp}" keyTimes="${kt}" calcMode="linear"/>
-<g transform="scale(1.9)">
+      return `<defs><clipPath id="${k}w"><path d="M92 0-70-38-48-6zM92 0-78 36-44 8z"/></clipPath></defs>
 <path d="M92 0-70-38-48-6z" fill="#ece3cb"/>
 <path d="M92 0-46 8-58 24z" fill="#c9b78f"/>
 <path d="M92 0-78 36-44 8z" fill="#fffaf0"/>
@@ -657,28 +702,47 @@ ${spark(990, 300, 1, 1)}${spark(800, 196, 1.35, 1.25)}${spark(680, 330, 1.7, .9)
 <path d="M-50 28C-20 14 14 12 48 5" fill="none" stroke="#e8434f" stroke-width="1.8" stroke-dasharray="3.5 3"/><circle cx="50" cy="4.6" r="2.6" fill="#e8434f" stroke="#fff" stroke-width="1"/></g>
 <path d="M92 0H-48" stroke="#b8a57c" stroke-width="1.3"/>
 <path d="M92 0-78 36M92 0-70-38" stroke="#fff" stroke-width="1.3" opacity=".85"/>
-<g transform="translate(-16 -15) rotate(6)">${BOO(0, 0, 1.15, '#2a1d55', '<ellipse cx="-6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/><ellipse cx="6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/>')}<path d="M9-3c4-6 9-9 13-8" stroke="#fff" stroke-width="3.6" stroke-linecap="round" fill="none"/></g>
-</g></g></g>
-</svg>`;
+<g transform="translate(-16 -15) rotate(6)">${BOO(0, 0, 1.15, '#2a1d55', '<ellipse cx="-6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/><ellipse cx="6" cy="2" rx="2" ry="1.2" fill="#ff9fb8" opacity=".8"/>')}<path d="M9-3c4-6 9-9 13-8" stroke="#fff" stroke-width="3.6" stroke-linecap="round" fill="none"/></g>`;
+    }
+    function paper() {
+      const L = lenOf(R3), pos = lin(P3_T, P3_P);
+      // the dotted route draws itself behind the plane: each dot shows as the plane gets to it (the dots of the same
+      // moment together)
+      const n = Math.floor((L - .1) / 19.1) + 1, fr = [];
+      for (let i = 0; i < n; i++) fr.push((i * 19.1 + .05) / L);
+      const when = f => { for (let i = 1; i < P3_P.length; i++) if (f <= P3_P[i]) return P3_T[i - 1] + (P3_T[i] - P3_T[i - 1]) * (f - P3_P[i - 1]) / ((P3_P[i] - P3_P[i - 1]) || 1); return 1; };
+      const at = new Map();
+      pointsOf(R3, fr).forEach((q, i) => { const t = Math.round(when(fr[i]) * P3_MS / 40) * 40; if (!at.has(t)) at.set(t, ''); at.set(t, at.get(t) + `<circle cx="${q[0].toFixed(1)}" cy="${q[1].toFixed(1)}" r="3"/>`); });
+      let dots = '';
+      for (const [t, c] of at) dots += `<g opacity="0"><set attributeName="opacity" to="1" begin="${(t / 1000).toFixed(2)}s" fill="freeze"/>${c}</g>`;
+      const spark = (x, y, t, s) => `<g transform="translate(${x} ${y}) scale(${s})" opacity="0"><path d="M0-12C1-3 3-1 12 0 3 1 1 3 0 12-1 3-3 1-12 0-3-1-1-3 0-12z" fill="#ffe08a"/>` +
+        `<animate attributeName="opacity" values="0;1;0" begin="${t}s" dur=".7s" fill="freeze"/><animateTransform attributeName="transform" type="scale" additive="sum" values=".3;1.2;.5" begin="${t}s" dur=".7s" fill="freeze"/></g>`;
+      const html = `<svg class="wpl-full wpl-fade" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<g fill="#fff" opacity=".85">${dots}</g>${spark(990, 300, 1, 1)}${spark(800, 196, 1.35, 1.25)}${spark(680, 330, 1.7, .9)}</svg>`;
+      // the plane and its soft shadow (12 below it, whichever way it heads), each a small picture of its own
+      return { html, fly(wrap, rtl) {
+        const N = 90, ts = [], fr2 = [];
+        for (let i = 0; i <= N; i++) { ts.push(i / N); fr2.push(pos(i / N)); }
+        const pts = pointsOf(R3, fr2).map((q, i) => ({ t: ts[i], x: q[0], y: q[1], a: q[2] }));
+        if (pts.length !== N + 1) return;
+        const box = [190, 114, 399, 228], vb = 'viewBox="-100 -60 210 120" width="399" height="228" xmlns="http://www.w3.org/2000/svg"';
+        const sk = sky(wrap, rtl), k1 = 'wp' + (++uid), k2 = 'wp' + (++uid);
+        sprite(sk, `<svg ${vb}><defs><filter id="${k2}d" x="-30%" y="-40%" width="160%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="3.68"/><feComponentTransfer><feFuncA type="linear" slope=".38"/></feComponentTransfer></filter></defs><g filter="url(#${k2}d)">${paperPlane(k2)}</g></svg>`, box, pts, P3_MS, 12);
+        sprite(sk, `<svg ${vb}>${paperPlane(k1)}</svg>`, box, pts, P3_MS, 0);
+      } };
     }
 
     // ---------- 4. the flight tracker (right to left: the picture turned round, its sign turned back so the words read right) ----------
     const R4 = 'M240 840C540 380 920 230 1180 330';
     function route(label, rtl) {
-      const k = 'wr' + (++uid), t = esc(label), L = lenOf(R4);
-      const fly = 2.3, ease = 'keyTimes="0;1" keySplines=".45 .05 .35 1" calcMode="spline"';
+      const k = 'wr' + (++uid), t = esc(label);
+      const fly = 2.3;
       const pin = 'M0-48c-16 0-28 12-28 27 0 19 28 43 28 43s28-24 28-43c0-15-12-27-28-27z';
-      const draw = `stroke-dasharray="${L} ${L}" stroke-dashoffset="${L}"><animate attributeName="stroke-dashoffset" from="${L}" to="0" dur="${fly}s" fill="freeze" ${ease}/>`;
-      return `<svg class="wpl-full" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"><defs>
-<linearGradient id="${k}g" gradientUnits="userSpaceOnUse" x1="240" y1="840" x2="1180" y2="330"><stop offset="0" stop-color="#9b7bff"/><stop offset=".55" stop-color="#ff7ab6"/><stop offset="1" stop-color="#ffc83d"/></linearGradient>
-<filter id="${k}b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
-<filter id="${k}p" x="-80%" y="-80%" width="260%" height="260%"><feFlood flood-color="#ffc83d" flood-opacity=".8"/><feComposite operator="in" in2="SourceAlpha"/><feGaussianBlur stdDeviation="6"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-<filter id="${k}s" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".4"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<g class="wpl-fade">
-<path d="${R4}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 14" opacity=".22"/>
-<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="18" stroke-linecap="round" opacity=".5" filter="url(#${k}b)" ${draw}</path>
-<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="6" stroke-linecap="round" ${draw}</path>
+      const full = 'class="wpl-full wpl-fade" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg"';
+      // under the route: where it will go, faint; over it: where it starts (pulsing), and the next stop's pin, which drops
+      // as the plane lands
+      const html = `<svg ${full}><path d="${R4}" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="10 14" opacity=".22"/></svg>
+<svg ${full}><defs><filter id="${k}s" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".4"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
 <g transform="translate(240 840)"><circle r="12" fill="none" stroke="#9b7bff" stroke-width="3"><animate attributeName="r" values="12;48" dur="1.3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0" dur="1.3s" repeatCount="indefinite"/></circle><circle r="11" fill="#9b7bff" stroke="#fff" stroke-width="4"/></g>
 <g transform="translate(1180 330)"><g opacity="0"><animate attributeName="opacity" from="0" to="1" begin="${(fly - .2).toFixed(2)}s" dur=".2s" fill="freeze"/>
 <ellipse cx="0" cy="24" rx="22" ry="7" fill="#000" opacity=".3"/>
@@ -687,17 +751,44 @@ ${spark(990, 300, 1, 1)}${spark(800, 196, 1.35, 1.25)}${spark(680, 330, 1.7, .9)
 <path d="${pin}" fill="#ffc83d" stroke="#fff" stroke-width="4"/><circle cy="-21" r="10" fill="#fff"/>
 ${t ? `<g class="wpl-label" transform="translate(0 -100)${rtl ? ' scale(-1 1)' : ''}"><rect x="-75" y="-28" width="150" height="56" rx="28" fill="#fff"/><text y="10" text-anchor="middle" ${FONT} font-size="30" fill="#2a1d55">${t}</text></g>` : ''}
 </g></g></g>
-</g>
-<g filter="url(#${k}p)"><g><animateMotion dur="${fly}s" path="${R4}" rotate="auto" fill="freeze" keyPoints="0;1" ${ease}/>
-<animate attributeName="opacity" values="1;0" begin="${(fly - .25).toFixed(2)}s" dur=".3s" fill="freeze"/>
-<g><animateTransform attributeName="transform" type="scale" values=".9;1.35;.7" keyTimes="0;.5;1" dur="${fly}s" fill="freeze"/>
-<path d="M50 0c0-4-4-7-11-7L-36-6c-8 0-14 3-14 6s6 6 14 6l75 1c7 0 11-3 11-7z" fill="#fff"/>
+</svg>`;
+      return { html, fly(wrap, rtl2) {
+        const N = 60, e = bez(.45, .05, .35, 1), ts = [], fr = [];
+        for (let i = 0; i <= N; i++) { ts.push(i / N); fr.push(e(i / N)); }
+        const sc = u => (u <= .5 ? .9 + .9 * u : 1.35 - 1.3 * (u - .5));
+        const pts = pointsOf(R4, fr).map((q, i) => ({ t: ts[i], x: q[0], y: q[1], a: q[2], s: sc(ts[i]) }));
+        if (pts.length !== N + 1) return;
+        // the glowing route, drawn once, whole, and shown up to where the plane is: a window over it slides along with
+        // the plane while the route under it stays still (it goes left to right all the way, so that's all of it so far)
+        const sk = sky(wrap, rtl2), win = document.createElement('div'), ink = document.createElement('div');
+        win.className = 'wpl-win wpl-fade'; ink.className = 'wpl-ink';
+        ink.innerHTML = `<svg viewBox="0 0 1920 1080" width="1920" height="1080" xmlns="http://www.w3.org/2000/svg"><defs>
+<linearGradient id="${k}g" gradientUnits="userSpaceOnUse" x1="240" y1="840" x2="1180" y2="330"><stop offset="0" stop-color="#9b7bff"/><stop offset=".55" stop-color="#ff7ab6"/><stop offset="1" stop-color="#ffc83d"/></linearGradient>
+<filter id="${k}b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter></defs>
+<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="18" stroke-linecap="round" opacity=".5" filter="url(#${k}b)"/>
+<path d="${R4}" fill="none" stroke="url(#${k}g)" stroke-width="6" stroke-linecap="round"/></svg>`;
+        win.appendChild(ink);
+        sk.appendChild(win);
+        // (the window's right edge is where the plane is; at the end, a little past the last spot, for the route's round end)
+        const X = pts.map((q, i) => Math.max(0, (i === N ? q.x + 30 : q.x) - 240));
+        try {
+          win.animate(pts.map((q, i) => ({ offset: q.t, transform: 'translateX(' + X[i].toFixed(2) + 'px)' })), { duration: fly * 1000, easing: 'linear', fill: 'forwards' });
+          ink.animate(pts.map((q, i) => ({ offset: q.t, transform: 'translateX(' + (-X[i]).toFixed(2) + 'px)' })), { duration: fly * 1000, easing: 'linear', fill: 'forwards' });
+        } catch (er) { win.style.transform = 'translateX(' + X[N] + 'px)'; ink.style.transform = 'translateX(' + (-X[N]) + 'px)'; }
+        // the pin and the start go over the route, as before (the second picture in the html above)
+        const over = wrap.querySelectorAll('.wpl-full')[1];
+        if (over) wrap.appendChild(over);
+        // the plane, glowing gold, a small picture of its own: it grows as it climbs, shrinks as it lands, and fades as the
+        // pin comes down
+        const k2 = 'wr' + (++uid);
+        const sp = sprite(sky(wrap, rtl2), `<svg viewBox="-75 -78 150 156" width="150" height="156" xmlns="http://www.w3.org/2000/svg"><defs><filter id="${k2}p" x="-80%" y="-80%" width="260%" height="260%"><feFlood flood-color="#ffc83d" flood-opacity=".8"/><feComposite operator="in" in2="SourceAlpha"/><feGaussianBlur stdDeviation="6"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<g filter="url(#${k2}p)"><path d="M50 0c0-4-4-7-11-7L-36-6c-8 0-14 3-14 6s6 6 14 6l75 1c7 0 11-3 11-7z" fill="#fff"/>
 <path d="M14-5-12-50c-1-2-4-3-6-3h-6l10 48zM14 5-12 50c-1 2-4 3-6 3h-6l10-48z" fill="#fff"/>
 <path d="M-30-4-42-22c-1-1-2-2-4-2h-4l6 20zM-30 4-42 22c-1 1-2 2-4 2h-4l6-20z" fill="#fff"/>
 <rect x="-6" y="-27" width="15" height="6" rx="3" fill="#ffc83d"/><rect x="-6" y="21" width="15" height="6" rx="3" fill="#ffc83d"/>
-<path d="M38-3.5h6" stroke="#5a3ce6" stroke-width="2.4" stroke-linecap="round"/>
-</g></g></g>
-</svg>`;
+<path d="M38-3.5h6" stroke="#5a3ce6" stroke-width="2.4" stroke-linecap="round"/></g></svg>`, [75, 78, 150, 156], pts, fly * 1000, 0);
+        try { sp.animate([{ opacity: 1 }, { opacity: 0 }], { delay: (fly - .25) * 1000, duration: 300, fill: 'forwards' }); } catch (er) {}
+      } };
     }
     return { jet, banner, paper, route };
   })();
@@ -708,7 +799,10 @@ ${t ? `<g class="wpl-label" transform="translate(0 -100)${rtl ? ' scale(-1 1)' :
     for (const [nm, d] of PLANE_FX[kind]) ctx.fx(nm, d);
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return 700;
     const rtl = document.body.classList.contains('rtl');
-    const wrap = div('wpl wpl-' + kind + (rtl ? ' rtl' : ''), document.body, PLANES[kind](label, rtl));
+    const pic = PLANES[kind](label, rtl);
+    const wrap = div('wpl wpl-' + kind + (rtl ? ' rtl' : ''), document.body, typeof pic === 'string' ? pic : pic.html);
+    // (the paper plane and the flight tracker: the plane flies over the picture as a small picture of its own)
+    if (pic.fly) { try { pic.fly(wrap, rtl); } catch (e) {} }
     // (the next stop's sign as wide as its words)
     const lab = wrap.querySelector('.wpl-label');
     if (lab) { try { const w = Math.max(150, Math.ceil(lab.querySelector('text').getComputedTextLength()) + 60), r = lab.querySelector('rect'); r.setAttribute('x', String(-w / 2)); r.setAttribute('width', String(w)); } catch (e) {} }
@@ -987,7 +1081,7 @@ ${t ? `<g class="wpl-label" transform="translate(0 -100)${rtl ? ' scale(-1 1)' :
     await K.sleep(750);
     for (const x of pins) {
       const dd = div('wq-dist ' + (x.ok ? 'ok' : 'no')); dd.style.setProperty('--pc', ctx.teamOf(x.p) || x.p.color);
-      const b = document.createElement('b'); b.textContent = (x.ok ? '✓ ' : '✗ ') + (x.d === 0 ? x.p.name : x.p.name + ' · ' + await distTxt(x.d)); b.dir = 'auto'; dd.appendChild(b);
+      const b = document.createElement('b'); b.textContent = (x.ok ? '✓ ' : '✗ ') + (x.d === 0 ? x.p.name : x.p.name + ' · ' + await distTxt(x.d)); b.dir = document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr'; dd.appendChild(b);
       if (x.pts > 0) { const pt = document.createElement('i'); pt.textContent = '+' + K.num(x.pts) + (x.hot ? ' 🔥' : ''); dd.appendChild(pt); }
       x.tag = dd;
       x.marks.push(map.add(dd, x.dxy[0], x.dxy[1]));

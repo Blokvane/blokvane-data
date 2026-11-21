@@ -1398,3 +1398,28 @@ BVI18N.add("hi", {
 "The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "मेज़ टीवी पर है और आपकी गोटियाँ आपके फ़ोन पर। टीमों में, एक के सामने एक, या हर कोई अकेले। अंग्रेज़ी और अरबी में।",
 "The table is on the TV. Your tiles are on your phone.": "मेज़ टीवी पर है। आपकी गोटियाँ आपके फ़ोन पर हैं।"
 });
+// (handing a party game over to another player)
+BVI18N.add("hi", {
+"Thanks for playing! A Blokvane member can scan the code to start a new one.": "खेलने के लिए धन्यवाद! कोई भी Blokvane सदस्य नया गेम शुरू करने के लिए कोड स्कैन कर सकता है।",
+"This game is over": "यह गेम खत्म हो गया",
+"Its host handed another game to someone else, and a host can hand over one game at a time. A Blokvane member can scan the code to start a new one.": "इसके होस्ट ने कोई दूसरा गेम किसी और को सौंप दिया है, और एक होस्ट एक समय में एक ही गेम सौंप सकता है। कोई भी Blokvane सदस्य नया गेम शुरू करने के लिए कोड स्कैन कर सकता है।",
+"This TV couldn't reach Blokvane for an hour to check who hosts it. A Blokvane member can scan the code to start a new one.": "यह टीवी एक घंटे तक Blokvane से नहीं जुड़ पाया, इसलिए पता नहीं चल सका कि होस्ट कौन है। कोई भी Blokvane सदस्य नया गेम शुरू करने के लिए कोड स्कैन कर सकता है।",
+"You're the host. Pick who hosts after you, or end the game for everyone.": "आप होस्ट हैं। चुनें कि आपके बाद होस्ट कौन होगा, या सबके लिए गेम खत्म करें।",
+"Make someone else the host": "किसी और को होस्ट बनाएं",
+"End the game for everyone": "सबके लिए गेम खत्म करें",
+"If you leave, {name} becomes the host.": "आपके जाने पर {name} होस्ट बन जाएंगे।",
+"If you leave, the game ends for everyone.": "आपके जाने पर सबके लिए गेम खत्म हो जाएगा।",
+"Nobody else is in the game, so it ends when you leave.": "गेम में और कोई नहीं है, इसलिए आपके जाते ही यह खत्म हो जाएगा।",
+"Who hosts after you?": "आपके बाद होस्ट कौन होगा?",
+"They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.": "वे जाने तक आपके प्लान के साथ होस्ट करेंगे। फिर यहां मौजूद कोई Blokvane सदस्य होस्ट बनेगा, नहीं तो गेम खत्म हो जाएगा।",
+"Handing the game over...": "गेम सौंपा जा रहा है...",
+"Its host handed another game to someone else, and a host can hand over one game at a time.": "इसके होस्ट ने कोई दूसरा गेम किसी और को सौंप दिया है, और एक होस्ट एक समय में एक ही गेम सौंप सकता है।",
+"The TV couldn't reach Blokvane for an hour to check who hosts it.": "टीवी एक घंटे तक Blokvane से नहीं जुड़ पाया, इसलिए पता नहीं चल सका कि होस्ट कौन है।",
+"Sign in again on this phone to hand the game over.": "गेम सौंपने के लिए इस फ़ोन पर फिर से साइन इन करें।",
+"{name} took the host back.": "{name} ने होस्ट वापस ले लिया।",
+"The host": "होस्ट",
+"The host handed another game to someone else, so you're not the host any more.": "होस्ट ने कोई दूसरा गेम किसी और को सौंप दिया है, इसलिए अब आप होस्ट नहीं हैं।",
+"The TV couldn't check with Blokvane, so you're not the host any more.": "टीवी Blokvane से पुष्टि नहीं कर पाया, इसलिए अब आप होस्ट नहीं हैं।",
+"Take the host back": "होस्ट वापस लें",
+"A host with Blokvane Pro can pick this.": "इसे सिर्फ़ Blokvane Pro वाला होस्ट चुन सकता है।"
+});

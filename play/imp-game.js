@@ -148,7 +148,7 @@
     im.className = 'imp-face' + (p.photo ? ' ph' : '');
     const s = p.photo ? Math.min(w, h) : Math.round(Math.max(w, h) * 1.12);
     im.style.width = s + 'px'; im.style.height = s + 'px';
-    if (svg.getAttribute('style')) im.style.cssText += ';' + svg.getAttribute('style').replace(/width:[^;]*;?|height:[^;]*;?/g, '');
+    if (svg.getAttribute('style')) im.style.cssText += ';' + svg.getAttribute('style').replace(/width:[^;]*;?|height:[^;]*;?|overflow:[^;]*;?/g, '');
     im.style.width = s + 'px'; im.style.height = s + 'px';
     svg.replaceWith(im);
   }
@@ -848,7 +848,8 @@
     }
     // the stage's cards: more of them share the width
     const cardRow = scr.querySelector('[data-row="rf"], [data-row="ri"]') ? null : null; void cardRow;
-    for (const g2 of scr.querySelectorAll('div[style*="grid-template-columns:repeat(4,280px)"]')) {
+    const cards = [...scr.querySelectorAll('div[style*="grid-template-columns:repeat(4,280px)"]')];
+    for (const g2 of cards) {
       const n2 = g2.children.length;
       if (n2 > 4) { const c = Math.min(7, Math.ceil(n2 / 2)); const w2 = Math.min(280, Math.floor((1700 - (c - 1) * 20) / c)); g2.style.gridTemplateColumns = 'repeat(' + c + ',' + w2 + 'px)'; }
     }
@@ -857,13 +858,17 @@
     if (grid && /grid-auto-flow:column/.test(grid.getAttribute('style') || '')) grid.style.gridTemplateRows = 'repeat(' + Math.max(1, Math.ceil(list.length / 2)) + ', auto)';
     for (const f of $(scr, 'foot')) f.textContent = when === 'next' ? (K.settings.next === 'auto' ? tx('nextIn', { n: K.num(clamp(K.settings.nextSec, 3, 300, 20)) }) : tx('hostNext')) : tx('hostAgain');
     // (lots of players: the lists get smaller so everyone fits on the screen)
-    for (const part of [$(scr, 'sb')[0], $(scr, 'wl')[0], $(scr, 'fl')[0], grid, wavBox && wavBox.parentNode].filter(Boolean)) fitIn(part);
+    for (const part of [$(scr, 'sb')[0], $(scr, 'wl')[0], $(scr, 'fl')[0], grid, wavBox && wavBox.parentNode, ...cards].filter(Boolean)) fitIn(part);
     // (a screen with room to spare: its middle sits in the middle)
     const main = scr.lastElementChild;
     if (main && main.lastElementChild && getComputedStyle(main).flexDirection === 'column') {
       const sr = scr.getBoundingClientRect(), k = sr.height / 1080 || 1;
       const bottom = (main.lastElementChild.getBoundingClientRect().bottom - sr.top) / k;
       if (bottom < 860) main.style.justifyContent = 'center';
+      // (and one that still has more than fits, like Arabic's taller lines with many players: all of it a little smaller,
+      // from the top, so the last line stays on the TV)
+      const need = main.scrollHeight, has = main.clientHeight;
+      if (has > 600 && need > has + 2 && !main.style.transform) { main.style.transformOrigin = '50% 0'; main.style.transform = 'scale(' + Math.max(0.8, has / need).toFixed(4) + ')'; }
     }
     for (const w of scr.querySelectorAll('[data-k="n"]')) shrinkLine(w);
   }

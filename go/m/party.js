@@ -11,6 +11,9 @@
   const view = (title, o) => {
     noZoom(false);
     const v = goView(title, o);
+    // (a game's own screens are in the game's language, right to left in Arabic, also right after a page in English,
+    // like signing in to host)
+    if (o && o.night && !o.app && I()) { const c = G.lang || 'en'; document.documentElement.lang = c; document.documentElement.dir = I().RTL.has(c) ? 'rtl' : 'ltr'; }
     // (the game itself, and its end: the night look, the same as the TV's, also when the phone is light)
     document.documentElement.classList.toggle('pt-dark', G.phase === 'play' || G.phase === 'end');
     return v;
@@ -47,7 +50,7 @@
     langMine: 'Your phone shows each question and its answers in {lang}. The TV stays in {tv}.', removed: 'You\'re out of this game', removedWhy: 'The host took you out of the game. You can join again if you like.',
     joinAgain: 'Join again', hostTools: 'Host tools', showCode: 'Show the join code on the TV', hideCode: 'Hide the join code', codeOn: 'The join code is on the TV. New players scan it to join.',
     makeHost: 'Make host', remove: 'Remove', tapAgain: 'Tap again to be sure', newHost: '{name} is the host now.', tvSize: 'TV size', autoSize: 'Auto', more: 'More', youHost: 'You\'re the host now.',
-    leaveQ: 'Leave the game?', leaveWhy: 'Your score stays, and you can come back while the game is on.', leaveHost: 'You\'re the host. If you leave, another Blokvane member here takes over, or the game ends for everyone.',
+    leaveQ: 'Leave the game?', leaveWhy: 'Your score stays, and you can come back while the game is on.',
     stay: 'Stay', leave: 'Leave', closedT: 'The game was closed on the TV', thanks: 'Thanks for playing!',
     menu: 'Game menu', changePic: 'Change my picture', leaveGame: 'Leave the game', picDone: 'Picture changed'
   };
@@ -82,6 +85,8 @@
     const s = el('style', '', document.head);
     s.id = 'pt-css';
     s.textContent = `
+/* (Arabic: its letters join, so the game's screens never space them apart, whatever a design asks for) */
+html[dir="rtl"] .app *,html[dir="rtl"] .app *::before,html[dir="rtl"] .app *::after{letter-spacing:0!important}
 .pt-me{display:flex;align-items:center;grid-gap: 12px;gap:12px;padding:10px 14px;border-radius:18px;background:var(--panel);border:1px solid var(--line);margin-bottom:14px}
 html.no-flexgap .pt-me > * + * { margin-left: 12px; }
 html.no-flexgap[dir="rtl"] .pt-me > * + * { margin-left: 0; margin-right: 12px; }
@@ -395,6 +400,10 @@ html.no-flexgap[dir="rtl"] .pt-opt > * + * { margin-left: 0; margin-right: 12px;
 .pt-box{min-height:52px;padding:8px 6px;border-radius:12px;border:1.5px solid rgba(255,255,255,.08);background:var(--panel);color:var(--text);font:700 15px/1.2 var(--fun);display:grid;align-items: center; justify-items: center;place-items:center;text-align:center;overflow-wrap:anywhere;transition:border-color .15s,background .15s}
 .pt-box.num{font-size:22px;min-height:58px}
 .pt-grid.many .pt-box{min-height:46px;font-size:13.5px;padding:6px 4px}
+.pt-opt.pro,.pt-box.pro{opacity:.55}
+.pt-pro{display:inline-block;margin:0 0 0 7px;padding:2px 7px;border-radius:999px;background:var(--sun);color:#2a1d00;font:800 11px/1.3 var(--round);vertical-align:middle;font-style:normal}
+html[dir="rtl"] .pt-pro{margin:0 7px 0 0}
+.pt-box .pt-pro{display:block;margin:4px auto 0;width:max-content}
 .pt-box[aria-pressed=true]{border-color:var(--sun);background:linear-gradient(180deg,rgba(255,201,60,.17),rgba(255,201,60,.05)),var(--panel);color:#fff}
 .pt-info{display:flex;grid-gap: 10px;gap:10px;align-items:flex-start;margin:10px 0 0;padding:10px 12px;border-radius:12px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.07);color:var(--dim);font-size:13.5px;line-height:1.4}
 html.no-flexgap .pt-info > * + * { margin-left: 10px; }
@@ -669,7 +678,7 @@ html.no-flexgap .emo-res .tags > * { margin: 0 4px 8px; }
 .emo-poster>*{position:relative}
 .emo-poster .pr{font:900 11px/1.2 var(--round);letter-spacing:.42em;color:#f3e2b8}
 .emo-poster .wk{margin-top:6px;font:700 22px/1.2 var(--fun);color:#ffc93c}
-.emo-poster .av{position:relative;width:118px;height:118px;margin:34px auto 10px;border-radius:50%;background:radial-gradient(circle at 40% 30%,#3a2870,#1a1236);box-shadow:0 0 0 5px #ffc93c,0 0 34px rgba(255,201,60,.6);display:grid;align-items:center;justify-items:center;place-items:center}
+.emo-poster .av{position:relative;width:118px;height:118px;margin:34px auto 10px;border-radius:50%;grid-template-columns:100%;grid-template-rows:100%;background:radial-gradient(circle at 40% 30%,#3a2870,#1a1236);box-shadow:0 0 0 5px #ffc93c,0 0 34px rgba(255,201,60,.6);display:grid;align-items:center;justify-items:center;place-items:center}
 .emo-poster .av img{width:80%;height:80%;object-fit:contain}
 .emo-poster .av img.ph{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .emo-poster .av::before{content:'👑';position:absolute;top:-38px;left:50%;transform:translateX(-50%);font-size:36px}
@@ -798,6 +807,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     S: Object.assign({}, STR0), lastHeard: 0, timers: [], stops: [], ui: {}, tries: 0, lang: 'en', tvStrings: null,
     wiz: 0, wizGame: '', plang: '', plangSent: '', kicked: false, key: '', again: false, closed: false };
   const S = () => G.S;
+  // (the host is handing the game to another player: { id, name, then, at }, see handOver)
+  let handing = null;
   // a line in the game's language, with its {parts} filled in
   function T(text, vars) {
     const i = I();
@@ -1046,7 +1057,21 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ni.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go.click(); } });
     if (!G.name) setTimeout(() => ni.focus(), 300);
   }
-  // a selfie with the front camera, or (fromPhone) a photo already on the phone; shrunk here, for the TV alone
+  // a selfie with the front camera, or (fromPhone) a photo already on the phone; shrunk here, for the TV alone. It goes
+  // square, its middle: the way the TV shows it in every frame (a taller or wider one would stand out of the circles)
+  async function squareShot(file, max, q) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+      const w = img.naturalWidth, h = img.naturalHeight, m = Math.min(w, h), px = Math.max(1, Math.min(max, m));
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = px;
+      cv.getContext('2d').drawImage(img, (w - m) / 2, (h - m) / 2, m, m, 0, 0, px, px);
+      const d = cv.toDataURL('image/jpeg', q);
+      cv.width = cv.height = 0;
+      return d;
+    } finally { URL.revokeObjectURL(url); }
+  }
   function takeSelfie(done, fromPhone) {
     const f = document.createElement('input');
     f.type = 'file'; f.accept = 'image/*';
@@ -1057,14 +1082,14 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const file = f.files && f.files[0];
       f.remove();
       if (!file) return;
-      try { let d = await L.shrink(file, 200, 0.72); if (d.length > 58000) d = await L.shrink(file, 140, 0.6); done(d); }
+      try { let d = await squareShot(file, 200, 0.72); if (d.length > 58000) d = await squareShot(file, 140, 0.6); done(d); }
       catch (e) { toast(T('That picture didn\'t work. Try another.'), 'bad'); }
     };
     f.click();
   }
   async function connect(o) {
     G.again = !!(o && o.again);
-    G.kicked = false; G.closed = false;
+    G.kicked = false; G.closed = false; G.ending = false; handing = null;
     const v = view(gameName(), { tint: 'sun', night: true });
     const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: heroBoo('boo:hi') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
@@ -1203,17 +1228,65 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (trap.going) return;
     if (inGame()) askLeave(); else history.back();
   });
+  // The host, with others in the game, picks who hosts after them, or ends the game for everyone. The player the game
+  // was handed to hears what happens when they leave: the Blokvane member here takes over, or the game ends.
   function askLeave() {
     if (trap.ask) return;
     buzz('tap');
     let leaving = false;
+    const l = G.lobby || {};
+    const others = (Array.isArray(l.players) ? l.players : []).filter(p => p && p.id !== G.id);
+    const lent = G.host && l.lent === G.id;
+    const heir = others.find(p => p.id === l.heir);
     trap.ask = sheet(S().leaveQ, (sh, close) => {
       sh.classList.add('pt-leave');
       sh.insertBefore(heroBoo('boo:sad'), sh.querySelector('h2'));
-      el('p', 'pt-leave-p', sh, G.host ? S().leaveHost : S().leaveWhy);
+      if (G.host && !lent && others.length) {
+        el('p', 'pt-leave-p', sh, T('You\'re the host. Pick who hosts after you, or end the game for everyone.'));
+        btn('👑 ' + T('Make someone else the host'), { kind: 'go', full: true, huge: true }, sh, () => { leaving = true; close(); heirSheet(); });
+        const row = pair(sh, [[S().stay, () => close()], ['🏁 ' + T('End the game for everyone'), () => {}, 'bad']]);
+        twice(row.lastChild, () => { leaving = true; close(); endForAll(); });
+        return;
+      }
+      el('p', 'pt-leave-p', sh, !G.host ? S().leaveWhy : lent ? (heir ? T('If you leave, {name} becomes the host.', { name: L.clean(heir.name, 16) }) : T('If you leave, the game ends for everyone.'))
+        : T('Nobody else is in the game, so it ends when you leave.'));
       btn(S().stay, { kind: 'go', full: true, huge: true }, sh, () => close());
       pair(sh, [[S().leave, () => { leaving = true; close(); leaveNow(); }, 'bad']]);
     }, { onClose: () => { trap.ask = null; if (!leaving) armBack(); } });
+  }
+  // the host leaves: who hosts after them. The TV hands it over (with a pass from Blokvane's server when that player
+  // isn't a Blokvane member with the same games), and this phone leaves once it's theirs.
+  function heirSheet() {
+    const l = G.lobby || {};
+    let picked = false;
+    sheet(T('Who hosts after you?'), (sh, close) => {
+      el('p', 'muted small', sh, T('They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.'));
+      const adm = el('div', 'pt-adm', sh);
+      for (const p of (Array.isArray(l.players) ? l.players : []).filter(x => x && x.id !== G.id)) {
+        const r = el('div', 'r', adm);
+        const pi = el('img', '', r); pi.src = booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); pi.alt = '';
+        el('b', '', r, L.clean(p.name, 16));
+        const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
+        mk.onclick = () => { picked = true; close(); buzz('tap'); toast(T('Handing the game over...'), 'ok'); handOver(p.id, L.clean(p.name, 16), () => leaveNow()); };
+      }
+      btn(S().stay, { kind: 'ghost', full: true }, sh, () => close()).style.marginTop = '14px';
+    }, { onClose: () => { if (!picked) armBack(); } });
+  }
+  // Hand the game to another player. The TV says it's theirs (the lobby shows them as the host), or first asks this
+  // phone for a pass for it (lendask, below). then: what to do once it's theirs (leave, from the Leave sheet).
+  function handOver(id, name, then) {
+    const h = handing = { id, name, then, at: Date.now() };
+    send({ k: 'makehost', id });
+    // (nothing for 20 seconds since the last step: it didn't work)
+    const tick = () => { if (handing !== h) return; if (Date.now() - h.at < 19500) { setTimeout(tick, 1500); return; } handFail(); };
+    setTimeout(tick, 20000);
+  }
+  function handFail(text) { if (!handing) return; handing = null; toast(text || T('That didn\'t work. Try again.'), 'bad'); armBack(); }
+  // the host ends the game for everyone, and leaves
+  function endForAll() {
+    G.ending = true;
+    send({ k: 'endall' });
+    setTimeout(() => leaveNow(), 400);
   }
   // Leave: goodbye to the TV, then where Back was going (the Blokvane home when this game was the first page here)
   function leaveNow() {
@@ -1256,15 +1329,25 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
   // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
   // your own (signing in on this phone: the free games for everyone, every question with Blokvane Pro)
-  function hostGoneScreen() {
+  // (the card about hosting your own game night says what the free games are: in Dominoes 151, 1 vs 1 to 51)
+  const hostCardText = () => ((G.lobby || {}).game === 'dominoes' ? T('Sign in on this phone with your email to host free games with friends and family. Free Dominoes 151 is 1 vs 1, first to 51, and Blokvane Pro gives you every mode. Everyone who joins plays for free.')
+    : T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.'));
+  // (why: 'end', the host ended it for everyone; 'lend', the game was handed over and its host has handed over another
+  // game since; 'lendoff', the TV couldn't check that hand-over)
+  function hostGoneScreen(why) {
     if (G.closed) return;
     G.closed = true;
     disarmBack();
     quitParty(true);
     dropBack();
     const v = view(gameName(), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
-    hero(v.body, T('The host ended the game'), T('The host left, so the game is over.'), { node: heroBoo('boo:sad') });
-    if (GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.'), url: 'https://blokvane.com/pricing' });
+    const words = why === 'end' ? [T('The host ended the game'), S().thanks]
+      : why === 'lend' ? [T('This game is over'), T('Its host handed another game to someone else, and a host can hand over one game at a time.')]
+        : why === 'lendoff' ? [T('This game is over'), T('The TV couldn\'t reach Blokvane for an hour to check who hosts it.')]
+          : [T('The host ended the game'), T('The host left, so the game is over.')];
+    hero(v.body, words[0], words[1], { node: heroBoo('boo:sad') });
+    // (signed in already: no need to say how to sign in)
+    if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: hostCardText(), url: 'https://blokvane.com/pricing' });
     const j = btn(T('Join a game'), { kind: 'ghost', full: true }, v.body, () => codeScreen());
     j.style.marginTop = '12px';
     buzz('long');
@@ -1300,7 +1383,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'pause': if (G.phase === 'play') setPausedPhone(!!m.on); return;
       case 'kicked': return kickedScreen();
       case 'closed': return closedScreen();
-      case 'hostgone': return hostGoneScreen();
+      case 'hostgone': if (G.ending) return; return hostGoneScreen(typeof m.why === 'string' ? m.why : '');
       case 'waitnext': G.waitNext = true; return waitNextScreen();
       // nobody is hosting yet: the first one in has to be a Blokvane member (signed in), then everyone else just joins
       case 'needhost': {
@@ -1313,7 +1396,29 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         return;
       }
       // (the host tried to hand the game to someone who isn't a Blokvane member)
-      case 'needpass': toast(T('{name} can\'t host: the host has to be a Blokvane member.', { name: L.clean(m.name, 20) || T('That player') }), 'bad'); return;
+      case 'needpass': handing = null; toast(T('{name} can\'t host: the host has to be a Blokvane member.', { name: L.clean(m.name, 20) || T('That player') }), 'bad'); return;
+      // handing the game over: the TV wants a pass for it from Blokvane's server (that player isn't a Blokvane member
+      // with the same games), or the pass didn't check out there
+      case 'lendask': {
+        const h = handing;
+        if (!G.host || !h || h.id !== m.id) return;
+        h.at = Date.now();
+        (GO.pass && GO.pass.lend ? GO.pass.lend(G.id, m.id) : Promise.resolve(null)).then(ps => {
+          if (handing !== h) return;
+          if (!ps) {
+            const w = GO.pass ? GO.pass.why : '';
+            return handFail(w === 'offline' ? T('Can\'t reach Blokvane right now. Check the internet and try again.') : w === 'signed_out' ? T('Sign in again on this phone to hand the game over.')
+              : w === 'slow_down' ? T('Too many tries. Please wait a bit and try again.') : '');
+          }
+          h.at = Date.now();
+          send({ k: 'makehost', id: m.id, lend: ps });
+        }, () => handFail());
+        return;
+      }
+      case 'lendbad': return handFail();
+      // (this phone was the host the game was handed to, and isn't any more: why)
+      case 'lendover': toast(m.why === 'back' ? T('{name} took the host back.', { name: L.clean(m.name, 16) || T('The host') }) : m.why === 'lend' ? T('The host handed another game to someone else, so you\'re not the host any more.')
+        : T('The TV couldn\'t check with Blokvane, so you\'re not the host any more.'), 'bad'); return;
       case 'full': if (!G.joined) { G.tries = 99; const v = view(T('Party games'), { tint: 'sun', night: true }); hero(v.body, T('This game is full'), T('It already has 40 players. Ask for a new game on the TV.'), { sleepy: true }); } return;
       case 'setup': return onSetup(m);
       case 'hb': return onBeat(m);
@@ -1407,6 +1512,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
   function onLobbyNow(m, prev, was, force) {
     G.host = m.host === G.id;
+    // (the game is theirs now: say so, and go on, like leaving after the Leave sheet)
+    if (handing && m.host === handing.id) { const h = handing; handing = null; toast(T(STR0.newHost, { name: h.name }), 'ok'); if (h.then) h.then(); }
     document.documentElement.classList.toggle('g-gir', m.game === 'gir');
     document.documentElement.classList.toggle('g-imp', m.game === 'imposter');
     document.documentElement.classList.toggle('g-emo', m.game === 'emoji');
@@ -1610,6 +1717,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         btn(pz ? '▶️ ' + T('Resume the game') : '⏸️ ' + T('Pause the game'), { kind: pz ? 'go' : 'tint', huge: true, full: true }, sh, () => { send({ k: 'pause', on: !pz }); close(); buzz('tap'); }).style.margin = '2px 0 12px';
       }
       pair(sh, [['🖼️ ' + S().changePic, () => { close(); picSheet(); }], ['🚪 ' + S().leaveGame, () => { close(); askLeave(); }, 'bad']]);
+      // (the host who handed the game over: take it back)
+      if (!G.host && l.owner === G.id) btn('👑 ' + T('Take the host back'), { kind: 'tint', full: true }, sh, () => { send({ k: 'takeback' }); close(); buzz('tap'); }).style.marginTop = '10px';
       fsRow(sh, close);
       // (the look of this phone's pages: Auto, Light or Dark. The game screens stay dark, like the TV)
       if (GO.lookRow) GO.lookRow(sh).classList.add('pt-looks');
@@ -1653,8 +1762,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const pi = el('img', '', r); pi.src = p.id === G.id ? myPic() : booUri(AVATARS.includes(p.av) ? p.av : 'boo:hi'); pi.alt = '';
       el('b', '', r, p.id === G.id ? S().you : L.clean(p.name, 16));
       if (p.id === l.host) { el('i', '', r, S().hostBadge); continue; }
-      const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
-      twice(mk, () => { send({ k: 'makehost', id: p.id }); if (after) after(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
+      // (the player the game was handed to can't pass it on)
+      if (l.lent !== G.id) { const mk = el('button', '', r); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost); twice(mk, () => { handOver(p.id, L.clean(p.name, 16)); if (after) after(); }); }
       const rm = el('button', 'bad', r); rm.type = 'button'; el('span', '', rm, S().remove);
       twice(rm, () => { send({ k: 'kick', id: p.id }); r.remove(); });
     }
@@ -1882,8 +1991,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   function playerSheet(p) {
     sheet(L.clean(p.name, 16), (sh, close) => {
       const row = el('div', 'pt-pair', sh);
-      const mk = el('button', 'pt-dk', row); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost);
-      twice(mk, () => { send({ k: 'makehost', id: p.id }); close(); toast(T(STR0.newHost, { name: L.clean(p.name, 16) }), 'ok'); });
+      if ((G.lobby || {}).lent !== G.id) { const mk = el('button', 'pt-dk', row); mk.type = 'button'; el('span', '', mk, '👑 ' + S().makeHost); twice(mk, () => { handOver(p.id, L.clean(p.name, 16)); close(); }); }
       const rm = el('button', 'pt-dk bad', row); rm.type = 'button'; el('span', '', rm, S().remove);
       twice(rm, () => { send({ k: 'kick', id: p.id }); close(); });
     });
@@ -2096,7 +2204,12 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // one setting, the way the design shows it
   function setCtl(parent, f, l) {
     if (!f) return;
-    const cur = l.settings && f.key in l.settings ? l.settings[f.key] : f.default;
+    // (the free games fix a few choices, like Dominoes 151's 1 vs 1 to 51: the other choices say Pro and can't be picked)
+    const fix = l.fixed && typeof l.fixed === 'object' && f.key in l.fixed ? l.fixed[f.key] : undefined;
+    const pro = v => fix !== undefined && String(v) !== String(fix);
+    const proTap = () => { toast(T('A host with Blokvane Pro can pick this.'), 'bad'); buzz('tap'); };
+    const proTag = b => { b.classList.add('pro'); el('i', 'pt-pro', b.querySelector('span') || b, 'Pro'); };
+    const cur = fix !== undefined ? fix : l.settings && f.key in l.settings ? l.settings[f.key] : f.default;
     const put = v => { send({ k: 'set', key: f.key, v }); buzz('tap'); };
     const desc = typeof f.desc === 'string' && f.desc ? L.clean(f.desc, 200) : '';
     const label = L.clean(f.label, 80);
@@ -2184,8 +2297,9 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       for (const [v, t, d] of opts) {
         const b = el('button', 'pt-opt', ls); b.type = 'button';
         b.setAttribute('aria-pressed', String(String(v) === String(cur)));
-        const tx = el('span', '', b); el('b', '', tx, t); if (d) el('small', '', tx, d);
+        const tx = el('span', '', b); const tb = el('b', '', tx, t); if (d) el('small', '', tx, d);
         el('span', 'ck', b, '✓');
+        if (pro(v)) { b.classList.add('pro'); el('i', 'pt-pro', tb, 'Pro'); b.onclick = proTap; continue; }
         b.onclick = () => { for (const x of ls.children) x.setAttribute('aria-pressed', String(x === b)); put(v); };
       }
       if (desc) el('p', 'pt-info', parent, desc);
@@ -2202,6 +2316,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     for (const [v, t] of opts) {
       const b = el('button', 'pt-box' + (/^\d+$/.test(t) ? ' num' : ''), g, t); b.type = 'button';
       b.setAttribute('aria-pressed', String(String(v) === String(cur)));
+      if (pro(v)) { proTag(b); b.onclick = proTap; continue; }
       b.onclick = () => { for (const x of g.children) x.setAttribute('aria-pressed', String(x === b)); showInfo(v); put(v); };
     }
     if (info) { parent.appendChild(info); showInfo(cur); }
@@ -2637,7 +2752,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         el('span', '', c, T(+t.v === 1 ? '1 vote' : '{n} votes', { n: numFmt(+t.v || 0) }));
       }
     }
-    if (m.note) { const say = el('div', 'pt-bwsay', box); say.appendChild(booPic('boo:laugh')); el('p', '', say, L.clean(m.note, 160)).dir = 'auto'; }
+    if (m.note) { const say = el('div', 'pt-bwsay', box); say.appendChild(booPic('boo:laugh')); el('p', '', say, L.clean(m.note, 160)).dir = document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr'; }
     if (+m.you > 0 && !kids) el('div', 'you', box, T(+m.you === 1 ? 'You got 1 vote' : 'You got {n} votes', { n: numFmt(+m.you) }));
     el('p', 'muted small', box, S().look).style.marginTop = '14px';
     buzz(m.ok ? 'ok' : 'tap');
@@ -2742,7 +2857,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     G.ui.hints = hints;
     G.ui.hintN = q.n;
     const wait = el('div', 'spin', box); wait.style.cssText = 'position:absolute;left:50%;top:50%;margin:-13px';
-    try { if (!window.BVMAP) await GO.script('../play/map.js'); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
+    try { if (!window.BVMAP) await GO.script('../play/map.js?v=' + GO.VERSION); } catch (e) { box.textContent = T('The map didn\'t load. Check the internet.'); return; }
     if (G.q !== q || !box.isConnected) return;
     wait.remove();
     const M = window.BVMAP;
@@ -2935,6 +3050,19 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   const ihead = (w, title, sub) => { const h = el('div', 'imp-h', w); h.textContent = title; if (sub) el('div', 'imp-s', w, sub); return h; };
   const iclues = w => { const c = Array.isArray(G.impClues) ? G.impClues : []; if (!c.length) return; const b = el('div', 'imp-clues', w); for (const [n, x] of c.slice(-12)) { const s2 = el('span', '', b); el('b', '', s2, L.clean(n, 16) + ': '); s2.append(L.clean(x, 24)); } };
 
+  // (the secret word as big as the design has it, made smaller only when it would not fit inside its card, like
+  // "Photographer" on a phone, or "Parque de diversiones" on a narrow one. Measured while it shows.)
+  function impWordSize(wEl) {
+    const card = wEl && wEl.parentElement;
+    if (!card || !card.clientWidth) return;
+    if (!wEl.dataset.px) wEl.dataset.px = String(parseFloat(getComputedStyle(wEl).fontSize) || 58);
+    let px = +wEl.dataset.px;
+    wEl.style.fontSize = px + 'px';
+    const cs = getComputedStyle(card);
+    const room = card.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    while (px > 22 && (wEl.offsetWidth > room + 0.5 || card.scrollHeight > card.clientHeight + 1)) { px -= 2; wEl.style.fontSize = px + 'px'; }
+  }
+
   // the secret, in the design of the game (the same one on every phone): hold the box down to see it
   function impPeek(parent, d, mode, titleFn) {
     const s = G.secret;
@@ -2950,6 +3078,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (s) {
       iset(tmp, 'w', L.clean(s.word, 40));
       const wEl = iq(tmp, 'w')[0];
+      // (a word on two lines: both lines in the middle, like everything else on the card)
+      if (wEl) wEl.style.textAlign = 'center';
       if (wEl && s.pic) { wEl.style.fontSize = '84px'; wEl.style.lineHeight = '1'; }
       else if (wEl && [...String(s.word || '')].length > 12) wEl.style.fontSize = ([...String(s.word)].length > 18 ? 34 : 44) + 'px';
       for (const c of iq(tmp, 'cat')) {
@@ -2968,7 +3098,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const parts = [...tmp.childNodes];
     for (const x of parts) parent.appendChild(x);
     if (!box || !s) return;
-    const show = on => { iifs(box, { hidden: !on, imp: on && !!s.imp, word: on && !s.imp }); };
+    const wordEl = !s.imp && !s.pic ? iq(box, 'w')[0] : null;
+    // (the word's letters are fetched now, so it is measured in them the first time it shows)
+    if (wordEl) { try { document.fonts.load('700 58px "IMP Fredoka"', String(s.word || '')).catch(() => {}); } catch (e) {} }
+    const show = on => { iifs(box, { hidden: !on, imp: on && !!s.imp, word: on && !s.imp }); if (on && wordEl) impWordSize(wordEl); };
     // (a finger still down from the screen before, when the next turn redrew it, keeps the word showing until it lets go)
     const up = () => { G.impHold = false; show(false); };
     G.impRelease = up;
@@ -3143,6 +3276,24 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.answered) { locked = true; paint(); }
   }
 
+  // (a long word on the guess cards, like "Washing machine": a little smaller first, then on two lines, so its card never
+  // cuts it off)
+  function impFitWords(tiles) {
+    for (const t of tiles) {
+      const s = t.querySelector('[data-k="w"]');
+      if (!s || t.hidden || !t.clientWidth) continue;
+      const pad = parseFloat(getComputedStyle(t).paddingBottom) || 0;
+      const ok = () => s.scrollWidth <= s.clientWidth + 1 && s.offsetTop + s.offsetHeight <= t.clientHeight - pad + 1;
+      s.style.whiteSpace = 'nowrap'; s.style.lineHeight = ''; s.style.wordBreak = ''; s.style.overflowWrap = '';
+      let px = 22;
+      s.style.fontSize = px + 'px';
+      while (px > 17 && !ok()) s.style.fontSize = --px + 'px';
+      if (ok()) continue;
+      s.style.whiteSpace = 'normal'; s.style.lineHeight = '1.1'; s.style.wordBreak = 'break-word'; s.style.overflowWrap = 'anywhere';
+      for (px = 20; px > 12; px--) { s.style.fontSize = px + 'px'; if (ok()) break; }
+    }
+  }
+
   // the last chance: the caught imposter picks the secret word from six
   function impGuess(q, ex) {
     const { v, w } = impView(+q.sec || 0);
@@ -3189,6 +3340,9 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     btnEl.onclick = () => { if (locked || G.locked || pickI < 0) { if (pickI < 0) buzz('bad'); return; } if (answer(pickI, words[pickI])) { locked = true; paint(); } };
     paint();
     for (const x of [...tmp.childNodes]) w.appendChild(x);
+    const shown = tiles.filter(t => !t.hidden);
+    impFitWords(shown);
+    try { document.fonts.load('700 22px "IMP Fredoka"', words.join(' ')).then(() => { if (shown[0] && shown[0].isConnected) impFitWords(shown); }, () => {}); } catch (e) {}
   }
 
   // the winners, in one of the game's four designs (and, after the last game, the whole night), with sharing
@@ -3382,7 +3536,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     y += top.length * 92 + 30;
     if (r.word && !final) { g.font = N(800, 34); g.fillStyle = '#c8bde6'; g.fillText(T('The word was "{word}".', { word: L.clean(r.word, 40) }), 540, Math.max(y + 30, H2 - 150), 1000); }
     g.font = F(700, 34); g.fillStyle = '#ffe3e8'; g.fillText(T('Play it at blokvane.com'), 540, H2 - 70, 1000);
-    return new Promise(res => cv.toBlob(b => res(b), 'image/png'));
+    return new Promise(res => cv.toBlob(b => { cv.width = cv.height = 0; res(b); }, 'image/png'));
   }
   async function impShare(r, final, how, b) {
     const list = (Array.isArray(r.list) ? r.list : []);
@@ -3703,7 +3857,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (me && me.place > 1 && meRow) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText(T('I came {n}!', { n: '#' + numFmt(me.place) }) + '  ' + T('{n} points', { n: numFmt(+me.score || 0) }), 540, Y0 + PH - 70, PW - 80); }
     else if (me && me.place === 1) { g.font = F(700, 44); g.fillStyle = '#ffc93c'; g.fillText('🏆 ' + T('I won Emoji Riddles!'), 540, Y0 + PH - 70, PW - 80); }
     g.font = F(700, 38); g.fillStyle = '#fff3d6'; g.fillText(T('Play it at blokvane.com'), 540, 1648, 1000);
-    return new Promise(res => cv.toBlob(b2 => res(b2), 'image/png'));
+    return new Promise(res => cv.toBlob(b2 => { cv.width = cv.height = 0; res(b2); }, 'image/png'));
   }
   async function emoShare(r, how, b) {
     const list = (Array.isArray(r.list) ? r.list : []);
@@ -3778,6 +3932,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         const off = document.createElement('canvas'); off.width = 1500; off.height = 604;
         const c2 = off.getContext('2d'); c2.drawImage(map, 0, 0, 1500, 604); c2.globalCompositeOperation = 'source-in'; c2.fillStyle = '#8fc0ff'; c2.fillRect(0, 0, 1500, 604);
         g.globalAlpha = 0.15; g.drawImage(off, -210, 40); g.globalAlpha = 0.07; g.drawImage(off, -210, 1310); g.globalAlpha = 1;
+        off.width = off.height = 0;
       }
     } catch (e) { g.globalAlpha = 1; }
     // the game's name
@@ -3861,6 +4016,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     g.save(); g.translate(540, 432 + PH / 2); g.rotate(rtl ? 0.022 : -0.022);
     g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = 60; g.shadowOffsetY = 26;
     g.drawImage(pc, -PW / 2, -PH / 2); g.restore();
+    pc.width = pc.height = 0;
     g.save(); g.translate(rtl ? 180 : 900, 1528); g.rotate(rtl ? 0.28 : -0.28); g.globalAlpha = 0.9;
     g.strokeStyle = '#ff5a6e'; g.lineWidth = 9; g.beginPath(); g.arc(0, 0, 112, 0, Math.PI * 2); g.stroke();
     g.lineWidth = 3; g.beginPath(); g.arc(0, 0, 94, 0, Math.PI * 2); g.stroke();
@@ -4097,7 +4253,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       const gid = (G.lobby || {}).game;
       const o = { rtl, seed: shSeed(list.map(x => x.n).join('|') + gid), kids: shKids(), team: !!G.endTeam, look: gid === 'gir' ? 'gir' : G.endLook };
       if (gid === 'world') await shWorld(g, list, o); else if (gid === 'dominoes' && window.BVDOMP && BVDOMP.pub && BVDOMP.pub.win) await BVDOMP.share(g, o); else await shPoster(g, list, o);
-      const blob = await new Promise(res => { try { cv.toBlob(b2 => res(b2), 'image/jpeg', 0.92); } catch (e) { res(null); } });
+      // (an iPhone gives a canvas's memory back only once it is emptied)
+      const blob = await new Promise(res => { try { cv.toBlob(b2 => { cv.width = cv.height = 0; res(b2); }, 'image/jpeg', 0.92); } catch (e) { cv.width = cv.height = 0; res(null); } });
       if (SH.sig === sig) { SH.blob = blob; SH.p = null; }
       return blob;
     })();
@@ -4213,7 +4370,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     } else {
       el('p', 'pt-note', v.body, S().hostAgain); pair(v.body, [[S().changeName, () => joinScreen(true)]]);
       // (liked it? anyone can host the free games: signing in on this phone is all it takes)
-      if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.') });
+      if (!G.pass && GO.getCard) GO.getCard(v.body, { title: T('Host your own game night'), text: hostCardText() });
     }
   }
 

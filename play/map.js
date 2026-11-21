@@ -3,6 +3,10 @@
 // in): only the tiles on screen load. On a phone it pans, pinches and zooms; on the TV it flies from place to place.
 // Pins, lines and a country's outline sit on top of it. The picture is a plain equirectangular map: 21.333 pixels per
 // degree both ways, the equator at y = 1727.8, from 81 degrees north to 64 degrees south.
+// The TV moves and zooms the whole map at once (one layer the screen slides and scales, so its flights glide). A phone
+// draws each piece at its size on the screen instead ("flat"): an iPhone's browser keeps a layer that big at its full
+// size in memory even when it shows small, and closes the page ("A problem repeatedly occurred"). So does an iPad or an
+// iPhone that shows the game itself.
 var BVMAP = (() => {
   'use strict';
   const W = 7680, H = 3096, K = W / 360, EQ = 1727.8;
@@ -13,6 +17,7 @@ var BVMAP = (() => {
   const NORTH = EQ / K, SOUTH = (EQ - H) / K;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const NS = 'http://www.w3.org/2000/svg';
+  const IOS = (() => { try { return /iP(hone|ad|od)/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); } catch (e) { return false; } })();
   let styled = false;
   function style() {
     if (styled) return;
@@ -38,7 +43,10 @@ var BVMAP = (() => {
 .bvm-pin svg{position:absolute;top:0;right:0;bottom:0;left:0;inset:0;width:100%;height:100%;overflow:visible}
 .bvm-pin img,.bvm-pin .face{position:absolute;left:14%;top:7.5%;width:72%;height:54.5%;border-radius:50%;object-fit:cover;background:#fff}
 .bvm-pin .face{background:none;display:grid;align-items:center;justify-items:center;place-items:center}
-.bvm-pin .face svg{position:static;width:78%;height:78%}`;
+.bvm-pin .face svg{position:static;width:78%;height:78%}
+.bvmap.flat .bvm-w{width:100%;height:100%;will-change:auto;overflow:hidden;pointer-events:none;z-index:0;isolation:isolate}
+.bvmap.flat .bvm-t,.bvmap.flat .bvm-fade{left:0;top:0;transform-origin:0 0}
+.bvmap.flat .bvm-fade{right:auto;width:100%;height:0}`;
     document.head.appendChild(s);
   }
   // a pin: a teardrop in the player's color with their face in it (or Boo), its tip on the spot
@@ -60,18 +68,27 @@ var BVMAP = (() => {
   function create(parent, o = {}) {
     style();
     const el = (tag, cls, at) => { const e = document.createElement(tag); if (cls) e.className = cls; if (at) at.appendChild(e); return e; };
-    const box = el('div', 'bvmap' + (o.cls ? ' ' + o.cls : ''), parent);
+    const flat = !!(o.touch || o.flat || IOS);
+    const box = el('div', 'bvmap' + (flat ? ' flat' : '') + (o.cls ? ' ' + o.cls : ''), parent);
     const world = el('div', 'bvm-w', box);
-    el('div', 'bvm-ext', world);
+    // (the sea beyond the map's edges, with its lines: on a phone, the box's own background)
+    if (!flat) el('div', 'bvm-ext', world);
     const tl = el('div', '', world);
-    el('div', 'bvm-fade n', world); el('div', 'bvm-fade s', world);
+    const fades = [el('div', 'bvm-fade n', world), el('div', 'bvm-fade s', world)];
     const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('class', 'bvm-svg'); box.appendChild(svg);
     const g = document.createElementNS(NS, 'g'); svg.appendChild(g);
     const marksEl = el('div', 'bvm-marks', box);
     // the part of the map this view keeps to (a continent, or the whole world)
     let lim = [0, 0, W, H];
     let cx = W / 2, cy = H / 2, s = 0.1, dead = false;
-    const size = () => [box.clientWidth || 300, box.clientHeight || 200];
+    // (the box's size, read once in each moment of work and not again after every mark or tile that moved: each new read
+    // after a change makes the browser lay the page out again, which a TV's small processor feels in every frame of a
+    // flight. Nothing in one moment of work changes the box's size; a new size comes with the next one.)
+    let sz = null;
+    const size = () => {
+      if (!sz) { sz = [box.clientWidth || 300, box.clientHeight || 200]; Promise.resolve().then(() => { sz = null; }); }
+      return sz;
+    };
     // (zoomed all the way out the whole area fits; o.out lets it shrink a little more, for the TV's flights)
     const minS = () => { const [bw, bh] = size(); return Math.min(bw / (lim[2] - lim[0]), bh / (lim[3] - lim[1])) * (o.out || 1); };
     const maxS = () => o.maxS || 3;
@@ -89,11 +106,50 @@ var BVMAP = (() => {
       if (dead) return;
       const [bw, bh] = size();
       const tx = bw / 2 - cx * s, ty = bh / 2 - cy * s;
-      world.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + s.toFixed(5) + ')';
+      if (!flat) world.style.transform = 'translate(' + tx.toFixed(2) + 'px,' + ty.toFixed(2) + 'px) scale(' + s.toFixed(5) + ')';
       g.setAttribute('transform', 'matrix(' + s.toFixed(5) + ' 0 0 ' + s.toFixed(5) + ' ' + tx.toFixed(2) + ' ' + ty.toFixed(2) + ')');
       for (const m of marks) place(m);
       tiles();
+      if (flat) draw(tx, ty, bw, bh);
       if (o.onView) o.onView(api);
+    }
+    // (a phone: each piece of the map where the view puts it, at its size on the screen; a piece that is off the screen
+    // isn't drawn. The edges are rounded outward, so two pieces side by side never show a gap between them.)
+    const GRID = 'rgba(120,165,230,.13)';
+    function draw(tx, ty, bw, bh) {
+      const put = (e, x0, y0, x1, y1, full) => {
+        const a = full ? 0 : Math.floor(tx + x0 * s), b = Math.floor(ty + y0 * s), c = full ? bw : Math.ceil(tx + x1 * s), d = Math.ceil(ty + y1 * s);
+        const off = c <= 0 || d <= 0 || a >= bw || b >= bh;
+        e.style.display = off ? 'none' : '';
+        if (off) return;
+        e.style.transform = 'translate(' + a + 'px,' + b + 'px)';
+        if (!full) e.style.width = (c - a) + 'px';
+        e.style.height = (d - b) + 'px';
+      };
+      // (under sharper pieces that are all in already, the blurrier ones aren't drawn: less work for each frame, and the
+      // phone can let go of their memory)
+      const [vx0, vy0] = toMap(0, 0), [vx1, vy1] = toMap(bw, bh);
+      const X0 = Math.max(0, vx0), Y0 = Math.max(0, vy0), X1 = Math.min(W, vx1), Y1 = Math.min(H, vy1);
+      const all = lv => {
+        const n = LV[lv], tw = W / n, th = H / n;
+        if (X1 <= X0 || Y1 <= Y0) return false;
+        for (let r = Math.floor(Y0 / th); r <= Math.min(n - 1, Math.floor((Y1 - 0.01) / th)); r++) {
+          for (let c = Math.floor(X0 / tw); c <= Math.min(n - 1, Math.floor((X1 - 0.01) / tw)); c++) { const im = have.get(lv + '-' + r + '-' + c); if (!im || im.hidden || !im.done) return false; }
+        }
+        return true;
+      };
+      const top = all(2) ? 2 : all(1) ? 1 : 0;
+      for (const [k, im] of have) {
+        if (im.hidden || !im.r) continue;
+        if (+k[0] < top) im.style.display = 'none'; else put(im, im.r[0], im.r[1], im.r[2], im.r[3]);
+      }
+      put(fades[0], 0, -2, 0, 128, true);
+      put(fades[1], 0, H - 128, 0, H + 2, true);
+      // the lines of the sea: one every 30 degrees, from the equator and from the date line, 3 map pixels wide
+      const p = 640 * s, lw = (3 * s).toFixed(3), m = v => (((v % p) + p) % p).toFixed(2);
+      box.style.backgroundImage = 'linear-gradient(90deg,' + GRID + ' 0 ' + lw + 'px,transparent ' + lw + 'px),linear-gradient(' + GRID + ' 0 ' + lw + 'px,transparent ' + lw + 'px)';
+      box.style.backgroundSize = p.toFixed(2) + 'px ' + p.toFixed(2) + 'px';
+      box.style.backgroundPosition = m(tx - 1.5 * s) + 'px 0px,0px ' + m(ty + (EQ - 1.5) * s) + 'px';
     }
     // the tiles: the whole world always, and the sharper ones for what's on screen once it's zoomed in
     const have = new Map();
@@ -105,8 +161,10 @@ var BVMAP = (() => {
       im = new Image();
       im.decoding = 'async'; im.alt = ''; im.draggable = false;
       im.className = 'bvm-t z' + lv;
-      im.style.cssText = 'left:' + (c * tw) + 'px;top:' + (r * th) + 'px;width:' + tw + 'px;height:' + th + 'px;z-index:' + lv;
-      im.onload = () => im.classList.add('on');
+      im.r = [c * tw, r * th, (c + 1) * tw, (r + 1) * th];
+      im.style.cssText = flat ? 'z-index:' + lv : 'left:' + (c * tw) + 'px;top:' + (r * th) + 'px;width:' + tw + 'px;height:' + th + 'px;z-index:' + lv;
+      // (a phone: once it has faded in, what's under it may go, so the map is drawn again)
+      im.onload = () => { im.classList.add('on'); if (flat) setTimeout(() => { im.done = true; if (!dead && have.get(k) === im) redraw(); }, 400); };
       im.src = BASE + (lv ? 'z' + lv + '-' + r + '-' + c + '.jpg' : 'z0.jpg');
       tl.appendChild(im);
       have.set(k, im);
@@ -129,6 +187,9 @@ var BVMAP = (() => {
         if (c * W / 4 > x1 || (c + 1) * W / 4 < x0 || r * H / 4 > y1 || (r + 1) * H / 4 < y0) { im.remove(); have.delete(k); }
       }
     }
+    // (once, at the next frame)
+    let rf = 0;
+    const redraw = () => { if (!rf) rf = requestAnimationFrame(() => { rf = 0; apply(); }); };
     // moving the view: at once, or a smooth flight (the zoom changes evenly, so a long trip zooms out on the way)
     let anim = 0;
     function set(x, y, sc) { cx = x; cy = y; s = sc; clampView(); apply(); }
@@ -201,7 +262,8 @@ var BVMAP = (() => {
       get view() { return { x: cx, y: cy, s }; }, set: (x, y, sc) => set(x, y, sc),
       zoomBy(k, px, py, ms) { const [bw, bh] = size(); const ax = px != null ? px : bw / 2, ay = py != null ? py : bh / 2; const [mx, my] = toMap(ax, ay); const ns = clamp(s * k, minS(), Math.max(minS(), maxS())); const nx = mx - (ax - bw / 2) / ns, ny = my - (ay - bh / 2) / ns; return fly(nx, ny, ns, ms == null ? 220 : ms); },
       minS, maxS, size, clear() { g.textContent = ''; for (const m of [...marks]) { m.node.remove(); marks.delete(m); } },
-      destroy() { dead = true; cancelAnimationFrame(anim); if (ro) ro.disconnect(); box.remove(); }
+      // (gone: its pictures let go of their memory too)
+      destroy() { dead = true; cancelAnimationFrame(anim); if (ro) ro.disconnect(); for (const im of have.values()) { im.onload = null; im.removeAttribute('src'); } have.clear(); box.remove(); }
     };
     // ---------- touch, mouse and wheel (phones) ----------
     if (o.touch) {
@@ -263,7 +325,8 @@ var BVMAP = (() => {
       box.addEventListener('wheel', e => { e.preventDefault(); const r = box.getBoundingClientRect(); api.zoomBy(e.deltaY > 0 ? 1 / 1.25 : 1.25, e.clientX - r.left, e.clientY - r.top, 0); }, { passive: false });
     }
     let ro = null;
-    if (window.ResizeObserver) { ro = new ResizeObserver(() => { if (!dead) { clampView(); apply(); } }); ro.observe(box); }
+    // (a map whose page went away, like a phone's last question, is let go of)
+    if (window.ResizeObserver) { ro = new ResizeObserver(() => { if (dead) return; if (!box.isConnected) { api.destroy(); return; } clampView(); apply(); }); ro.observe(box); }
     bounds(o.bounds || null);
     return api;
   }

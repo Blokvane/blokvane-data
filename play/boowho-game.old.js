@@ -641,7 +641,7 @@ var __async = (__this, __arguments, generator) => {
     im.alt = "";
     im.src = P.booUri(o.boo || "boo:laugh") || P.booUri("boo:hi");
     const t = mk("div", "t", b, text);
-    t.dir = "auto";
+    t.dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
     if (o.color) b.style.setProperty("--bc", o.color);
     const q = $1(v.cv, "q");
     if (o.at === "q" && q) {
@@ -855,7 +855,7 @@ var __async = (__this, __arguments, generator) => {
         if (sig) {
           if (others.length) sig.textContent = ctx.tx("xo", { name: short(pick(others).name, 12) });
           else sig.hidden = true;
-          sig.dir = "auto";
+          sig.dir = document.documentElement.dir === "rtl" ? "rtl" : "ltr";
         }
         for (const [x, k] of [[w2, 2], [w3, 3]]) {
           const box = $1(cv, "p" + k);

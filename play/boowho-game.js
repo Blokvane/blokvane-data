@@ -459,7 +459,8 @@
     if (v.bub) { const b0 = v.bub; b0.classList.add('out'); setTimeout(() => b0.remove(), 400); v.bub = null; }
     const b = mk('div', 'bw-bub in' + (o.kids ? ' kids' : '') + (o.cls ? ' ' + o.cls : ''), v.cv);
     const im = mk('img', '', b); im.alt = ''; im.src = P.booUri(o.boo || 'boo:laugh') || P.booUri('boo:hi');
-    const t = mk('div', 't', b, text); t.dir = 'auto';
+    // (it reads the way the game's language does, also when it starts with a name in another script: "Ben وCy، تعادل!")
+    const t = mk('div', 't', b, text); t.dir = document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr';
     if (o.color) b.style.setProperty('--bc', o.color);
     const q = $1(v.cv, 'q');
     // (the bar race and the columns: in place of the question, which shows again with the next one)
@@ -618,7 +619,7 @@
       // (a signature from someone else who played, like a real yearbook)
       const others = K.players().filter(p => !w1 || p.id !== w1.id);
       const sig = $1(cv, 'sig');
-      if (sig) { if (others.length) sig.textContent = ctx.tx('xo', { name: short(pick(others).name, 12) }); else sig.hidden = true; sig.dir = 'auto'; }
+      if (sig) { if (others.length) sig.textContent = ctx.tx('xo', { name: short(pick(others).name, 12) }); else sig.hidden = true; sig.dir = document.documentElement.dir === 'rtl' ? 'rtl' : 'ltr'; }
       for (const [x, k] of [[w2, 2], [w3, 3]]) {
         const box = $1(cv, 'p' + k);
         if (!x) { if (box) box.hidden = true; continue; }

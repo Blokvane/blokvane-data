@@ -96,6 +96,35 @@ var BVPLAY = (() => {
   const list = () => [...players.values()].filter((p) => !p.away);
   const alive = () => list().filter((p) => !p.out);
   const avatarUrl = (p) => p.photo || P.booUri(p.av) || P.booUri("boo:hi");
+  const OK_MARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 12.6l4.1 4.1 8.7-9.2" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function squarePic(d) {
+    return new Promise((res) => {
+      try {
+        const im = new Image();
+        im.onload = () => {
+          try {
+            const w = im.naturalWidth, h = im.naturalHeight;
+            if (!w || !h || Math.abs(w / h - 1) < 0.02) {
+              res(d);
+              return;
+            }
+            const m = Math.min(w, h), px = Math.min(m, 200), cv = document.createElement("canvas");
+            cv.width = cv.height = px;
+            cv.getContext("2d").drawImage(im, (w - m) / 2, (h - m) / 2, m, m, 0, 0, px, px);
+            const out = cv.toDataURL("image/jpeg", 0.85);
+            cv.width = cv.height = 0;
+            res(L.okPicture(out) && out.length < 6e4 ? out : d);
+          } catch (e) {
+            res(d);
+          }
+        };
+        im.onerror = () => res(d);
+        im.src = d;
+      } catch (e) {
+        res(d);
+      }
+    });
+  }
   const pub = (p) => ({ id: p.id, name: p.name, av: p.av, ph: !!p.photo, color: p.color, team: p.team, ready: !!p.ready || p.id === host, score: p.score, lives: p.lives, out: !!p.out, lg: p.lang || "" });
   function open(given) {
     return __async(this, null, function* () {
@@ -264,11 +293,17 @@ var BVPLAY = (() => {
     if (w.got.size >= w.who.size) w.finish();
   }
   let trueHost = "", hostT = 0;
-  const hostHere = () => [...players.values()].some((x) => x.paid && !x.away && !x.left);
+  let lend = null, goneWhy = "";
+  const lentTo = (p) => !!(lend && p && lend.id === p.id);
+  const mayHost = (p) => !!(p && (p.paid || lentTo(p)));
+  const hostHere = () => [...players.values()].some((x) => mayHost(x) && !x.away && !x.left);
   const passed = /* @__PURE__ */ new WeakSet();
   const fullPass = /* @__PURE__ */ new WeakSet();
   const FREE_N = 15;
-  const fullHere = () => [...players.values()].some((x) => x.paid && x.full && !x.left);
+  const fullHere = () => [...players.values()].some((x) => x.paid && x.full && !x.left) || !!(lend && lend.full && players.has(lend.id) && !players.get(lend.id).left);
+  let runFree = null;
+  const freeNow = () => !!game && (phase !== "lobby" && runFree !== null ? runFree : !fullHere());
+  const effSet = () => game && game.free && freeNow() ? Object.assign({}, settings, game.free) : settings;
   const hashId = (s) => {
     let h = 2166136261;
     s = String(s);
@@ -298,10 +333,13 @@ var BVPLAY = (() => {
     const h = players.get(host);
     const grace = waitHost ? 15e3 : 9e4;
     clearTimeout(hostT);
-    if (!h || !h.paid || h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace))) {
+    let why = goneWhy;
+    goneWhy = "";
+    if (!h || !mayHost(h) || h.away && (h.left || !(Date.now() - (h.awayAt || 0) < grace))) {
+      if (lend && (!h || lend.id === h.id)) endLend(why || "left");
       const next = list().find((x) => x.paid);
       host = next ? next.id : "";
-      if (!th || th.left) trueHost = host;
+      if (!th || th.left || !mayHost(th)) trueHost = host;
     } else if (h.away) hostT = setTimeout(() => {
       pickHost();
       if (phase === "lobby") lobby();
@@ -312,13 +350,15 @@ var BVPLAY = (() => {
       const x = players.get(id);
       if (x && !x.away) sayTo(id, { k: "you", id, host: host === id, color: x.color });
     }
-    if (was && !host && players.size && phase !== "closed") setTimeout(hostGone, 0);
+    if (was && !host && players.size && phase !== "closed") setTimeout(() => hostGone(false, why), 0);
   }
-  function hostGone() {
+  function hostGone(force, why) {
     return __async(this, null, function* () {
-      if (host || hostHere() || !players.size || phase === "closed") return;
+      if (!players.size || phase === "closed" || !force && (host || hostHere())) return;
       abortGame();
-      say({ k: "hostgone" });
+      endLend(why === "lend" ? "lend" : "gone");
+      why = typeof why === "string" ? why : "";
+      say({ k: "hostgone", why });
       for (const id of players.keys()) ended.add(id);
       players.clear();
       waitNext.clear();
@@ -328,7 +368,9 @@ var BVPLAY = (() => {
       clearTimeout(hostT);
       phase = "lobby";
       const my = ++lobbyRun;
-      const t = yield Promise.all(["The host left", "This game is over. A Blokvane member can scan the code to start a new one."].map((x) => P.tr(x)));
+      const after = "A Blokvane member can scan the code to start a new one.";
+      const words = why === "end" ? ["The host ended the game", "Thanks for playing! " + after] : why === "lend" ? ["This game is over", "Its host handed another game to someone else, and a host can hand over one game at a time. " + after] : why === "lendoff" ? ["This game is over", "This TV couldn't reach Blokvane for an hour to check who hosts it. " + after] : ["The host left", "This game is over. " + after];
+      const t = yield Promise.all(words.map((x) => P.tr(x)));
       if (my !== lobbyRun || phase !== "lobby") return;
       SND.music(null, { fadeOut: 1 });
       if (booEl) booEl.hidden = true;
@@ -348,6 +390,72 @@ var BVPLAY = (() => {
       }, 9e3);
     });
   }
+  function setHost(id) {
+    const was = host;
+    host = id;
+    trueHost = id;
+    clearTimeout(hostT);
+    for (const x of [players.get(was), players.get(id)]) if (x) sayTo(x.id, { k: "you", id: x.id, host: host === x.id, color: x.color });
+    if (phase === "lobby") lobby();
+    sayLobby();
+  }
+  function endLend(why) {
+    if (!lend) return null;
+    const l = lend;
+    lend = null;
+    if (why !== "lend" && typeof BVPASS !== "undefined" && BVPASS.lendEnd) BVPASS.lendEnd(l.pass).catch(() => {
+    });
+    const by = players.get(l.from);
+    if (why === "back" && players.has(l.id)) sayTo(l.id, { k: "lendover", why, name: by ? by.name : "" });
+    return l;
+  }
+  function lendGone(why) {
+    const l = endLend(why);
+    if (!l) return;
+    goneWhy = why;
+    pickHost();
+    goneWhy = "";
+    if (host && host !== l.id && players.has(l.id)) sayTo(l.id, { k: "lendover", why });
+    if (phase === "lobby") lobby();
+    sayLobby();
+  }
+  function checkLend(now) {
+    if (!lend || lend.asking || phase === "closed" || typeof BVPASS === "undefined" || !BVPASS.lendCheck) return;
+    const t = Date.now();
+    if (t - lend.okAt > 36e5) {
+      lendGone("lendoff");
+      return;
+    }
+    if (!now && t - lend.askAt < (lend.failed ? 6e4 : 3e5)) return;
+    const l = lend;
+    l.asking = true;
+    l.askAt = t;
+    BVPASS.lendCheck(l.pass).then((r) => {
+      l.asking = false;
+      if (lend !== l) return;
+      if (r && r.lend) {
+        l.pass = r.lend;
+        l.okAt = Date.now();
+        l.failed = false;
+        const full = r.plan !== "free";
+        if (full !== l.full) {
+          l.full = full;
+          if (phase === "lobby") lobby();
+          sayLobby();
+        }
+        return;
+      }
+      if (r && r.over) {
+        lendGone("lend");
+        return;
+      }
+      l.failed = true;
+    }, () => {
+      l.asking = false;
+      l.failed = true;
+    });
+  }
+  setInterval(() => checkLend(), 15e3);
   function removePlayer(id) {
     if (!players.has(id)) return;
     players.delete(id);
@@ -512,7 +620,10 @@ var BVPLAY = (() => {
         pl.left = false;
         pl.at = Date.now();
         pl.heard = Date.now();
-        if (m.nophoto) pl.photo = "";
+        if (m.nophoto) {
+          pl.photo = "";
+          pl.phSeq = (pl.phSeq || 0) + 1;
+        }
         if (!p) pl.away = false;
         pl.cap = +m.cap || 0;
         pl.sv = typeof m.sv === "string" ? m.sv.slice(0, 24) : "";
@@ -542,8 +653,12 @@ var BVPLAY = (() => {
       }
       case "photo":
         if (p && m.boxed && L.okPicture(m.d) && m.d.length < 6e4) {
-          p.photo = m.d;
-          if (phase === "lobby") lobby();
+          const n = p.phSeq = (p.phSeq || 0) + 1;
+          squarePic(m.d).then((d) => {
+            if (p.phSeq !== n || players.get(p.id) !== p) return;
+            p.photo = d;
+            if (phase === "lobby") lobby();
+          });
         }
         return;
       case "ready":
@@ -623,18 +738,47 @@ var BVPLAY = (() => {
         return;
       case "makehost": {
         const to = players.get(m.id);
-        if (!p || m.f !== host || !to || to.away || to.id === host) return;
-        if (!to.paid) {
-          sayTo(m.f, { k: "needpass", name: to.name });
+        if (!p || m.f !== host || !to || to.away || to.id === host || lentTo(p)) return;
+        if (to.paid && (to.full || !p.full)) {
+          setHost(to.id);
           return;
         }
-        host = to.id;
-        trueHost = to.id;
-        for (const x of [p, to]) sayTo(x.id, { k: "you", id: x.id, host: host === x.id, color: x.color });
-        if (phase === "lobby") lobby();
-        sayLobby();
+        if (typeof m.lend !== "string") {
+          if (p.paid) sayTo(m.f, { k: "lendask", id: to.id });
+          return;
+        }
+        if (typeof BVPASS === "undefined" || !BVPASS.okLend) {
+          sayTo(m.f, { k: "lendbad" });
+          return;
+        }
+        const ps = m.lend, from = m.f, toId = to.id;
+        BVPASS.okLend(ps, from, toId).then((ok) => {
+          const f = players.get(from), t2 = players.get(toId);
+          if (!ok) {
+            if (f) sayTo(from, { k: "lendbad" });
+            return;
+          }
+          if (host !== from || !f || !t2 || t2.away || phase === "closed") return;
+          if (lend) endLend("again");
+          const pl = BVPASS.read(ps);
+          lend = { id: toId, from, full: !!pl && pl.plan !== "free", pass: ps, okAt: Date.now(), askAt: Date.now() };
+          setHost(toId);
+        }, () => {
+          if (players.has(from)) sayTo(from, { k: "lendbad" });
+        });
         return;
       }
+      // the host who handed the game over takes it back
+      case "takeback":
+        if (p && lend && lend.from === m.f && p.paid && !p.away && host !== m.f) {
+          endLend("back");
+          setHost(m.f);
+        }
+        return;
+      // the host ends the game for everyone (from their phone, as they leave)
+      case "endall":
+        if (p && m.f === host && phase !== "closed") hostGone(true, "end");
+        return;
       case "showjoin":
         if (p && m.f === host) showJoin(!!m.on);
         return;
@@ -730,7 +874,10 @@ var BVPLAY = (() => {
       return false;
     });
   }
-  const teamsOn = () => !!(game && game.teams && (settings.teams || game.teamsForce && game.teamsForce(settings)) && (!game.teamsOn || game.teamsOn(settings)));
+  const teamsOn = () => {
+    const s = effSet();
+    return !!(game && game.teams && (s.teams || game.teamsForce && game.teamsForce(s)) && (!game.teamsOn || game.teamsOn(s)));
+  };
   function balanceTeams() {
     if (!teamsOn()) return;
     const ids = P.TEAMS.slice(0, Math.min(4, +settings.teamN || 2)).map((t) => t[0]);
@@ -769,22 +916,30 @@ var BVPLAY = (() => {
       // (a game written in only some languages, like Guess It Right! in English and Arabic: the phones offer only those)
       langs: game && game.langs ? game.langs : null,
       // (a game's own rules for the settings picked, like Guess It Right!'s: each phone shows them in its language)
-      howto: game && game.howto ? game.howto(settings) : null
+      howto: game && game.howto ? game.howto(effSet()) : null
     };
     const sj = JSON.stringify(setup);
     if (sj !== setupSig) {
       setupSig = sj;
       setupV = fnv(sj) + "." + sj.length.toString(36);
     }
+    const free = freeNow(), heir = list().find((x) => x.paid && x.id !== host);
     const dyn = {
       k: "lobby",
       phase,
       game: game ? game.id : "",
       players: list().map(pub),
       host,
-      settings,
+      settings: effSet(),
       lang,
       rtl: P.RTL.has(lang),
+      // (the free games, and the choices they fix (the others say Pro on the host's phone); a hand-over: who it was
+      // handed to and who handed it over; heir: the Blokvane member who takes over when the host leaves)
+      free: free ? 1 : 0,
+      fixed: free && game.free ? game.free : null,
+      lent: lend ? lend.id : "",
+      owner: lend ? lend.from : "",
+      heir: heir ? heir.id : "",
       mlang: !!(game && game.mlang),
       joinOn: !!joinEl,
       zoom: Math.round(zoom * 100),
@@ -1402,6 +1557,7 @@ var BVPLAY = (() => {
       lobbyRun++;
       unpause();
       abandonTimers();
+      endLend("gone");
       phase = "closed";
       nearOn();
       handlers.clear();
@@ -1443,6 +1599,7 @@ var BVPLAY = (() => {
     });
   }
   addEventListener("pagehide", (e) => {
+    if (!e.persisted) endLend("gone");
     if (!e.persisted && R && !back.said && phase !== "closed") {
       back.said = true;
       try {
@@ -1562,7 +1719,7 @@ var BVPLAY = (() => {
         im.src = avatarUrl(p);
         im.alt = "";
         if (p.ready || p.id === host) {
-          el("span", "ok", av, "✓");
+          el("span", "ok", av).innerHTML = OK_MARK;
           c2.classList.add("rd");
         }
         if (p.lang && g && g.mlang) {
@@ -1588,7 +1745,7 @@ var BVPLAY = (() => {
       if (g && g.lobbyCard === false) {
       } else if (g && g.spot) {
         body.classList.add("has-spot");
-        yield spotCard(crowd ? left : right, g.spot(settings));
+        yield spotCard(crowd ? left : right, g.spot(effSet()));
       } else if (g) {
         const ex = el("div", "lob-x", crowd ? left : right);
         if (g.helpers) {
@@ -1596,7 +1753,7 @@ var BVPLAY = (() => {
           const chips = el("div", "chips", ex);
           for (const h of g.helpers) el("span", "chip", chips, yield T(h));
         } else if (g.rules && (typeof g.rules === "function" || g.rules.length)) {
-          const rl = typeof g.rules === "function" ? g.rules(settings) : g.rules;
+          const rl = typeof g.rules === "function" ? g.rules(effSet()) : g.rules;
           el("div", "lbl", ex, yield T("How to play"));
           const ol = el("ol", "howto2", ex);
           for (const r of rl) el("li", "", ol, yield T(r));
@@ -1684,7 +1841,7 @@ var BVPLAY = (() => {
       stage.append(...page.childNodes);
       if (g && g.lobbyDone) {
         try {
-          g.lobbyDone(stage, el, settings);
+          g.lobbyDone(stage, el, effSet());
         } catch (e) {
           console.warn("Blokvane play", e);
         }
@@ -2017,6 +2174,7 @@ var BVPLAY = (() => {
       lastRes.clear();
       resN = 0;
       P.mute(false);
+      runFree = !fullHere();
       phase = "play";
       played = true;
       document.body.dataset.game = game.id;
@@ -2089,9 +2247,9 @@ var BVPLAY = (() => {
   function kitRules(my) {
     return __async(this, null, function* () {
       const secs = Math.max(5, Math.min(120, Math.round(+settings.k_rulesSec) || 12));
-      const sp = game.spot ? game.spot(settings) : null;
+      const sp = game.spot ? game.spot(effSet()) : null;
       const lines = [];
-      const all = (typeof game.rules === "function" ? game.rules(settings) : game.rules) || [];
+      const all = (typeof game.rules === "function" ? game.rules(effSet()) : game.rules) || [];
       const rl = sp && Array.isArray(sp.bullets) && sp.bullets.length ? all.slice(0, 2) : all.slice(0, 6);
       const plain = !!game.plain;
       if (sp && sp.name) lines.push([plain ? "" : "🎮", P.f(sp.name) + (sp.desc ? ": " + P.f(sp.desc) : "")]);
@@ -2355,9 +2513,9 @@ var BVPLAY = (() => {
     const live = () => my === run && phase === "play";
     const nop = () => {
     };
-    const free = !fullHere();
+    const free = runFree !== null ? runFree : !fullHere();
     const freeSet = () => {
-      const o = Object.assign({}, settings);
+      const o = Object.assign({}, settings, game && game.free ? game.free : {});
       for (const k of ["count", "rounds", "games"]) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N);
       return o;
     };
@@ -2518,6 +2676,17 @@ var BVPLAY = (() => {
     },
     get phase() {
       return phase;
+    },
+    // (a game that was handed over: what this screen knows of it, and its check with the server, right now)
+    get lend() {
+      return lend;
+    },
+    get trueHost() {
+      return trueHost;
+    },
+    checkLend: () => checkLend(true),
+    get free() {
+      return freeNow();
     },
     // (for checking the screens on this computer: made-up players join and get ready, and the winners show straight away)
     fake(names) {

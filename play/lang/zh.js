@@ -1398,3 +1398,28 @@ BVI18N.add("zh", {
 "The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.": "牌桌在电视上，你的牌在手机上。可以组队、一对一，或者各打各的。有英文和阿拉伯文。",
 "The table is on the TV. Your tiles are on your phone.": "牌桌在电视上，你的牌在手机上。"
 });
+// (handing a party game over to another player)
+BVI18N.add("zh", {
+"Thanks for playing! A Blokvane member can scan the code to start a new one.": "感谢参与！任何 Blokvane 会员都可以扫码开始新的一局。",
+"This game is over": "这局游戏结束了",
+"Its host handed another game to someone else, and a host can hand over one game at a time. A Blokvane member can scan the code to start a new one.": "这局游戏的房主把另一局游戏交给了别人，而一位房主一次只能交出一局游戏。任何 Blokvane 会员都可以扫码开始新的一局。",
+"This TV couldn't reach Blokvane for an hour to check who hosts it. A Blokvane member can scan the code to start a new one.": "这台电视一个小时都没能连上 Blokvane，无法确认谁是房主。任何 Blokvane 会员都可以扫码开始新的一局。",
+"You're the host. Pick who hosts after you, or end the game for everyone.": "你是房主。选一位接替你的房主，或者为所有人结束游戏。",
+"Make someone else the host": "让别人当房主",
+"End the game for everyone": "为所有人结束游戏",
+"If you leave, {name} becomes the host.": "你离开后，{name}会成为房主。",
+"If you leave, the game ends for everyone.": "你离开后，游戏会为所有人结束。",
+"Nobody else is in the game, so it ends when you leave.": "游戏里没有其他人了，你离开后游戏就会结束。",
+"Who hosts after you?": "谁来接替你当房主？",
+"They host with your plan until they leave. Then a Blokvane member here takes over, or the game ends.": "在离开之前，对方会用你的方案当房主。之后由这里的 Blokvane 会员接替，否则游戏结束。",
+"Handing the game over...": "正在移交游戏……",
+"Its host handed another game to someone else, and a host can hand over one game at a time.": "这局游戏的房主把另一局游戏交给了别人，而一位房主一次只能交出一局游戏。",
+"The TV couldn't reach Blokvane for an hour to check who hosts it.": "电视一个小时都没能连上 Blokvane，无法确认谁是房主。",
+"Sign in again on this phone to hand the game over.": "请在这部手机上重新登录，才能移交游戏。",
+"{name} took the host back.": "{name}收回了房主身份。",
+"The host": "房主",
+"The host handed another game to someone else, so you're not the host any more.": "房主把另一局游戏交给了别人，所以你不再是房主了。",
+"The TV couldn't check with Blokvane, so you're not the host any more.": "电视无法和 Blokvane 确认，所以你不再是房主了。",
+"Take the host back": "收回房主身份",
+"A host with Blokvane Pro can pick this.": "只有有 Blokvane Pro 的房主才能选这个。"
+});
