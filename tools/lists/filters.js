@@ -473,7 +473,8 @@ function bvSecurityApply(base, delta) {
   }
   return out;
 }
-// Returns { same: true, v, hints } or { malware: [...], phishing: [...], v, hints }. Throws when the list can't be used.
+// Returns { same: true, v, hints } or { malware: [...], phishing: [...], added: [...], v, hints } (added: the phishing
+// sites that came since the base, which are also in phishing). Throws when the list can't be used.
 async function bvSecurityFromBlokvane(have, store) {
   store = store || bvListBaseStore;
   let lastErr = null;
@@ -496,7 +497,8 @@ async function bvSecurityFromBlokvane(have, store) {
       const base = JSON.parse(baseText), delta = JSON.parse(deltaText);
       if (!base || base.id !== s.base || !delta || delta.base !== s.base) throw new Error('The two parts of the security list do not belong together.');
       const out = bvSecurityApply(base, delta);
-      return { malware: out.malware, phishing: out.phishing, v: s.v, hints };
+      const added = delta.add && Array.isArray(delta.add.phishing) ? delta.add.phishing.filter(d => typeof d === 'string') : [];
+      return { malware: out.malware, phishing: out.phishing, added, v: s.v, hints };
     } catch (e) { lastErr = e; }
   }
   throw lastErr || new Error('The list could not be reached.');

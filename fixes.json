@@ -1,12 +1,14 @@
 {
   "schema": 1,
-  "updated": "2026-10-27",
+  "updated": "2026-11-22",
   "minVersion": "3.13.0",
   "youtube": {
     "deleteKeys": [],
     "adRenderers": [],
     "wrapperKeys": [],
-    "keepKeys": [],
+    "keepKeys": [
+      "ytInitialPlayerResponse"
+    ],
     "markers": [],
     "endpoints": [],
     "initialData": [],
