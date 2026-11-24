@@ -240,8 +240,31 @@ var BVDOM = (() => {
     if (parts.length === 1) parts = opp[0].map(t => t[0] + t[1]);
     return parts.length > 1 ? parts.join(' + ') + ' = ' + parts.reduce((a, b) => a + b, 0) : '';
   }
-  // ("+17" stays "+17" inside a line of Arabic: the sign and the number are kept together, left to right)
-  const plus = n => '\u2066+' + n + '\u2069';
+  // ("+17" stays "+17" inside a line of Arabic: the sign and the number are kept together, left to right. The marks
+  // that do this best are the "isolate" ones; browsers from before 2019, like many TVs', read them wrong and scramble
+  // the words around them, so those get the older marks, which every browser knows.)
+  let isoOk = null;
+  function isoWorks() {
+    if (isoOk != null) return isoOk;
+    isoOk = true;
+    try {
+      const d = document.createElement('div');
+      d.dir = 'rtl';
+      d.style.cssText = 'position:absolute;left:-999px;top:-999px;white-space:nowrap;font:20px sans-serif;visibility:hidden';
+      d.textContent = '\u05d0\u2068a\u2069';
+      (document.body || document.documentElement).appendChild(d);
+      const r = document.createRange(), t = d.firstChild;
+      r.setStart(t, 0); r.setEnd(t, 1);
+      const a = r.getBoundingClientRect();
+      r.setStart(t, 2); r.setEnd(t, 3);
+      const b = r.getBoundingClientRect();
+      // (read right, the Hebrew letter is on the right and the "a" to its left)
+      if (a.width && b.width) isoOk = b.left < a.left;
+      if (d.parentNode) d.parentNode.removeChild(d);
+    } catch (e) {}
+    return isoOk;
+  }
+  const plus = n => (isoWorks() ? '\u2066+' + n + '\u2069' : '\u202a+' + n + '\u202c');
   // One half of a tile by itself: an open end's number, to aim at (the same surface and pips as the set's tiles).
   function half(n, o) {
     o = o || {};

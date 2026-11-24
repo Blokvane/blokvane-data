@@ -383,7 +383,7 @@
     if (o.who && o.who.length) {
       const got = await K.ask({ kind: 'spin', prompt: '', sec: 12, who: o.who, extra: { gir: 1, sl: 'Spin the wheel!', wt: o.wt || null }, onAns: () => { if (!spun) { spun = true; K.close(K.qn()); } } });
       const first = [...got.entries()].sort((a, b) => a[1].at - b[1].at)[0];
-      if (first && K.player(first[0])) st.textContent = await K.tr('{name} spins!', { name: '⁨' + K.player(first[0]).name + '⁩' });
+      if (first && K.player(first[0])) { const line = await K.tr('{name} spins!', { name: '⁨' + K.player(first[0]).name + '⁩' }); st.textContent = ''; K.words(st, line); }
       else st.textContent = await K.tr('Spinning...');
     } else { await K.sleep(1600); st.textContent = await K.tr('Spinning...'); }
     if (K.over()) { clearInterval(blink); return o.ok[0]; }
@@ -717,7 +717,7 @@
       return ps;
     }
   });
-  async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; f.append('⚡ ' + await K.tr('First: {name} ({s} s)', { name: '⁨' + p.name + '⁩', s: K.num(Math.round(ms / 100) / 10) })); return f; }
+  async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; K.words(f, '⚡ ' + await K.tr('First: {name} ({s} s)', { name: '⁨' + p.name + '⁩', s: K.num(Math.round(ms / 100) / 10) })); return f; }
   // with no time limit, the host can show the answer whenever they like (their phone gets a button)
   function hostReveal(K, n) {
     let on = true;

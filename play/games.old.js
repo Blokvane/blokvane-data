@@ -69,7 +69,7 @@ var __async = (__this, __arguments, generator) => {
       const im = K.el("img", "", f);
       im.src = K.avatarUrl(p);
       im.alt = "";
-      f.append("⚡ " + (yield K.tr("First: {name} ({s} s)", { name: "⁨" + p.name + "⁩", s: K.num(Math.round(ms / 100) / 10) })));
+      K.words(f, "⚡ " + (yield K.tr("First: {name} ({s} s)", { name: "⁨" + p.name + "⁩", s: K.num(Math.round(ms / 100) / 10) })));
       return f;
     });
   }

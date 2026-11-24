@@ -505,8 +505,11 @@ var __async = (__this, __arguments, generator) => {
           }
         } });
         const first = [...got.entries()].sort((a, b) => a[1].at - b[1].at)[0];
-        if (first && K.player(first[0])) st.textContent = yield K.tr("{name} spins!", { name: "⁨" + K.player(first[0]).name + "⁩" });
-        else st.textContent = yield K.tr("Spinning...");
+        if (first && K.player(first[0])) {
+          const line = yield K.tr("{name} spins!", { name: "⁨" + K.player(first[0]).name + "⁩" });
+          st.textContent = "";
+          K.words(st, line);
+        } else st.textContent = yield K.tr("Spinning...");
       } else {
         yield K.sleep(1600);
         st.textContent = yield K.tr("Spinning...");
@@ -924,7 +927,7 @@ var __async = (__this, __arguments, generator) => {
       const im = K.el("img", "", f);
       im.src = K.avatarUrl(p);
       im.alt = "";
-      f.append("⚡ " + (yield K.tr("First: {name} ({s} s)", { name: "⁨" + p.name + "⁩", s: K.num(Math.round(ms / 100) / 10) })));
+      K.words(f, "⚡ " + (yield K.tr("First: {name} ({s} s)", { name: "⁨" + p.name + "⁩", s: K.num(Math.round(ms / 100) / 10) })));
       return f;
     });
   }

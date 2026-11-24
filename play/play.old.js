@@ -37,10 +37,43 @@ var BVPLAY = (() => {
   const playerSubs = /* @__PURE__ */ new Set();
   const setSubs = /* @__PURE__ */ new Set();
   let waitHost = false;
+  const ISO = /[\u2066-\u2069]/;
+  function wordsInto(node, text) {
+    const s = String(text == null ? "" : text);
+    if (!ISO.test(s)) {
+      node.appendChild(document.createTextNode(s));
+      return node;
+    }
+    let at = node, buf = "";
+    const flush = () => {
+      if (buf) {
+        at.appendChild(document.createTextNode(buf));
+        buf = "";
+      }
+    };
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c >= 8294 && c <= 8296) {
+        flush();
+        const b = document.createElement("bdi");
+        b.dir = c === 8294 ? "ltr" : c === 8295 ? "rtl" : "auto";
+        at.appendChild(b);
+        at = b;
+      } else if (c === 8297) {
+        flush();
+        if (at !== node && at.parentNode) at = at.parentNode;
+      } else buf += s[i];
+    }
+    flush();
+    return node;
+  }
   function el(tag, cls, parent2, text) {
     const e = document.createElement(tag);
     if (cls) e.className = cls;
-    if (text != null) e.textContent = text;
+    if (text != null) {
+      if (typeof text === "string" && ISO.test(text)) wordsInto(e, text);
+      else e.textContent = text;
+    }
     if (parent2) parent2.appendChild(e);
     return e;
   }
@@ -2533,6 +2566,7 @@ var BVPLAY = (() => {
       f: P.f,
       P,
       el,
+      words: wordsInto,
       strings,
       top,
       stage,

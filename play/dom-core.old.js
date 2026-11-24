@@ -313,7 +313,30 @@ var BVDOM = (() => {
     if (parts.length === 1) parts = opp[0].map((t2) => t2[0] + t2[1]);
     return parts.length > 1 ? parts.join(" + ") + " = " + parts.reduce((a, b) => a + b, 0) : "";
   }
-  const plus = (n) => "⁦+" + n + "⁩";
+  let isoOk = null;
+  function isoWorks() {
+    if (isoOk != null) return isoOk;
+    isoOk = true;
+    try {
+      const d = document.createElement("div");
+      d.dir = "rtl";
+      d.style.cssText = "position:absolute;left:-999px;top:-999px;white-space:nowrap;font:20px sans-serif;visibility:hidden";
+      d.textContent = "א⁨a⁩";
+      (document.body || document.documentElement).appendChild(d);
+      const r = document.createRange(), t2 = d.firstChild;
+      r.setStart(t2, 0);
+      r.setEnd(t2, 1);
+      const a = r.getBoundingClientRect();
+      r.setStart(t2, 2);
+      r.setEnd(t2, 3);
+      const b = r.getBoundingClientRect();
+      if (a.width && b.width) isoOk = b.left < a.left;
+      if (d.parentNode) d.parentNode.removeChild(d);
+    } catch (e) {
+    }
+    return isoOk;
+  }
+  const plus = (n) => isoWorks() ? "⁦+" + n + "⁩" : "‪+" + n + "‬";
   function half(n, o) {
     o = o || {};
     const T = setOf(o.set), Z = typeof o.size === "object" ? o.size : SIZES[o.size || "menu"], k = o.k || 1;

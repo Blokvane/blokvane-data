@@ -20,7 +20,26 @@ var BVPLAY = (() => {
   const playerSubs = new Set();   // a running game hears when someone leaves, comes back or joins
   const setSubs = new Set();      // ... and when the host changes one of its looks in the middle of the game
   let waitHost = false;           // the game is waiting for the host's phone (Next question)
-  function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; if (parent) parent.appendChild(e); return e; }
+  // A name inside a line keeps its own direction (an English name in an Arabic line, and the other way round): the
+  // lines mark it with the invisible "isolate" characters. Older TV browsers (Chrome before 77, like LG's webOS up to
+  // 2020) read those characters wrong and draw the Arabic words before an English name backwards. So on the page the
+  // marked part goes into a <bdi> element, which every browser gets right, and the marks themselves are left out.
+  const ISO = /[\u2066-\u2069]/;
+  function wordsInto(node, text) {
+    const s = String(text == null ? '' : text);
+    if (!ISO.test(s)) { node.appendChild(document.createTextNode(s)); return node; }
+    let at = node, buf = '';
+    const flush = () => { if (buf) { at.appendChild(document.createTextNode(buf)); buf = ''; } };
+    for (let i = 0; i < s.length; i++) {
+      const c = s.charCodeAt(i);
+      if (c >= 0x2066 && c <= 0x2068) { flush(); const b = document.createElement('bdi'); b.dir = c === 0x2066 ? 'ltr' : c === 0x2067 ? 'rtl' : 'auto'; at.appendChild(b); at = b; }
+      else if (c === 0x2069) { flush(); if (at !== node && at.parentNode) at = at.parentNode; }
+      else buf += s[i];
+    }
+    flush();
+    return node;
+  }
+  function el(tag, cls, parent, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) { if (typeof text === 'string' && ISO.test(text)) wordsInto(e, text); else e.textContent = text; } if (parent) parent.appendChild(e); return e; }
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   // (shown inside another page: Blokvane's own window on a computer, or beside a player's panel in duo.html)
   const EMBEDDED = (() => { try { return window.parent !== window; } catch (e) { return true; } })();
@@ -1637,7 +1656,7 @@ var BVPLAY = (() => {
     const freeSet = () => { const o = Object.assign({}, settings, game && game.free ? game.free : {}); for (const k of ['count', 'rounds', 'games']) if (k in o) o[k] = Math.min(FREE_N, +o[k] || FREE_N); return o; };
     return {
       players: list, alive, get settings() { return free ? freeSet() : settings; }, lang,
-      free, freeN: FREE_N, freePick: (l, idOf, groupOf) => (free ? freePick(l, idOf, groupOf) : l), tr: P.tr, f: P.f, P, el, strings, top, stage, avatarUrl,
+      free, freeN: FREE_N, freePick: (l, idOf, groupOf) => (free ? freePick(l, idOf, groupOf) : l), tr: P.tr, f: P.f, P, el, words: wordsInto, strings, top, stage, avatarUrl,
       // the game's own questions, words and places, written for its language (null: English, the packs in packs.js)
       packs: lang === 'en' ? null : I18N.packs(lang),
       sleep: ms => (live() ? psleep(ms) : Promise.resolve()),

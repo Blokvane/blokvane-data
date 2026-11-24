@@ -37,7 +37,7 @@
     for (const p of ps.slice(0, ps.length > 7 ? 6 : 7)) { const im = K.el('img', '', cell.who); im.src = K.avatarUrl(p); im.alt = ''; }
     if (ps.length > 7) K.el('span', 'more', cell.who, '+' + K.num(ps.length - 6));
   }
-  async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; f.append('⚡ ' + await K.tr('First: {name} ({s} s)', { name: '\u2068' + p.name + '\u2069', s: K.num(Math.round(ms / 100) / 10) })); return f; }
+  async function firstBadge(K, parent, p, ms) { const f = K.el('div', 'first', parent); const im = K.el('img', '', f); im.src = K.avatarUrl(p); im.alt = ''; K.words(f, '⚡ ' + await K.tr('First: {name} ({s} s)', { name: '\u2068' + p.name + '\u2069', s: K.num(Math.round(ms / 100) / 10) })); return f; }
   const catName = id => (PK.cats.find(c => c[0] === id) || [0, ''])[1];
   const fromBank = x => ({ q: x[0], a: x[1], w: x[2], cat: x[3], c: catName(x[3]), d: x[4] });
   const BANK_CATS = new Set(PK.trivia.map(x => x[3]));

@@ -127,7 +127,6 @@ var __async = (__this, __arguments, generator) => {
     else out.push([s.speed !== false ? "⚡" : "✅", s.speed !== false ? "Right answers score points. The faster you answer, the more you get." : "Every right answer scores 100 points."]);
     if (s.golden !== false && m !== "kids") out.push(["⭐", "Every fifth riddle is golden: it counts double."]);
     if (s.streak !== false && m !== "kids") out.push(["🔥", "Three right in a row, or more: 50 extra points each time."]);
-    if (s.make !== false && m !== "kids") out.push(["✍️", "In the last round, everyone makes their own riddle for the others to guess."]);
     if (s.teams && m !== "survival") out.push(["👥", "Teams: everyone's points are added up for their team."]);
     out.push(["🏆", m === "survival" ? "The last one standing wins." : m === "kids" ? "Everyone is a winner, and the most points gets the crown!" : "The most points wins."]);
     return out;
@@ -299,17 +298,6 @@ var __async = (__this, __arguments, generator) => {
     nextBtn: "Next riddle",
     showAns: "Show the answer",
     howTo: "How to play",
-    makeT: "Make your own riddle!",
-    makeSub: "The last round",
-    makeLine: "On your phone: some emoji, and what they mean.",
-    madeN: "{n} of {total} ready",
-    byName: "A riddle by {name}",
-    guessIt: "Type your guess on your phone",
-    tooEasy: "Too easy: everyone got it!",
-    tooHard: "Too hard: nobody got it!",
-    makerPts: "{name} gets {n} points for the riddle",
-    noneMade: "No riddles were made this time.",
-    theAnswer: "The answer",
     loadFail: "The riddles didn't load. Check the internet, then start the game again.",
     winner: "The winner",
     winTeam: "The winning team",
@@ -321,7 +309,6 @@ var __async = (__this, __arguments, generator) => {
     kidsAll: "Wow, everybody got it!",
     kidsNone: "So close! Let's try the next one!",
     lastOne: "{name} is the last one standing!",
-    yourRiddle: "Your emoji riddle",
     soon: "Get ready...",
     title: "Emoji Riddles"
   };
@@ -394,7 +381,7 @@ var __async = (__this, __arguments, generator) => {
       { t: "Riddles", keys: ["count", "cat", "level"] },
       { t: "Timing", s: "Time", keys: ["sec", "fast", "kidSec", "next", "wait"] },
       { t: "Points and lives", s: "Points", keys: ["speed", "golden", "streak", "hints", "lives"] },
-      { t: "Extras", keys: ["look", "make", "makeSec", "teams", "teamN", "rules", "rulesSec"] }
+      { t: "Extras", keys: ["look", "teams", "teamN", "rules", "rulesSec"] }
     ],
     settings: [
       { key: "mode", label: "Game mode", type: "seg", look: "list", options: MODES, default: "classic" },
@@ -412,8 +399,6 @@ var __async = (__this, __arguments, generator) => {
       { key: "hints", label: "Hint and one more try", type: "toggle", default: true, desc: "When nobody types the right answer, a hint shows and everyone tries again for half the points.", when: ["mode", "type"] },
       { key: "lives", label: "Lives", type: "number", min: 1, max: 10, quick: [1, 2, 3, 5], unit: "lives", default: 3, when: ["mode", "survival"] },
       { key: "look", label: "Screen look", type: "seg", options: [["mix", "All three, mixed", "A different look for every riddle: cinema, neon sign or retro TV."], ["cinema", "Cinema"], ["neon", "Neon sign"], ["retro", "Retro TV"]], default: "mix" },
-      { key: "make", label: "Last round: make your own", type: "toggle", default: true, desc: "At the end, everyone makes an emoji riddle and the others guess it.", when: ["mode", "!kids"] },
-      { key: "makeSec", label: "Time to make a riddle", type: "number", min: 20, max: 300, quick: [45, 60, 90, 120], unit: "seconds", default: 60, when: [["make", true], ["mode", "!kids"]] },
       { key: "teams", label: "Teams", type: "toggle", default: false, desc: "Phones join a color team, and each team's points are added up.", when: ["mode", "!survival"] },
       { key: "teamN", label: "How many teams", type: "seg", options: [[2, "2"], [3, "3"], [4, "4"]], default: 2, when: [["teams", true], ["mode", "!survival"]] },
       { key: "rules", label: "How to play first", type: "toggle", default: true, desc: "The TV and the phones show how to play before the first riddle." },
@@ -484,8 +469,6 @@ var __async = (__this, __arguments, generator) => {
           if (s.next === "host") yield hostNext(K, st, res.cv, res.qn);
           else yield nextIn(K, st, res.cv, clamp(s.wait, 2, 120, 6));
         }
-        if (K.over()) return [];
-        if (s.make !== false && !kids && K.players().length >= 2 && !(surv && K.alive().length <= 1)) yield makeRound(K, s, st);
         if (K.over()) return [];
         let ps = K.players().slice().sort((a, b) => b.score - a.score || b.right - a.right);
         if (surv) ps = K.players().slice().sort((a, b) => (a.out ? 1 : 0) - (b.out ? 1 : 0) || b.lives - a.lives || b.score - a.score);
@@ -855,8 +838,8 @@ var __async = (__this, __arguments, generator) => {
         const dots = K.el("div", "emo-dots", tb);
         for (let j = 0; j < 3; j++) K.el("i", "", dots);
       }
-      const line2 = K.el("div", "emo-line", null);
-      if (ansBox) ansBox.after(line2);
+      const line = K.el("div", "emo-line", null);
+      if (ansBox) ansBox.after(line);
       const cards = typeIt ? [] : [0, 1, 2, 3].map((j) => $1(cv, "a" + j)).filter(Boolean);
       for (const c of cards) c.classList.add("emo-card");
       for (const c of cards) {
@@ -871,7 +854,7 @@ var __async = (__this, __arguments, generator) => {
       K.wait(tx("soon"), { emo: { t: "look", gold, n: num, of: st.total } });
       K.snd.sting(gold ? "eEvery5" : "eNext", { duck: 0.65 });
       if (gold) {
-        const g = K.el("div", "emo-pill emo-pop", line2, "⭐ " + tx("golden"));
+        const g = K.el("div", "emo-pill emo-pop", line, "⭐ " + tx("golden"));
         g.style.borderColor = "#ffc93c";
       }
       yield K.sleep(K.snd.on() ? gold ? 2600 : 1500 : 900);
@@ -885,7 +868,7 @@ var __async = (__this, __arguments, generator) => {
         yield K.sleep(160);
       }
       if (gold) yield K.sleep(900);
-      line2.textContent = "";
+      line.textContent = "";
       if (K.over()) return null;
       const live = K.alive().slice();
       const secs = st.sec;
@@ -893,10 +876,10 @@ var __async = (__this, __arguments, generator) => {
       const answered = /* @__PURE__ */ new Set();
       const shownAt = /* @__PURE__ */ new Map();
       const worth = (n) => ems.length <= 1 ? 100 : Math.max(30, Math.round((100 - 60 * (n - 1) / (ems.length - 1)) / 10) * 10);
-      let pill = K.el("div", "emo-pill", line2, tx("answered", { n: K.num(0), total: K.num(live.length) }));
+      let pill = K.el("div", "emo-pill", line, tx("answered", { n: K.num(0), total: K.num(live.length) }));
       let worthP = null;
       if (reveal) {
-        worthP = K.el("div", "emo-pill", line2, tx("worth", { n: K.num(worth(shown) * (gold ? 2 : 1)) }));
+        worthP = K.el("div", "emo-pill", line, tx("worth", { n: K.num(worth(shown) * (gold ? 2 : 1)) }));
         worthP.style.borderColor = "#7df9ff";
       }
       const showIn = () => {
@@ -955,7 +938,7 @@ var __async = (__this, __arguments, generator) => {
       const tuT = secs ? K.after(secs * 1e3, () => {
         if (closed || K.over() || answered.size >= live.length) return;
         K.snd.sting("eTimesup", { duck: 0.65 });
-        K.el("div", "emo-pill bad emo-pop", line2, "⏰ " + tx("timesUp"));
+        K.el("div", "emo-pill bad emo-pop", line, "⏰ " + tx("timesUp"));
       }) : 0;
       let got = yield asking;
       closed = true;
@@ -982,12 +965,12 @@ var __async = (__this, __arguments, generator) => {
       let late = /* @__PURE__ */ new Set();
       if (typeIt && st.hintOn && live.length && ![...got].some(([id, a]) => isRight(id, a)) && !K.over()) {
         const hintT = hintOf(rightT, lang);
-        line2.textContent = "";
+        line.textContent = "";
         answered.clear();
         for (const r of rowEls.values()) r.classList.remove("emo-in");
-        K.el("div", "emo-pill hint emo-pop", line2, "💡 " + tx("hint", { x: hintT }));
-        K.el("div", "emo-pill emo-pop", line2, tx("oneMore"));
-        pill = K.el("div", "emo-pill", line2, tx("answered", { n: K.num(0), total: K.num(live.length) }));
+        K.el("div", "emo-pill hint emo-pop", line, "💡 " + tx("hint", { x: hintT }));
+        K.el("div", "emo-pill emo-pop", line, tx("oneMore"));
+        pill = K.el("div", "emo-pill", line, tx("answered", { n: K.num(0), total: K.num(live.length) }));
         K.snd.fx("sparkle", { vol: 0.7 });
         const ck2 = clock(K, cv, secs ? Math.max(8, Math.round(secs * 0.6)) : 0);
         const hints = {};
@@ -1001,7 +984,7 @@ var __async = (__this, __arguments, generator) => {
           late.add(id);
         }
         got = g2;
-        line2.textContent = "";
+        line.textContent = "";
       }
       if (K.over()) {
         offPlayers();
@@ -1011,7 +994,7 @@ var __async = (__this, __arguments, generator) => {
       const rightIds = inPlay.filter((p) => isRight(p.id, got.get(p.id))).map((p) => p.id);
       const wrongIds = inPlay.filter((p) => got.has(p.id) && !isRight(p.id, got.get(p.id))).map((p) => p.id);
       const noneIds = inPlay.filter((p) => !got.has(p.id)).map((p) => p.id);
-      line2.textContent = "";
+      line.textContent = "";
       yield K.sleep(500);
       K.snd.sting(rightIds.length ? "eCorrect" : "eWrong", { duck: 0.65 });
       yield K.sleep(K.snd.on() ? 650 : 200);
@@ -1091,38 +1074,38 @@ var __async = (__this, __arguments, generator) => {
         const sc = $1(r, "sc");
         if (sc) sc.before(ch);
       }
-      line2.textContent = "";
+      line.textContent = "";
       if (kids) {
         const nR = rightIds.length;
-        K.el("div", "emo-pill ok emo-pop", line2, nR && nR === inPlay.length && nR > 1 ? "🎉 " + tx("kidsAll") : nR === 1 ? "🎉 " + tx("kidsOne", { name: (K.player(rightIds[0]) || {}).name || "" }) : nR ? "🎉 " + tx("kidsYay", { n: K.num(nR) }) : "🌈 " + tx("kidsNone"));
+        K.el("div", "emo-pill ok emo-pop", line, nR && nR === inPlay.length && nR > 1 ? "🎉 " + tx("kidsAll") : nR === 1 ? "🎉 " + tx("kidsOne", { name: (K.player(rightIds[0]) || {}).name || "" }) : nR ? "🎉 " + tx("kidsYay", { n: K.num(nR) }) : "🌈 " + tx("kidsNone"));
         if (nR) burst(cv);
       } else {
-        if (rightIds.length && rightIds.length === inPlay.length && inPlay.length > 1) K.el("div", "emo-pill ok emo-pop", line2, "🎉 " + tx("everybody"));
-        else if (!rightIds.length) K.el("div", "emo-pill bad emo-pop", line2, "😮 " + tx("nobody"));
+        if (rightIds.length && rightIds.length === inPlay.length && inPlay.length > 1) K.el("div", "emo-pill ok emo-pop", line, "🎉 " + tx("everybody"));
+        else if (!rightIds.length) K.el("div", "emo-pill bad emo-pop", line, "😮 " + tx("nobody"));
         else {
-          K.el("div", "emo-pill ok emo-pop", line2, "✓ " + tx("rightN", { n: K.num(rightIds.length) }));
-          K.el("div", "emo-pill bad emo-pop", line2, "✗ " + tx("wrongN", { n: K.num(wrongIds.length + noneIds.length) }));
+          K.el("div", "emo-pill ok emo-pop", line, "✓ " + tx("rightN", { n: K.num(rightIds.length) }));
+          K.el("div", "emo-pill bad emo-pop", line, "✗ " + tx("wrongN", { n: K.num(wrongIds.length + noneIds.length) }));
         }
         if (firstRight && inPlay.length > 1) {
           const fp = K.player(firstRight[0]);
           if (fp) {
-            const f = K.el("div", "emo-pill emo-pop", line2);
+            const f = K.el("div", "emo-pill emo-pop", line);
             mini(K, fp, f);
-            f.append("⚡ " + tx("fastest", { name: "⁨" + fp.name + "⁩", s: K.num(Math.round(firstRight[1].ms / 100) / 10) }));
+            K.words(f, "⚡ " + tx("fastest", { name: "⁨" + fp.name + "⁩", s: K.num(Math.round(firstRight[1].ms / 100) / 10) }));
           }
         }
         const hot = inPlay.filter((p) => rightIds.includes(p.id) && p.streak >= 3).sort((a, b) => b.streak - a.streak)[0];
         if (hot && st.streakOn) {
-          const f = K.el("div", "emo-pill emo-pop", line2);
+          const f = K.el("div", "emo-pill emo-pop", line);
           K.el("span", "emo-fire", f, "🔥");
-          f.append(tx("inARow", { name: "⁨" + hot.name + "⁩", n: K.num(hot.streak) }));
+          K.words(f, tx("inARow", { name: "⁨" + hot.name + "⁩", n: K.num(hot.streak) }));
         }
-        if (spare) K.el("div", "emo-pill emo-pop", line2, "🛡️ " + tx("spare"));
-        if (outNow.length === 1) K.el("div", "emo-pill bad emo-pop", line2, "💀 " + tx("isOut", { name: "⁨" + outNow[0].name + "⁩" }));
-        else if (outNow.length > 1) K.el("div", "emo-pill bad emo-pop", line2, "💀 " + tx("areOut", { n: K.num(outNow.length) }));
-        if (surv && K.players().length > 1 && K.alive().length === 1) K.el("div", "emo-pill ok emo-pop", line2, "🏆 " + tx("lastOne", { name: "⁨" + K.alive()[0].name + "⁩" }));
+        if (spare) K.el("div", "emo-pill emo-pop", line, "🛡️ " + tx("spare"));
+        if (outNow.length === 1) K.el("div", "emo-pill bad emo-pop", line, "💀 " + tx("isOut", { name: "⁨" + outNow[0].name + "⁩" }));
+        else if (outNow.length > 1) K.el("div", "emo-pill bad emo-pop", line, "💀 " + tx("areOut", { n: K.num(outNow.length) }));
+        if (surv && K.players().length > 1 && K.alive().length === 1) K.el("div", "emo-pill ok emo-pop", line, "🏆 " + tx("lastOne", { name: "⁨" + K.alive()[0].name + "⁩" }));
       }
-      while (line2.children.length > 3) line2.lastChild.remove();
+      while (line.children.length > 3) line.lastChild.remove();
       const rank = K.players().slice().sort((a, b) => b.score - a.score);
       for (const p of inPlay) {
         const code = K.langOf(p.id) || lang;
@@ -1138,7 +1121,7 @@ var __async = (__this, __arguments, generator) => {
         });
       }
       offPlayers();
-      return { cv, qn, line: line2 };
+      return { cv, qn, line };
     });
   }
   function shrinkCard(card) {
@@ -1227,8 +1210,8 @@ var __async = (__this, __arguments, generator) => {
   }
   function nextIn(K, st, cv, secs) {
     return __async(this, null, function* () {
-      const line2 = cv.querySelector(".emo-line");
-      const pill = K.el("div", "emo-pill", line2);
+      const line = cv.querySelector(".emo-line");
+      const pill = K.el("div", "emo-pill", line);
       pill.style.borderColor = "rgba(255,255,255,.3)";
       for (let n = secs; n > 0 && !K.over(); n--) {
         pill.textContent = "⏭️ " + st.tx("nextIn", { n: K.num(n) });
@@ -1238,8 +1221,8 @@ var __async = (__this, __arguments, generator) => {
   }
   function hostNext(K, st, cv, n) {
     return __async(this, null, function* () {
-      const line2 = cv.querySelector(".emo-line");
-      K.el("div", "emo-pill", line2, "⏸️ " + st.tx("hostNext"));
+      const line = cv.querySelector(".emo-line");
+      K.el("div", "emo-pill", line, "⏸️ " + st.tx("hostNext"));
       const label = st.tx("nextBtn");
       let go = false;
       const off = K.on("next", (m, p) => {
@@ -1257,172 +1240,6 @@ var __async = (__this, __arguments, generator) => {
       off();
     });
   }
-  function makeRound(K, s, st) {
-    return __async(this, null, function* () {
-      const { tx } = st;
-      const secs = clamp(s.makeSec, 20, 300, 60);
-      const cv = screen(K, TPL.q[0], "make");
-      setT(cv, "title", tx("makeT"));
-      setT(cv, "sub", tx("makeSub"));
-      rows(cv, "em", splitEm("✍️🤔💡"), (sp, e, i) => {
-        sp.textContent = e;
-        sp.style.animationDelay = i * 0.3 + "s";
-      });
-      const a = $1(cv, "answers");
-      const ps = K.alive().slice();
-      let made = null;
-      if (a) {
-        a.style.display = "block";
-        a.innerHTML = "";
-        const tb = K.el("div", "emo-typebox", a);
-        K.el("b", "", tb, tx("makeLine"));
-        const cnt = K.el("div", "emo-pill", tb, tx("madeN", { n: K.num(0), total: K.num(ps.length) }));
-        made = K.el("div", "emo-made", a);
-        made.style.marginTop = "22px";
-        for (const p of ps) {
-          const x = K.el("span", "", made);
-          x.dataset.id = p.id;
-          mini(K, p, x);
-          x.append(p.name);
-        }
-        a._cnt = cnt;
-      }
-      board(K, cv, st, null);
-      const ck = clock(K, cv, secs);
-      K.snd.sting("eEvery5", { duck: 0.65 });
-      let nIn = 0;
-      const D = window.BVEMOD;
-      const ex = D && D.r ? D.r.findIndex((r) => r[0] === "🦁👑") : -1;
-      const place = ex >= 0 ? main(answerOf(D, { i: ex }, D.a && D.a[K.lang] ? K.lang : "en")) : tx("theAnswer");
-      const got = yield K.ask({
-        kind: "emojimake",
-        prompt: tx("yourRiddle"),
-        sec: secs,
-        who: ps.map((p) => p.id),
-        extra: { place, emo: { t: "make" } },
-        onAns: (id) => {
-          nIn++;
-          if (a && a._cnt) a._cnt.textContent = tx("madeN", { n: K.num(nIn), total: K.num(ps.length) });
-          const x = made && made.querySelector('[data-id="' + id + '"]');
-          if (x) x.classList.add("in");
-          K.snd.fx("pop", { vol: 0.6 });
-        }
-      });
-      ck.stop();
-      if (K.over()) return;
-      const list = P.shuffle([...got].map(([id, x]) => ({ id, e: String(x.v && x.v.e || "").replace(/\s+/g, "").slice(0, 24), a: P.safe(x.v && x.v.a, 50) })).filter((x) => x.e && x.a && BVRX.picto().test(x.e) && !P.bad(x.a)));
-      if (!list.length) {
-        line(cv, K).appendChild(K.el("div", "emo-pill", null, tx("noneMade")));
-        yield K.sleep(3500);
-        return;
-      }
-      for (const r of list) {
-        if (K.over()) return;
-        const au = K.player(r.id);
-        const others = K.players().filter((p) => p.id !== r.id && !p.out && !p.away);
-        if (!au || !others.length) continue;
-        const look = pickLook(s, st);
-        const cv2 = screen(K, TPL.q[look], "made");
-        setT(cv2, "title", tx("byName", { name: au.name }));
-        setT(cv2, "sub", tx("makeSub"));
-        const hd = $1(cv2, "hdr");
-        if (hd) {
-          const icon = hd.firstElementChild;
-          if (icon) {
-            icon.innerHTML = "";
-            const im = mini(K, au, icon);
-            im.style.cssText = "width:84px;height:84px;border-radius:24px;object-fit:" + (au.photo ? "cover" : "contain");
-          }
-        }
-        const ems = splitEm(r.e);
-        rows(cv2, "em", ems, (sp, e, i) => {
-          sp.textContent = e;
-          sp.style.animationDelay = i * 0.25 + "s";
-          if (ems.length > 4) sp.style.fontSize = Math.max(70, Math.floor(880 / ems.length) - 30) + "px";
-        });
-        const a2 = $1(cv2, "answers");
-        if (a2) {
-          a2.style.display = "block";
-          a2.innerHTML = "";
-          const tb = K.el("div", "emo-typebox", a2);
-          K.el("b", "", tb, tx("guessIt"));
-          const d = K.el("div", "emo-dots", tb);
-          for (let j = 0; j < 3; j++) K.el("i", "", d);
-        }
-        const ln = line(cv2, K);
-        const rowEls = board(K, cv2, st, null);
-        const gsec = st.sec ? Math.max(15, st.sec + 5) : 30;
-        K.snd.sting("eNext", { duck: 0.65 });
-        yield K.sleep(1200);
-        const ck2 = clock(K, cv2, gsec);
-        const answered = /* @__PURE__ */ new Set();
-        const g = yield K.ask({
-          kind: "text",
-          prompt: "",
-          sec: gsec,
-          who: others.map((p) => p.id),
-          extra: { max: 60, place: tx("theAnswer"), emo: { e: r.e, made: au.name, look } },
-          onAns: (id) => {
-            answered.add(id);
-            const rr = rowEls.get(id);
-            if (rr) rr.classList.add("emo-in");
-            K.snd.fx("pop", { vol: 0.5 });
-          }
-        });
-        ck2.stop();
-        if (K.over()) return;
-        const right = others.filter((p) => g.has(p.id) && P.close(g.get(p.id).v, r.a)).map((p) => p.id);
-        K.snd.sting(right.length ? "eCorrect" : "eWrong", { duck: 0.65 });
-        yield K.sleep(K.snd.on() ? 650 : 200);
-        if (a2) {
-          a2.innerHTML = "";
-          const big = K.el("div", "emo-ansbig" + (right.length ? "" : " miss"), a2);
-          K.el("span", "emo-badge ok", big, "✓");
-          K.el("span", "", big, r.a);
-          shrink(big, 0.55);
-          const gs = K.el("div", "emo-guesses", a2);
-          gs.style.marginTop = "22px";
-          for (const p of others.slice(0, 16)) {
-            const x = g.get(p.id);
-            const okP = right.includes(p.id);
-            const gg = K.el("div", "emo-guess " + (okP ? "ok" : x ? "bad" : "none"), gs);
-            mini(K, p, gg);
-            K.el("span", "", gg, x ? P.safe(String(x.v), 40, "***") : "...");
-            K.el("span", "emo-badge " + (okP ? "ok" : "bad"), gg, okP ? "✓" : x ? "✗" : "–");
-          }
-        }
-        const res = /* @__PURE__ */ new Map();
-        for (const p of others) {
-          const x = g.get(p.id), good = right.includes(p.id);
-          let pts = 0;
-          if (good) {
-            pts = Math.round(100 * (0.5 + 0.5 * Math.max(0, 1 - (x.ms || 0) / (gsec * 1e3))));
-            p.score += pts;
-            p.right++;
-          }
-          res.set(p.id, good ? "emo-ok" : x ? "emo-bad" : "emo-none");
-          K.result(p.id, { ok: good, pts, score: p.score, right: r.a, emo: { e: r.e, made: au.name, look } });
-        }
-        const easy = right.length === others.length && others.length > 1, hard = !right.length;
-        const mpts = easy || hard ? 0 : 50 * right.length;
-        au.score += mpts;
-        K.result(au.id, { ok: mpts > 0, pts: mpts, score: au.score, title: easy ? tx("tooEasy") : hard ? tx("tooHard") : "", emo: { e: r.e, maker: true, look } });
-        board(K, cv2, st, res);
-        ln.textContent = "";
-        K.el("div", "emo-pill " + (mpts ? "ok" : "bad") + " emo-pop", ln, easy ? "😅 " + tx("tooEasy") : hard ? "🤯 " + tx("tooHard") : "✍️ " + tx("makerPts", { name: "⁨" + au.name + "⁩", n: K.num(mpts) }));
-        yield K.sleep(5200);
-      }
-    });
-  }
-  const line = (cv, K) => {
-    let l = cv.querySelector(".emo-line");
-    if (!l) {
-      l = K.el("div", "emo-line", null);
-      const a = $1(cv, "answers");
-      if (a) a.after(l);
-    }
-    return l;
-  };
   function winners(K, st, ps) {
     return __async(this, null, function* () {
       const { tx } = st;
