@@ -4,7 +4,9 @@
 (function () {
   var old = !window.BV_ASYNC;
   var hasOld = { 'wt-core': 1, 'wt-net': 1, 'live-kit': 1, 'i18n': 1, 'common': 1, 'sound': 1, 'play': 1, 'games': 1, 'boowho-game': 1, 'world-game': 1, 'gir-game': 1, 'imp-game': 1, 'emoji-game': 1, 'dom-core': 1, 'dom-game': 1 };
-  var list = ['../go/compat.js?v=15',
+  // (tvlite.js comes first: on a TV's own browser it makes the drawing light before any game draws. See that file.)
+  var list = ['tvlite.js?v=1',
+    '../go/compat.js?v=15',
     '../go/wt-core.js?v=15',
     '../go/wt-net.js?v=19',
     '../go/live-kit.js?v=19',
