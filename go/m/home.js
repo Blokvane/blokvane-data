@@ -89,7 +89,7 @@ GO.def('home', (pair) => {
     // (the computer's own word on what this phone may do comes with its hello: the tiles follow it)
     if (!perms) { const off = pc.onStatus(() => { if (pc.perms() && st.onHome) { off(); if (showing() && st.draw) st.draw(); } }); }
     // what this phone does by itself: ad blocking, who is signed in and their licenses, a video for the TV
-    GO.thisPhone(v.body, pc.name).style.marginTop = '16px';
+    GO.thisPhone(v.body).style.marginTop = '16px';
     // not on the home screen yet: one tap to make Blokvane an app icon
     if (GO.installCard) GO.installCard(v.body);
     const more = el('div', 'card', v.body); more.style.marginTop = '16px';

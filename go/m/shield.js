@@ -3,7 +3,6 @@
 //   #me      Account. Who is signed in on this phone, the licenses that email has and the devices on them: rename
 //            one, remove one, put this phone on a license or take it off.
 //   #ads     Block ads on this phone, in three numbered steps: sign in, put this phone on a license, switch it on.
-//   #tvplay  A YouTube video from this phone, played on the computer (where Blokvane removes the ads) for the TV.
 //
 // A phone has no browser extension, so it is protected one level lower. Every app and browser first asks "where does
 // this site live?" (a name lookup). With ad blocking on, the phone asks Blokvane, and for ad and tracking companies
@@ -556,7 +555,7 @@ GO.def('shield', (kind, parts) => {
       a.appendChild(icon('shield')); el('span', '', a, 'Install the profile');
       steps(box, p === 'ios' ? [
         ['shield', 'Tap "Install the profile"', 'Safari asks whether to allow the download: tap Allow.'],
-        ['gear', 'Open the Settings app', 'At the top, tap "Profile Downloaded".'],
+        ['gear', 'Open the Settings app', 'Tap "Profile Downloaded" near the top. Not there? Tap General, then "VPN & Device Management", then "Blokvane ad blocking".'],
         ['check', 'Tap Install, three times', 'It asks for the phone\'s passcode. "Not Signed" in red is normal for a profile that is not from a company\'s device management.'],
         ['refresh', 'Come back here', 'Tap "Check now".']
       ] : [
@@ -639,81 +638,13 @@ GO.def('shield', (kind, parts) => {
     for (const t of [
       all ? 'It blocks ads and trackers that come from ad and tracking companies\' own servers: in apps, games, news sites and browsers.'
         : 'It blocks ads and trackers that come from ad and tracking companies\' own servers, on the sites you open in Chrome.',
-      'It cannot remove the ads inside YouTube, or in other apps that send their ads from the same servers as their videos. For YouTube without ads, play it on your computer.',
+      'It cannot remove the ads inside YouTube, or in other apps that send their ads from the same servers as their videos. For YouTube without ads, watch it on your computer, where Blokvane takes them out.',
       'Where an ad was, an empty space can stay. A sponsored link at the top of search results may not open: use the normal result under it.',
       'This phone\'s lookups go to Blokvane, encrypted. Blokvane answers them and keeps none of them: no list of sites or apps.',
       'If the phone ever has no internet right after a change, switch this off with the steps under "Switch it off". Everything is back at once.'
     ]) el('li', '', ul, t);
   }
 
-  // ---------------------------------------------------------------- a video from this phone, on the computer (and the TV)
-  function tidy(text) {
-    const m = /https?:\/\/[^\s<>"']+/i.exec(String(text || ''));
-    const u = GO.webUrl(m ? m[0] : '');
-    if (!u) return '';
-    try { const x = new URL(u); if (x.hostname === 'm.youtube.com') x.hostname = 'www.youtube.com'; return x.href; } catch (e) { return ''; }
-  }
-  function playOn() {
-    const v = view('Play on the computer', { tint: 'teal', back });
-    const list = GO.pairs();
-    let shared = '';
-    try { shared = sessionStorage.getItem('bvgo:shared') || ''; sessionStorage.removeItem('bvgo:shared'); } catch (e) {}
-    head(v.body, 'tv', 'YouTube on the TV, without the ads', 'The video plays on your computer, where Blokvane removes YouTube\'s ads. The TV shows the computer, and this phone is the remote.');
-    const c = el('div', 'card', v.body);
-    if (!list.length) {
-      el('h2', '', c, 'First, connect this phone to your computer');
-      steps(c, [
-        ['laptop', 'On your computer, open Blokvane', 'Click the Blokvane icon in Chrome or Edge, then Connect.'],
-        ['phone', 'Click "Connect your phone"', 'A QR code shows.'],
-        ['camera', 'Point this phone\'s camera at it', 'Tap the link. From then on this phone knows your computer.']
-      ]);
-    } else {
-      el('h2', '', c, '1. The video\'s link');
-      const t = input({ placeholder: 'A YouTube link', max: 2000, value: shared });
-      const r = el('div', 'sh-copy', c);
-      r.appendChild(t);
-      btn('Paste', { icon: 'clip' }, r, async () => { try { t.value = tidy(await navigator.clipboard.readText()) || t.value; } catch (e) { toast('Press and hold in the box, then Paste.'); } });
-      let pick = list[0];
-      const go = btn('Play on ' + pick.name, { kind: 'go', icon: 'play', full: true }, c, async () => {
-        const u = tidy(t.value);
-        if (!u) { toast('Paste the video\'s link first.', 'bad'); t.focus(); return; }
-        const pc = GO.computer(pick);
-        const a = await pc.ask('open', { url: u }, { timeout: 20000 });
-        buzz('ok');
-        toast(a && a.opened ? 'Playing on ' + pick.name + '.' : 'Sent. It opens when the computer is on.', 'ok');
-        done.hidden = false;
-      });
-      go.style.marginTop = '10px';
-      if (list.length > 1) {
-        const s = el('div', 'list', c); s.style.marginTop = '10px';
-        for (const p of list) {
-          const it = el('button', 'item', s); it.type = 'button'; it.style.border = '0'; it.style.textAlign = 'start';
-          it.appendChild(icon('laptop')); const tx = el('span', 't', it); el('b', '', tx, p.name);
-          it.onclick = () => { pick = p; go.querySelector('span').textContent = 'Play on ' + p.name; for (const x of s.children) x.classList.toggle('on', x === it); };
-          if (p === pick) it.classList.add('on');
-        }
-      }
-      const done = el('div', '', c); done.hidden = true; done.style.marginTop = '10px';
-      btn('Open the remote', { kind: 'tint', full: true, icon: 'remote' }, done, () => { location.hash = '#c1.' + pick.s + '.' + pick.cid; });
-      el('p', 'muted small', c, GO.standalone() && plat() === 'android' ? 'Quicker: in YouTube, tap Share, then Blokvane. The link lands here by itself.'
-        : plat() === 'android' ? 'Quicker: add Blokvane to the home screen. Then YouTube\'s Share button lists Blokvane, and the link lands here by itself.'
-          : 'In YouTube, tap Share, then Copy link. Then tap Paste here.').style.marginTop = '12px';
-      el('p', 'muted small', c, 'The computer has to be on, with Chrome open.').style.marginTop = '6px';
-    }
-    const how = el('div', 'card', v.body);
-    el('h2', '', how, list.length ? '2. Show the computer on the TV' : 'Getting it onto the TV');
-    steps(how, [
-      ['laptop', 'A cable is the simplest', 'Plug the computer into the TV (HDMI). What the computer plays, the TV shows, without the ads.'],
-      ['cast', 'Chromecast or Google TV', 'On the computer, open Chrome\'s menu (the three dots), then "Cast, save and share", then "Cast", and pick "Cast tab". The TV shows the computer\'s tab, so the ads stay gone.'],
-      ['tv', 'Apple TV or a smart TV', 'Mirror the computer\'s screen (AirPlay on a Mac, "Cast" or "Connect to a wireless display" on Windows).']
-    ]);
-    const no = el('div', 'card', v.body);
-    el('h2', '', no, 'Why not straight from the phone to the TV?');
-    el('p', '', no, 'The Cast button inside YouTube hands the video to the TV\'s own YouTube app. That app belongs to the TV: it shows its ads, and nothing on a phone or a computer can reach into it. That is why the video has to play on the computer.');
-    foot();
-  }
-
-  if (kind === 'tvplay') return playOn();
   if (kind === 'me') return me();
   return ads();
 });

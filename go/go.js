@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '40';
+  const VERSION = '41';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -731,9 +731,9 @@
   }
   // which part handles each kind of link
   const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
-    wb: 'board', game: 'party', join: 'party', ads: 'shield', tvplay: 'shield', me: 'shield' };
-  // (this phone's own pages: its account and licenses, ad blocking, a video for the computer)
-  const OWN_KINDS = new Set(['ads', 'tvplay', 'me']);
+    wb: 'board', game: 'party', join: 'party', ads: 'shield', me: 'shield' };
+  // (this phone's own pages: its account and licenses, and ad blocking)
+  const OWN_KINDS = new Set(['ads', 'me']);
   // no link: the computers this phone knows, or how to start
   async function home() {
     // (Blokvane as an app, opened again soon after it was in a party game it didn't leave: straight back into that game,
@@ -753,7 +753,7 @@
     if (list.length === 1 && !picking) { history.replaceState(null, '', '#c1.' + list[0].s + '.' + list[0].cid); return (await need('home'))(list[0]); }
     const v = view('Blokvane');
     // (what this phone does by itself, with or without a computer: ad blocking, its account and licenses, a video for the TV)
-    const ownCard = () => thisPhone(v.body, '');
+    const ownCard = () => thisPhone(v.body);
     const gameCard = () => {
       const c = el('div', 'card', v.body);
       el('h2', '', c, 'Joining a game or a poll?');
@@ -786,8 +786,8 @@
   }
 
   // ---------- "This phone": what the phone does by itself, with or without a computer ----------
-  // Three rows, each with what is true right now under its name: ad blocking on this phone, who is signed in and their
-  // licenses, and a YouTube video for the TV. What they say comes from this phone's own memory of its last look
+  // Two rows, each with what is true right now under its name: ad blocking on this phone, and who is signed in and
+  // their licenses. What they say comes from this phone's own memory of its last look
   // (m/shield.js keeps it). The one thing asked here, every few hours and without any sign-in: is ad blocking for
   // phones open yet? So the first row never promises what Blokvane cannot give today.
   const adsOpen = () => { const x = store.get('shield:info', null); return x && typeof x === 'object' && typeof x.open === 'string' ? x : { open: '', at: 0 }; };
@@ -818,7 +818,7 @@
     it.onclick = () => { location.hash = hash; };
     return it;
   }
-  function thisPhone(parent, pcName) {
+  function thisPhone(parent) {
     const c = el('div', 'card own', parent);
     el('h2', '', c, 'This phone');
     const ls = el('div', 'list own-list', c);
@@ -838,8 +838,6 @@
       who = sum.total ? [m, sum.used + ' of ' + sum.total + (sum.total === 1 ? ' license' : ' licenses') + ' in use'] : m;
     }
     ownRow(ls, 'kid', 'sky', 'Account and licenses', who, '#me');
-    // 3. a video from this phone, played on the computer for the TV
-    ownRow(ls, 'tv', 'teal', 'YouTube on the TV, without the ads', pcName ? 'Plays on ' + pcName : 'Plays on your computer', '#tvplay');
     return c;
   }
 
@@ -1497,16 +1495,12 @@
     hero(v.body, 'This browser is too old for this', 'Open this link in Chrome, Safari, Edge or Firefox.', { sleepy: true });
     return;
   }
-  // A link shared to Blokvane from another app (YouTube's Share button on Android, once Blokvane is on the home
-  // screen): it is kept for "Play on the computer" and taken out of the address, so it is not shared twice.
+  // (A copy of Blokvane put on a home screen before could be picked in another app's Share list. Nothing here takes
+  // a shared link any more: it is taken out of the address and forgotten, and the page opens as usual.)
   try {
     const q = new URLSearchParams(location.search);
-    const sharedText = [q.get('url'), q.get('text'), q.get('title')].filter(Boolean).join(' ');
-    if (!GAMES && sharedText) {
-      const m = /https?:\/\/[^\s<>"']+/i.exec(sharedText);
-      if (m && webUrl(m[0])) { sessionStorage.setItem('bvgo:shared', webUrl(m[0])); history.replaceState(null, '', location.pathname + '#tvplay'); }
-      else history.replaceState(null, '', location.pathname + location.hash);
-    }
+    if (!GAMES && (q.get('url') || q.get('text') || q.get('title'))) history.replaceState(null, '', location.pathname + location.hash);
+    sessionStorage.removeItem('bvgo:shared');
   } catch (e) {}
   // (first the connection, from the second copy if the first is gone; then the page)
   keepConnected().finally(async () => { if (GAMES) await gamesLang(); route(); if (pairs().length) askToKeep(); });
