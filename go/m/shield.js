@@ -395,7 +395,42 @@ GO.def('shield', (kind, parts) => {
     if (again) btn('Check again', { kind: 'ghost', full: true, icon: 'refresh' }, c, again).style.marginTop = '4px';
     return c;
   }
+  // Ad blocking for the phone has an app of its own now (adblock.html): this page says so first, and why, and keeps
+  // its own three steps below for whoever would rather stay here. Both use the same sign-in and the same license.
+  function recCard(parent, working) {
+    const c = el('div', 'card rec', parent);
+    const top = el('div', 'rec-top', c);
+    const im = el('img', '', top); im.src = 'ads-192.png'; im.alt = '';
+    const t = el('div', '', top);
+    el('span', 'pill ok', t, 'The easier way');
+    el('h2', '', t, 'Blokvane Ad Blocker');
+    el('p', '', c, working ? 'Ad blocking has its own app now. This phone is already set up: the app shows it as on, with nothing to do again.'
+      : 'Ad blocking has its own app now. We recommend it over the steps on this page:');
+    const ul = el('ul', 'muted', c);
+    for (const x of (working ? [
+      'How many ads and trackers were stopped, day by day.',
+      'The Ad Blocker Test, and countries this phone should not reach.',
+      'How to switch it off and remove it, in two steps.'
+    ] : [
+      'One button switches it on, and the app notices by itself when the phone is ready.',
+      'A free day to try it: 24 hours, no card.',
+      'It shows how much was stopped, day by day, and has the Ad Blocker Test and country blocking in it.'
+    ])) el('li', '', ul, x);
+    const a = el('a', 'btn go full', c); a.href = 'adblock.html';
+    a.appendChild(icon('shield')); el('span', '', a, 'Open Blokvane Ad Blocker');
+    el('p', 'muted small', c, 'Same sign-in, same license. It opens right here.').style.marginTop = '10px';
+    return c;
+  }
+  // The setting that blocks ads on an iPhone or iPad came with iOS 14 (Apple's "DNSSettings" profile). An older one is
+  // told so, not walked through steps that would fail. (0: the browser does not say; nothing is assumed then.)
+  const IOS = +((/(?:iPhone|iPad|iPod)[^)]*? OS (\d+)_/.exec(navigator.userAgent) || [])[1] || 0);
   async function ads() {
+    if (plat() === 'ios' && IOS > 0 && IOS < 14) {
+      const v = view('Block ads', { tint: 'mint', back });
+      head(v.body, 'shield', 'Needs iOS 14 or newer', 'Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS ' + IOS + '. If it can be updated: open Settings, then General, then Software Update.');
+      foot();
+      return;
+    }
     const a = pass.get(), p = plat();
     const info = infoNow();
     // (asked again in the background; the page is drawn anew only when the answer changed what it says)
@@ -405,6 +440,8 @@ GO.def('shield', (kind, parts) => {
       const v = view('Block ads', { tint: 'mint', back });
       head(v.body, 'shield', 'Block ads on this phone', info.open === 'none' ? QUIET : lead(info.android));
       if (info.open === 'none') { closedCard(v.body, false, null); foot(); return; }
+      recCard(v.body, false);
+      el('h2', 'sh-or', v.body, 'Or set it up on this page');
       progress(v.body, 0);
       const ol = el('ol', 'sh-steps', v.body);
       const s1 = step(ol, 1, 'now', 'Sign in', 'With the email your Blokvane plan is on');
@@ -449,6 +486,8 @@ GO.def('shield', (kind, parts) => {
       foot();
       return;
     }
+    recCard(v.body, working);
+    if (!working) el('h2', 'sh-or', v.body, 'Or set it up on this page');
     progress(v.body, done);
     const ol = el('ol', 'sh-steps', v.body);
     // 1. signed in

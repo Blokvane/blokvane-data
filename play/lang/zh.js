@@ -1421,5 +1421,8 @@ BVI18N.add("zh", {
 "The host handed another game to someone else, so you're not the host any more.": "房主把另一局游戏交给了别人，所以你不再是房主了。",
 "The TV couldn't check with Blokvane, so you're not the host any more.": "电视无法和 Blokvane 确认，所以你不再是房主了。",
 "Take the host back": "收回房主身份",
-"A host with Blokvane Pro can pick this.": "只有有 Blokvane Pro 的房主才能选这个。"
+"A host with Blokvane Pro can pick this.": "只有有 Blokvane Pro 的房主才能选这个。",
+"More from Blokvane": "Blokvane 的更多应用",
+"Block ads on this phone": "在这部手机上拦截广告",
+"Your phone as the remote for your computer and TV": "把手机当作电脑和电视的遥控器"
 });

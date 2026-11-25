@@ -1421,5 +1421,8 @@ BVI18N.add("bn", {
 "The host handed another game to someone else, so you're not the host any more.": "হোস্ট অন্য একটা খেলা অন্য কাউকে দিয়ে দিয়েছেন, তাই আপনি আর হোস্ট নন।",
 "The TV couldn't check with Blokvane, so you're not the host any more.": "টিভি Blokvane-এর সাথে যাচাই করতে পারেনি, তাই আপনি আর হোস্ট নন।",
 "Take the host back": "আবার হোস্ট হন",
-"A host with Blokvane Pro can pick this.": "শুধু Blokvane Pro থাকা হোস্ট এটা বেছে নিতে পারেন।"
+"A host with Blokvane Pro can pick this.": "শুধু Blokvane Pro থাকা হোস্ট এটা বেছে নিতে পারেন।",
+"More from Blokvane": "Blokvane-এর আরও অ্যাপ",
+"Block ads on this phone": "এই ফোনে বিজ্ঞাপন ব্লক করুন",
+"Your phone as the remote for your computer and TV": "আপনার ফোন আপনার কম্পিউটার আর টিভির রিমোট"
 });

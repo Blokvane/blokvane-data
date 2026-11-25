@@ -1513,5 +1513,8 @@ BVI18N.add("ar", {
 "The TV couldn't check with Blokvane, so you're not the host any more.": "تعذّر على التلفاز التحقق مع Blokvane، لذا لم تعد المضيف.",
 "Take the host back": "استعد دور المضيف",
 "A host with Blokvane Pro can pick this.": "يمكن للمضيف الذي لديه Blokvane Pro فقط اختيار هذا.",
-"Sign in on this phone with your email to host free games with friends and family. Free Dominoes 151 is 1 vs 1, first to 51, and Blokvane Pro gives you every mode. Everyone who joins plays for free.": "سجّل الدخول على هذا الهاتف ببريدك الإلكتروني لتستضيف ألعابًا مجانية مع الأصدقاء والعائلة. دومنة 151 المجانية واحد ضد واحد حتى 51، ومع Blokvane Pro تحصل على كل طرق اللعب. كل من ينضم يلعب مجانًا."
+"Sign in on this phone with your email to host free games with friends and family. Free Dominoes 151 is 1 vs 1, first to 51, and Blokvane Pro gives you every mode. Everyone who joins plays for free.": "سجّل الدخول على هذا الهاتف ببريدك الإلكتروني لتستضيف ألعابًا مجانية مع الأصدقاء والعائلة. دومنة 151 المجانية واحد ضد واحد حتى 51، ومع Blokvane Pro تحصل على كل طرق اللعب. كل من ينضم يلعب مجانًا.",
+"More from Blokvane": "المزيد من Blokvane",
+"Block ads on this phone": "احجب الإعلانات على هذا الهاتف",
+"Your phone as the remote for your computer and TV": "هاتفك جهاز تحكم بحاسوبك وتلفازك"
 });

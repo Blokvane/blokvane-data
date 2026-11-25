@@ -1421,5 +1421,8 @@ BVI18N.add("hi", {
 "The host handed another game to someone else, so you're not the host any more.": "होस्ट ने कोई दूसरा गेम किसी और को सौंप दिया है, इसलिए अब आप होस्ट नहीं हैं।",
 "The TV couldn't check with Blokvane, so you're not the host any more.": "टीवी Blokvane से पुष्टि नहीं कर पाया, इसलिए अब आप होस्ट नहीं हैं।",
 "Take the host back": "होस्ट वापस लें",
-"A host with Blokvane Pro can pick this.": "इसे सिर्फ़ Blokvane Pro वाला होस्ट चुन सकता है।"
+"A host with Blokvane Pro can pick this.": "इसे सिर्फ़ Blokvane Pro वाला होस्ट चुन सकता है।",
+"More from Blokvane": "Blokvane की ओर से और भी",
+"Block ads on this phone": "इस फ़ोन पर विज्ञापन ब्लॉक करें",
+"Your phone as the remote for your computer and TV": "आपका फ़ोन आपके कंप्यूटर और टीवी का रिमोट"
 });

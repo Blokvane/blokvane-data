@@ -1,0 +1,43 @@
+{
+  "id": "adblock.html",
+  "name": "Blokvane Ad Blocker",
+  "short_name": "BV Ad Block",
+  "description": "Blokvane's ad blocker for your phone: ads and trackers stopped in every app and every browser, the Protection Lab test, your numbers, and country blocking.",
+  "start_url": "adblock.html",
+  "scope": "adblock.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f5efe3",
+  "theme_color": "#f5efe3",
+  "icons": [
+    {
+      "src": "ads-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ads-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "ads-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "https://app.blokvane.com/go/adblock.webmanifest"
+    }
+  ],
+  "lang": "en",
+  "categories": [
+    "utilities",
+    "security"
+  ]
+}

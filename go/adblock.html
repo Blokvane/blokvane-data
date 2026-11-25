@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en" data-app="ads">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f5efe3" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#15120e" media="(prefers-color-scheme: dark)">
+<meta name="referrer" content="no-referrer">
+<!-- What this page may load and talk to (a second lock, in case a mistake in the page ever let someone's text through
+     as code): scripts only from Blokvane's own pages, never written into the page or made from text; connections only
+     to Blokvane's server (and to a made-up name under dnscheck.blokvane.com that leads nowhere: looking it up is how
+     the app finds out that this phone's lookups go through Blokvane); one frame, for Blokvane's own Ad Blocker Test
+     on blokvane.com; nothing else from anywhere. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://blokvane.com https://*.dnscheck.blokvane.com; frame-src https://blokvane.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="BV Ad Block">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>Blokvane Ad Blocker</title>
+<link rel="icon" href="ads-192.png">
+<link rel="apple-touch-icon" href="ads-apple-touch.png">
+<link rel="manifest" href="adblock.webmanifest">
+<link rel="stylesheet" href="adblock.css?v=1">
+<!-- Blokvane Ad Blocker: the phone's own app for ad blocking (the third of Blokvane's small apps, next to BV Remote
+     and BV Games). It looks like the Protection Lab. What it does: switches ad blocking on for this phone and shows
+     how to take it off again, runs Blokvane's Ad Blocker Test, shows this phone's numbers, and lets its owner pick
+     countries the phone does not reach. It talks to Blokvane's server only (pass.js for the sign-in with an emailed
+     code; everything else in adblock.js), and keeps on this phone: who is signed in, this phone's own id, and the
+     language. Its words in six more languages are in lang/ab-<code>.js. -->
+</head>
+<body>
+<div id="app" class="app"><noscript>Blokvane Ad Blocker needs JavaScript.</noscript></div>
+<script src="compat.js?v=15"></script>
+<script src="qrcode.js?v=11"></script>
+<script src="pass.js?v=5"></script>
+<script src="adblock.js?v=1"></script>
+</body>
+</html>

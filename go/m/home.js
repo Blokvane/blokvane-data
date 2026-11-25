@@ -90,6 +90,8 @@ GO.def('home', (pair) => {
     if (!perms) { const off = pc.onStatus(() => { if (pc.perms() && st.onHome) { off(); if (showing() && st.draw) st.draw(); } }); }
     // what this phone does by itself: ad blocking, who is signed in and their licenses, a video for the TV
     GO.thisPhone(v.body).style.marginTop = '16px';
+    // Blokvane's other two apps: the ad blocker for this phone, and the party games
+    if (GO.appsCard) GO.appsCard(v.body, ['ads', 'games']).style.marginTop = '16px';
     // not on the home screen yet: one tap to make Blokvane an app icon
     if (GO.installCard) GO.installCard(v.body);
     const more = el('div', 'card', v.body); more.style.marginTop = '16px';

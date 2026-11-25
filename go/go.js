@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '41';
+  const VERSION = '42';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -491,6 +491,13 @@
   // Add to Home Screen). Either way it is the same page, with its own icon, opening full screen.
   let installEvt = null;
   addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  // (Chrome on Android can say that this app is on the home screen already: then "add the app" is not offered again)
+  try {
+    if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => {
+      const mine = document.documentElement.hasAttribute('data-games') ? /games\.webmanifest/ : /manifest\.json/;
+      if (a && a.some(x => mine.test(x.url || ''))) { store.set(document.documentElement.hasAttribute('data-games') ? 'gamesAdded' : 'appAdded', 1); document.querySelectorAll('.card.install').forEach(c => c.remove()); }
+    }).catch(() => {});
+  } catch (e) {}
   addEventListener('appinstalled', () => { installEvt = null; store.set(GAMES ? 'gamesAdded' : 'appAdded', 1); });
   const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } };
   async function installApp(o = {}) {
@@ -537,7 +544,8 @@
     const r = el('div', 'install-row', c);
     const ic = el('img', 'install-ic', r); ic.src = 'icon-192.png'; ic.alt = '';
     const t = el('div', '', r); el('b', '', t, 'Make Blokvane an app'); el('p', 'muted small', t, 'Add it to your home screen: it opens in one tap, full screen, and stays connected.');
-    const row = el('div', 'grid2', c); row.style.marginTop = '12px';
+    // one under the other: side by side, "Add to home screen" took three lines on a phone
+    const row = el('div', 'install-btns', c);
     btn('Add to home screen', { kind: 'tint', icon: 'addbox' }, row, () => installApp());
     btn('Not now', { kind: 'ghost' }, row, () => { store.set('installHide', Date.now() + 21 * 864e5); c.remove(); });
     return c;
@@ -753,7 +761,7 @@
     if (list.length === 1 && !picking) { history.replaceState(null, '', '#c1.' + list[0].s + '.' + list[0].cid); return (await need('home'))(list[0]); }
     const v = view('Blokvane');
     // (what this phone does by itself, with or without a computer: ad blocking, its account and licenses, a video for the TV)
-    const ownCard = () => thisPhone(v.body);
+    const ownCard = () => { thisPhone(v.body); appsCard(v.body, ['ads', 'games']); };
     const gameCard = () => {
       const c = el('div', 'card', v.body);
       el('h2', '', c, 'Joining a game or a poll?');
@@ -838,6 +846,33 @@
       who = sum.total ? [m, sum.used + ' of ' + sum.total + (sum.total === 1 ? ' license' : ' licenses') + ' in use'] : m;
     }
     ownRow(ls, 'kid', 'sky', 'Account and licenses', who, '#me');
+    return c;
+  }
+
+  // Blokvane's other two apps, each with its own icon: one tap opens it (in the browser, or as the app once it is on
+  // the home screen). which: 'ads', 'games', 'remote'.
+  const APPS = {
+    ads: ['ads-192.png', 'BV Ad Block', 'Block ads on this phone', 'adblock.html'],
+    games: ['games-192.png', 'BV Games', 'Party games on the TV, with every phone as a controller', 'games.html'],
+    remote: ['icon-192.png', 'BV Remote', 'Your phone as the remote for your computer and TV', 'index.html']
+  };
+  function appsCard(parent, which, o = {}) {
+    const w = t => (o.words ? o.words(t) : t);
+    const c = el('div', 'card apps', parent);
+    el('h2', '', c, w(o.title || 'More from Blokvane'));
+    const ls = el('div', 'list own-list', c);
+    for (const k of which) {
+      const [img, name, sub, href] = APPS[k];
+      const a = el('a', 'item own-row app-row', ls);
+      a.href = href;
+      const im = el('img', 'app-ic', a); im.src = img; im.alt = '';
+      const t = el('span', 't', a);
+      el('b', '', t, name);
+      // (the ad blocker's row never promises what is not open yet: the same words as "This phone" above it)
+      const open = k === 'ads' && !o.words ? adsOpen().open : '';
+      el('small', '', t, open === 'none' ? 'Not open yet' : open === 'some' ? 'Being tried out with a few people' : w(sub));
+      a.appendChild(icon('chev', 'go'));
+    }
     return c;
   }
 
@@ -1341,6 +1376,8 @@
       btn(gt('Sign in to host'), { kind: 'go', full: true, icon: 'key' }, c, () => signInScreen({ after: gamesHome, back: gamesHome })).style.marginTop = '10px';
       getCard(v.body);
     }
+    // (Blokvane's other two apps)
+    appsCard(v.body, ['ads', 'remote'], { words: gt });
     if (!standalone() && !store.get('gamesAdded', 0)) {
       const ic = el('div', 'card install', v.body);
       const r = el('div', 'install-row', ic);
@@ -1474,7 +1511,7 @@
 
   // ---------- off we go ----------
   window.GO = { el, icon, boo, swBoo, lookRow, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, ownRow, thisPhone, say: null, get pc() { return pc; },
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, ownRow, thisPhone, appsCard, say: null, get pc() { return pc; },
     games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
