@@ -5,6 +5,9 @@ GO.def('home', (pair) => {
   const { el, icon, view, btn, toast, buzz, sheet, store } = GO;
   if (!pair) { location.hash = ''; GO.route(); return; }
   const pc = GO.computer(pair);
+  // (the computer stays connected while this phone's own pages are open, like its license: only when this computer's
+  // page is the one showing may something the computer says draw it again)
+  const showing = () => { const h = BVLIVE.parse(location.hash); return !!(h && h.kind === 'c1' && h.parts[1] === pair.cid); };
   const TILES = [
     { id: 'remote', perm: 'remote', icon: 'remote', tint: 'violet', name: 'Remote', hint: 'Pause, volume, next episode',
       help: 'Control whatever plays in Chrome on the computer: pause and play, the volume, skip the intro, the next episode.' },
@@ -36,10 +39,14 @@ GO.def('home', (pair) => {
   const PARTS = { remote: 'remote', slides: 'remote', gameday: 'remote', send: 'send', clip: 'send', kid: 'family', screens: 'family', board: 'family', camera: 'family', kv: 'family', lost: 'family' };
   // (each tile's place: these two are always wide; if the rest don't pair up, the last one is wide too)
   const WIDE = new Set(['remote', 'party']);
+  // (kept with the connection, not with this drawing of the page: the page is drawn anew each time you come back to
+  // it, and what the computer says must reach the newest one)
+  const st = pc.__homeState || (pc.__homeState = { badge: {}, onHome: false, draw: null });
+  const badge = st.badge;
   // what the computer says by itself, wherever you are in the app
   if (!pc.__homeWired) {
     pc.__homeWired = true;
-    pc.on('kidAsk', a => { buzz('long'); toast(`${a.host} needs a yes or no`, 'ok'); badge.kid = (badge.kid || 0) + 1; if (onHome) home(); });
+    pc.on('kidAsk', a => { buzz('long'); toast(`${a.host} needs a yes or no`, 'ok'); st.badge.kid = (st.badge.kid || 0) + 1; if (st.onHome && showing() && st.draw) st.draw(); });
     pc.on('kvAsk', a => { GO.need('family').then(F => F.kvPrompt(pc, a)); });
     pc.on('drop', d => { GO.need('send').then(S => S.incoming(pc, d)); });
     pc.on('continue', d => { GO.need('send').then(S => S.continueCard(pc, d)); });
@@ -49,10 +56,8 @@ GO.def('home', (pair) => {
     // (the parts most likely to be needed load now, so a tap opens them at once)
     setTimeout(() => { GO.need('remote').catch(() => {}); GO.need('send').catch(() => {}); GO.need('family').catch(() => {}); }, 400);
   }
-  const badge = {};
-  let onHome = false;
   function home() {
-    onHome = true;
+    st.onHome = true;
     const v = view(pc.name, { live: true });
     // the "?": what every tile does
     const hb = el('button', 'help', v.top);
@@ -82,14 +87,9 @@ GO.def('home', (pair) => {
     }
     if (!perms) el('p', 'muted small center', v.body, 'Connecting to your computer...').style.marginTop = '14px';
     // (the computer's own word on what this phone may do comes with its hello: the tiles follow it)
-    if (!perms) { const off = pc.onStatus(() => { if (pc.perms() && onHome) { off(); home(); } }); }
-    // what this phone does by itself: its own license and ad blocking, and a video sent to the computer for the TV
-    const own = el('div', 'card', v.body); own.style.marginTop = '16px';
-    el('h2', '', own, 'This phone');
-    el('p', '', own, 'Block ads in every app on this phone, and play a YouTube video on ' + pc.name + ' without the ads.');
-    const orow = el('div', 'grid2', own);
-    btn('Block ads here', { kind: 'tint', icon: 'shield' }, orow, () => { location.hash = '#ads'; });
-    btn('Play on the TV', { kind: 'ghost', icon: 'tv' }, orow, () => { location.hash = '#tvplay'; });
+    if (!perms) { const off = pc.onStatus(() => { if (pc.perms() && st.onHome) { off(); if (showing() && st.draw) st.draw(); } }); }
+    // what this phone does by itself: ad blocking, who is signed in and their licenses, a video for the TV
+    GO.thisPhone(v.body, pc.name).style.marginTop = '16px';
     // not on the home screen yet: one tap to make Blokvane an app icon
     if (GO.installCard) GO.installCard(v.body);
     const more = el('div', 'card', v.body); more.style.marginTop = '16px';
@@ -139,11 +139,11 @@ GO.def('home', (pair) => {
     });
   }
   async function open(id) {
-    onHome = false;
+    st.onHome = false;
     badge[id] = 0;
     if (id === 'party') { (await GO.need('party'))('start', [], { pc, back: () => { history.replaceState(null, '', '#c1.' + pair.s + '.' + pair.cid); home(); } }); return; }
     if (id === 'here') {
-      onHome = true;
+      st.onHome = true;
       try { const d = await pc.ask('here', {}); const S = await GO.need('send'); S.continueCard(pc, d); }
       catch (e) { toast(e && e.message ? e.message : 'That didn\'t work. Try again.', 'bad'); }
       return;
@@ -151,5 +151,6 @@ GO.def('home', (pair) => {
     const part = await GO.need(PARTS[id]);
     part.open(id, pc, home);
   }
+  st.draw = home;
   home();
 });

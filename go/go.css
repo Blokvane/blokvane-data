@@ -839,3 +839,99 @@ a.btn { text-decoration: none; }
 .sh-devs .item > svg { width: 26px; height: 26px; flex: none; color: var(--dim); }
 .sh-again { margin-top: 12px; }
 .sh-again > summary { cursor: pointer; color: var(--dim); font-weight: 650; font-size: 15px; margin-bottom: 10px; }
+
+/* ---------- "This phone" on the home screen: three rows, each with what is true right now under its name ---------- */
+.own-list { margin-top: 12px; }
+.item.own-row { width: 100%; border: 0; color: var(--text); text-align: start; padding: 12px 12px 12px 12px; min-height: 68px; transition: transform .1s ease, background .15s ease; }
+.item.own-row:active { transform: scale(.985); background: var(--raise2); }
+.item.own-row .ic { flex: none; width: 44px; height: 44px; border-radius: 14px; display: grid; align-items: center; justify-items: center; place-items: center; color: var(--tint);
+  background: rgba(255, 255, 255, .06); background: color-mix(in srgb, var(--tint) 18%, transparent); }
+.item.own-row .ic svg { width: 23px; height: 23px; }
+.item.own-row .t b { font: 700 16.5px/1.25 var(--round); white-space: normal; }
+.item.own-row .t small { font-size: 14px; line-height: 1.35; margin-top: 2px; overflow-wrap: anywhere; }
+.item.own-row .t small.ok { color: var(--ok); }
+.item.own-row .t small.warn { color: var(--warn); }
+.item.own-row > svg.go { flex: none; width: 20px; height: 20px; color: var(--faint); }
+html[dir="rtl"] .item.own-row > svg.go { transform: scaleX(-1); }
+
+/* ---------- this phone's own pages (m/shield.js): the account, and ad blocking in three steps ---------- */
+/* the top of a page: one picture, what the page is for, one line under it */
+.sh-head { text-align: center; padding: 10px 8px 6px; }
+.sh-head .sh-ic { display: grid; align-items: center; justify-items: center; place-items: center; width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 24px; color: var(--tint);
+  background: rgba(255, 255, 255, .06); background: color-mix(in srgb, var(--tint) 16%, transparent);
+  box-shadow: inset 0 0 0 1px transparent; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint) 34%, transparent); }
+.sh-head .sh-ic svg { width: 38px; height: 38px; }
+.sh-head h1 { font-size: 26px; font-weight: 800; line-height: 1.15; margin-bottom: 8px; }
+.sh-head p { color: var(--dim); font-size: 17px; line-height: 1.45; margin: 0 auto 16px; max-width: 26em; }
+.sh-head.ok .sh-ic { color: #06241a; background: var(--ok); box-shadow: 0 14px 30px -14px rgba(54, 214, 165, .9); }
+.sh-head.ok .sh-ic svg { stroke-width: 2.6; }
+/* how far along: three short bars and the count in words */
+.sh-prog { display: flex; align-items: center; grid-gap: 12px; gap: 12px; margin: 0 2px 14px; }
+html.no-flexgap .sh-prog > * + * { margin-left: 12px; }
+.sh-prog > span { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 6px; gap: 6px; }
+.sh-prog i { height: 8px; border-radius: 4px; background: var(--raise2); }
+.sh-prog i.on { background: var(--ok); }
+.sh-prog b { flex: none; font: 700 14.5px/1 var(--round); color: var(--dim); }
+/* the three steps: a done one is folded with a tick, the one to do now is open, a later one waits */
+.sh-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-gap: 10px; gap: 10px; }
+.sh-step { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-l); padding: 14px 16px; }
+.sh-step.s-now { border-color: var(--tint); border-color: color-mix(in srgb, var(--tint) 55%, var(--line)); padding-bottom: 16px; }
+.sh-step.s-todo { opacity: .55; }
+.sh-step-h { display: flex; align-items: center; grid-gap: 12px; gap: 12px; }
+html.no-flexgap .sh-step-h > * + * { margin-left: 12px; }
+.sh-step-h .t { flex: 1; min-width: 0; }
+.sh-step-h .t b { display: block; font: 700 17.5px/1.25 var(--round); }
+.sh-step-h .t small { display: block; color: var(--dim); font-size: 14px; line-height: 1.35; margin-top: 1px; overflow-wrap: anywhere; }
+.sh-num { flex: none; width: 34px; height: 34px; border-radius: 50%; display: grid; align-items: center; justify-items: center; place-items: center; background: var(--raise2); color: var(--dim); font: 800 16px/1 var(--round); }
+.sh-step.s-now .sh-num { background: var(--tint); color: #0b0f17; }
+.sh-step.s-done .sh-num { background: rgba(54, 214, 165, .16); color: var(--ok); }
+.sh-step.s-done .sh-num svg { width: 19px; height: 19px; stroke-width: 2.8; }
+.sh-step.s-done .sh-step-h .t b { font-size: 16.5px; }
+.sh-step-b { margin-top: 14px; }
+.sh-step-b > p { margin: 0 0 12px; color: var(--dim); }
+.sh-step-b > p:last-child { margin-bottom: 0; }
+.sh-note { padding: 10px 12px; border-radius: var(--r-s); background: rgba(255, 196, 81, .1); color: var(--warn) !important; font-size: 14.5px; line-height: 1.4; }
+.btn.sh-sm { min-height: 44px; padding: 0 14px; font-size: 15px; border-radius: 14px; flex: none; }
+/* two buttons side by side inside a step: each keeps its words on one line */
+.sh-pair .btn { padding-left: 12px; padding-right: 12px; font-size: 16px; white-space: nowrap; min-width: 0; }
+@media (max-width: 380px) { .sh-pair .btn svg { display: none; } }
+.sh-mail { overflow-wrap: anywhere; }
+.input.sh-code { font: 700 24px/1.2 var(--round); letter-spacing: .12em; text-align: center; }
+.sh-sign .field:first-child { margin-top: 0; }
+.sh-closed h2 { margin-top: 10px; }
+/* who is signed in */
+.sh-who { display: flex; align-items: center; grid-gap: 12px; gap: 12px; }
+html.no-flexgap .sh-who > * + * { margin-left: 12px; }
+.sh-who .t { flex: 1; min-width: 0; }
+.sh-who .t b { display: block; font: 700 17px/1.25 var(--round); overflow-wrap: anywhere; }
+.sh-who .t small { display: block; color: var(--dim); font-size: 14px; margin-top: 2px; }
+.sh-av { flex: none; width: 48px; height: 48px; border-radius: 50%; display: grid; align-items: center; justify-items: center; place-items: center; background: var(--tint); color: #0b0f17; font: 800 21px/1 var(--round); }
+/* how many licenses are in use */
+.sh-meter { display: flex; align-items: center; grid-gap: 12px; gap: 12px; margin: 12px 0 12px; }
+html.no-flexgap .sh-meter > * + * { margin-left: 12px; }
+.sh-meter > span { flex: 1; height: 10px; border-radius: 5px; background: var(--raise2); overflow: hidden; }
+.sh-meter i { display: block; height: 100%; border-radius: 5px; background: var(--tint); }
+.sh-meter b { flex: none; font: 700 14.5px/1 var(--round); color: var(--dim); }
+/* a device on a license: its name, where its license comes from, and what you can do with it */
+.sh-dev { padding: 11px 6px 11px 14px; grid-gap: 10px; gap: 10px; }
+.sh-dev > svg { width: 22px; height: 22px; flex: none; color: var(--dim); }
+.sh-dev .sh-x { width: 40px; height: 44px; margin-inline-start: -8px; }
+@supports not (margin-inline-start: 0) { .sh-dev .sh-x { margin-left: -8px; } }
+.sh-dev .btn.sh-sm { margin-inline-end: 6px; }
+.btn.sh-out { margin: 4px 0 0; color: var(--dim); }
+.sh-copy .input { flex: 1; min-width: 0; min-height: 48px; font-size: 16px; }
+.sh-dev .t b { white-space: normal; overflow-wrap: anywhere; font-weight: 700; }
+.sh-dev.me { box-shadow: inset 0 0 0 1px var(--tint); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tint) 60%, transparent); }
+.sh-dev.free { background: transparent; border: 1px dashed var(--line); padding-right: 12px; }
+.sh-dev.free > svg { color: var(--ok); }
+.sh-chip { display: inline-block; vertical-align: middle; margin-inline-start: 8px; padding: 2px 8px; border-radius: 999px; background: var(--tint); color: #0b0f17; font: 700 12px/1.4 var(--sans); white-space: nowrap; }
+@supports not (margin-inline-start: 0) { .sh-chip { margin-left: 8px; } }
+.sh-x.bad { color: var(--bad); }
+.sh-x:active { background: rgba(255, 255, 255, .08); color: var(--text); }
+.sh-x.bad:active { background: rgba(255, 111, 125, .16); color: var(--bad); }
+.sh-more-lic { margin-top: 12px; }
+/* what it blocks, and what it can't: closed until asked */
+.sh-limits { margin: 0 0 12px; padding: 14px 16px; border-radius: var(--r-l); border: 1px solid var(--line); background: transparent; }
+.sh-limits summary { cursor: pointer; color: var(--dim); font-weight: 650; font-size: 15.5px; }
+.sh-limits ul { margin: 12px 0 0; padding-inline-start: 20px; color: var(--dim); font-size: 14.5px; line-height: 1.45; display: grid; grid-gap: 8px; gap: 8px; }
+@supports not (padding-inline-start: 0) { .sh-limits ul { padding-left: 20px; } }

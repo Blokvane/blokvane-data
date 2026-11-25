@@ -1206,6 +1206,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // added at a tap.)
   const trap = { on: false, ask: null, going: false, popping: false };
   const inGame = () => !!(G.R && G.joined && !G.kicked && !G.closed);
+  // (the app's own Back, in go.js, stays out of the way while a game answers Back itself)
+  GO.backBusy = () => trap.on || trap.going || trap.popping || inGame();
   function armBack() {
     if (trap.on || trap.going || !inGame()) return;
     if (history.state && history.state.bvBack) { trap.on = true; return; }
@@ -4504,7 +4506,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     // where it shows: { k: 'tv', tv } (a TV near you), { k: 'link' }, or { k: 'pc', id: 'here' or a TV screen's id, name }
     let where = null, chose = false;
     await useLang(GO.lang ? GO.lang() : (i18 ? i18.pick() : 'en'));
-    const v = view(T('Start a game'), { tint: 'sun', night: true, back });
+    const v = view(T('Start a game'), { tint: 'sun', night: true, back, step: true });
     if (GO.backCard) GO.backCard(v.body);
     hero(v.body, T('Start a game'), T('Pick a game, then the screen everyone will watch. Everyone else joins from their own phone: no app, no account.'), { node: heroBoo('boo:party') });
     const mayHost = () => !!(GO.pass && (GO.pass.host ? GO.pass.host() : GO.pass.get()));
@@ -4678,7 +4680,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (!conn) return back();
     let stop = () => {};
     const end = () => { stop(); try { conn.terminate(); } catch (e) {} };
-    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { end(); back(); } });
+    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, step: true, back: () => { end(); back(); } });
     hero(v.body, T('Casting to your TV...'), T('{game} opens on the TV in a moment, and this page joins it as the host by itself.', { game: gameNameOf(game) }), { node: heroBoo('boo:party') });
     const st = el('div', 'pt-wait', v.body);
     el('div', 'spin', st);
@@ -4709,7 +4711,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     const code = L.shortCode(6);
     const url = L.PLAY + '#' + game + '.' + lang + '.' + code;
     let stop = () => {};
-    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, back: () => { stop(); back(); } });
+    const v = view(T('Put it on the screen'), { tint: 'sun', night: true, step: true, back: () => { stop(); back(); } });
     hero(v.body, T('Open this link on the screen'), T('On the laptop, tablet or TV everyone will watch. {game} opens there, and this phone joins it as the host by itself.', { game: gameNameOf(game) }), { node: heroBoo('boo:party') });
     const card = el('div', 'card pt-link', v.body);
     el('div', 'pt-url', card, url.replace(/^https:\/\//, '')).dir = 'ltr';
@@ -4795,7 +4797,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (!c) return codeScreen();
     await GO.script('watch-boo.js').catch(() => {});
     const leave = () => { history.replaceState(null, '', location.pathname); GO.route(); };
-    const v = view(T('Join a game'), { tint: 'sun', night: true, back: leave });
+    const v = view(T('Join a game'), { tint: 'sun', night: true, back: leave, step: true });
     const h = hero(v.body, T('Joining the game...'), T('Finding the TV. Keep this page open.'), { node: heroBoo('boo:hi') });
     const sp = el('div', 'spin', h); sp.style.margin = '14px auto 0';
     waitCode(c, v.body, link => {
@@ -4814,7 +4816,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     await loadI18n();
     await useLang(GO.lang ? GO.lang() : I() ? I().pick() : 'en');
     GO.say = T;
-    const v = view(T('Join a game'), { tint: 'sun', night: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
+    const v = view(T('Join a game'), { tint: 'sun', night: true, step: true, back: () => { history.replaceState(null, '', location.pathname); GO.route(); } });
     if (GO.backCard) GO.backCard(v.body);
     nearTvs(v.body);
     hero(v.body, T('Type the code on the TV'), T('The 6 letters under the QR code.'), { node: heroBoo('boo:party') });

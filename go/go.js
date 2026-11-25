@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '38';
+  const VERSION = '40';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -46,7 +46,7 @@
     wifi: 'M2.5 9a14 14 0 0 1 19 0M5.5 12.5a9.5 9.5 0 0 1 13 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01', globe: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9S9.5 5.5 12 3z',
     clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2', mic: 'M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21', star: 'M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.5 9.7l5.9-.9z',
     scroll: 'M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4', draw: 'M4 20l4-1 11-11-3-3L5 16zM14 6l3 3',
-    share: 'M12 15V3M7.5 7.5L12 3l4.5 4.5M6 11H4.5v10h15V11H18', dots: 'M12 5h.01M12 12h.01M12 19h.01', addbox: 'M5 4h14v16H5zM12 8.5v7M8.5 12h7', ghost: 'M12 3a7 7 0 0 1 7 7v10l-2.3-1.7L14.3 20 12 18.3 9.7 20l-2.4-1.7L5 20V10a7 7 0 0 1 7-7zM9.5 10h.01M14.5 10h.01'
+    chev: 'M9 5l7 7-7 7', share: 'M12 15V3M7.5 7.5L12 3l4.5 4.5M6 11H4.5v10h15V11H18', dots: 'M12 5h.01M12 12h.01M12 19h.01', addbox: 'M5 4h14v16H5zM12 8.5v7M8.5 12h7', ghost: 'M12 3a7 7 0 0 1 7 7v10l-2.3-1.7L14.3 20 12 18.3 9.7 20l-2.4-1.7L5 20V10a7 7 0 0 1 7-7zM9.5 10h.01M14.5 10h.01'
   };
   function icon(name, cls) {
     const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -128,7 +128,12 @@
     sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
     el('div', 'grab', sh);
     if (title) el('h2', '', sh, title);
-    const close = () => { bg.remove(); if (o.onClose) o.onClose(); };
+    const rec = { bg, locked: o.dismiss === false, close: null };
+    const close = () => { const i = nav.sheets.indexOf(rec); if (i >= 0) nav.sheets.splice(i, 1); bg.remove(); if (o.onClose) o.onClose(); };
+    rec.close = close;
+    nav.sheets.push(rec);
+    // (one step in the browser's history, so the phone's Back button closes the sheet instead of leaving the page)
+    if (tapped() && !navBusy()) pushStep();
     bg.addEventListener('click', e => { if (e.target === bg && o.dismiss !== false) close(); });
     build(sh, close);
     return close;
@@ -217,10 +222,70 @@
   }
   function plat() { const ua = navigator.userAgent; return /iPhone|iPad/.test(ua) ? 'ios' : /Android/.test(ua) ? 'android' : 'desktop'; }
 
+  // ---------- the phone's own Back button (and the back swipe) ----------
+  // A browser only knows web pages: its Back leaves this page, and for an app on the home screen that closes the app.
+  // So every step into the app (a page with an arrow at the top, an open sheet, another page of the app) is also one
+  // step in the browser's history, made at the tap that opened it. Back takes that one step out again and the app
+  // does what the arrow does: one page back, or the sheet closes. On the first page there is nothing to go back to,
+  // so Back leaves, as it should. The arrow at the top goes the same way, so the two never disagree.
+  // (During a party game m/party.js answers Back itself: it asks before leaving the game. GO.backBusy says when.)
+  const nav = { idx: 0, hash: location.hash, title: '', backFn: null, back: null, wants: false, sheets: [], fresh: false, trav: false, answerAt: 0, popAt: 0 };
+  // (every step the app has stood on carries a mark, { bv: how deep }: 0 on the page the app opened on. A step with
+  // no mark is one the browser just made for a new page of the app)
+  const marked = st => !!st && typeof st === 'object' && typeof st.bv === 'number';
+  const stepOf = st => (marked(st) && st.bv > 0 ? st.bv | 0 : 0);
+  const navBusy = () => { try { return !!(window.GO && typeof GO.backBusy === 'function' && GO.backBusy()); } catch (e) { return false; } };
+  // (a browser only keeps a step in its history when a tap added it; one that can't say assumes a tap)
+  const tapped = () => { try { const ua = navigator.userActivation; return ua ? !!ua.isActive : true; } catch (e) { return true; } };
+  // (the parts write a page's address with history.replaceState(null, ...): the step's mark stays on it)
+  const rawReplace = history.replaceState.bind(history);
+  try {
+    history.replaceState = function (st, t, url) {
+      rawReplace(st == null && marked(history.state) ? { bv: stepOf(history.state) } : st, t, url);
+      nav.hash = location.hash;
+    };
+    if (history.state == null) rawReplace({ bv: 0 }, '', location.href);
+  } catch (e) {}
+  nav.idx = stepOf(history.state);
+  function pushStep() {
+    try { history.pushState({ bv: stepOf(history.state) + 1 }, '', location.href); nav.idx = stepOf(history.state); return true; } catch (e) { return false; }
+  }
+  const topSheet = () => { while (nav.sheets.length && !nav.sheets[nav.sheets.length - 1].bg.isConnected) nav.sheets.pop(); return nav.sheets[nav.sheets.length - 1] || null; };
+  addEventListener('popstate', e => {
+    // (a browser also says "popstate" when a tap or a link opens another page of the app. That step is new and has
+    // no mark yet: it is not Back, and "hashchange", which comes next, marks it and draws the page)
+    if (e.state == null) return;
+    const from = nav.idx, to = stepOf(e.state), moved = location.hash !== nav.hash;
+    nav.idx = to; nav.fresh = false; nav.hash = location.hash; nav.popAt = Date.now();
+    // (another page of the app: the address changed, so route() draws it, right after this, on the step it already has)
+    if (moved) { nav.trav = true; nav.fresh = true; for (const r of nav.sheets.splice(0)) { try { r.bg.remove(); } catch (er) {} } return; }
+    if (navBusy() || (e.state && e.state.bvBack) || to > from) return;
+    const top = topSheet();
+    if (top) { if (!top.locked) top.close(); return; }
+    if (nav.back && nav.wants) { nav.answerAt = Date.now(); nav.back(); return; }
+    // (nothing on this page to go back to: that step was left over from a page before, so Back goes on)
+    if (from > 0) { try { history.back(); } catch (er) {} }
+  });
+  // (a page drawn without a tap, like the one the app opens on, has no step yet: the first tap on it adds one)
+  const armNav = () => { if ((nav.wants || topSheet()) && !stepOf(history.state) && !(history.state && history.state.bvBack) && !navBusy()) pushStep(); };
+  for (const ev of ['pointerup', 'keydown', 'click']) addEventListener(ev, armNav, true);
+
   // ---------- the screen ----------
   // view: a fresh page in the app, with a title, the way back, and one color (tint) for the part it belongs to
   const stack = [];
   function view(title, o = {}) {
+    // (what the phone's Back button does here. A party game's pages keep their own Back; a page of theirs that is
+    // not in a game yet, like "Start a game", asks for the app's with o.step)
+    const hasBack = typeof o.back === 'function', wants = hasBack && (!o.night || !!o.step);
+    const goBack = hasBack ? () => { if (o.onBack) o.onBack(); o.back(); } : null;
+    {
+      const answer = Date.now() - nav.answerAt < 1500;                                          // drawn as the answer to Back
+      nav.answerAt = 0;
+      const same = wants && nav.wants && (nav.title === title || nav.backFn === o.back);        // the same page again, or one beside it
+      nav.title = title; nav.backFn = hasBack ? o.back : null; nav.wants = wants; nav.back = goBack;
+      if (nav.fresh) nav.fresh = false;                                                         // this step was made for this page
+      else if (wants && !answer && !same && tapped() && !navBusy()) pushStep();
+    }
     app.textContent = '';
     app.className = 'app';
     app.style.removeProperty('--oa'); app.style.removeProperty('height');
@@ -239,7 +304,15 @@
       const b = el('button', 'back', top);
       b.type = 'button'; b.setAttribute('aria-label', o.app ? gt('Back') : say('Back'));
       b.appendChild(icon('back'));
-      b.onclick = () => { if (o.onBack) o.onBack(); o.back(); };
+      b.onclick = () => {
+        // (on a step of the app's own: out the same way as the phone's Back button, which then draws the page
+        // before. If the browser stays silent, the page before is drawn anyway.)
+        if (!wants || !stepOf(history.state) || navBusy()) return goBack();
+        b.onclick = null;
+        const t0 = Date.now();
+        setTimeout(() => { if (nav.popAt < t0) goBack(); }, 450);
+        try { history.back(); } catch (e) { goBack(); }
+      };
     } else if (o.night) { const ic = el('span', 'sw-appic', top); ic.innerHTML = SW_BOO('plain').replace('class="sw-boo"', ''); }
     else top.appendChild(boo('float'));
     const who = el('div', 'who', top);
@@ -658,7 +731,9 @@
   }
   // which part handles each kind of link
   const KINDS = { d1: 'drop', mv1: 'drop', pw1: 'pw', up1: 'pagehelp', sg1: 'pagehelp', poll: 'poll', q1: 'poll', light: 'fun', rev: 'fun', cam: 'camera', mon: 'camera', monv: 'camera',
-    wb: 'board', game: 'party', join: 'party', ads: 'shield', tvplay: 'shield' };
+    wb: 'board', game: 'party', join: 'party', ads: 'shield', tvplay: 'shield', me: 'shield' };
+  // (this phone's own pages: its account and licenses, ad blocking, a video for the computer)
+  const OWN_KINDS = new Set(['ads', 'tvplay', 'me']);
   // no link: the computers this phone knows, or how to start
   async function home() {
     // (Blokvane as an app, opened again soon after it was in a party game it didn't leave: straight back into that game,
@@ -677,15 +752,8 @@
     if (picking) store.del('pick');
     if (list.length === 1 && !picking) { history.replaceState(null, '', '#c1.' + list[0].s + '.' + list[0].cid); return (await need('home'))(list[0]); }
     const v = view('Blokvane');
-    // (what this phone does by itself, with or without a computer: its license and ad blocking, and a video for the TV)
-    const ownCard = () => {
-      const c = el('div', 'card', v.body);
-      el('h2', '', c, 'This phone');
-      el('p', '', c, 'Put this phone on your Blokvane license, block ads in every app, and send a YouTube video to your computer to watch on the TV without the ads.');
-      const r = el('div', 'grid2', c);
-      btn('Block ads here', { kind: 'tint', icon: 'shield' }, r, () => { location.hash = '#ads'; });
-      btn('Play on the TV', { kind: 'ghost', icon: 'tv' }, r, () => { location.hash = '#tvplay'; });
-    };
+    // (what this phone does by itself, with or without a computer: ad blocking, its account and licenses, a video for the TV)
+    const ownCard = () => thisPhone(v.body, '');
     const gameCard = () => {
       const c = el('div', 'card', v.body);
       el('h2', '', c, 'Joining a game or a poll?');
@@ -715,6 +783,64 @@
     ownCard();
     gameCard();
     foot();
+  }
+
+  // ---------- "This phone": what the phone does by itself, with or without a computer ----------
+  // Three rows, each with what is true right now under its name: ad blocking on this phone, who is signed in and their
+  // licenses, and a YouTube video for the TV. What they say comes from this phone's own memory of its last look
+  // (m/shield.js keeps it). The one thing asked here, every few hours and without any sign-in: is ad blocking for
+  // phones open yet? So the first row never promises what Blokvane cannot give today.
+  const adsOpen = () => { const x = store.get('shield:info', null); return x && typeof x === 'object' && typeof x.open === 'string' ? x : { open: '', at: 0 }; };
+  let adsAsked = 0;
+  function adsOpenFresh() {
+    const have = adsOpen();
+    if (GAMES || typeof BVPASS === 'undefined' || Date.now() - (+have.at || 0) < 3 * 3600e3 || Date.now() - adsAsked < 60000) return Promise.resolve(false);
+    adsAsked = Date.now();
+    const ctl = typeof AbortController === 'function' ? new AbortController() : null;
+    const t = setTimeout(() => { if (ctl) ctl.abort(); }, 8000);
+    return fetch(BVPASS.api + '/v1/phone/dns/info', { credentials: 'omit', signal: ctl ? ctl.signal : undefined }).then(r => (r.ok ? r.json() : null)).then(d => {
+      clearTimeout(t);
+      if (!d || !/^(all|some|none)$/.test(d.open)) return false;
+      store.set('shield:info', { open: d.open, android: !!d.android, at: Date.now() });
+      return d.open !== have.open;
+    }, () => { clearTimeout(t); return false; });
+  }
+  function ownRow(ls, ic, tint, title, sub, hash, tone) {
+    const it = el('button', 'item own-row', ls);
+    it.type = 'button';
+    it.style.setProperty('--tint', `var(--${tint})`);
+    el('span', 'ic', it).appendChild(icon(ic));
+    const t = el('span', 't', it);
+    el('b', '', t, title);
+    // (one line under the name, or two)
+    for (const x of Array.isArray(sub) ? sub : [sub]) { const sm = el('small', tone || '', t); if (x instanceof Node) sm.appendChild(x); else sm.textContent = x || ''; }
+    it.appendChild(icon('chev', 'go'));
+    it.onclick = () => { location.hash = hash; };
+    return it;
+  }
+  function thisPhone(parent, pcName) {
+    const c = el('div', 'card own', parent);
+    el('h2', '', c, 'This phone');
+    const ls = el('div', 'list own-list', c);
+    const a = pass.get();
+    const sum = (() => { const x = store.get('shield:sum', null); return a && x && typeof x === 'object' && x.email === a.email ? x : {}; })();
+    // 1. ad blocking on this phone
+    const adsSays = () => { const info = adsOpen(); return sum.ads === 'working' ? ['On: ads are blocked', 'ok'] : sum.ads === 'steps' ? ['Almost there: finish the steps', 'warn']
+      : sum.ads === 'left-out' ? ['Not part of your license', '']
+      : sum.ads === 'closed' || info.open === 'none' ? ['Not open yet', ''] : info.open === 'some' && !sum.ads ? ['Being tried out with a few people', ''] : ['Not set up yet', '']; };
+    const ads = adsSays();
+    const adsRow = ownRow(ls, 'shield', 'mint', 'Block ads on this phone', ads[0], '#ads', ads[1]);
+    adsOpenFresh().then(changed => { if (!changed || !adsRow.isConnected) return; const now = adsSays(), sm = adsRow.querySelector('small'); if (sm) { sm.textContent = now[0]; sm.className = now[1]; } });
+    // 2. who is signed in, and their licenses
+    let who = 'Not signed in. Your licenses show here once you are.';
+    if (a) {
+      const m = el('bdi', '', null, a.email); m.dir = 'ltr';
+      who = sum.total ? [m, sum.used + ' of ' + sum.total + (sum.total === 1 ? ' license' : ' licenses') + ' in use'] : m;
+    }
+    ownRow(ls, 'kid', 'sky', 'Account and licenses', who, '#me');
+    // 3. a video from this phone, played on the computer for the TV
+    ownRow(ls, 'tv', 'teal', 'YouTube on the TV, without the ads', pcName ? 'Plays on ' + pcName : 'Plays on your computer', '#tvplay');
+    return c;
   }
 
   // a party game this phone was in a little while ago (its page was closed by mistake, say): one tap goes back in, as
@@ -844,11 +970,18 @@
     btn(gt('Share it'), { kind: 'blue', icon: 'share' }, r, () => shareGames());
     return c;
   }
+  // (an email inside a sentence in any language stays left to right in a <bdi> of its own, which every browser
+  // knows. The invisible direction marks that did this before show as little boxes on some older phones.)
+  function sayWithMail(node, text, email) {
+    node.textContent = '';
+    String(text).split('\u0001').forEach((t, i) => { if (i) { const b = el('bdi', '', node, email); b.dir = 'ltr'; } if (t) node.appendChild(document.createTextNode(t)); });
+    return node;
+  }
   // signing in to host: Boo with his golden host ticket. Two steps: the email, then the code Blokvane emails to it (no
   // password to make up or forget). A phone that is signed in but whose email has no plan yet sees how to get one.
   async function signInScreen(o = {}) {
     try { (await need('party'))('css'); } catch (e) {}
-    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true, back: o.back || null });
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true, back: o.back || null, step: true });
     const art = el('div', 'si-art', v.body);
     art.appendChild(swBoo('float'));
     const tk = el('div', 'si-ticket', art);
@@ -868,7 +1001,7 @@
       main.textContent = '';
       art.classList.remove('yay'); art.classList.add('sad');
       h1.textContent = gt('This email can\'t host yet');
-      lead.textContent = gt('You\'re signed in as {email}. Hosting needs Blokvane Pro or a free trial for that email. Joining a game is always free.', { email: '\u2068' + acct.email + '\u2069' });
+      sayWithMail(lead, gt('You\'re signed in as {email}. Hosting needs Blokvane Pro or a free trial for that email. Joining a game is always free.', { email: '\u0001' }), acct.email);
       getCard(main, { title: gt('Get Blokvane to host'), text: gt('Get Blokvane on your computer (it\'s at blokvane.com) and start the free trial or Blokvane Pro with this same email. Then tap "Check again" here.'), url: SITE + 'pricing' });
       const err = el('p', 'si-err', main); err.hidden = true;
       const chk = btn(gt('Check again'), { kind: 'go', huge: true, full: true }, main, async () => {
@@ -915,7 +1048,7 @@
     function codeStep(st) {
       main.textContent = '';
       const card = el('div', 'card si-card', main);
-      el('p', 'si-sent', card, gt('We emailed a code to {email}. Type it here:', { email: '\u2068' + st.email + '\u2069' }));
+      sayWithMail(el('p', 'si-sent', card), gt('We emailed a code to {email}. Type it here:', { email: '\u0001' }), st.email);
       const ci = input({ placeholder: '1234 5678', max: 9 });
       ci.inputMode = 'numeric'; ci.autocomplete = 'one-time-code'; ci.dir = 'ltr'; ci.classList.add('si-code');
       ci.setAttribute('aria-label', gt('The 8 numbers from the email'));
@@ -1230,7 +1363,7 @@
   async function scanScreen() {
     let stream = null, stopped = false;
     const stop = () => { stopped = true; if (stream) stream.getTracks().forEach(t => t.stop()); stream = null; };
-    const v = view(gt('Scan the QR code'), { tint: 'mint', night: true, app: true, back: () => { stop(); gamesHome(); } });
+    const v = view(gt('Scan the QR code'), { tint: 'mint', night: true, app: true, step: true, back: () => { stop(); gamesHome(); } });
     const typeIt = async () => { stop(); (await need('party'))('code', []); };
     function noCam(why) {
       stop();
@@ -1343,11 +1476,22 @@
 
   // ---------- off we go ----------
   window.GO = { el, icon, boo, swBoo, lookRow, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, say: null, get pc() { return pc; },
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, ownRow, thisPhone, say: null, get pc() { return pc; },
     games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
-  addEventListener('hashchange', () => { if (pc) { const h = L.parse(location.hash); if (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid) { pc.close(); } } route(); });
+  addEventListener('hashchange', () => {
+    // (another page of the app, opened by a tap and not by Back: its step in the history is marked, so Back comes
+    // back from it)
+    if (!nav.trav && history.state == null) {
+      try { rawReplace({ bv: nav.idx + 1 }, '', location.href); nav.idx += 1; nav.fresh = true; } catch (e) {}
+    }
+    nav.trav = false; nav.hash = location.hash;
+    // (the computer stays connected on this phone's own pages, like its license and ad blocking: coming back from
+    // them is instant. Another computer, or the list of computers, lets it go.)
+    if (pc) { const h = L.parse(location.hash); if (!(h && OWN_KINDS.has(h.kind)) && (!h || h.kind !== 'c1' || h.parts[1] !== pc.cid)) { pc.close(); } }
+    route();
+  });
   if (!(window.crypto && crypto.subtle) || !window.WebSocket) {
     const v = view('Blokvane');
     hero(v.body, 'This browser is too old for this', 'Open this link in Chrome, Safari, Edge or Firefox.', { sleepy: true });
