@@ -1,12 +1,12 @@
 // Blokvane party games: Car Fighting Arena on a phone (../go/m/party.js loads this when the game is on). Music only
 // ever plays on the TV; the phone has the game's own car sounds and nothing else.
 // - The garage: the player picks one of the game's 16 cars. It drops onto its stand the way the game drops a car, with
-//   the car's own engine starting as it lands (and the last one's turning off as it goes), its speed, acceleration,
-//   weight and handling, and Ready. The TV shows everyone's car on the arena, each dropping in as it is picked.
+//   the car's own engine starting as it lands and then running like the TV's (idling, revving now and then, off by
+//   itself after a minute), the last one's turning off as it goes, its speed, acceleration, weight and handling, and Ready. The TV shows everyone's car on the arena, each dropping in as it is picked.
 // - The match: the phone is the controller, like the game's own touch pad: on the left one stick to drive (up to go,
-//   down to brake and back up, the sides to steer), on the right four round buttons (Fire, Boost, Jump, Change weapon),
-//   placed for a right thumb. Above them the car's boost, damage, weapon, place and the clock. Sideways is best; it
-//   works upright too.
+//   down to brake and back up, the sides to steer, and to drive while turning), on the right four round buttons (Fire,
+//   Boost, Jump, Change weapon), placed for a right thumb. Above them the car's boost, damage, weapon, place and the
+//   clock. Sideways is best; it works upright too. Or the phone itself is the wheel: tilting it drives (see below).
 // The moves go through a straight line to the TV when the phone gets one (many times a second), and through the relays
 // otherwise. No emoji in the controller: the buttons wear the game's own marks.
 var BVCFAP = (() => {
@@ -31,7 +31,11 @@ var BVCFAP = (() => {
     prev: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>',
     next: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>',
     ok: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5.6 12.6l4.1 4.1 8.7-9.2" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-    dots: '<svg viewBox="0 0 24 24" fill="#fff"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>'
+    dots: '<svg viewBox="0 0 24 24" fill="#fff"><circle cx="5" cy="12" r="2.2"/><circle cx="12" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/></svg>',
+    // (driving by tilting: a phone turned like a wheel; the stick; Center)
+    tilt: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="9" rx="2" transform="rotate(-16 12 12.5)"/><path d="M3 6.5a10 10 0 0 1 5-3M21 6.5a10 10 0 0 0-5-3"/></svg>',
+    stick: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="3.5" fill="#fff"/></svg>',
+    center: '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="6.5"/><path d="M12 2.5v4M12 17.5v4M2.5 12h4M17.5 12h4"/></svg>'
   };
   const LAT = 'U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD';
   const face = (w, f) => `@font-face{font-family:'Chakra Petch';font-style:normal;font-weight:${w};font-display:swap;src:url(${HERE}fonts/${f}) format('woff2');unicode-range:${LAT}}`;
@@ -124,7 +128,9 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
 .cfp .chips span { padding: 4px 10px; border-radius: 9px; background: rgba(19,27,46,.85); margin: 0 3px; }
 .cfp .chips span b { color: ${GOLD}; }
 .cfp .chips span:empty { display: none; }
-.cfp .warn { position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); padding: 12px 22px; border-radius: 16px; font-size: 22px; font-weight: 700; letter-spacing: .1em; text-align: center; white-space: nowrap; pointer-events: none; }
+/* (the words in the middle stay in the room between the stick and the buttons (--mx, --mw: layout()) and wrap there;
+   --fs makes them smaller when even that is not enough (fitMid())) */
+.cfp .warn { position: absolute; left: var(--mx, 50%); top: 40%; transform: translate(-50%, -50%); width: max-content; max-width: var(--mw, 90vw); padding: 12px 22px; border-radius: 16px; font-size: calc(22px * var(--fs, 1)); font-weight: 700; letter-spacing: .1em; line-height: 1.2; text-align: center; text-wrap: balance; pointer-events: none; }
 .cfp .warn.bomb { background: ${RED}; animation: cfpPulse .5s ease-in-out infinite alternate; }
 .cfp .warn.crown { background: rgba(255,210,63,.92); color: #2a1d00; }
 @keyframes cfpPulse { to { transform: translate(-50%, -50%) scale(1.07); } }
@@ -164,20 +170,22 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
 .cfp .b .cap span, .cfp .b .cap small { font-weight: 700; color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.45), 0 -1px 0 rgba(0,0,0,.4); text-align: center; }
 .cfp .b .cap span { font-size: 11px; letter-spacing: .08em; margin-top: 2px; max-width: 86%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cfp .b .cap small { font-size: 10px; }
-/* (a button that can't do anything right now keeps its color, a little dimmer) */
+/* (a button that can't do anything right now keeps its color, a little dimmer: Jump, while the car can't jump) */
 .cfp .b.off .cap, .cfp .b.off .wl { filter: saturate(.88) brightness(.8); }
-/* (Fire stays red even before there is a weapon to fire: its word says FIRE until one is picked up) */
-.cfp .b.fire.off .cap, .cfp .b.fire.off .wl { filter: none; }
+/* (Fire is gray until there is a weapon to fire, then red; Change weapon is gray until there are two weapons to
+   change between, then green) */
+.cfp .b.fire.off, .cfp .b.swap.off { --c: #7c8597; --hi: #c6cdd9; --lo: #535c6d; --sd: #3a404d; --ink: #252a33; }
+.cfp .b.fire.off .cap, .cfp .b.fire.off .wl, .cfp .b.swap.off .cap, .cfp .b.swap.off .wl { filter: none; }
 .cfp .b.fire { --c: #e53935; --hi: #ff9a90; --lo: #a51f1b; --sd: #7a1411; --ink: #5a0d0b; }
 .cfp .b.boost { --c: #ff8a1f; --hi: #ffc98a; --lo: #cc6106; --sd: #984502; --ink: #6a2f00; }
 .cfp .b.jump { --c: #4aa3ff; --hi: #b2d8ff; --lo: #2070d2; --sd: #15519c; --ink: #0d3a73; }
 .cfp .b.swap { --c: #2fb36a; --hi: #93efbc; --lo: #1d8149; --sd: #135c34; --ink: #0b4425; }
 .cfp .b.swap .cap span { white-space: normal; font-size: 9px; line-height: 1.05; letter-spacing: .04em; }
-.cfp .msg { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); text-align: center; pointer-events: none; }
-.cfp .msg b { display: block; font-size: 46px; font-weight: 700; letter-spacing: .06em; line-height: 1; text-shadow: 0 4px 0 ${RED}; }
-.cfp .msg span { display: block; font-size: 16px; font-weight: 700; letter-spacing: .1em; color: #c9d2e6; margin-top: 8px; }
+.cfp .msg { position: absolute; left: var(--mx, 50%); top: 52%; transform: translate(-50%, -50%); width: max-content; max-width: var(--mw, 90vw); text-align: center; pointer-events: none; }
+.cfp .msg b { display: block; font-size: calc(46px * var(--fs, 1)); font-weight: 700; letter-spacing: .06em; line-height: 1; text-shadow: 0 4px 0 ${RED}; }
+.cfp .msg span { display: block; font-size: calc(16px * var(--fs, 1)); font-weight: 700; letter-spacing: .1em; line-height: 1.3; color: #c9d2e6; margin-top: 8px; text-wrap: balance; }
 .cfp .msg:empty { display: none; }
-.cfp .pop { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 22px; font-weight: 700; letter-spacing: .08em; white-space: nowrap; pointer-events: none; text-shadow: 0 2px 8px #000; }
+.cfp .pop { position: absolute; left: var(--mx, 50%); top: 30%; transform: translateX(-50%); width: max-content; max-width: var(--mw, 90vw); font-size: 22px; font-weight: 700; letter-spacing: .08em; line-height: 1.2; text-align: center; text-wrap: balance; pointer-events: none; text-shadow: 0 2px 8px #000; }
 .cfp .pop.go { animation: cfpPop 1.5s ease-out both; }
 @keyframes cfpPop { 0% { opacity: 0; transform: translate(-50%, 24px) scale(.6); } 15% { opacity: 1; transform: translate(-50%, 0) scale(1.15); } 70% { opacity: 1; transform: translate(-50%, 0) scale(1); } 100% { opacity: 0; transform: translate(-50%, -30px); } }
 .cfp .hit { position: absolute; left: 0; top: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0; box-shadow: inset 0 0 90px 20px rgba(229,57,53,.7); transition: opacity .35s; }
@@ -193,7 +201,28 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
 .cfp .turn { position: absolute; left: 50%; top: calc(128px + env(safe-area-inset-top, 0px)); transform: translateX(-50%); display: none; align-items: center; padding: 8px 14px; border-radius: 12px; background: rgba(255,138,31,.16); color: #ffd7ad; font-size: 13px; font-weight: 700; white-space: nowrap; }
 .cfp .turn svg { width: 22px; height: 22px; margin-right: 8px; animation: cfpTurn 2.4s ease-in-out infinite; }
 @keyframes cfpTurn { 0%, 30% { transform: rotate(0); } 60%, 100% { transform: rotate(-90deg); } }
+/* (driving by tilting the phone: the switch for it and Center on the left, and the card that says how it works) */
+.cfp .drv { position: absolute; left: calc(12px + env(safe-area-inset-left, 0px)); top: calc(56px + env(safe-area-inset-top, 0px)); z-index: 3; display: flex; align-items: center; min-height: 40px; padding: 0 14px 0 10px; border: 0; border-radius: 12px;
+  background: rgba(19,27,46,.9); box-shadow: inset 0 0 0 2px #33415f; color: #fff; font: 700 13px/1 'Chakra Petch', ui-rounded, system-ui, sans-serif; letter-spacing: .06em; touch-action: manipulation; }
+.cfp .drv svg { width: 20px; height: 20px; margin-right: 8px; flex: none; }
+.cfp .drv.ctr { top: calc(104px + env(safe-area-inset-top, 0px)); }
+.cfp .drv:active { transform: scale(.96); background: #26324f; }
+.cfp .tg { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4; width: min(560px, calc(100vw - 24px)); max-height: calc(100% - 16px); overflow: auto; padding: 16px 18px; border-radius: 22px;
+  background: rgba(19,27,46,.97); border: 1px solid #33415f; box-shadow: 0 18px 50px rgba(0,0,0,.55); text-align: left; touch-action: pan-y; }
+.cfp .tg b { display: block; font-size: 20px; letter-spacing: .04em; line-height: 1.15; }
+.cfp .tg ul { margin: 8px 0 0; padding: 0; list-style: none; }
+.cfp .tg li { position: relative; padding-left: 20px; margin-top: 6px; font-size: 15px; font-weight: 600; line-height: 1.3; color: #dfe5f2; }
+.cfp .tg li::before { content: ''; position: absolute; left: 3px; top: .42em; width: 8px; height: 8px; border-radius: 50%; background: ${ORANGE}; }
+.cfp .tg .why { margin: 10px 0 0; padding: 9px 12px; border-radius: 12px; background: rgba(255,138,31,.14); color: #ffd7ad; font-size: 14px; font-weight: 700; line-height: 1.3; }
+.cfp .tg .row { display: flex; margin-top: 12px; }
+.cfp .tg .row button { flex: 1; min-height: 50px; border: 0; border-radius: 14px; font: 700 17px/1 'Chakra Petch', ui-rounded, system-ui, sans-serif; letter-spacing: .08em; }
+.cfp .tg .row button + button { margin-left: 10px; }
+.cfp .tg .go { background: ${GREEN}; color: #0b1a10; }
+.cfp .tg .alt { background: #26324f; color: #fff; }
+.cfp .tg small { display: block; margin-top: 10px; font-size: 13px; font-weight: 600; color: #aeb8cc; line-height: 1.35; }
 @media (orientation: portrait) {
+  .cfp .drv { top: calc(176px + env(safe-area-inset-top, 0px)); }
+  .cfp .drv.ctr { top: calc(224px + env(safe-area-inset-top, 0px)); }
   .cfp .turn { display: flex; }
   .cfp .bars { width: calc(100vw - 24px); }
   .cfp .lz { top: 40%; width: 52%; }
@@ -256,7 +285,7 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
 
   let A = null;   // what party.js lends: el, send, G, view, buzz, toast, sheet, btn, myPic, T, more, pipe, numFmt
   const X = { g: null, m: null, st: null, stAt: 0, ui: null, ctl: null, pick: -1, shown: -1, sendT: 0, sent: -1, wantReady: false, pipe: null, pipeTry: 0, pipeAt: 0, lastSig: '', lastAt: 0,
-    J: { id: null, x0: 0, y0: 0, steer: 0, gas: 0, brake: 0 }, boost: false, ac: null, bufs: new Map(), loop: 0, syncAt: 0, mode: '', popT: 0, hitT: 0 };
+    J: { id: null, x0: 0, y0: 0, steer: 0, gas: 0, brake: 0 }, boost: false, ac: null, bufs: new Map(), eng: null, loop: 0, syncAt: 0, mode: '', popT: 0, hitT: 0 };
   const T = (t, v) => (A && A.T ? A.T(t, v) : t);
   function css() { if (document.getElementById('cfp-css')) return; const st = document.createElement('style'); st.id = 'cfp-css'; st.textContent = CSS; document.head.appendChild(st); }
   function init(api) { A = api; css(); }
@@ -295,6 +324,86 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
       s.buffer = b; g.gain.value = gain; s.connect(g); g.connect(a.destination);
       try { s.start(a.currentTime + Math.max(0, at || 0)); } catch (e) {}
     });
+  }
+  // (a sound that goes round and round with no click where it starts again: the bits a sound file adds at its two ends
+  // are left out, and its end is faded into its start)
+  function loopBuf(name) {
+    const k = 'loop:' + name;
+    if (X.bufs.has(k)) return X.bufs.get(k);
+    const p = buf(name).then(b => {
+      const a = X.ac;
+      if (!b || !a) return null;
+      const sr = b.sampleRate, d0 = b.getChannelData(0);
+      let s = 0, e = b.length;
+      while (s < e && Math.abs(d0[s]) < 1e-3) s++;
+      while (e > s && Math.abs(d0[e - 1]) < 1e-3) e--;
+      const F = Math.round(sr * 0.06), N = e - s - F;
+      if (N < sr * 0.5) return b;
+      const out = a.createBuffer(b.numberOfChannels, N, sr);
+      for (let c = 0; c < b.numberOfChannels; c++) {
+        const x = b.getChannelData(c), y = out.getChannelData(c);
+        for (let j = 0; j < N; j++) y[j] = x[s + j];
+        for (let j = 0; j < F; j++) { const q = j / F * Math.PI / 2; y[j] = x[s + j] * Math.sin(q) + x[s + N + j] * Math.cos(q); }
+      }
+      return out;
+    }).catch(() => null);
+    X.bufs.set(k, p);
+    return p;
+  }
+
+  // ---------- the engine after it starts: it keeps running, the way the TV's garage runs it ----------
+  // (the game's own numbers, from its car picker: once started the engine idles, revs now and then, and turns off by
+  // itself after a minute. A car that goes away turns off with its own sound; the match starting, leaving the garage,
+  // or the screen going off stop it at once, quietly.)
+  // how loud it idles (ld: how hard it is pushed, 0.2 idling, 1 revving), 0.8 / 0.55 of the game's like the start
+  const IDLE = ld => 0.45 * (0.55 + 0.45 * ld) * 0.65 * (0.8 / 0.55);
+  // (the game's cars' weights: a heavier engine revs up a little more slowly)
+  const MASS = [1.2, 1.9, 1.05, 2.2, 1.1, 1.35, 1.45, 1, 1, 1.8, 1.1, 1.05, 1.95, 1.5, 1.3, 1.85];
+  function engOn(i) {
+    engOff(false);
+    const a = ac();
+    if (!a || a.state !== 'running') return;
+    play('start' + nn(i), 0.85 * 0.8);
+    const e = X.eng = { i, t0: a.currentTime, src: null, g: null, T: [], W: 0 };
+    e.T.push(setTimeout(() => { if (X.eng === e) engOff(true); }, 60000));
+    e.W = setInterval(() => {
+      if (X.eng !== e) { clearInterval(e.W); return; }
+      if (!X.ui || !X.ui.stage.isConnected || document.hidden || !X.ac || X.ac.state !== 'running') engOff(false);
+    }, 500);
+    loopBuf('idle' + nn(i)).then(b => {
+      if (X.eng !== e || !b || !X.ac) return;
+      // (it comes in as the start sound settles, the way the game brings it in)
+      const t = a.currentTime, s = a.createBufferSource(), g = a.createGain(), at = Math.max(t, e.t0 + 0.95);
+      s.buffer = b; s.loop = true; s.connect(g); g.connect(a.destination);
+      g.gain.setValueAtTime(0, t); g.gain.setValueAtTime(0, at); g.gain.linearRampToValueAtTime(IDLE(0.2), at + 0.45);
+      try { s.start(t, Math.random() * b.duration); } catch (er) { return; }
+      e.src = s; e.g = g;
+      // (a rev: for a fifth to half a second the engine is pushed to between 45 and 75% and drops back; every 3 to 7
+      // seconds. The Yellow Supercar's V12 climbs higher, like in the game.)
+      const up = 0.035 + 0.045 * MASS[i], sl = i === 2 ? 0.65 : 0.45;
+      const rev = wait => e.T.push(setTimeout(() => {
+        if (X.eng !== e) return;
+        const t1 = a.currentTime + 0.02, bl = 0.2 + Math.random() * 0.3, rv = 0.45 + Math.random() * 0.3;
+        s.playbackRate.setTargetAtTime(Math.pow(2, rv * sl), t1, up); s.playbackRate.setTargetAtTime(Math.pow(2, 0.02 * sl), t1 + bl, up * 2.5);
+        g.gain.setTargetAtTime(IDLE(1), t1, 0.09); g.gain.setTargetAtTime(IDLE(0.2), t1 + bl, 0.09);
+        rev(3 + Math.random() * 4);
+      }, wait * 1000));
+      rev(at + 0.45 - t + 2.5 + Math.random() * 2);
+    });
+  }
+  function engOff(sound) {
+    const e = X.eng;
+    if (!e) return;
+    X.eng = null;
+    e.T.forEach(clearTimeout); clearInterval(e.W);
+    if (sound) play('stop' + nn(e.i), 0.75 * 0.8);
+    const a = X.ac;
+    if (e.g && a) {
+      const t = a.currentTime, G = e.g.gain;
+      if (G.cancelAndHoldAtTime) G.cancelAndHoldAtTime(t); else { G.cancelScheduledValues(t); G.setValueAtTime(G.value, t); }
+      G.linearRampToValueAtTime(0, t + (sound ? 0.12 : 0.05));
+      try { e.src.stop(t + 0.25); } catch (er) {}
+    }
   }
 
   // ---------- messages from the TV ----------
@@ -376,6 +485,8 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
   function closeCtl() {
     if (!X.ctl) return;
     clearInterval(X.loop); X.loop = 0; clearInterval(X.rumble);
+    // (tilting stops listening between rounds; how it was set up stays for the next one)
+    tiltOff();
     if (X.ctl.root.isConnected) X.ctl.root.remove();
     X.ctl = null;
     X.J.id = null; X.boost = false;
@@ -399,7 +510,7 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     if (!u || !u.stage.isConnected) return;
     if (u.car && old >= 0 && old !== i) {
       for (const gone of [u.car, u.sh]) { gone.classList.remove('drop'); void gone.offsetWidth; gone.classList.add('away'); setTimeout(() => gone.remove(), 420); }
-      play('stop' + nn(old), 0.75 * 0.8);
+      engOff(true);
     } else if (u.car) { u.car.remove(); u.sh.remove(); }
     // (its shadow lands with it, under its wheels)
     const sh = A.el('div', 'sh drop', u.scene); A.el('img', '', sh).src = shOf(i);
@@ -408,10 +519,10 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     u.scene.appendChild(u.dust);
     // (the landing: the dust, a little bump, and the engine starting the way the game starts it)
     clearTimeout(u.landT);
-    u.landT = setTimeout(() => { u.dust.classList.remove('on'); void u.dust.offsetWidth; u.dust.classList.add('on'); try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {} play('start' + nn(i), 0.85 * 0.8); }, 470);
+    u.landT = setTimeout(() => { u.dust.classList.remove('on'); void u.dust.offsetWidth; u.dust.classList.add('on'); try { if (navigator.vibrate) navigator.vibrate(18); } catch (e) {} engOn(i); }, 470);
     // (the next car's pictures and sounds, ready before they are needed)
     for (const k of [i + 1, i + 15]) { const j = k % 16; for (const src of [picOf(j), shOf(j)]) { const p = new Image(); p.src = src; } }
-    buf('start' + nn(i)); buf('stop' + nn(i));
+    buf('start' + nn(i)); buf('stop' + nn(i)); loopBuf('idle' + nn(i));
   }
   function garage() {
     const v = A.view();
@@ -478,7 +589,7 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
   const PAD = { steer: 0, gas: 0, brake: 0 };
   function controller() {
     if (X.ctl && X.ctl.root.isConnected) { ctlUpd(); return; }
-    X.ui = null;
+    X.ui = null; engOff(false);
     document.documentElement.classList.remove('cfp-pick');
     document.documentElement.classList.add('cfp-on');
     const root = A.el('div', 'cfp', document.body);
@@ -513,8 +624,15 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     // (the host can skip the replay of the final knockout)
     const skipB = A.el('button', 'skipb', root, T('Skip the replay')); skipB.type = 'button'; skipB.hidden = true;
     skipB.onclick = () => { hap('tap'); send1('skip'); skipB.hidden = true; };
-    X.ctl = { root, im, clR, clT, pl, bb, db, chK, chS, warn, hit, pop, msg, lz, joy, kn, rz, fire, boost, jump, swap, fireN, res, turn, skipB, sig: '' };
+    // (driving by tilting the phone: the switch for it, and Center; tiltSync() shows them)
+    const drv = A.el('button', 'drv', root); drv.type = 'button'; drv.hidden = true;
+    drv.onclick = () => { hap('tap'); unlock(); if (tilting()) setDrive('stick'); else if (hostDrive() === 'pick') { TILT.fail = false; setDrive('tilt'); } };
+    const ctr = A.el('button', 'drv ctr', root); ctr.type = 'button'; ctr.hidden = true; ctr.innerHTML = ICON.center; ctr.appendChild(document.createTextNode(T('Center')));
+    ctr.onclick = () => { hap('tap'); if (TILT.on && TILT.ready) { TILT.cal = true; TILT.calN = TILT.got + 3; } };
+    X.ctl = { root, im, clR, clT, pl, bb, db, chK, chS, warn, hit, pop, msg, lz, joy, kn, rz, fire, boost, jump, swap, fireN, res, turn, skipB, drv, ctr, sig: '' };
     layout();
+    // (the game's font comes a moment later and is a little wider: the words are fitted again then)
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (X.ctl && X.ctl.root === root) fitMid(); }); } catch (e) {}
     // (the stick: the thumb goes down anywhere on the left half, and the stick is there)
     const J = X.J;
     const jmove = e => {
@@ -524,15 +642,19 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
       const d = Math.hypot(dx, dy); if (d > R) { dx *= R / d; dy *= R / d; }
       if (d >= R * 0.97) { if (!J.edge) { J.edge = true; hap('edge'); } } else if (d < R * 0.8) J.edge = false;
       c.kn.style.transform = 'translate(' + dx.toFixed(1) + 'px,' + dy.toFixed(1) + 'px)';
-      // (the game's own: a little play in the middle, up from a fifth of the way is the gas, down past a third the brake)
+      // (the game's own: a little play in the middle, up from a fifth of the way is the gas, down past a third the brake.
+      // A push to either side drives too, turning that way, so straight left or right the car goes round instead of
+      // standing still; pulled down, it brakes and backs up as before.)
       const nx = dx / R, ny = dy / R;
       PAD.steer = Math.abs(nx) < 0.12 ? 0 : nx;
-      PAD.gas = -ny > 0.2 ? Math.min(1, (-ny - 0.1) / 0.6) : 0;
       PAD.brake = ny > 0.35 ? 1 : 0;
+      const upGas = -ny > 0.2 ? Math.min(1, (-ny - 0.1) / 0.6) : 0, sideGas = Math.abs(nx) > 0.2 ? Math.min(1, (Math.abs(nx) - 0.1) / 0.6) : 0;
+      PAD.gas = PAD.brake ? 0 : Math.max(upGas, sideGas);
     };
     lz.addEventListener('pointerdown', e => {
       e.preventDefault(); unlock();
-      if (J.id != null) return;
+      // (while tilting drives, the stick shows what the tilt does and a thumb on it does nothing)
+      if (J.id != null || TILT.on) return;
       J.id = e.pointerId; J.edge = false; hap('stick');
       try { lz.setPointerCapture(e.pointerId); } catch (er) {}
       const c = X.ctl, box = c.root.getBoundingClientRect();
@@ -597,6 +719,31 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     put(c.jump, s2, fx - f * 0.86, fy - f * 0.86);
     put(c.swap, s3, fx + f * 0.04, fy - f * 1.08);
     c.fire.s.style.fontSize = Math.round(f * 0.1) + 'px';
+    // (the words in the middle: sideways, the room between the stick and Jump, the button nearest the middle; upright,
+    // the whole width. They wrap in it instead of going under the stick or a button.)
+    const gl = land ? c.jx + jd / 2 + 12 : 16, gr = land ? W - rw + fx - f * 0.86 - s2 / 2 - 12 : W - 16;
+    c.root.style.setProperty('--mx', Math.round((gl + gr) / 2) + 'px');
+    c.root.style.setProperty('--mw', Math.round(Math.max(140, gr - gl)) + 'px');
+    fitMid();
+  }
+  // (and when they would still touch the stick or a button, on a small phone or in a longer language, they get a
+  // little smaller until they don't, down to 60%)
+  function fitMid() {
+    const c = X.ctl;
+    if (!c || !c.root.isConnected || !c.jd) return;
+    const round = [[c.jx, c.jy, c.jd / 2]];
+    for (const o of [c.fire, c.boost, c.jump, c.swap]) { const r = o.b.getBoundingClientRect(); if (r.width) round.push([(r.left + r.right) / 2, (r.top + r.bottom) / 2, r.width / 2]); }
+    const touches = el => {
+      const r = el.getBoundingClientRect();
+      if (!r.width) return false;
+      return round.some(([x, y, R]) => { const dx = Math.max(r.left - x, 0, x - r.right), dy = Math.max(r.top - y, 0, y - r.bottom); return dx * dx + dy * dy < (R + 6) * (R + 6); });
+    };
+    for (const el of [c.msg, c.warn]) {
+      let k = 1;
+      el.style.setProperty('--fs', '1');
+      if (el.hidden || !el.textContent) continue;
+      while (k > 0.65 && touches(el)) { k = Math.round((k - 0.1) * 10) / 10; el.style.setProperty('--fs', String(k)); }
+    }
   }
   // the moves: through the pipe up to 30 times a second (and a "still here" 4 times a second); through the relays at
   // most about 6 a second, once a second while something is held (the TV lets go of a car after 3 quiet seconds), and
@@ -611,6 +758,151 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     }
     if (force || (sig !== X.lastSig && t - X.lastAt > 160) || (!zero && t - X.lastAt > 1000) || t - X.lastAt > 3000) { A.send(Object.assign({ k: 'cfa', a: 'in' }, pad)); X.lastSig = sig; X.lastAt = t; }
   }
+  // ---------- driving by tilting the phone ----------
+  // Held sideways in both hands like a steering wheel: turning it steers, leaning its top away from you drives, leaning
+  // it back toward you brakes and backs up. Level is the middle for turning; for leaning, the middle is how the phone
+  // is held when Start (or later Center) is tapped. The four buttons stay as they are. The host picks it for everyone
+  // (Driving on phones), keeps everyone on the stick, or lets each player pick: the stick, until they tap "Tilt to
+  // drive" (the phone remembers it). An iPhone asks before a page may know how it is held: Start is that question.
+  const TILT = { on: false, cal: false, calN: 0, ready: false, fail: false, ok: false, p0: 30, u: null, at: 0, got: 0, sx: 1, sy: 1, wake: null, waking: false };
+  let myDrv = null;
+  const hostDrive = () => { const v = (X.m && X.m.drv) || (X.g && X.g.drv) || 'pick'; return v === 'stick' || v === 'tilt' ? v : 'pick'; };
+  const myDrive = () => { if (myDrv) return myDrv; try { return localStorage.getItem('cfa:drive') === 'tilt' ? 'tilt' : 'stick'; } catch (e) { return 'stick'; } };
+  const tilting = () => !TILT.fail && (hostDrive() === 'tilt' || (hostDrive() === 'pick' && myDrive() === 'tilt'));
+  function setDrive(v) { myDrv = v; try { localStorage.setItem('cfa:drive', v); } catch (e) {} tiltSync(); }
+  // (what the controller shows for it, and listening or not: on every update from the TV, so the host's choice works at once)
+  function tiltSync() {
+    const c = X.ctl, want = tilting();
+    if (!c) { if (!want) tiltOff(); return; }
+    if (want && !TILT.on) { if (TILT.ready && TILT.ok) tiltListen(); else tiltCard(); }
+    if (!want) { tiltOff(); if (c.tg && !TILT.fail) c.tg.hidden = true; }
+    const hd = hostDrive(), sig = [want ? 1 : 0, hd, TILT.on && TILT.ready ? 1 : 0, TILT.fail ? 1 : 0].join('|');
+    if (c.tsig === sig) return;
+    c.tsig = sig;
+    c.drv.hidden = hd !== 'pick';
+    c.drv.innerHTML = want ? ICON.stick : ICON.tilt;
+    c.drv.appendChild(document.createTextNode(want ? T('Use the stick') : T('Tilt to drive')));
+    c.ctr.hidden = !(want && TILT.on && TILT.ready);
+    const art = c.joy.querySelector('svg');
+    if (art && c.joyWords !== want) { c.joyWords = want; art.outerHTML = stickArt(want ? T('Tilt to steer') : T('Drive and steer')); }
+    if (!want) { c.kn.style.transform = ''; c.joy.classList.remove('on'); }
+  }
+  // (the card that tells how it works; Start is the tap an iPhone needs before it tells how the phone is held)
+  function tiltCard() {
+    const c = X.ctl;
+    if (!c) return;
+    if (!c.tg) {
+      const tg = c.tg = A.el('div', 'tg', c.root);
+      A.el('b', '', tg, T('Drive by tilting your phone'));
+      const ul = A.el('ul', '', tg);
+      for (const t of [T('Hold your phone sideways in both hands, like a steering wheel.'), T('Turn it left or right to steer.'),
+        T('Lean the top away from you to drive, and back toward you to brake and back up.'), T('Boost, Jump, Fire and Change weapon stay on the buttons.')]) A.el('li', '', ul, t);
+      c.tgWhy = A.el('p', 'why', tg);
+      const row = A.el('div', 'row', tg);
+      c.tgGo = A.el('button', 'go', row, T('Start')); c.tgGo.type = 'button';
+      c.tgAlt = A.el('button', 'alt', row, T('Use the stick')); c.tgAlt.type = 'button';
+      A.el('small', '', tg, T('Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.'));
+      c.tgGo.onclick = () => { hap('tap'); unlock(); tiltStart(); };
+      c.tgAlt.onclick = () => { hap('tap'); c.tg.hidden = true; if (hostDrive() === 'pick') setDrive('stick'); else { TILT.fail = true; tiltSync(); } };
+    }
+    c.tg.hidden = false;
+    c.tgWhy.hidden = !TILT.fail;
+    c.tgGo.hidden = TILT.fail;
+    c.tgAlt.hidden = hostDrive() === 'tilt' && !TILT.fail;
+  }
+  function tiltStart() {
+    const no = () => tiltFail(T('Motion was not allowed. Open the page again and tap Allow when the phone asks.'));
+    const go = () => {
+      TILT.ok = true; TILT.fail = false; TILT.cal = true; TILT.calN = 6;
+      tiltListen();
+      setTimeout(() => { if (TILT.on && !TILT.got) tiltFail(T('This phone does not tell the page how it is held, so tilting can\'t drive here. Drive with the stick.')); }, 1600);
+    };
+    let ask = null;
+    try { if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') ask = DeviceOrientationEvent.requestPermission(); } catch (e) { ask = null; }
+    if (ask && typeof ask.then === 'function') ask.then(r => (r === 'granted' ? go() : no()), no); else go();
+  }
+  function tiltFail(why) {
+    tiltOff();
+    TILT.fail = true;
+    tiltCard();
+    const c = X.ctl;
+    if (c && c.tgWhy) c.tgWhy.textContent = why;
+    tiltSync();
+  }
+  function tiltListen() {
+    if (TILT.on) return;
+    TILT.on = true; TILT.got = 0; TILT.u = null;
+    X.J.id = null; PAD.steer = 0; PAD.gas = 0; PAD.brake = 0;
+    try { window.addEventListener('deviceorientation', onOrient); } catch (e) {}
+    wakeOn();
+    tiltSync();
+  }
+  function tiltOff() {
+    if (!TILT.on) return;
+    TILT.on = false; TILT.cal = false;
+    try { window.removeEventListener('deviceorientation', onOrient); } catch (e) {}
+    wakeOff();
+    PAD.steer = 0; PAD.gas = 0; PAD.brake = 0;
+    const c = X.ctl;
+    if (c) { c.kn.style.transform = ''; c.joy.classList.remove('on'); }
+  }
+  const D2R = Math.PI / 180;
+  function onOrient(e) {
+    if (!TILT.on || e.beta == null || e.gamma == null) return;
+    const b = e.beta * D2R, g = e.gamma * D2R, t = performance.now();
+    // which way is up, in the phone's own directions (x across the phone held upright, y along it, z out of the screen),
+    // smoothed over about a twentieth of a second so the car moves smoothly
+    const u = [-Math.sin(g) * Math.cos(b), Math.sin(b), Math.cos(b) * Math.cos(g)];
+    if (!TILT.u) TILT.u = u;
+    else { const k = 1 - Math.exp(-Math.min(250, t - TILT.at) / 60); for (let i = 0; i < 3; i++) TILT.u[i] += (u[i] - TILT.u[i]) * k; }
+    TILT.at = t; TILT.got++;
+    const v = TILT.u, land = innerWidth >= innerHeight;
+    // (the top of the screen is the edge of the phone that points up, the way the phone turns its screen itself)
+    if (land) { if (Math.abs(v[0]) > 0.3) TILT.sx = v[0] > 0 ? 1 : -1; } else if (Math.abs(v[1]) > 0.3) TILT.sy = v[1] > 0 ? 1 : -1;
+    const up = land ? TILT.sx * v[0] : TILT.sy * v[1], right = land ? -TILT.sx * v[1] : TILT.sy * v[0];
+    // turn: how far it is turned from level, like a wheel (left is less than 0); lean: how far the top leans away from you
+    const turn = -Math.asin(Math.max(-1, Math.min(1, right))) / D2R, lean = Math.atan2(v[2], up) / D2R;
+    if (TILT.cal) {
+      if (TILT.got < TILT.calN) return;
+      TILT.cal = false; TILT.p0 = Math.max(-10, Math.min(75, lean));
+      const first = !TILT.ready;
+      TILT.ready = true;
+      const c = X.ctl;
+      if (c && c.tg) c.tg.hidden = true;
+      popText(first ? T('Tilt to steer') : T('Centered'), GREEN);
+      tiltSync();
+      return;
+    }
+    if (!TILT.ready) return;
+    // (a little play around level, then all the way at 27 degrees; the gas from 4 degrees forward, all of it at 18; the
+    // brake from 8 degrees back)
+    const a = Math.abs(turn), d = lean - TILT.p0;
+    PAD.steer = a < 2.5 ? 0 : Math.sign(turn) * Math.min(1, (a - 2.5) / 24.5);
+    PAD.brake = d < -8 ? 1 : 0;
+    PAD.gas = PAD.brake ? 0 : d > 4 ? Math.min(1, (d - 4) / 14) : 0;
+    const c = X.ctl;
+    if (c && c.jr) {
+      c.kn.style.transform = 'translate(' + (PAD.steer * c.jr).toFixed(1) + 'px,' + ((PAD.brake ? 0.7 : -PAD.gas) * c.jr).toFixed(1) + 'px)';
+      c.joy.classList.toggle('on', !!(PAD.steer || PAD.gas || PAD.brake));
+    }
+  }
+  // (the screen stays on while tilting drives: nobody touches it then)
+  function wakeOn() {
+    if (TILT.wake || TILT.waking || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+    TILT.waking = true;
+    let p = null;
+    try { p = navigator.wakeLock.request('screen'); } catch (e) { p = null; }
+    if (!p || !p.then) { TILT.waking = false; return; }
+    p.then(w => {
+      TILT.waking = false;
+      if (!TILT.on) { try { w.release(); } catch (e) {} return; }
+      TILT.wake = w;
+      w.addEventListener('release', () => { if (TILT.wake === w) TILT.wake = null; });
+    }, () => { TILT.waking = false; });
+  }
+  function wakeOff() { const w = TILT.wake; TILT.wake = null; if (w) { try { w.release(); } catch (e) {} } }
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && TILT.on) wakeOn(); });
+
   function popText(t, col) {
     const c = X.ctl;
     if (!c || !t) return;
@@ -646,7 +938,8 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     c.fire.s.textContent = w ? w : T('Fire').toUpperCase();
     c.fireN.textContent = w ? '×' + (+s.a || 0) : '';
     c.fire.b.classList.toggle('off', !w);
-    c.swap.b.classList.toggle('off', !(+s.n > 1));
+    // (nw: how many weapons the car holds; n is how many cars there are, for the place)
+    c.swap.b.classList.toggle('off', !(+s.nw > 1));
     c.jump.b.classList.toggle('off', !s.j);
     // (the bomb, the crown)
     if (+s.bomb > 0) { c.warn.hidden = false; c.warn.className = 'warn bomb'; c.warn.textContent = T('Pass the bomb! {n}', { n: s.bomb }); }
@@ -668,6 +961,8 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
       if (small) A.el('span', '', c.msg, small);
       if (big === 'GO!') hap('go');
     }
+    const fs = (c.warn.hidden ? '' : c.warn.textContent) + '|' + sig;
+    if (c.fsig !== fs) { c.fsig = fs; fitMid(); }
     // (the results of a round, and the host's Next round)
     const R = m.res;
     if ((ph === 'victory' || ph === 'over') && R) {
@@ -687,6 +982,7 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
       }
     } else { c.res.hidden = true; c.resSig = ''; }
     c.skipB.hidden = !(ph === 'replay' && A.G.host);
+    tiltSync();
   }
   // (the host's own buttons in the ⋯ menu: the TV's view, the next round, the replay)
   const VIEWS = [['auto', 'Automatic'], ['arena', 'Arena'], ['top', 'From above'], ['action', 'Action'], ['chase', 'Chase'], ['split', 'Split screen']];
@@ -706,8 +1002,8 @@ html.cfp-on, html.cfp-on body { overflow: hidden; overscroll-behavior: none; }
     if (m.res && m.res.more) mkBtn(T('Next round'), () => { send1('next'); close(); });
     if (m.ph === 'replay') mkBtn(T('Skip the replay'), () => { send1('skip'); close(); });
   }
-  function reset() { closeCtl(); X.g = null; X.m = null; X.st = null; X.fin = null; X.ui = null; X.sent = -1; X.wantReady = false; X.pick = -1; X.pipeTry = 0; if (X.pipe) { try { X.pipe.close(); } catch (e) {} X.pipe = null; } document.documentElement.classList.remove('cfp-pick'); }
-  function left() { closeCtl(); X.ui = null; document.documentElement.classList.remove('cfp-pick'); if (X.pipe) { try { X.pipe.close(); } catch (e) {} X.pipe = null; } X.pipeTry = 0; }
+  function reset() { closeCtl(); engOff(false); X.g = null; X.m = null; X.st = null; X.fin = null; X.ui = null; X.sent = -1; X.wantReady = false; X.pick = -1; X.pipeTry = 0; if (X.pipe) { try { X.pipe.close(); } catch (e) {} X.pipe = null; } document.documentElement.classList.remove('cfp-pick'); }
+  function left() { closeCtl(); engOff(false); X.ui = null; document.documentElement.classList.remove('cfp-pick'); if (X.pipe) { try { X.pipe.close(); } catch (e) {} X.pipe = null; } X.pipeTry = 0; }
   // (the car someone drove: the TV says it at the end, and in the garage)
   function carOf(id) { const f = X.fin && X.fin[id]; if (Number.isInteger(f) && f >= 0 && f < 16) return f; const g = X.g && X.g.cars && X.g.cars[id]; return Array.isArray(g) && Number.isInteger(g[0]) ? g[0] : -1; }
   return { init, onMsg, draw, reset, left, menu, css, CARS, carOf, get on() { return !!X.g; }, get inMatch() { return inMatch(); } };

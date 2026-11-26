@@ -1642,3 +1642,25 @@ BVI18N.add("ar", {
 "Phone vibration": "اهتزاز الهاتف",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "تهتز الهواتف عند الإطلاق والتسريع والقفز والتعرض لضربة أو السقوط. عند الإيقاف لا يهتز أي هاتف."
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("ar", {
+"Use the stick": "استخدم عصا التحكم",
+"Tilt to drive": "أمِل الهاتف لتقود",
+"Center": "اضبط الوسط",
+"Tilt to steer": "أمِل لتنعطف",
+"Drive by tilting your phone": "قُد بإمالة هاتفك",
+"Hold your phone sideways in both hands, like a steering wheel.": "أمسك هاتفك بالعرض بيديك الاثنتين، مثل عجلة القيادة.",
+"Turn it left or right to steer.": "أدِره يمينًا أو يسارًا لتنعطف.",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "أمِل أعلى الهاتف بعيدًا عنك لتتقدم، ونحوك لتفرمل وترجع إلى الخلف.",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "التسريع والقفز والإطلاق وتغيير السلاح تبقى على الأزرار.",
+"Start": "ابدأ",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "أمسكه بالطريقة التي تحب اللعب بها، ثم اضغط ابدأ. اضغط اضبط الوسط في أي وقت لتبدأ من جديد من طريقة إمساكك له.",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "لم يُسمح بالحركة. افتح الصفحة من جديد واضغط سماح عندما يسأل الهاتف.",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "هذا الهاتف لا يخبر الصفحة بطريقة إمساكه، لذا لا يمكن القيادة بالإمالة هنا. قُد بعصا التحكم.",
+"Centered": "تم ضبط الوسط",
+"Driving on phones": "القيادة على الهواتف",
+"Each player picks": "كل لاعب يختار",
+"Stick": "عصا التحكم",
+"Tilting": "الإمالة",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "عصا التحكم: العصا على الشاشة. الإمالة: أدِر الهاتف مثل عجلة القيادة وأمِله لتتقدم وتفرمل. كل لاعب يختار: عصا التحكم، ويمكن لأي لاعب التبديل إلى الإمالة على هاتفه."
+});

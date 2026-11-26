@@ -1546,3 +1546,25 @@ BVI18N.add("fr", {
 "Phone vibration": "Vibration du téléphone",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "Les téléphones vibrent quand on tire, utilise le turbo, saute, prend un coup ou tombe. Désactivé : aucun téléphone ne vibre."
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("fr", {
+"Use the stick": "Utiliser le joystick",
+"Tilt to drive": "Incliner pour conduire",
+"Center": "Recentrer",
+"Tilt to steer": "Incline pour tourner",
+"Drive by tilting your phone": "Conduis en inclinant ton téléphone",
+"Hold your phone sideways in both hands, like a steering wheel.": "Tiens ton téléphone à l'horizontale à deux mains, comme un volant.",
+"Turn it left or right to steer.": "Tourne-le à gauche ou à droite pour diriger la voiture.",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "Penche le haut vers l'avant pour avancer, et vers toi pour freiner et reculer.",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "Turbo, Saut, Tir et Changer d'arme restent sur les boutons.",
+"Start": "Commencer",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "Tiens-le comme tu aimes jouer, puis touche Commencer. Touche Recentrer quand tu veux pour repartir de ta façon de le tenir.",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "Le mouvement n'a pas été autorisé. Rouvre la page et touche Autoriser quand le téléphone le demande.",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "Ce téléphone ne dit pas à la page comment tu le tiens, donc on ne peut pas conduire en l'inclinant ici. Conduis avec le joystick.",
+"Centered": "Recentré",
+"Driving on phones": "Conduite sur les téléphones",
+"Each player picks": "Chaque joueur choisit",
+"Stick": "Joystick",
+"Tilting": "Inclinaison",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "Joystick : le joystick de l'écran. Inclinaison : on tourne le téléphone comme un volant et on le penche pour avancer et freiner. Chaque joueur choisit : le joystick, et chacun peut passer à l'inclinaison sur son téléphone."
+});

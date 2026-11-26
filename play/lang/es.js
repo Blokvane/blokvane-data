@@ -1546,3 +1546,25 @@ BVI18N.add("es", {
 "Phone vibration": "Vibración del teléfono",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "Los teléfonos vibran al disparar, usar el turbo, saltar, recibir un golpe o caerte. Si está apagado, ningún teléfono vibra."
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("es", {
+"Use the stick": "Usar la palanca",
+"Tilt to drive": "Inclinar para manejar",
+"Center": "Centrar",
+"Tilt to steer": "Inclina para girar",
+"Drive by tilting your phone": "Maneja inclinando el teléfono",
+"Hold your phone sideways in both hands, like a steering wheel.": "Sostén el teléfono de lado con las dos manos, como un volante.",
+"Turn it left or right to steer.": "Gíralo a la izquierda o a la derecha para doblar.",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "Inclina la parte de arriba hacia adelante para avanzar, y hacia ti para frenar y dar marcha atrás.",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "Turbo, Salto, Disparo y Cambiar arma siguen en los botones.",
+"Start": "Empezar",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "Sostenlo como te guste jugar y toca Empezar. Toca Centrar cuando quieras para volver a empezar desde cómo lo sostienes.",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "No se permitió el movimiento. Vuelve a abrir la página y toca Permitir cuando el teléfono pregunte.",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "Este teléfono no le dice a la página cómo lo sostienes, así que aquí no se puede manejar inclinándolo. Maneja con la palanca.",
+"Centered": "Centrado",
+"Driving on phones": "Manejo en los teléfonos",
+"Each player picks": "Cada jugador elige",
+"Stick": "Palanca",
+"Tilting": "Inclinar",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "Palanca: la palanca de la pantalla. Inclinar: se gira el teléfono como un volante y se inclina para avanzar y frenar. Cada jugador elige: la palanca, y cualquiera puede cambiar a inclinar en su teléfono."
+});

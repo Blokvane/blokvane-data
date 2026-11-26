@@ -1546,3 +1546,25 @@ BVI18N.add("hi", {
 "Phone vibration": "फ़ोन का वाइब्रेशन",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "फ़ायर, बूस्ट, जंप, टक्कर लगने या गिरने पर फ़ोन वाइब्रेट होते हैं। बंद हो तो कोई फ़ोन वाइब्रेट नहीं होता।"
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("hi", {
+"Use the stick": "स्टिक इस्तेमाल करें",
+"Tilt to drive": "झुकाकर चलाएँ",
+"Center": "बीच सेट करें",
+"Tilt to steer": "झुकाकर मोड़ें",
+"Drive by tilting your phone": "फ़ोन झुकाकर चलाएँ",
+"Hold your phone sideways in both hands, like a steering wheel.": "फ़ोन को आड़ा करके दोनों हाथों से स्टीयरिंग व्हील की तरह पकड़ें।",
+"Turn it left or right to steer.": "मोड़ने के लिए इसे बाएँ या दाएँ घुमाएँ।",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "आगे बढ़ने के लिए ऊपर का हिस्सा अपने से दूर झुकाएँ, और ब्रेक लगाने व पीछे जाने के लिए अपनी ओर।",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "बूस्ट, जंप, फ़ायर और हथियार बदलें बटनों पर ही रहते हैं।",
+"Start": "शुरू करें",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "इसे वैसे पकड़ें जैसे आपको खेलना पसंद है, फिर शुरू करें दबाएँ। आप इसे अभी जैसे पकड़े हैं वहाँ से फिर शुरू करने के लिए कभी भी बीच सेट करें दबाएँ।",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "मोशन की अनुमति नहीं मिली। पेज फिर से खोलें और फ़ोन पूछे तो अनुमति दें दबाएँ।",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "यह फ़ोन पेज को नहीं बताता कि इसे कैसे पकड़ा गया है, इसलिए यहाँ झुकाकर नहीं चला सकते। स्टिक से चलाएँ।",
+"Centered": "बीच सेट हो गया",
+"Driving on phones": "फ़ोन पर चलाने का तरीका",
+"Each player picks": "हर खिलाड़ी चुने",
+"Stick": "स्टिक",
+"Tilting": "झुकाकर",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "स्टिक: स्क्रीन पर बनी स्टिक। झुकाकर: फ़ोन को स्टीयरिंग व्हील की तरह घुमाएँ और आगे बढ़ने व ब्रेक के लिए झुकाएँ। हर खिलाड़ी चुने: स्टिक, और कोई भी अपने फ़ोन पर झुकाकर चलाना चुन सकता है।"
+});

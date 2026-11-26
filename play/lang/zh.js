@@ -1546,3 +1546,25 @@ BVI18N.add("zh", {
 "Phone vibration": "手机振动",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "开火、冲刺、跳跃、被撞或掉下去时手机会振动。关闭后手机不再振动。"
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("zh", {
+"Use the stick": "改用摇杆",
+"Tilt to drive": "倾斜手机开车",
+"Center": "重新校准",
+"Tilt to steer": "倾斜转向",
+"Drive by tilting your phone": "倾斜手机来开车",
+"Hold your phone sideways in both hands, like a steering wheel.": "把手机横过来，用双手像方向盘一样握住。",
+"Turn it left or right to steer.": "向左或向右转动手机来转向。",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "把手机顶端向前倾就前进，向自己这边倾就刹车和倒车。",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "冲刺、跳跃、开火和换武器仍然用按钮。",
+"Start": "开始",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "按你喜欢的姿势拿好，然后点“开始”。随时点“重新校准”，就会按你现在拿手机的姿势重新开始。",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "没有允许使用动作感应。请重新打开页面，手机询问时点“允许”。",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "这部手机不会告诉网页你怎么拿着它，所以这里不能靠倾斜开车。请用摇杆开车。",
+"Centered": "已重新校准",
+"Driving on phones": "手机上的驾驶方式",
+"Each player picks": "每位玩家自己选",
+"Stick": "摇杆",
+"Tilting": "倾斜",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "摇杆：屏幕上的摇杆。倾斜：像方向盘一样转动手机，前后倾斜来前进和刹车。每位玩家自己选：默认用摇杆，每个人都可以在自己的手机上改用倾斜。"
+});

@@ -122,7 +122,7 @@ BVAB.add('zh', {
   "Pick \"Choose another provider\". In the list pick \"Custom\", then paste the address.": "选择“选择其他提供商”。在列表里选“自定义”，然后粘贴地址。",
   "What it blocks, and what it can't": "它能拦什么，不能拦什么",
   "It stops ads and trackers that come from ad and tracking companies' own servers: in apps, games, news sites and browsers.": "它拦截来自广告和跟踪公司自己服务器的广告和跟踪器：应用、游戏、新闻网站和浏览器里都管用。",
-  "It also stops new ad addresses on the web endings ad companies use for them (like \".cfd\"), before any list has them, and ad servers hidden under a site's own name.": "它还会在广告公司为此使用的网址后缀（例如“.cfd”）上拦截新的广告地址，赶在任何列表收录之前；藏在网站自己名下的广告服务器也会被拦截。",
+  "It also stops ad servers hidden under a site's own name. Every hour Blokvane checks whether a web ending (like \".cfd\") is used almost only by ad companies; if one is, new addresses there are stopped too, before any list has them.": "藏在网站自己名下的广告服务器也会被拦截。Blokvane 每小时检查一次：某个网址后缀（例如“.cfd”）是否几乎只被广告公司使用；如果是，那里的新地址也会被拦截，赶在任何列表收录之前。",
   "It cannot remove the ads inside YouTube, or in other apps that send their ads from the same servers as their videos.": "它去不掉 YouTube 里的广告，也去不掉那些把广告和视频放在同一批服务器上的应用里的广告。",
   "Where an ad was, an empty space can stay. A sponsored link at the top of search results may not open: use the normal result under it.": "原来有广告的地方可能会留下空白。搜索结果顶部的赞助链接可能打不开：请用它下面的普通结果。",
   "This phone's lookups go to Blokvane, encrypted. Blokvane answers them and keeps none of them: no list of sites or apps. It only counts how many.": "这部手机的查询会加密发给 Blokvane。Blokvane 答复它们，一条也不保留：没有网站或应用的清单。它只统计数量。",

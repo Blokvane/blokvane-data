@@ -1546,3 +1546,25 @@ BVI18N.add("bn", {
 "Phone vibration": "ফোনের ভাইব্রেশন",
 "Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.": "গুলি, বুস্ট, লাফ, ধাক্কা খাওয়া বা পড়ে গেলে ফোন কাঁপে। বন্ধ থাকলে কোনো ফোন কাঁপে না।"
 });
+// (Car Fighting Arena: driving by tilting the phone, added November 2026)
+BVI18N.add("bn", {
+"Use the stick": "স্টিক ব্যবহার করুন",
+"Tilt to drive": "হেলিয়ে চালান",
+"Center": "মাঝখান ঠিক করুন",
+"Tilt to steer": "হেলিয়ে ঘোরান",
+"Drive by tilting your phone": "ফোন হেলিয়ে চালান",
+"Hold your phone sideways in both hands, like a steering wheel.": "ফোনটা আড়াআড়ি করে দুই হাতে স্টিয়ারিং হুইলের মতো ধরুন।",
+"Turn it left or right to steer.": "ঘোরাতে এটা বাঁয়ে বা ডানে ঘোরান।",
+"Lean the top away from you to drive, and back toward you to brake and back up.": "এগোতে ওপরের দিকটা সামনে হেলান, আর ব্রেক করতে ও পেছোতে নিজের দিকে।",
+"Boost, Jump, Fire and Change weapon stay on the buttons.": "বুস্ট, লাফ, গুলি আর অস্ত্র বদলানো বোতামেই থাকে।",
+"Start": "শুরু করুন",
+"Hold it the way you like to play, then tap Start. Tap Center any time to start again from how you hold it.": "যেভাবে খেলতে ভালো লাগে সেভাবে ধরুন, তারপর শুরু করুন চাপুন। এখন যেভাবে ধরে আছেন সেখান থেকে আবার শুরু করতে যেকোনো সময় মাঝখান ঠিক করুন চাপুন।",
+"Motion was not allowed. Open the page again and tap Allow when the phone asks.": "মোশনের অনুমতি দেওয়া হয়নি। পেজটা আবার খুলুন, আর ফোন জিজ্ঞেস করলে অনুমতি দিন চাপুন।",
+"This phone does not tell the page how it is held, so tilting can't drive here. Drive with the stick.": "এই ফোন পেজকে জানায় না সেটা কীভাবে ধরা আছে, তাই এখানে হেলিয়ে চালানো যাবে না। স্টিক দিয়ে চালান।",
+"Centered": "মাঝখান ঠিক হয়েছে",
+"Driving on phones": "ফোনে চালানোর ধরন",
+"Each player picks": "প্রত্যেক খেলোয়াড় বেছে নেবেন",
+"Stick": "স্টিক",
+"Tilting": "হেলিয়ে",
+"Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.": "স্টিক: স্ক্রিনের স্টিক। হেলিয়ে: ফোনটা স্টিয়ারিং হুইলের মতো ঘোরান আর এগোতে ও ব্রেক করতে হেলান। প্রত্যেক খেলোয়াড় বেছে নেবেন: স্টিক, আর যে কেউ নিজের ফোনে হেলিয়ে চালানো বেছে নিতে পারেন।"
+});

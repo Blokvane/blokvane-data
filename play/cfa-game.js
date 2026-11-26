@@ -364,7 +364,7 @@
       } catch (e) {}
     },
     steps: [{ t: 'Game mode', s: 'Mode', keys: ['lang', 'mode'] }, { t: 'The arena', s: 'Arena', keys: ['arena', 'hazards', 'ramps', 'shrink'] },
-      { t: 'The cars', s: 'Cars', keys: ['bots', 'level', 'teamN', 'koMin', 'champ', 'autoNext', 'autoGo', 'haptics'] }, { t: 'The TV', s: 'TV', keys: ['view', 'quality'] }],
+      { t: 'The cars', s: 'Cars', keys: ['bots', 'level', 'teamN', 'koMin', 'champ', 'autoNext', 'autoGo', 'haptics', 'drive'] }, { t: 'The TV', s: 'TV', keys: ['view', 'quality'] }],
     spot: s => {
       const m = MODES.find(x => x[0] === s.mode) || MODES[0], ar = ARENAS.find(x => x[0] === s.arena) || ARENAS[0];
       const bullets = [['🕹️', 'Your phone is your steering wheel: drive on the left, boost, jump and fire on the right.'], ['🏎️', 'Pick a car on your phone. It drops onto the arena on the TV.'], [m[4], m[3]]];
@@ -388,6 +388,8 @@
       { key: 'autoNext', label: 'Next round starts by itself', tag: 'Next round', type: 'seg', options: [[0, 'Off'], [10, '10 s'], [20, '20 s']], default: 10, desc: 'Off: the host starts each round from their phone.', when: [['champ', true], ['mode', '!survival']] },
       { key: 'autoGo', label: 'Start when everyone is ready', type: 'toggle', default: true, desc: 'The match starts by itself when every player has tapped Ready. Off: the host starts it.' },
       { key: 'haptics', label: 'Phone vibration', type: 'toggle', default: true, live: 1, desc: 'Phones buzz when you fire, boost, jump, get hit or fall off. Off: no phone buzzes.' },
+      { key: 'drive', label: 'Driving on phones', type: 'seg', options: [['pick', 'Each player picks'], ['stick', 'Stick'], ['tilt', 'Tilting']], default: 'pick', live: 1,
+        desc: 'Stick: the stick on the screen. Tilting: turn the phone like a steering wheel and lean it to drive and brake. Each player picks: the stick, and anyone can switch to tilting on their phone.' },
       { key: 'view', label: 'TV view', type: 'seg', look: 'list', options: VIEWS, default: 'auto', live: 1 },
       { key: 'quality', label: 'Picture quality', type: 'seg', options: [['AUTO', 'Automatic'], ['LOW', 'Low'], ['HIGH', 'High']], default: 'AUTO', live: 1, desc: 'Automatic starts lower on a TV, and goes lower by itself when the TV can\'t keep up.' }
     ],
@@ -486,6 +488,7 @@
         if (key === 'view') setView(v);
         else if (key === 'quality' && ['AUTO', 'LOW', 'HIGH'].includes(v)) { E.state.quality = v; E.applyQ(v); }
         else if (key === 'haptics') { s.haptics = v; try { sayGarage(); sayMatch(); } catch (e) {} }
+        else if (key === 'drive') { s.drive = v; try { sayGarage(); sayMatch(); } catch (e) {} }
       });
       K.onPause(p => { try { E.togglePause(!!p); } catch (e) {} if (!p) bridge(); });
 
@@ -573,10 +576,12 @@
         garageCards(); garageSay();
       }
       // (what the phones need to know about the garage: everyone's car and who is ready)
+      // how the phones drive (Driving on phones): 'pick' lets each player choose, the stick until they pick tilting
+      function driveOf() { return s.drive === 'stick' || s.drive === 'tilt' ? s.drive : 'pick'; }
       function garageMsg() {
         const cars = {};
         for (const p of K.players()) cars[p.id] = [carOf(p.id), rdy.has(p.id) ? 1 : 0, later.has(p.id) ? 1 : 0];
-        return { k: 'cfa', t: 'g', v: gv, ph: phase, mode, arena, champ: champ ? 1 : 0, nT, cars, go: goAt ? Math.max(1, Math.ceil((goAt - K.now()) / 1000)) : 0, solo: here().length <= 1 ? 1 : 0, auto: s.autoGo === false ? 0 : 1, hap: s.haptics === false ? 0 : 1 };
+        return { k: 'cfa', t: 'g', v: gv, ph: phase, mode, arena, champ: champ ? 1 : 0, nT, cars, go: goAt ? Math.max(1, Math.ceil((goAt - K.now()) / 1000)) : 0, solo: here().length <= 1 ? 1 : 0, auto: s.autoGo === false ? 0 : 1, hap: s.haptics === false ? 0 : 1, drv: driveOf() };
       }
       function sayGarage(now) {
         gv++;
@@ -685,10 +690,10 @@
       const flushEv = () => { for (const [id, q] of evQ) { if (q.length) K.sayTo(id, q.shift()); if (!q.length) evQ.delete(id); } };
       function matchInfo() {
         const S = E.state, hd = S.hud || {};
-        return { ph: E.phase, mode, t: hd.time || '', r: hd.round || '', ser: serLine(), cnt: S.count || '', box: hd.box || '', bv: hd.boxVal || '', bs: hd.boxSub || '', solo: E.solo ? 1 : 0, busy: S.busy ? 1 : 0, hap: s.haptics === false ? 0 : 1,
+        return { ph: E.phase, mode, t: hd.time || '', r: hd.round || '', ser: serLine(), cnt: S.count || '', box: hd.box || '', bv: hd.boxVal || '', bs: hd.boxSub || '', solo: E.solo ? 1 : 0, busy: S.busy ? 1 : 0, hap: s.haptics === false ? 0 : 1, drv: driveOf(),
           res: E.phase === 'over' || E.phase === 'victory' ? { h: (S.result || {}).head || '', t: (S.result || {}).title || '', n: (S.result || {}).name || '', s: (S.result || {}).series || '', more: champ && E.series && !E.series.done ? 1 : 0, auto: nextAt ? Math.max(0, Math.ceil((nextAt - K.now()) / 1000)) : 0 } : null };
       }
-      const statusOf = c => { const x = E.status(c); x.pl = placeOf(c); x.n = (E.cars || []).length; x.team = c.team; x.col = c.color; x.auto = c.auto ? 1 : 0; return x; };
+      const statusOf = c => { const x = E.status(c); x.nw = x.n; x.pl = placeOf(c); x.n = (E.cars || []).length; x.team = c.team; x.col = c.color; x.auto = c.auto ? 1 : 0; return x; };
       function placeOf(c) { const all = (E.cars || []).slice(), v = o => (mode === 'hill' || mode === 'crown' ? o.pts : o.kos * 1e4 + o.score); all.sort((a, b) => (a.elim && !E.respawns ? 1 : 0) - (b.elim && !E.respawns ? 1 : 0) || v(b) - v(a)); return all.indexOf(c) + 1; }
       function serLine() { const S = E.series; if (!champ || !S) return ''; const ks = Object.keys(S.wins || {}).sort((a, b) => S.wins[b] - S.wins[a]).slice(0, 4); return 'BEST OF 5' + (ks.length ? ' · ' + ks.map(k => k + ' ' + S.wins[k]).join(' · ') : ''); }
       let fast = 0;

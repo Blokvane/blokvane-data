@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '2';
+  const V = '3';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -640,7 +640,7 @@
     el('summary', '', d, T("What it blocks, and what it can't"));
     bullets(d, [
       T("It stops ads and trackers that come from ad and tracking companies' own servers: in apps, games, news sites and browsers."),
-      T('It also stops new ad addresses on the web endings ad companies use for them (like ".cfd"), before any list has them, and ad servers hidden under a site\'s own name.'),
+      T('It also stops ad servers hidden under a site\'s own name. Every hour Blokvane checks whether a web ending (like ".cfd") is used almost only by ad companies; if one is, new addresses there are stopped too, before any list has them.'),
       T('It cannot remove the ads inside YouTube, or in other apps that send their ads from the same servers as their videos.'),
       T('Where an ad was, an empty space can stay. A sponsored link at the top of search results may not open: use the normal result under it.'),
       T("This phone's lookups go to Blokvane, encrypted. Blokvane answers them and keeps none of them: no list of sites or apps. It only counts how many."),
