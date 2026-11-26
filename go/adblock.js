@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '1';
+  const V = '2';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -640,6 +640,7 @@
     el('summary', '', d, T("What it blocks, and what it can't"));
     bullets(d, [
       T("It stops ads and trackers that come from ad and tracking companies' own servers: in apps, games, news sites and browsers."),
+      T('It also stops new ad addresses on the web endings ad companies use for them (like ".cfd"), before any list has them, and ad servers hidden under a site\'s own name.'),
       T('It cannot remove the ads inside YouTube, or in other apps that send their ads from the same servers as their videos.'),
       T('Where an ad was, an empty space can stay. A sponsored link at the top of search results may not open: use the normal result under it.'),
       T("This phone's lookups go to Blokvane, encrypted. Blokvane answers them and keeps none of them: no list of sites or apps. It only counts how many."),
@@ -892,6 +893,7 @@
     row(ls, 'hex', T('Run the Ad Blocker Test'), T('See what this phone stops, test by test'), () => go('test'));
     row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
     row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats'));
+    row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet);
     limits(v);
     installCard(v);
   }
@@ -1107,6 +1109,42 @@
     lines.forEach((l, i) => g.fillText(l, x, y + i * lh));
   }
 
+  // ---------------------------------------------------------------- Sites that always open: never blocked on this phone, by anything
+  function trustSheet() {
+    sheet(T('Sites that always open'), (sh, close) => {
+      el('p', 'muted', sh, T('Blokvane never blocks these sites on this phone, not even their ads. Add a site here if it does not open while ad blocking is on.'));
+      let list = S.prefs.trusted.slice();
+      const tl = el('div', 'chips', sh);
+      const draw2 = () => {
+        tl.textContent = '';
+        for (const s of list) { const c = el('button', 'chip', tl); c.type = 'button'; const b = el('bdi', '', c, s); b.dir = 'ltr'; c.appendChild(icon('x')); c.setAttribute('aria-label', T('Remove') + ' ' + s); c.onclick = () => { list = list.filter(x => x !== s); draw2(); }; }
+        tl.hidden = !list.length;
+      };
+      draw2();
+      const tr = el('div', 'copy', sh); tr.style.borderStyle = 'solid';
+      const ti = el('input', '', tr); ti.placeholder = 'example.com'; ti.autocapitalize = 'none'; ti.spellcheck = false; ti.dir = 'ltr'; ti.inputMode = 'url'; ti.setAttribute('aria-label', T('A site that always opens'));
+      ti.style.cssText = 'flex:1;min-width:0;border:0;background:none;font-size:16px;padding:8px 0;outline:none';
+      const add = () => {
+        const s = ti.value.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '').split(/[/?#]/)[0].replace(/^www\./, '').replace(/:\d+$/, '');
+        if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(s)) { toast(T('Type a site like example.com.')); return false; }
+        if (!list.includes(s)) list.push(s);
+        ti.value = ''; draw2(); return true;
+      };
+      btn(T('Add'), { cls: 'sm', icon: 'plus' }, tr, add);
+      ti.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+      const st = el('div', 'stack', sh); st.style.marginTop = '14px';
+      btn(T('Save'), { kind: 'go', icon: 'check' }, st, async () => {
+        // (a site typed and not added yet counts too)
+        if (ti.value.trim() && !add()) return;
+        const r = await ask('/v1/phone/prefs', { countries: S.prefs.countries, trusted: list });
+        if (!r.ok) { toast(why(r), 'bad'); return; }
+        S.prefs = { countries: r.data.countries || [], trusted: r.data.trusted || [] };
+        draft = null;
+        toast(T('Saved. It works from now on.'), 'ok'); close(); draw();
+      });
+    });
+  }
+
   // ---------------------------------------------------------------- Countries: where this phone does not go
   let draft = null;        // what is being changed and not saved yet: { cc: Set, trusted: [] }
   const flag = cc => { try { return String.fromCodePoint(...cc.toUpperCase().split('').map(c => 127397 + c.charCodeAt(0))); } catch (e) { return ''; } };
@@ -1164,7 +1202,7 @@
     // sites that always open
     const tc = el('div', 'card soft', v);
     el('h3', '', tc, T('Sites that always open'));
-    el('p', 'muted small', tc, T('A site you trust opens whatever country its server is in.'));
+    el('p', 'muted small', tc, T('A site you trust always opens on this phone: whatever country its server is in, and even when Blokvane would block it.'));
     const tl = el('div', 'chips', tc);
     const drawTrusted = () => {
       tl.textContent = '';

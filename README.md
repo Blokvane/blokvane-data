@@ -331,6 +331,17 @@ web host's temporary address or a scam site's own name with at least 300 listed 
 from this month's million most-visited sites. The extension treats a page under one of them as a warning sign, never
 as a block, so the scam page put there tomorrow is noticed before any list has it. Nobody has to keep that list by hand.
 
+Phones get more (`phone.json`). A phone blocks by name only, so blokvane.com takes every whole name from `ads.json`, and
+this part adds what makes it smarter: the pop-up and pop-under ad servers the lists name (the extension stops those as
+pop-ups, a phone only by name), the addresses in this repo's `fixes.json` (so an address added there reaches phones
+within the hour), and the web endings where nearly every site is an ad, scam or malware server and next to no real site
+lives (like `.cfd` and `.qpon`). Those endings are worked out from the numbers every hour: at least 500 listed sites on
+it, at most 30 of this month's most-visited sites, and listed ones at least 100 times as many. A phone then blocks
+every name there, so the next throwaway ad address is stopped before any list has it; the real sites on them stay
+open. Never in it: a shared platform, a company's own site, a popular site, a name on a big shared network, or an
+ending everybody uses (`.com`, `.net`, a country's own two letters ...). blokvane.com follows it every hour, and checks
+it again before it uses it.
+
 - `tools/lists/sources.json`: the lists it is made from and their licenses. Only lists that allow use in a paid product.
   Malware and phishing sites come from Phishing.Database, uBlock's badware list, MetaMask's and polkadot{.js}'s lists of
   fake crypto sites, and TweetFeed (whole scam sites that security researchers reported in the last 30 days).

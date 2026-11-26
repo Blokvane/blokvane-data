@@ -365,3 +365,84 @@ test('a list that was changed on the way is not used', async () => {
   await assert.rejects(F.asBuildFromBlokvane(''));
   await assert.rejects(F.bvSecurityFromBlokvane('', memStore()));
 });
+
+// ---------- the phone part (phone.json): what a phone's ad blocking adds to the whole names in ads.json ----------
+const readPhone = out => {
+  const meta = JSON.parse(fs.readFileSync(path.join(out, 'meta.json'), 'utf8')), text = fs.readFileSync(path.join(out, 'phone.json'), 'utf8');
+  assert.strictEqual(require('crypto').createHash('sha256').update(text, 'utf8').digest('hex'), meta.phone.sha256, 'phone.json matches its fingerprint in meta.json');
+  return { meta: meta.phone, phone: JSON.parse(text) };
+};
+const fixFile = domains => { const f = path.join(tmp(), 'fixes.json'); fs.writeFileSync(f, JSON.stringify({ schema: 1, block: { domains } })); return f; };
+const POPUPS = '||popup-ads.example^$popup\n||popunder.example^$popup,third-party\n||scoped-pop.example^$popup,domain=site.example\n||popular-shop.example^$popup\n' +
+  '||d1abc.cloudfront.net^$popup\n||google.com^$popup\n||allowed-pop.example^$popup\n@@||allowed-pop.example^$popup\n||pop-script.example^$script\n||WWW.Upper-Pop.example^$popup\n';
+
+test('phones get the pop-up ad servers the lists name and the fix file\'s addresses, never a real site', async () => {
+  const from = lists(tmp(), { 'easylist.txt': '! Title: made up\n||ads.example^\n' + POPUPS, 'filters.txt': '||ubo-ads.example^\n||ubo-pop.example^$popup,3p\n' }), out = tmp();
+  const r = await build({ from, out, prev: '', floors: FLOORS, now: T0, fixesFile: fixFile(['fix-ads.example', 'www.fix2.example', 'Not A Domain', 'paypal.com', 'popular-shop.example', 7]) });
+  assert.deepStrictEqual(r.errors, []);
+  const { meta, phone } = readPhone(out);
+  // (a rule with uppercase letters is not one the lists write: left out like any line that is not a plain rule)
+  assert.deepStrictEqual(phone.names, ['fix-ads.example', 'fix2.example', 'popunder.example', 'popup-ads.example', 'ubo-pop.example']);
+  // left out: a pop-up rule for some sites only, a popular shop, a name on a big shared network, a name people need, one
+  // a list lets through again, a rule that is not about pop-ups, a company's own site, and what is not a name at all
+  assert.strictEqual(meta.names, 5);
+  assert.strictEqual(meta.popups, 3);
+  assert.strictEqual(meta.fixes, 2);
+  assert.match(meta.v, /^[0-9a-f]{16}$/);
+  // the extension's own reading of the list does not change: the phone part is for phones only
+  assert.ok(F.bvListCheckMeta(JSON.parse(fs.readFileSync(path.join(out, 'meta.json'), 'utf8'))).ads);
+});
+
+test('phones block every name on the web endings ad companies use, and the real sites there still open', async () => {
+  const on = (n, end, word) => Array.from({ length: n }, (_, i) => (word || 'bad') + i + '.' + end).join('\n') + '\n';
+  // risky: 8 listed sites and one real one (a shop on this month's most-visited list). mixed: 8 listed and 2 real.
+  // zz: a country's own ending. xyz: a big ending everybody uses. few: too few listed sites.
+  const listed = on(8, 'risky') + 'x.bad0.risky\n' + on(8, 'mixed') + on(8, 'zz') + on(8, 'xyz') + on(2, 'few');
+  const from = lists(tmp(), {
+    'phishing-domains-ACTIVE.txt': phish(40) + listed,
+    'current.csv.gz': popular('https://shop.real.risky,90000\nhttps://real1.mixed,90000\nhttps://real2.mixed,90000\n')
+  }), out = tmp();
+  const r = await build({ from, out, prev: '', floors: FLOORS, now: T0, fixesFile: fixFile([]), endings: { minListed: 5, maxReal: 1, ratio: 3 } });
+  assert.deepStrictEqual(r.errors, []);
+  const { meta, phone } = readPhone(out);
+  assert.deepStrictEqual(phone.endings, ['risky']);
+  assert.deepStrictEqual(meta.endings, ['risky']);
+  // the real site on it stays open (with every name under it)
+  assert.deepStrictEqual(phone.keep, ['real.risky']);
+  assert.strictEqual(meta.keep, 1);
+  // with the usual numbers (500 listed sites at least) nothing this small is an ending ad companies use
+  const big = await build({ from, out: tmp(), prev: '', floors: FLOORS, now: T0, fixesFile: fixFile([]) });
+  assert.deepStrictEqual(big.meta.phone.endings, []);
+});
+
+test('the phone part published last time stays when a list it needs fails, and a sudden big change is not trusted', async () => {
+  const many = Array.from({ length: 20 }, (_, i) => '||pop' + i + '.example^$popup').join('\n') + '\n';
+  // (lists() writes every made-up list again: the pop-up rules go along each time)
+  const ads = { 'easylist.txt': '! Title: made up\n||ads.example^\n' + many };
+  const from = lists(tmp(), ads), out1 = tmp();
+  const fixes = fixFile([]);
+  await build({ from, out: out1, prev: '', floors: FLOORS, now: T0, fixesFile: fixes });
+  const first = readPhone(out1);
+  assert.strictEqual(first.meta.names, 20);
+  // MetaMask's list breaks: the security part stays, so the phone part does too (exactly as it was)
+  lists(from, Object.assign({}, ads, { 'config.json': '{"blacklist":"none"}' }));
+  let out = tmp(), r = await build({ from, out, prev: out1, floors: FLOORS, now: T0 + 3600e3, fixesFile: fixes });
+  assert.ok(!r.ok && !r.changed);
+  assert.strictEqual(fs.readFileSync(path.join(out, 'phone.json'), 'utf8'), fs.readFileSync(path.join(out1, 'phone.json'), 'utf8'));
+  assert.deepStrictEqual(JSON.parse(fs.readFileSync(path.join(out, 'meta.json'), 'utf8')).phone, first.meta);
+  // the pop-up rules shrink to a quarter: not trusted, the phone part stays
+  lists(from, { 'config.json': JSON.stringify({ blacklist: ['fake-wallet1.example', 'fake-wallet2.example', 'fake-wallet3.example'] }), 'easylist.txt': '! Title: made up\n||ads.example^\n' + many.split('\n').slice(0, 5).join('\n') + '\n' });
+  out = tmp();
+  r = await build({ from, out, prev: out1, floors: FLOORS, now: T0 + 3600e3, fixesFile: fixes });
+  assert.match(r.errors.join(' '), /Phones: went from 20 names to 5/);
+  assert.strictEqual(fs.readFileSync(path.join(out, 'phone.json'), 'utf8'), fs.readFileSync(path.join(out1, 'phone.json'), 'utf8'));
+  // a few more is fine; and without this month's most-visited list the endings published last time stay
+  lists(from, { 'easylist.txt': ads['easylist.txt'] + '||pop-new.example^$popup\n' });
+  fs.unlinkSync(path.join(from, 'current.csv.gz'));
+  out = tmp();
+  r = await build({ from, out, prev: out1, floors: FLOORS, now: T0 + 3600e3, fixesFile: fixes });
+  assert.deepStrictEqual(r.errors, []);
+  const next = readPhone(out);
+  assert.strictEqual(next.meta.names, 21);
+  assert.deepStrictEqual([next.phone.endings, next.phone.keep], [first.phone.endings, first.phone.keep]);
+});

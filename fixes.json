@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-22",
+  "updated": "2026-11-25",
   "minVersion": "3.13.0",
   "youtube": {
     "deleteKeys": [],
@@ -39,7 +39,7 @@
     "max": [],
     "disney": []
   },
-  "block": { "domains": [] },
+  "block": { "domains": ["bestridrabbleunhope.cfd", "googletagmanager.xyz", "hosteroutz.shop", "llvpn.com", "segolparmese.qpon", "stemonaaugured.com"] },
   "allow": { "domains": [] },
   "hide": { "generic": [], "sites": {} },
   "unhide": { "generic": [] }

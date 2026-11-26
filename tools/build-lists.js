@@ -15,6 +15,8 @@
 //   ads-delta.json        the lines added and removed since that base (small: what each computer downloads)
 //   security-base.json    malware and phishing sites: the big part, replaced about once a week
 //   security-delta.json   what was added and removed since that base (small: what each computer downloads)
+//   phone.json            what a phone's ad blocking adds to the whole names in ads.json: pop-up ad servers, the fix
+//                         file's addresses, and the web endings ad companies use (see phonePart). blokvane.com reads it.
 //   CREDITS.txt           the lists this is made from and their licenses. The list stays under those licenses.
 //   licenses/             the full text of the licenses that ask to be passed on with the list
 //
@@ -41,8 +43,31 @@ const DEFAULTS = {
   hintsMin: 300, hintsMax: 300,
   maxAdRules: 28000,          // what the extension can load (MAX_LIST_RULES in background.js)
   shrink: 0.7, grow: 3,       // against the count published last time
-  baseDays: 7, baseChurn: 0.15
+  baseDays: 7, baseChurn: 0.15,
+  // the phone part (phonePart): a web ending counts as one ad companies use when at least minListed sites on it are
+  // listed ad, scam or malware servers, at most maxReal are among this month's most-visited sites, and the listed ones
+  // outnumber those at least ratio times. At most `most` endings.
+  endings: { minListed: 500, maxReal: 30, ratio: 100, most: 40 }
 };
+
+// ---------- what a phone needs that the lists' whole names alone do not give it ----------
+// Web endings never blocked whole on a phone, whatever the numbers say: the big ones everybody uses. (Every country's
+// own ending, two letters, is never one either. The server refuses these too: server/app/dnscore.py, NEVER_ENDINGS.)
+const NEVER_ENDINGS = new Set(['com', 'net', 'org', 'info', 'biz', 'edu', 'gov', 'mil', 'int', 'arpa', 'app', 'dev', 'page', 'io', 'ai', 'co', 'me', 'tv',
+  'cloud', 'blog', 'online', 'site', 'store', 'shop', 'top', 'xyz', 'live', 'news', 'tech', 'mobi', 'name', 'pro', 'aero', 'coop', 'museum', 'jobs', 'travel']);
+// Big shared networks that many unrelated sites point their names to (content networks, cloud hosts): a name there is
+// never blocked whole on a phone. (The same list: server/app/dnscore.py, SHARED.)
+const SHARED = ['akamai.net', 'akamaiedge.net', 'akamaihd.net', 'akamaized.net', 'akadns.net', 'edgekey.net', 'edgesuite.net', 'cloudfront.net',
+  'amazonaws.com', 'awsglobalaccelerator.com', 'azureedge.net', 'azurefd.net', 'trafficmanager.net', 'cloudapp.net', 'windows.net', 'cloudflare.net',
+  'fastly.net', 'fastlylb.net', 'b-cdn.net', 'edgecastcdn.net', 'llnwd.net', 'cdn77.org', 'googlehosted.com', 'googleusercontent.com', 'appspot.com',
+  'herokudns.com', 'netlify.app', 'vercel-dns.com', 'github.io', 'pages.dev', 'myshopify.com', 'shopify.com', 'wixdns.net', 'squarespace.com',
+  'wpengine.com', 'impervadns.net', 'incapdns.net', 'sucuri.net', 'kxcdn.com', 'jsdelivr.net'];
+// The names people need most: never in the phone part (the server refuses a phone part that has one: dnsnames.MUST_WORK)
+const MUST_WORK = new Set(['google.com', 'gstatic.com', 'googleapis.com', 'youtube.com', 'apple.com', 'icloud.com', 'microsoft.com', 'live.com',
+  'office.com', 'windows.com', 'amazon.com', 'amazonaws.com', 'cloudfront.net', 'cloudflare.com', 'akamai.net', 'fastly.net', 'facebook.com', 'fbcdn.net',
+  'instagram.com', 'whatsapp.com', 'whatsapp.net', 'x.com', 'twitter.com', 'tiktok.com', 'linkedin.com', 'reddit.com', 'wikipedia.org', 'github.com',
+  'githubusercontent.com', 'netflix.com', 'spotify.com', 'zoom.us', 'paypal.com', 'stripe.com', 'yahoo.com', 'bing.com', 'samsung.com', 'adobe.com',
+  'dropbox.com', 'onrender.com']);
 
 // One list, as text (or, with bytes, as it came). from: a folder with the lists as files (named like the last part
 // of each address), for tests.
@@ -72,6 +97,8 @@ async function buildAds(o) {
       try {
         const text = await fetchText(url, o.from);
         if (!looksLikeAList(text, o.floors.listBytes)) throw new Error('came back too small or is not a list');
+        // (kept for the phone part: the pop-up ad servers the lists name)
+        if (o.texts) o.texts.set(String(url).replace(/\/+$/, '').split('/').pop(), text);
         return { ok: true, status: 200, text: async () => text };
       } catch (e) { failed.push(url + ' (' + e.message + ')'); throw e; }
     }
@@ -290,7 +317,90 @@ async function buildSecurity(o, sources, never, warnings) {
   }
   const deltaText = JSON.stringify({ format: 1, base: base.id, v, add: delta.add, del: delta.del });
   return { baseText, deltaText, v, base: base.id, baseMade, count, malware: full.malware.length, phishing: full.phishing.length, from, spared,
-    changes: delta.add.malware.length + delta.add.phishing.length + delta.del.length, domains: new Set([...full.malware, ...full.phishing]), popularAll: pop.all };
+    changes: delta.add.malware.length + delta.add.phishing.length + delta.del.length, domains: new Set([...full.malware, ...full.phishing]), popularAll: pop.all,
+    popular: guard ? popular : null };
+}
+
+// ---------- the phone part ----------
+// A phone blocks by name only: it asks Blokvane where each site lives, and for an ad server the answer is "nowhere".
+// The server takes every whole name from ads.json for that. This part adds what makes a phone smarter than those
+// names alone (phone.json; server/app/dns.py follows it every hour):
+//   names    the pop-up and pop-under ad servers the lists name ("||name^$popup": the extension's pop-up blocker stops
+//            them, which a phone can only do by name), and the addresses in the fix file (fixes.json, block.domains),
+//            so an address added there reaches phones within the hour as well
+//   endings  web endings where nearly every listed site is an ad, scam or malware server and next to no real site
+//            lives (.cfd, .qpon ...). A phone blocks every name there, so tomorrow's throwaway ad address is stopped
+//            before any list has it. Worked out from the numbers every hour, never picked by hand.
+//   keep     the real sites on those endings (on this month's most-visited list, or a company's own): they still open
+// Never in it: a shared platform, a company's own site, an established popular site, a name on a big shared network,
+// or one of the names people need most.
+const POPUP_OPTS = /^(popup|popunder|third-party|3p|all)$/;
+function popupNames(texts) {
+  const add = new Set(), allow = new Set();
+  for (const text of texts.values()) {
+    for (let line of text.split('\n')) {
+      line = line.trim();
+      const m = /^(@@)?\|\|([a-z0-9.-]+)\^\$([a-z0-9,-]+)$/.exec(line);
+      if (!m) continue;
+      const opts = m[3].split(',');
+      // (only a rule for every site: one with a site list, or for some kinds of page only, is left to the extension)
+      if (!opts.some(x => x === 'popup' || x === 'popunder') || !opts.every(x => POPUP_OPTS.test(x))) continue;
+      (m[1] ? allow : add).add(m[2].replace(/^www\./, '').replace(/\.$/, ''));
+    }
+  }
+  for (const d of allow) add.delete(d);
+  return add;
+}
+// the addresses in the fix file's block list (the extension takes the same ones from it every day)
+function fixNames(file) {
+  const f = readJson(file, null);
+  const list = f && f.block && Array.isArray(f.block.domains) ? f.block.domains : [];
+  return list.filter(x => typeof x === 'string').map(x => x.trim().toLowerCase().replace(/^\*\./, '').replace(/^www\./, '').replace(/\.$/, '')).slice(0, 2000);
+}
+const regOf = d => { const p = d.split('.'); return p.length > 2 ? p.slice(-2).join('.') : d; };
+const endOf = d => d.slice(d.lastIndexOf('.') + 1);
+// in: texts (the ad lists, by file name), adDomains and secDomains (every whole site on the ad and the security lists),
+// popular (the established popular sites and the names above them), popularAll (this month's most-visited list, or
+// null when it could not be had: then the endings published last time are kept), never (never-block.json), prev (the
+// phone part published last time, or null).
+function phonePart(o, inp) {
+  const never = inp.never;
+  const platform = new Set(never.platform), official = new Set([...never.official, ...(never.companies || [])]), shapes = (never.shapes || []).map(x => new RegExp(x));
+  const isOfficial = d => { for (let x = d; x;) { if (official.has(x)) return true; const i = x.indexOf('.'); if (i < 0) return false; x = x.slice(i + 1); } return false; };
+  const ok = d => d.length <= 253 && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(d) && !/^[\d.]+$/.test(d) && d !== 'localhost' &&
+    !platform.has(d) && !isOfficial(d) && !shapes.some(x => x.test(d)) && !MUST_WORK.has(d) && !inp.popular.has(d) && !SHARED.some(s => d === s || d.endsWith('.' + s));
+  const fromPopups = [...popupNames(inp.texts)].filter(ok), fromFixes = fixNames(inp.fixesFile).filter(ok);
+  const names = [...new Set([...fromPopups, ...fromFixes])].sort();
+  const was = inp.prev && Array.isArray(inp.prev.names) ? inp.prev.names.length : 0;
+  if (was && (names.length < was * o.shrink || names.length > Math.max(was * o.grow, was + 500))) throw new Error('went from ' + was + ' names to ' + names.length + ': too big a change to trust');
+  let endings, keep;
+  if (inp.popularAll) {
+    // each site counted once (its own name and every name under it are one site), listed or real
+    const listed = new Map(), real = new Map(), seen = new Set(), realSites = new Set();
+    for (const set of [inp.adDomains, inp.secDomains, fromPopups]) for (const d of set) {
+      const r = regOf(d);
+      if (seen.has(r)) continue;
+      seen.add(r);
+      listed.set(endOf(r), (listed.get(endOf(r)) || 0) + 1);
+    }
+    for (const d of inp.popularAll) realSites.add(regOf(d));
+    for (const r of realSites) real.set(endOf(r), (real.get(endOf(r)) || 0) + 1);
+    const E = o.endings;
+    endings = [...listed].filter(([e, n]) => /^[a-z]{3,24}$/.test(e) && !NEVER_ENDINGS.has(e) && n >= E.minListed && (real.get(e) || 0) <= E.maxReal &&
+      n >= E.ratio * Math.max(1, real.get(e) || 0)).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, E.most).map(x => x[0]).sort();
+    const on = new Set(endings), k = new Set();
+    for (const r of realSites) if (on.has(endOf(r))) k.add(r);
+    for (const d of [...platform, ...official]) if (on.has(endOf(d))) k.add(regOf(d));
+    keep = [...k].sort();
+  } else {
+    // (without this month's most-visited list nobody can tell which real sites live on an ending: the endings and the
+    // real sites published last time stay)
+    endings = inp.prev && Array.isArray(inp.prev.endings) ? inp.prev.endings : [];
+    keep = inp.prev && Array.isArray(inp.prev.keep) ? inp.prev.keep : [];
+  }
+  const body = { names, endings, keep };
+  const v = sha(JSON.stringify(body)).slice(0, 16);
+  return { text: JSON.stringify(Object.assign({ format: 1, v }, body)), v, names: names.length, popups: fromPopups.length, fixes: fromFixes.length, endings, keep: keep.length };
 }
 
 // "Only what changed" for the ad list: the base published last time, while it is fresh enough, and the lines added and
@@ -338,8 +448,11 @@ function credits(sources) {
 // Builds into o.out. Returns { ok, changed, errors, ads, security }. Never throws for a list that fails: that part
 // keeps what was published last time (copied from o.prev).
 async function build(opts) {
-  const o = Object.assign({}, DEFAULTS, opts, { floors: Object.assign({}, DEFAULTS.floors, opts.floors || {}) });
+  const o = Object.assign({}, DEFAULTS, opts, { floors: Object.assign({}, DEFAULTS.floors, opts.floors || {}), endings: Object.assign({}, DEFAULTS.endings, opts.endings || {}) });
   o.now = o.now || Date.now();
+  o.texts = new Map();
+  // (the fix file sits at the top of this repo; tests hand in a made-up one)
+  o.fixesFile = opts.fixesFile || path.join(__dirname, '..', 'fixes.json');
   const sources = readJson(path.join(HERE, 'sources.json'), null).sources;
   const never = readJson(path.join(HERE, 'never-block.json'), null);
   o.prevMeta = (o.prev && readJson(path.join(o.prev, 'meta.json'), null)) || {};
@@ -377,6 +490,26 @@ async function build(opts) {
     if (o.prevMeta.security && keep('security-base.json') && keep('security-delta.json')) meta.security = o.prevMeta.security;
     if (o.prevMeta.hints) meta.hints = o.prevMeta.hints;
   }
+  // the phone part: it needs this hour's ad and security lists (and the most-visited sites that come with the latter).
+  // Without them, or when it fails its own checks, the phone part published last time stays.
+  const keepPhone = () => { if (o.prevMeta.phone && keep('phone.json')) meta.phone = o.prevMeta.phone; };
+  if (res.ads && res.security && res.security.popular) {
+    try {
+      let prev = null;
+      if (o.prevMeta.phone) {
+        try { const t = fs.readFileSync(path.join(o.prev, 'phone.json'), 'utf8'); if (sha(t) === o.prevMeta.phone.sha256) prev = JSON.parse(t); } catch (e) {}
+      }
+      const p = res.phone = phonePart(o, { texts: o.texts, adDomains: res.ads.domains, secDomains: res.security.domains, popular: res.security.popular,
+        popularAll: res.security.popularAll, never, fixesFile: o.fixesFile, prev });
+      fs.writeFileSync(path.join(o.out, 'phone.json'), p.text);
+      const same = o.prevMeta.phone && o.prevMeta.phone.v === p.v;
+      meta.phone = { v: p.v, sha256: sha(p.text), bytes: Buffer.byteLength(p.text), names: p.names, popups: p.popups, fixes: p.fixes, endings: p.endings,
+        keep: p.keep, made: same ? o.prevMeta.phone.made : stamp };
+    } catch (e) {
+      errors.push('Phones: ' + e.message);
+      keepPhone();
+    }
+  } else keepPhone();
   meta.sources = sources.map(s => ({ name: s.name, home: s.home, license: s.license }));
   const strip = m => JSON.stringify(Object.assign({}, m, { made: '' }));
   const changed = strip(meta) !== strip(o.prevMeta);
@@ -410,6 +543,8 @@ if (require.main === module && process.argv.includes('--save-popular')) {
     for (const f of (m.security && m.security.from) || []) console.log('  from ' + f.name + ': ' + f.sites);
     if (r.security && r.security.spared) console.log('  left out because they are among the most-visited sites: ' + r.security.spared);
     if (m.hints) console.log('Addresses that scam pages crowd under (a warning sign for the extension): ' + m.hints.crowded.length);
+    if (m.phone) console.log('Phones: ' + m.phone.names + ' more names (' + m.phone.popups + ' pop-up ad servers, ' + m.phone.fixes + ' from the fix file), ' +
+      m.phone.endings.length + ' web endings ad companies use (' + (m.phone.endings.join(', ') || 'none') + '), ' + m.phone.keep + ' real sites on them left open');
     for (const w of r.warnings) console.log('Note: ' + w);
     console.log(r.changed ? 'The list changed.' : 'Nothing changed since last time.');
     // (the workflow publishes only when this file is there)
@@ -418,4 +553,4 @@ if (require.main === module && process.argv.includes('--save-popular')) {
     process.exit(r.ok ? 0 : 1);
   }).catch(e => { console.error(e); process.exit(2); });
 }
-module.exports = { build, readSecurity, readReported, crowded, DEFAULTS };
+module.exports = { build, readSecurity, readReported, crowded, popupNames, phonePart, DEFAULTS, NEVER_ENDINGS, SHARED, MUST_WORK };
