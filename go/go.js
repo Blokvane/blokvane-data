@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '45';
+  const VERSION = '46';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -499,7 +499,8 @@
   // show its own "Install" window. iPhones don't let a page do that: there, three picture steps show how (Share, then
   // Add to Home Screen). Either way it is the same page, with its own icon, opening full screen.
   let installEvt = null;
-  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  // (Android offers to install it: then it is not on this phone, whatever was noted before)
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!standalone()) store.set(document.documentElement.hasAttribute('data-games') ? 'gamesAdded' : 'appAdded', 0); });
   // (Chrome on Android can say that this app is on the home screen already: then "add the app" is not offered again)
   try {
     if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => {
@@ -570,7 +571,8 @@
   function getSheet() {
     const w = (t, v) => (GAMES ? gt(t, v) : gfill(t, v));
     const nm = MY()[1];
-    if (standalone() || haveApp(myApp())) { toast(w('{name} is on this phone already. Open it from your home screen.', { name: nm }), 'ok'); return; }
+    // (only a page that really runs from this app's own icon says "already here". Anyone else who asks gets the way to add it)
+    if (window.BVAPPS && BVAPPS.inApp()) { toast(w('{name} is on this phone already. Open it from your home screen.', { name: nm }), 'ok'); return; }
     if (plat() === 'desktop') {
       sheet(w('Get {name} on your phone', { name: nm }), sh => {
         appHead(sh, w('Point your phone\'s camera at the code. The app opens in its browser, ready to add to the home screen.'));
@@ -920,7 +922,7 @@
       el('p', 'muted', sh, w('Point the other phone\'s camera at the code. The app opens in its browser.'));
       qr(BVAPPS.url(myApp(), true), sh);
     }));
-    if (canGet()) row(ls, 'addbox', 'mint', w('Add this app to your home screen'), w('It opens like any app, with its own icon'), () => getSheet());
+    if (plat() !== 'desktop' && !(window.BVAPPS && BVAPPS.inApp())) row(ls, 'addbox', 'mint', w('Add this app to your home screen'), w('It opens like any app, with its own icon'), () => getSheet());
     // help
     const hl = el('div', 'list own-list', sec(w('Help')));
     row(hl, 'help', 'sun', w('Questions and answers'), '', null, SITE + 'faq');
@@ -1005,7 +1007,7 @@
         // (on this phone already: one tap opens it. Not yet: "Get" leads to that app's page, which adds it)
         const have = !phone || haveApp(k);
         const a = el('a', 'item own-row app-row', ls);
-        a.href = have || !window.BVAPPS ? href : BVAPPS.getUrl(k);
+        a.href = !window.BVAPPS ? href : have ? BVAPPS.openUrl(k) : BVAPPS.getUrl(k);
         const im = el('img', 'app-ic', a); im.src = img; im.alt = '';
         const t = el('span', 't', a);
         el('b', '', t, name);

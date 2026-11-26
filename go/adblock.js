@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '5';
+  const V = '6';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -963,7 +963,8 @@
 
   // ---------------------------------------------------------------- this app on the home screen
   let installEvt = null, installed = false;
-  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; });
+  // (Android offers to install it: then it is not on this phone, whatever was noted before)
+  addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; if (!standalone()) { installed = false; own.set('added', 0); } });
   addEventListener('appinstalled', () => { installEvt = null; own.set('added', 1); installed = true; });
   // (Chrome on Android can say whether the app is on the home screen already; nothing else can)
   try { if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => { if (a && a.some(x => /adblock\.webmanifest/.test(x.url || ''))) { installed = true; document.querySelectorAll('.card.install').forEach(c => c.remove()); } }).catch(() => {}); } catch (e) {}
@@ -1444,7 +1445,7 @@
     // (an app that is not on this phone yet says "Get": one tap leads to its page, which adds it to the home screen)
     const appRow = (k, img, name, sub, file) => {
       const have = plat() === 'desktop' || haveApp(k);
-      const it = row(ls, img, name, have && plat() !== 'desktop' ? T('On this phone') : sub, null, have || !window.BVAPPS ? HERE + file : BVAPPS.getUrl(k));
+      const it = row(ls, img, name, have && plat() !== 'desktop' ? T('On this phone') : sub, null, !window.BVAPPS ? HERE + file : have ? BVAPPS.openUrl(k) : BVAPPS.getUrl(k));
       if (!have) { const c = it.querySelector('.chev'); if (c) c.remove(); const g = el('span', 'get-pill', it); g.appendChild(icon('addbox')); el('span', '', g, T('Get')); }
     };
     appRow('remote', 'icon-192.png', 'BV Remote', T('Your phone as the remote for your computer and TV: slides, videos, sending things'), 'index.html');
@@ -1455,7 +1456,7 @@
     ls = el('div', 'list', v);
     row(ls, 'share', T('Tell a friend about Blokvane'), T('Sends the address of blokvane.com'), shareApp);
     row(ls, 'hex', T('Show this app to someone next to you'), T('A code their phone can scan'), () => qrSheet(T('Scan to get this app'), APP_URL, T('Point the other phone\'s camera at the code. The app opens in its browser.')));
-    if (canOfferInstall()) row(ls, 'addbox', T('Add this app to your home screen'), T('It opens like any app, with its own icon'), installApp);
+    if (plat() !== 'desktop' && !(window.BVAPPS && BVAPPS.inApp())) row(ls, 'addbox', T('Add this app to your home screen'), T('It opens like any app, with its own icon'), installApp);
     row(ls, 'look', T('Look'), { auto: T('Auto'), light: T('Light'), dark: T('Dark') }[lookNow()], lookSheet);
     row(ls, 'globe', T('Language'), (LANGS.find(l => l[0] === lang) || LANGS[0])[1], langSheet);
     row(ls, 'info', T('Good to know'), T('What it can do, what it cannot, and a few warnings'), goodToKnow);
@@ -1523,7 +1524,7 @@
     if (window.BVAPPS) {
       BVAPPS.onchange(() => { if (tab === 'more' && !closeSheet) draw(); });
       // (came here from "Get" in another app or on blokvane.com: straight to adding it)
-      if (BVAPPS.wantsGet()) setTimeout(() => { if (standalone() || haveApp('ads')) toast(T('This app is on your home screen already.'), 'ok'); else if (plat() !== 'desktop') installApp(); }, 400);
+      if (BVAPPS.wantsGet()) setTimeout(() => { if (BVAPPS.inApp()) toast(T('This app is on your home screen already.'), 'ok'); else if (plat() !== 'desktop') installApp(); }, 400);
     }
     if (acct()) { await load(); firstProbe(); }
     watch();

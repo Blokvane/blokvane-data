@@ -8,7 +8,9 @@
 // is what a page can tell about a phone: iPhone or Android, and the size of its screen.
 // (Written the old way, like theme.js, so it also runs on old phones.)
 (function () {
-  var KEY = 'bvgo:apps', SRV = 'bvgo:apps:acct';
+  // (the first marks, under 'bvgo:apps', could be wrong: a page opened from inside another app counted as that page's
+  // app. They are left behind; these names start clean.)
+  var KEY = 'bvgo:apps2', SRV = 'bvgo:apps2:acct', GONE = 'bvgo:apps2:gone';
   var FILES = { ads: 'adblock.html', games: 'games.html', remote: 'index.html' };
   var ua = navigator.userAgent || '';
   var IPAD = /iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
@@ -36,7 +38,18 @@
     var x = read(KEY) || {};
     if (x[app]) return;
     x[app] = Date.now(); write(KEY, x);
+    var g = read(GONE) || {}; if (g[app]) { delete g[app]; write(GONE, g); }
     changed(); sync();
+  }
+  // the phone itself says this app is NOT on it (Android offers to install it: it only does that when it is not there)
+  function unmark(app) {
+    if (!FILES[app]) return;
+    var x = read(KEY) || {}, was = has(app);
+    if (x[app]) { delete x[app]; write(KEY, x); }
+    var s = read(SRV); if (s && s.have && s.have.indexOf(app) >= 0) { s.have = s.have.filter(function (h) { return h !== app; }); write(SRV, s); }
+    var g = read(GONE) || {}; g[app] = Date.now(); write(GONE, g);
+    if (was) changed();
+    sync(true);
   }
   // signed in: tell Blokvane what this phone has, and hear what its other apps said (at most every few hours, or
   // right away when there is something new to tell)
@@ -45,48 +58,52 @@
     var a = acct(), k = kind();
     if (!a || !k || asking || typeof fetch !== 'function') return;
     var have = []; var l = local(); for (var n in l) have.push(n);
+    var gone = []; var gl = read(GONE) || {}; for (var q in gl) if (FILES[q] && !l[q]) gone.push(q);
     var last = read(SRV) || {};
     var same = last.email === a.email && last.kind === k && have.every(function (h) { return (last.have || []).indexOf(h) >= 0; });
-    if (!force && same && Date.now() - (+last.at || 0) < 6 * 3600e3) return;
+    if (!force && !gone.length && same && Date.now() - (+last.at || 0) < 6 * 3600e3) return;
     asking = true;
     var api = window.BV_TEST && typeof window.BV_TEST.api === 'string' ? window.BV_TEST.api.replace(/\/$/, '') : 'https://blokvane.com';
     fetch(api + '/v1/phone/apps', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + a.session }, credentials: 'omit', cache: 'no-store',
-      body: JSON.stringify({ kind: k, have: have }) })
+      body: JSON.stringify({ kind: k, have: have, gone: gone }) })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         asking = false;
         if (!d || !d.have || !d.have.filter) return;
+        if (gone.length) write(GONE, {});
         var before = list().join();
         write(SRV, { email: a.email, kind: k, have: d.have.filter(function (x) { return !!FILES[x]; }), at: Date.now() });
         if (list().join() !== before) changed();
       }, function () { asking = false; });
   }
-  // this page runs from its own icon: the app is on this phone
-  if (standalone() && plat() !== 'desktop') mark(me);
-  try { window.addEventListener('appinstalled', function () { mark(me); }); } catch (e) {}
-  try {
-    if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(function (a) {
-      var mine = me === 'ads' ? /adblock\.webmanifest/ : me === 'games' ? /games\.webmanifest/ : /manifest\.json/;
-      if (a && a.some(function (x) { return mine.test(x.url || ''); })) mark(me);
-    }, function () {});
-  } catch (e) {}
-  // (the marks the apps kept before this file was there)
-  try {
-    if (localStorage.getItem('bvgo:appAdded') && localStorage.getItem('bvgo:appAdded') !== '0') mark('remote');
-    if (localStorage.getItem('bvgo:gamesAdded') && localStorage.getItem('bvgo:gamesAdded') !== '0') mark('games');
-    if (localStorage.getItem('bvab:added') && localStorage.getItem('bvab:added') !== '0') mark('ads');
-  } catch (e) {}
-  try { window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === SRV) changed(); }); } catch (e) {}
   // a page that came here to add the app: "...?get=1" (from another app's "Get", or from blokvane.com)
   var wantsGet = /[?&]get=1\b/.test(location.search || '');
-  if (wantsGet) { try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {} }
+  // ("...?via=1": opened from a row in another of the apps)
+  var via = /[?&]via=1\b/.test(location.search || '');
+  if (wantsGet || via) { try { history.replaceState(history.state, '', location.pathname + location.hash); } catch (e) {} }
+  // This page runs from its own icon: the app is on this phone. Only the page a window STARTED with counts. A page of
+  // another app, opened from inside a home-screen app, still looks "standalone" to the phone, and so does a page that
+  // was reached through "Get": neither says anything about its own app.
+  var owner = '';
+  try { owner = sessionStorage.getItem('bv:owner') || ''; if (!owner) { owner = !document.referrer && !wantsGet && !via ? me : 'other'; sessionStorage.setItem('bv:owner', owner); } } catch (e) { owner = ''; }
+  var mine = standalone() && plat() !== 'desktop' && owner === me && !wantsGet;
+  if (mine) mark(me);
+  try { window.addEventListener('appinstalled', function () { mark(me); }); } catch (e) {}
+  // (Android offers to install this app: so it is not on this phone, whatever was noted before)
+  try { window.addEventListener('beforeinstallprompt', function () { if (!mine) unmark(me); }); } catch (e) {}
+  try { window.addEventListener('storage', function (e) { if (e.key === KEY || e.key === SRV) changed(); }); } catch (e) {}
   var here = location.href.replace(/[?#].*$/, '').replace(/[^/]*$/, '');
   window.BVAPPS = {
-    me: me, plat: plat, kind: kind, has: has, list: list, mark: mark, sync: sync, standalone: standalone,
+    me: me, plat: plat, kind: kind, has: has, list: list, mark: mark, unmark: unmark, sync: sync, standalone: standalone,
+    // truly inside this app's own home-screen window
+    inApp: function () { return mine; },
     wantsGet: function () { var w = wantsGet; wantsGet = false; return w; },
     onchange: function (fn) { heard.push(fn); },
     // where an app lives; get: straight to "add it to the home screen"
     url: function (app, get) { return here + FILES[app] + (get ? '?get=1' : ''); },
+    // a row in one app that opens another: from inside a home-screen app the page says where it came from, so it is
+    // never taken for an app that was started from its own icon
+    openUrl: function (app) { return here + FILES[app] + (standalone() ? '?via=1' : ''); },
     // Where "Get" leads. From inside a home-screen app, another app's page would open in a small browser that cannot
     // add anything to the home screen: there it is handed to the phone's real browser (Safari on an iPhone, Chrome on
     // Android; an Android phone without Chrome opens it the normal way).
