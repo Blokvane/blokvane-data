@@ -1013,7 +1013,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
 
   // ---------- joining ----------
   function joinScreen(editing) {
-    const v = view(editing ? S().changeName : T('Party games'), { tint: 'sun', night: true, back: editing ? () => backToNow() : null });
+    const v = view(editing ? S().changeName : T('Party games'), { tint: 'sun', night: true, back: editing ? () => backToNow() : null, get: !editing });
     if (!editing) hero(v.body, S().join, T('Pick a name and a Boo. The game itself is on the TV.'), { node: heroBoo('boo:party') });
     const card = el('div', 'card', v.body);
     const ni = input({ value: G.name, placeholder: S().name, max: 16 });

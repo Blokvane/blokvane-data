@@ -276,3 +276,30 @@ details.more > :not(summary) { margin-top: 10px; }
 html:is(:lang(ar), :lang(hi), :lang(bn), :lang(zh)) :is(.eyebrow, .sec, .stat span, .dial .core .lbl, .card .pill, .tag, .barlbl) { letter-spacing: 0; }
 html:is(:lang(ar), :lang(hi), :lang(bn), :lang(zh)) :is(.eyebrow, .sec) { font-family: var(--sans); font-size: 13.5px; font-weight: 700; }
 html:is(:lang(ar), :lang(hi), :lang(bn)) h1 { line-height: 1.25; letter-spacing: 0; }
+
+/* ---- the look picked in the app (More, then Look): theme.js says it on the first tag */
+html[data-theme="dark"] { color-scheme: dark; --paper: #15120e; --paper2: #1b1813; --card: #211d18; --ink: #f3ebdc; --ink2: #c4b8a5; --faint: #8b8070; --rule: #352f27;
+  --pass: #3fcf95; --pass-soft: #163a2c; --fail: #ff6b5e; --fail-soft: #43201c; --wait: #2c2620; --amber: #e0a52e; --amber-soft: #3a2f16; }
+html[data-theme="light"] { color-scheme: light; --paper: #f5efe3; --paper2: #fbf7ef; --card: #fffdf8; --ink: #1f1b16; --ink2: #5d554a; --faint: #9a8f80; --rule: #e4dac8;
+  --pass: #18946a; --pass-soft: #d9f0e5; --fail: #e0453a; --fail-soft: #fbe0dc; --wait: #ebe2d1; --amber: #c98a12; --amber-soft: #f6ead0; }
+html[data-theme="dark"] .go { color: var(--paper); }
+html[data-theme="light"] .go { color: #fff; }
+.looks { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 10px; gap: 10px; margin-top: 6px; }
+.look { border: 1.5px solid var(--rule); background: var(--card); border-radius: 16px; padding: 12px 6px 10px; cursor: pointer; display: flex; flex-direction: column; align-items: center; grid-gap: 8px; gap: 8px; font: 700 14px var(--sans); }
+html.no-flexgap .look > * + * { margin-top: 8px; }
+.look i { width: 46px; height: 46px; border-radius: 50%; border: 1.5px solid var(--ink); background: #f5efe3; }
+.look-dark i { background: #15120e; }
+.look-auto i { background: linear-gradient(90deg, #f5efe3 50%, #15120e 50%); }
+.look[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 4px 0 var(--accent); }
+/* ---- "Get" on an app that is not on this phone yet, and the app's icon at the top of "add it to your home screen" */
+.get-pill { flex: none; display: inline-flex; align-items: center; grid-gap: 5px; gap: 5px; min-height: 34px; padding: 0 14px 0 10px; border-radius: 999px; background: var(--ink); color: var(--paper); font: 700 14px var(--sans);
+  box-shadow: 0 3px 0 var(--accent); }
+html.no-flexgap .get-pill > * + * { margin-left: 5px; }
+html.no-flexgap[dir="rtl"] .get-pill > * + * { margin-left: 0; margin-right: 5px; }
+.get-pill svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.get-head { display: flex; align-items: center; grid-gap: 14px; gap: 14px; margin: 2px 0 12px; }
+html.no-flexgap .get-head > * + * { margin-left: 14px; }
+html.no-flexgap[dir="rtl"] .get-head > * + * { margin-left: 0; margin-right: 14px; }
+.get-head img { width: 60px; height: 60px; border-radius: 15px; flex: none; }
+.get-head b { font: 700 20px var(--display); }
+.get-head p { margin: 2px 0 0; }

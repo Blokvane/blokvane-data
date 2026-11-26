@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '44';
+  const VERSION = '45';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -96,7 +96,8 @@
     }
     for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
       if (m.getAttribute('data-c0') == null) m.setAttribute('data-c0', m.content);
-      const want = !night ? m.getAttribute('data-c0') : day ? '#f3eeff' : '#1d1440';
+      // (BV Remote's own pages by day: its light paper)
+      const want = !night ? (h.classList.contains('bv-day') && !h.hasAttribute('data-games') ? '#f4f6fb' : m.getAttribute('data-c0')) : day ? '#f3eeff' : '#1d1440';
       if (m.content !== want) m.content = want;
     }
   }
@@ -321,6 +322,14 @@
     const dot = el('i', 'dot', sub);
     const st = el('span', '', sub, o.status || '');
     if (!o.status && !o.live) sub.hidden = true;
+    // (a page reached by scanning a code, in the browser, on a phone that does not have the app yet: one small button
+    // that gets it. Never inside the app, never when the app is on this phone already.)
+    if (o.get && canGet()) {
+      const g = el('button', 'getchip', top); g.type = 'button';
+      g.appendChild(icon('addbox'));
+      el('span', '', g, o.night ? gt('Get the app') : 'Get the app');
+      g.onclick = () => getSheet();
+    }
     const body = el('main', '', app);
     if (o.live) bindStatus(dot, st, sub);
     return { body, top, setStatus: (text, tone) => { sub.hidden = false; st.textContent = text; dot.className = 'dot ' + (tone || ''); } };
@@ -529,17 +538,56 @@
           ['check', w('Tap "Install" or "Add"'), w('{name} is now on your home screen.', { name: nm })]]
         : [['addbox', w('In Chrome or Edge: the install icon in the address bar'), w('Or the browser menu, then "Install".')], ['check', w('Click "Install"'), w('{name} gets its own window and icon.', { name: nm })]];
     sheet(w('Add {name} to your home screen', { name: nm }), (sh, close) => {
-      el('p', 'muted', sh, w('It opens like an app, with its own icon, in one tap. Nothing to download from a store.'));
+      appHead(sh, w('It opens like an app, with its own icon, in one tap. Nothing to download from a store.'));
       const ls = el('ol', 'steps-pic', sh);
       steps.forEach(([ic, t, sub]) => { const li = el('li', '', ls); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); if (sub) el('small', '', d, sub); });
       if (o.note) el('p', 'install-note', sh, o.note);
+      // (a page opened inside another app, like a messenger's own little browser, cannot add anything to the home
+      // screen: the link, to open in the phone's real browser)
+      if (plat() !== 'desktop') {
+        const d = el('details', 'get-more', sh);
+        el('summary', '', d, w('Not in the list?'));
+        el('p', 'muted small', d, w('Then this page is open inside another app. Copy the link and open it in {browser} itself.', { browser: ios ? 'Safari' : 'Chrome' }));
+        btn(w('Copy the link'), { kind: 'ghost', full: true, icon: 'copy' }, d, async () => { const u = BVAPPS.url(myApp(), true); try { await navigator.clipboard.writeText(u); toast(w('Link copied.'), 'ok'); } catch (e) { toast(u); } });
+      }
       if (o.instead) btn(w('Use it in the browser instead'), { kind: 'ghost', full: true }, sh, () => { close(); o.instead(); }).style.marginTop = '12px';
       else btn(w('Got it'), { kind: 'go', full: true }, sh, () => close()).style.marginTop = '12px';
     });
   }
+  // ---------- "Get the app": Blokvane's three apps on this phone (apps.js knows which are here already) ----------
+  const myApp = () => (window.BVAPPS ? BVAPPS.me : 'remote');
+  const haveApp = k => !!(window.BVAPPS && BVAPPS.has(k));
+  // may this page offer its own app? On a phone, in the browser, and the app is not on this phone yet
+  const canGet = () => plat() !== 'desktop' && !standalone() && !haveApp(myApp());
+  const MY = () => (GAMES ? ['games-192.png', 'BV Games'] : ['icon-192.png', 'BV Remote']);
+  function appHead(parent, text) {
+    const r = el('div', 'get-head', parent);
+    const im = el('img', '', r); im.src = MY()[0]; im.alt = '';
+    const t = el('div', '', r); el('b', '', t, MY()[1]); el('p', 'muted small', t, text);
+    return r;
+  }
+  // one tap on "Get": Android's own Install window, an iPhone's three picture steps, and on a computer the code to scan
+  function getSheet() {
+    const w = (t, v) => (GAMES ? gt(t, v) : gfill(t, v));
+    const nm = MY()[1];
+    if (standalone() || haveApp(myApp())) { toast(w('{name} is on this phone already. Open it from your home screen.', { name: nm }), 'ok'); return; }
+    if (plat() === 'desktop') {
+      sheet(w('Get {name} on your phone', { name: nm }), sh => {
+        appHead(sh, w('Point your phone\'s camera at the code. The app opens in its browser, ready to add to the home screen.'));
+        qr(BVAPPS.url(myApp(), true), sh);
+      });
+      return;
+    }
+    if (plat() === 'ios') return installSteps();
+    sheet(w('Get {name}', { name: nm }), (sh, close) => {
+      appHead(sh, w('It opens like an app, with its own icon, in one tap. Nothing to download from a store.'));
+      btn(w('Install'), { kind: 'go', full: true, huge: true, icon: 'addbox' }, sh, async () => { close(); await installApp(); }).style.marginTop = '14px';
+      btn(w('Not now'), { kind: 'ghost', full: true }, sh, () => close()).style.marginTop = '8px';
+    });
+  }
   // a small card on the home page (until it's added, or "Not now" for three weeks)
   function installCard(parent) {
-    if (standalone() || store.get('appAdded', 0) || store.get('installHide', 0) > Date.now()) return null;
+    if (standalone() || haveApp('remote') || store.get('appAdded', 0) || store.get('installHide', 0) > Date.now()) return null;
     const c = el('div', 'card install', parent);
     const r = el('div', 'install-row', c);
     const ic = el('img', 'install-ic', r); ic.src = 'icon-192.png'; ic.alt = '';
@@ -662,7 +710,7 @@
     setTimeout(route, 600);
   }
   function celebrate(name, kind, how = {}) {
-    const v = view('All set');
+    const v = view('All set', { get: true });
     const h = hero(v.body, 'Connected to ' + name, kind === 'kid' ? 'Kid mode requests from that computer come to this phone. You can allow or deny them here.' : 'This phone is now a remote and more for your computer. It stays connected: you don\'t need to scan again.');
     h.querySelector('.boo').classList.add('wave');
     btn('Start', { kind: 'go', huge: true, full: true }, v.body, () => route());
@@ -759,7 +807,8 @@
     const picking = store.get('pick', 0);
     if (picking) store.del('pick');
     if (list.length === 1 && !picking) { history.replaceState(null, '', '#c1.' + list[0].s + '.' + list[0].cid); return (await need('home'))(list[0]); }
-    const v = view('Blokvane');
+    const v = view('Blokvane', { get: false });
+    moreBtn(v.top, () => moreScreen({ back: () => { store.set('pick', 1); home(); } }));
     // (what this phone does by itself, with or without a computer: ad blocking, its account and licenses, a video for the TV)
     const ownCard = () => { thisPhone(v.body); appsCard(v.body, ['ads', 'games']); };
     const gameCard = () => {
@@ -770,7 +819,8 @@
     };
     if (!list.length) {
       backCard(v.body);
-      hero(v.body, 'Blokvane on your phone', 'Connect this phone to Blokvane on your computer: there, open Blokvane, then Connect, and scan the QR code with this phone\'s camera.');
+      hero(v.body, 'Blokvane on your phone', 'The remote for your computer and TV. Ad blocking and party games are here too.');
+      startCard(v.body);
       ownCard();
       gameCard();
       foot();
@@ -793,6 +843,92 @@
     foot();
   }
 
+  // where to start, for a phone that knows no computer yet: three steps with pictures
+  function startCard(parent) {
+    const c = el('div', 'card start', parent);
+    el('h2', '', c, 'Start here');
+    const ol = el('ol', 'steps-pic', c);
+    for (const [ic, t, sub] of [['laptop', 'On your computer, open Blokvane', 'Click the Blokvane icon in Chrome or Edge, then Connect.'],
+      ['camera', 'Scan the code with this phone', 'Point the phone\'s camera at it. This page connects by itself.'],
+      ['check', 'Done', 'This phone is now the remote for your computer and TV.']]) {
+      const li = el('li', '', ol); const b = el('span', 'ic', li); b.appendChild(icon(ic)); const d = el('div', '', li); el('b', '', d, t); el('small', '', d, sub);
+    }
+    const a = el('a', 'btn ghost full', c); a.href = SITE + 'download'; a.target = '_blank'; a.rel = 'noopener'; a.style.marginTop = '12px'; a.style.textDecoration = 'none';
+    a.appendChild(icon('laptop')); el('span', '', a, 'No Blokvane on your computer yet? Get it');
+    return c;
+  }
+  // the "More" button at the top of an app's first page
+  function moreBtn(top, fn) {
+    const b = el('button', 'morebtn', top); b.type = 'button';
+    b.appendChild(icon('dots'));
+    el('span', '', b, GAMES ? gt('More') : 'More');
+    b.onclick = () => { buzz('tap'); fn(); };
+    return b;
+  }
+  // ---------- More: everything else of the app. The same page in BV Remote and BV Games, like "More" in BV Ad Block:
+  // the account, the look, Blokvane's other apps (each with "Get" until it is on this phone), telling a friend, help.
+  async function shareRemote() {
+    const data = { title: 'Blokvane', text: 'Blokvane makes my phone the remote for my computer and TV, blocks ads, and has party games for the TV. Take a look:', url: SITE };
+    try { if (navigator.share) { await navigator.share(data); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(data.text + ' ' + SITE); toast('Copied. Send it to a friend.', 'ok'); } catch (e) { toast(SITE); }
+  }
+  function moreScreen(o = {}) {
+    const w = (t, v) => (GAMES ? gt(t, v) : gfill(t, v));
+    const back = o.back || (() => route());
+    const again = () => moreScreen(o);
+    const v = GAMES ? view(gt('More'), { tint: 'mint', night: true, app: true, step: true, back }) : view('More', { back, tint: 'sky' });
+    const sec = title => { const c = el('div', 'card more-sec', v.body); el('h2', '', c, title); return c; };
+    const row = (ls, ic, tint, title, sub, fn, href) => {
+      const it = el(href ? 'a' : 'button', 'item own-row' + (href ? ' app-row' : ''), ls);
+      if (href) { it.href = href; if (/^https?:/.test(href)) { it.target = '_blank'; it.rel = 'noopener'; } } else { it.type = 'button'; it.onclick = () => { buzz('tap'); fn(); }; }
+      it.style.setProperty('--tint', `var(--${tint})`);
+      el('span', 'ic', it).appendChild(icon(ic));
+      const t = el('span', 't', it); el('b', '', t, title); if (sub) el('small', '', t, sub);
+      it.appendChild(icon('chev', 'go'));
+      return it;
+    };
+    // the account
+    if (GAMES) {
+      const a = pass.get();
+      const ls = el('div', 'list own-list', sec(gt('Account')));
+      if (a) {
+        const it = el('div', 'item own-row plain', ls);
+        it.style.setProperty('--tint', 'var(--sky)');
+        el('span', 'ic', it).appendChild(icon('key'));
+        const t = el('span', 't', it); const m = el('bdi', '', el('b', '', t), a.email); m.dir = 'ltr';
+        el('small', '', t, pass.host() ? gt('Signed in. This phone can host games') : gt('Signed in on this phone'));
+        row(ls, 'x', 'rose', gt('Sign out'), '', () => { pass.clear(); toast(gt('Signed out.')); again(); });
+      } else row(ls, 'key', 'sky', gt('Sign in to host'), gt('With your email and a code. No password.'), () => signInScreen({ after: again, back: again }));
+    } else thisPhone(v.body);
+    // the look, and in the Games the language
+    const look = sec(w('Look'));
+    const note = el('p', 'muted small', look);
+    const sayLook = () => { note.textContent = lookNow() === 'auto' ? w('Auto matches this phone: light when the phone is light, dark when it is dark.') : w('It stays like this on this phone, whatever the phone is set to.'); };
+    sayLook();
+    lookRow(look, sayLook);
+    if (GAMES) {
+      const ls = el('div', 'list own-list', look); ls.style.marginTop = '12px';
+      row(ls, 'globe', 'violet', gt('Language'), (window.BVI18N && (BVI18N.LANGS.find(l => l[0] === gl) || [])[1]) || 'English', () => langSheet());
+    }
+    // Blokvane's other apps
+    const apps = appsCard(v.body, GAMES ? ['ads', 'remote'] : ['ads', 'games'], GAMES ? { words: gt } : {});
+    row(apps.querySelector('.list'), 'laptop', 'coral', w('Blokvane for your computer'), w('The ad blocker for Chrome and Edge. It takes the ads out of YouTube too.'), null, SITE + 'download').classList.add('pc-row');
+    // this app
+    const ls = el('div', 'list own-list', sec(w('This app')));
+    row(ls, 'share', 'pink', w('Tell a friend'), GAMES ? gt('Invite them to game night') : 'Sends the address of blokvane.com', () => (GAMES ? shareInvite() : shareRemote()));
+    row(ls, 'phone', 'teal', w('Show this app to someone next to you'), w('A code their phone can scan'), () => sheet(w('Scan to get this app'), sh => {
+      el('p', 'muted', sh, w('Point the other phone\'s camera at the code. The app opens in its browser.'));
+      qr(BVAPPS.url(myApp(), true), sh);
+    }));
+    if (canGet()) row(ls, 'addbox', 'mint', w('Add this app to your home screen'), w('It opens like any app, with its own icon'), () => getSheet());
+    // help
+    const hl = el('div', 'list own-list', sec(w('Help')));
+    row(hl, 'help', 'sun', w('Questions and answers'), '', null, SITE + 'faq');
+    row(hl, 'send', 'sky', w('Write to Blokvane'), 'support@blokvane.com', null, 'mailto:support@blokvane.com');
+    row(hl, 'lock', 'violet', w('Privacy'), w('What Blokvane keeps, and what it never does'), null, SITE + 'privacy');
+    const f = el('p', 'muted small center', v.body, (GAMES ? 'BV Games' : 'BV Remote') + ' ' + VERSION); f.style.marginTop = '18px';
+  }
+
   // ---------- "This phone": what the phone does by itself, with or without a computer ----------
   // Two rows, each with what is true right now under its name: ad blocking on this phone, and who is signed in and
   // their licenses. What they say comes from this phone's own memory of its last look
@@ -809,7 +945,7 @@
     return fetch(BVPASS.api + '/v1/phone/dns/info', { credentials: 'omit', signal: ctl ? ctl.signal : undefined }).then(r => (r.ok ? r.json() : null)).then(d => {
       clearTimeout(t);
       if (!d || !/^(all|some|none)$/.test(d.open)) return false;
-      store.set('shield:info', { open: d.open, android: !!d.android, at: Date.now() });
+      store.set('shield:info', { open: d.open, android: !!d.android, droid: d.droid === 'all' ? 'all' : 'soon', lab: /^[0-9a-f]{6,16}$/.test(d.lab || '') ? d.lab : '', at: Date.now() });
       return d.open !== have.open;
     }, () => { clearTimeout(t); return false; });
   }
@@ -861,18 +997,29 @@
     const c = el('div', 'card apps', parent);
     el('h2', '', c, w(o.title || 'More from Blokvane'));
     const ls = el('div', 'list own-list', c);
-    for (const k of which) {
-      const [img, name, sub, href] = APPS[k];
-      const a = el('a', 'item own-row app-row', ls);
-      a.href = href;
-      const im = el('img', 'app-ic', a); im.src = img; im.alt = '';
-      const t = el('span', 't', a);
-      el('b', '', t, name);
-      // (the ad blocker's row never promises what is not open yet: the same words as "This phone" above it)
-      const open = k === 'ads' && !o.words ? adsOpen().open : '';
-      el('small', '', t, open === 'none' ? 'Not open yet' : open === 'some' ? 'Being tried out with a few people' : w(sub));
-      a.appendChild(icon('chev', 'go'));
-    }
+    const phone = plat() !== 'desktop';
+    const paint = () => {
+      ls.textContent = '';
+      for (const k of which) {
+        const [img, name, sub, href] = APPS[k];
+        // (on this phone already: one tap opens it. Not yet: "Get" leads to that app's page, which adds it)
+        const have = !phone || haveApp(k);
+        const a = el('a', 'item own-row app-row', ls);
+        a.href = have || !window.BVAPPS ? href : BVAPPS.getUrl(k);
+        const im = el('img', 'app-ic', a); im.src = img; im.alt = '';
+        const t = el('span', 't', a);
+        el('b', '', t, name);
+        // (the ad blocker's row never promises what is not open yet: the same words as "This phone" above it)
+        const info = k === 'ads' ? adsOpen() : null;
+        const open = info && !o.words ? info.open : '';
+        const soon = info && plat() === 'android' && info.droid === 'soon';
+        el('small', '', t, open === 'none' ? 'Not open yet' : soon ? w('Coming soon on Android. The Ad Blocker Test works today') : have && phone ? w('On this phone') : w(sub));
+        if (have) a.appendChild(icon('chev', 'go'));
+        else { const g = el('span', 'get-pill', a); g.appendChild(icon('addbox')); el('span', '', g, w('Get')); }
+      }
+    };
+    paint();
+    if (window.BVAPPS) BVAPPS.onchange(() => { if (ls.isConnected) paint(); });
     return c;
   }
 
@@ -908,7 +1055,7 @@
   const pass = {
     why: '',
     get() { const p = store.get('games:acct', null); return p && typeof p === 'object' && typeof p.session === 'string' && p.session && typeof p.email === 'string' ? p : null; },
-    set(p) { store.set('games:acct', p); },
+    set(p) { store.set('games:acct', p); if (window.BVAPPS) setTimeout(() => BVAPPS.sync(true), 0); },
     // (may this phone host? signed in, and the server said its email has a plan)
     host() { const p = pass.get(); return p && p.plan ? p : null; },
     clear() { const p = pass.get(); store.del('games:acct'); store.del('games:passes'); store.del('games:pass'); if (p && typeof BVPASS !== 'undefined') BVPASS.signOut(p.session).catch(() => {}); },
@@ -1320,7 +1467,7 @@
     }
     // (the games' own look, the same as in a game)
     try { (await need('party'))('css'); } catch (e) {}
-    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true });
+    const v = view('Blokvane Games', { tint: 'mint', night: true, app: true, get: false });
     // (the language, at the top: one tap to change it)
     const lb = el('button', 'sw-langbtn', v.top);
     lb.type = 'button';
@@ -1328,14 +1475,10 @@
     lb.innerHTML = SW_ICONS.globe;
     el('span', '', lb, (window.BVI18N && (BVI18N.LANGS.find(l => l[0] === gl) || [])[1]) || 'English');
     lb.onclick = () => langSheet();
-    // (the look, beside it: Auto, Light or Dark)
-    const kb = el('button', 'sw-lookbtn', v.top);
-    kb.type = 'button';
-    kb.setAttribute('aria-label', gt('Look'));
-    const kpaint = () => { kb.innerHTML = LOOK_IC[lookNow()] || LOOK_IC.auto; };
-    kpaint();
-    kb.onclick = () => { lookSheet(); };
-    if (window.BVTHEME) BVTHEME.onchange = () => { if (kb.isConnected) kpaint(); };
+    // (and everything else, the look too: More)
+    const mb = el('button', 'sw-lookbtn sw-morebtn', v.top); mb.type = 'button'; mb.setAttribute('aria-label', gt('More'));
+    mb.appendChild(icon('dots'));
+    mb.onclick = () => { buzz('tap'); moreScreen({ back: gamesHome }); };
     backCard(v.body);
     hero(v.body, gt('Party games'), gt('The game is on the TV, and you play on this phone. Join it:'));
     const tiles = el('div', 'gm-tiles', v.body);
@@ -1378,13 +1521,14 @@
     }
     // (Blokvane's other two apps)
     appsCard(v.body, ['ads', 'remote'], { words: gt });
-    if (!standalone() && !store.get('gamesAdded', 0)) {
+    if (canGet() && !store.get('gamesAdded', 0)) {
       const ic = el('div', 'card install', v.body);
       const r = el('div', 'install-row', ic);
       const im = el('img', 'install-ic', r); im.src = 'games-192.png'; im.alt = '';
       const t = el('div', '', r); el('b', '', t, gt('Make it an app')); el('p', 'muted small', t, gt('Blokvane Games on your home screen: one tap for every game night.'));
-      btn(gt('Add to home screen'), { kind: 'ghost', icon: 'addbox', full: true }, ic, () => installApp()).style.marginTop = '12px';
+      btn(gt('Add to home screen'), { kind: 'ghost', icon: 'addbox', full: true }, ic, () => getSheet()).style.marginTop = '12px';
     }
+    btn(gt('More: look, language, tell a friend'), { kind: 'ghost', icon: 'dots', full: true }, v.body, () => moreScreen({ back: gamesHome })).style.marginTop = '14px';
     if (!standalone() && store.get('games:how', '')) {
       const ch = el('p', 'muted small center', v.body);
       ch.append(store.get('games:how', '') === 'app' ? gt('When you scan a game\'s code: the app.') : gt('When you scan a game\'s code: the browser.'));
@@ -1511,7 +1655,7 @@
 
   // ---------- off we go ----------
   window.GO = { el, icon, boo, swBoo, lookRow, BOO_SVG, toast, buzz, flash, sheet, btn, field, input, seg, toggle, store, view, hero, foot, qr, confetti, def, need, script, webUrl, safeBlob, okImage,
-    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, ownRow, thisPhone, appsCard, say: null, get pc() { return pc; },
+    computer, pairs, savePair, forgetPair, member, deviceName, plat, route, VERSION, installApp, installCard, installSteps, standalone, reconnect, backCard, ownRow, thisPhone, appsCard, moreScreen, getSheet, canGet, say: null, get pc() { return pc; },
     games: GAMES, pass, signInScreen, getCard, shareGames, shareInvite, lang: () => (GAMES ? gl : window.BVI18N ? BVI18N.pick() : 'en'), gt, appDir };
   // (a small helper the browser needs to offer "Install" for this page; it never stores anything, see sw.js)
   try { if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
@@ -1540,5 +1684,11 @@
     sessionStorage.removeItem('bvgo:shared');
   } catch (e) {}
   // (first the connection, from the second copy if the first is gone; then the page)
-  keepConnected().finally(async () => { if (GAMES) await gamesLang(); route(); if (pairs().length) askToKeep(); });
+  keepConnected().finally(async () => {
+    if (GAMES) await gamesLang();
+    route();
+    if (pairs().length) askToKeep();
+    // (came here from "Get" in another app or on blokvane.com: straight to adding it)
+    if (window.BVAPPS && BVAPPS.wantsGet()) setTimeout(getSheet, 400);
+  });
 })();

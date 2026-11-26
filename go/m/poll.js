@@ -40,7 +40,7 @@
   }
   async function vote(parts) {
     const [s] = parts;
-    const v = view('Live poll', { tint: 'pink' });
+    const v = view('Live poll', { tint: 'pink', get: true });
     if (!s) { hero(v.body, 'This code isn\'t complete', 'Scan it again on the screen.', { sleepy: true }); return; }
     css();
     const wait = hero(v.body, 'Getting the question...', 'One moment while this phone finds the screen.');

@@ -104,6 +104,7 @@ GO.def('home', (pair) => {
     btn('Connect again with a new code', { kind: 'ghost', full: true, icon: 'phone' }, more, () => againSheet()).style.marginTop = '10px';
     btn('Join a game with a code', { kind: 'ghost', full: true, icon: 'game' }, more, async () => (await GO.need('party'))('code', [])).style.marginTop = '10px';
     btn('What each button does', { kind: 'ghost', full: true, icon: 'help' }, more, () => helpSheet()).style.marginTop = '10px';
+    btn('More: apps, look, tell a friend', { kind: 'ghost', full: true, icon: 'dots' }, more, () => GO.moreScreen({ back: home })).style.marginTop = '10px';
     GO.foot();
   }
   function helpSheet() {

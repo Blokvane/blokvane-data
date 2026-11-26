@@ -6,7 +6,7 @@
   const L = BVLIVE, C = BVWT_CORE;
   GO.def('pw', async (kind, parts) => {
     const [s, cid, k] = parts;
-    const v = view('A password for you', { tint: 'gold' });
+    const v = view('A password for you', { tint: 'gold', get: true });
     if (!s || !L.okId(cid) || !k) { hero(v.body, 'This link isn\'t complete', 'Ask the person who sent it for the whole link.', { sleepy: true }); return; }
     // (the key leaves the address, so it isn't in this browser's history)
     try { history.replaceState(null, '', location.pathname); } catch (e) {}

@@ -15,7 +15,7 @@
   }
   // files offered by the computer (or phone) that showed the code
   async function takeFiles(s, host) {
-    const v = view('Files for you', { tint: 'sky' });
+    const v = view('Files for you', { tint: 'sky', get: true });
     const h = hero(v.body, 'Getting the list...', 'Keep this page open.');
     const list = el('div', 'list', v.body);
     let R = null, files = null, from = '';

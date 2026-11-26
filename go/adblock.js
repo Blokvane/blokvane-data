@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '4';
+  const V = '5';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -52,6 +52,8 @@
   const tooOld = () => plat() === 'ios' && IOS > 0 && IOS < 14;
   // (Safari itself, not Chrome, Firefox or Edge on an iPhone, and not a page opened inside another app)
   const SAFARI = /Version\/[\d.]+.*Safari\//.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  // (Chrome itself on Android, where the ad blocking setting lives: not Samsung Internet, Edge, Opera, or a page inside another app)
+  const CHROME = /Chrome\/\d/.test(ua) && !/SamsungBrowser|EdgA|OPR\/|YaBrowser|DuckDuckGo|Firefox|; wv\)/.test(ua);
   const standalone = () => { try { return matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches || navigator.standalone === true; } catch (e) { return false; } };
   function deviceName() {
     const n = store.get('name', '');
@@ -117,7 +119,7 @@
     share: '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/>',
     chev: '<path d="m9 5 7 7-7 7"/>', key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8-8M16 7l3 3"/>',
     out: '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 8 6 12l4 4M6 12h10"/>',
-    plus: '<path d="M12 5v14M5 12h14"/>', addbox: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
+    plus: '<path d="M12 5v14M5 12h14"/>', look: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17a8.5 8.5 0 0 0 0-17z" fill="currentColor" stroke="none"/>', addbox: '<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>',
     gear: '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/>',
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>', heart: '<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
@@ -283,7 +285,7 @@
     return S;
   }
   // what the pages show, in a few words: a quiet look redraws only when this changed
-  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, S.strict ? 1 : 0, (S.phones || []).length].join('|') : phase() + '|' + failed);
+  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, S.strict ? 1 : 0, (S.blocked || []).length, (S.phones || []).length].join('|') : phase() + '|' + failed);
   let shown = '';
   async function refresh() { await load(true); if (sig() !== shown) draw(); }
   // which screen the Shield page shows
@@ -349,7 +351,8 @@
     lastProbe = Date.now();
     const p = await probe();
     if (!p || !p.seen || !p.mine) return;
-    if (p.this) await refresh(); else if (ph === 'start') await adopt(p.device);
+    // (its lookups arrive on another address of this same person: this phone is that one, under an older id)
+    if (p.this) await refresh(); else await adopt(p.device);
   }
 
   // ---------------------------------------------------------------- signing in: an email, then the code sent to it
@@ -829,20 +832,50 @@
       return;
     }
     if (ph === 'finish') {
-      el('div', 'eyebrow', v, T('Almost there'));
+      // Blokvane heard from this phone before: it was set up. Then nothing is "to do" here. The page says what it
+      // knows, why it may not see the phone from here, and keeps "set it up again" out of the way (a new address
+      // would make the old one stop, and the setting on the phone would have to be done again).
+      const before = d.last_used > 0, here = !!urls();
+      const check = async () => {
+        lastProbe = Date.now();
+        const pr = await probe();
+        if (pr && pr.seen && pr.mine && !pr.this && await adopt(pr.device, true)) { if (phase() === 'on') toast(T('Ad blocking is on.'), 'ok'); return; }
+        await load(true);
+        if (phase() === 'on') { toast(T('Ad blocking is on.'), 'ok'); draw(); }
+        else toast(pr && pr.seen && !pr.mine ? T('This phone uses Blokvane with another email. Sign in with that one.') : before ? T('Not yet. If the setting is there, wait a moment and check again.') : T('Not yet. Do the steps above, then check again.'));
+      };
+      if (before && !here) {
+        el('div', 'eyebrow', v, T('This phone'));
+        headline(v, T('Set up *before.*'));
+        el('p', 'lede', v, T('Ad blocking was set up on this phone, and Blokvane last heard from it {when}. This page cannot see it right now.', { when: ago(d.last_used) }));
+        dial(v, 'wait', '', T('Checking'));
+        bullets(v, p === 'ios' ? [
+          T('Is "iCloud Private Relay" on? It sends Safari\'s lookups past Blokvane. Switch it off in Settings: your name at the top, then iCloud, then Private Relay.'),
+          T('A VPN app does the same while it is connected.')
+        ] : [
+          T('On Android, ad blocking is a setting inside Chrome. If this page is open in another browser, or inside another app, open it in Chrome.'),
+          T('A VPN app sends lookups past Blokvane while it is connected.')
+        ]);
+        const st = el('div', 'stack', v); st.style.marginTop = '14px';
+        btn(T('Check now'), { kind: 'go', icon: 'refresh' }, st, check);
+        if (p === 'android' && !CHROME && /^https:\/\//.test(APP_URL)) btn(T('Open this page in Chrome'), { href: 'intent://' + APP_URL.slice(8) + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(APP_URL) + ';end' }, st);
+        const w = el('details', 'more', v);
+        el('summary', '', w, T('Set it up again'));
+        el('p', 'muted', w, T('This makes a new address for this phone. The old one stops blocking, so the steps have to be done again.'));
+        const s2 = el('div', 'stack', w);
+        btn(T('Make a new address'), {}, s2, () => make());
+        btn(T('Switch it off'), {}, s2, offSheet);
+        return;
+      }
+      el('div', 'eyebrow', v, before ? T('This phone') : T('Almost there'));
       headline(v, T('Now the steps *on the phone.*'));
-      el('p', 'lede', v, T('Blokvane has not heard from this phone yet. Do the steps below once. This page turns green by itself.'));
+      el('p', 'lede', v, before ? T('Blokvane last heard from this phone {when}. If the setting is still there, this page turns green by itself. If not, do the steps below again: the address is the same.', { when: ago(d.last_used) })
+        : T('Blokvane has not heard from this phone yet. Do the steps below once. This page turns green by itself.'));
       dial(v, 'wait', '', T('Waiting for this phone'));
       const c = el('div', 'card', v);
       setup(c);
       const st = el('div', 'row2', v);
-      btn(T('Check now'), { icon: 'refresh' }, st, async () => {
-        lastProbe = Date.now();
-        const pr = await probe();
-        await load(true);
-        if (phase() === 'on') { toast(T('Ad blocking is on.'), 'ok'); draw(); }
-        else toast(pr && pr.seen && !pr.mine ? T('This phone uses Blokvane with another email. Sign in with that one.') : T('Not yet. Do the steps above, then check again.'));
-      });
+      btn(T('Check now'), { icon: 'refresh' }, st, check);
       btn(T('Switch it off'), {}, st, offSheet);
       const w = el('details', 'more', v);
       el('summary', '', w, T('Still waiting after a minute?'));
@@ -894,6 +927,7 @@
     row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
     row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats'));
     row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet);
+    row(ls, 'off', T('Block a website'), (S.blocked || []).length ? T('{n} blocked', { n: num(S.blocked.length) }) : T('Pick sites this phone should not open'), sitesSheet);
     row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
     limits(v);
     installCard(v);
@@ -933,7 +967,8 @@
   addEventListener('appinstalled', () => { installEvt = null; own.set('added', 1); installed = true; });
   // (Chrome on Android can say whether the app is on the home screen already; nothing else can)
   try { if (navigator.getInstalledRelatedApps) navigator.getInstalledRelatedApps().then(a => { if (a && a.some(x => /adblock\.webmanifest/.test(x.url || ''))) { installed = true; document.querySelectorAll('.card.install').forEach(c => c.remove()); } }).catch(() => {}); } catch (e) {}
-  const canOfferInstall = () => !standalone() && !installed && !own.get('added', 0) && plat() !== 'desktop';
+  const haveApp = k => !!(window.BVAPPS && BVAPPS.has(k));
+  const canOfferInstall = () => !standalone() && !installed && !own.get('added', 0) && !haveApp('ads') && plat() !== 'desktop';
   async function installApp() {
     if (installEvt) {
       const e = installEvt; installEvt = null;
@@ -942,7 +977,9 @@
     }
     const ios = plat() === 'ios', other = /CriOS|FxiOS|EdgiOS/.test(ua);
     sheet(T('Add this app to your home screen'), (sh, close) => {
-      el('p', 'muted', sh, T('It opens like any app, with its own icon. Nothing to download from a store.'));
+      const hd = el('div', 'get-head', sh);
+      const im = el('img', '', hd); im.src = 'ads-192.png'; im.alt = '';
+      const ht = el('div', '', hd); el('b', '', ht, 'BV Ad Block'); el('p', 'muted small', ht, T('It opens like any app, with its own icon. Nothing to download from a store.'));
       steps(sh, ios ? [
         [T('Tap the Share button'), other ? T('The square with an arrow, next to the address at the top.') : T('The square with an arrow, at the bottom of Safari.')],
         [T('Tap "Add to Home Screen"'), T("Scroll down the list a little if you don't see it.")],
@@ -984,7 +1021,7 @@
       f.setAttribute('allow', 'clipboard-write');
       f.setAttribute('referrerpolicy', 'no-referrer');
       const ver = info().lab || (S && S.lab) || String(Math.floor(Date.now() / 864e5));
-      f.src = API + '/x/lab?app=1&v=' + encodeURIComponent(ver);
+      f.src = API + '/x/lab?app=1&v=' + encodeURIComponent(ver) + (lookNow() === 'auto' ? '' : '&look=' + lookNow());
       el('div', 'labwrap', labEl).appendChild(f);
       const foot = el('div', '', labEl);
       el('p', 'muted small', foot, T('On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.')).style.marginTop = '12px';
@@ -1148,6 +1185,40 @@
 
   // ---------------------------------------------------------------- Strict blocking: also the names phones leave open on purpose
   // (the server keeps it for this phone: POST /v1/phone/strict. Sites that always open still open with it on.)
+  // websites this phone's owner does not want it to open (the whole list is saved each time)
+  function sitesSheet() {
+    sheet(T('Websites this phone cannot open'), (sh, close) => {
+      el('p', 'muted', sh, T('This phone cannot open these websites, in any app or browser, while ad blocking is on. Each one is blocked with everything under it.'));
+      let list = (S.blocked || []).slice();
+      const tl = el('div', 'chips', sh);
+      const draw2 = () => {
+        tl.textContent = '';
+        for (const s of list) { const c = el('button', 'chip', tl); c.type = 'button'; const b = el('bdi', '', c, s); b.dir = 'ltr'; c.appendChild(icon('x')); c.setAttribute('aria-label', T('Remove') + ' ' + s); c.onclick = () => { list = list.filter(x => x !== s); draw2(); }; }
+        tl.hidden = !list.length;
+      };
+      draw2();
+      const tr = el('div', 'copy', sh); tr.style.borderStyle = 'solid';
+      const ti = el('input', '', tr); ti.placeholder = 'example.com'; ti.autocapitalize = 'none'; ti.spellcheck = false; ti.dir = 'ltr'; ti.inputMode = 'url'; ti.setAttribute('aria-label', T('A website to block'));
+      ti.style.cssText = 'flex:1;min-width:0;border:0;background:none;font-size:16px;padding:8px 0;outline:none';
+      const add = () => {
+        const s = ti.value.trim().toLowerCase().replace(/^[a-z][a-z0-9+.-]*:\/\//, '').split(/[/?#]/)[0].replace(/^www\./, '').replace(/:\d+$/, '');
+        if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(s)) { toast(T('Type a site like example.com.')); return false; }
+        if (!list.includes(s)) list.push(s);
+        ti.value = ''; draw2(); return true;
+      };
+      btn(T('Add'), { cls: 'sm', icon: 'plus' }, tr, add);
+      ti.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+      el('p', 'muted small', sh, T('A site that is also under "A site does not open?" stays open: that list wins.')).style.marginTop = '10px';
+      const st = el('div', 'stack', sh); st.style.marginTop = '14px';
+      btn(T('Save'), { kind: 'go', icon: 'check' }, st, async () => {
+        if (ti.value.trim() && !add()) return;
+        const r = await ask('/v1/phone/sites', { blocked: list });
+        if (!r.ok) { toast(why(r), 'bad'); return; }
+        S.blocked = r.data.blocked || [];
+        toast(T('Saved. It works from now on.'), 'ok'); close(); draw();
+      });
+    });
+  }
   function strictSheet() {
     sheet(T('Strict blocking'), (sh, close) => {
       el('p', '', sh, T('A phone blocks by name. A few names are left open on purpose, because things people use come from them too.'));
@@ -1296,6 +1367,28 @@
       }
     });
   }
+  // the look: Auto (like this phone), Light or Dark. theme.js keeps it on this phone; BV Remote and BV Games follow it too
+  const lookNow = () => (window.BVTHEME ? BVTHEME.get() : 'auto');
+  function barLook() {
+    const dark = lookNow() === 'dark' || (lookNow() === 'auto' && !(window.BVTHEME && BVTHEME.phoneLight()));
+    for (const m of document.querySelectorAll('meta[name="theme-color"]')) { m.removeAttribute('media'); m.content = dark ? '#15120e' : '#f5efe3'; }
+  }
+  function lookSheet() {
+    sheet(T('Look'), sh => {
+      const note = el('p', 'muted', sh);
+      const row3 = el('div', 'looks', sh);
+      const paint = () => {
+        note.textContent = lookNow() === 'auto' ? T('Auto matches this phone: light when the phone is light, dark when it is dark.') : T('It stays like this on this phone, whatever the phone is set to.');
+        for (const b of row3.children) b.setAttribute('aria-pressed', String(b.dataset.t === lookNow()));
+      };
+      for (const [t, name] of [['auto', T('Auto')], ['light', T('Light')], ['dark', T('Dark')]]) {
+        const b = el('button', 'look look-' + t, row3); b.type = 'button'; b.dataset.t = t;
+        el('i', '', b); el('b', '', b, name);
+        b.onclick = () => { if (window.BVTHEME) BVTHEME.set(t); barLook(); paint(); labMade = false; labEl.textContent = ''; draw(); };
+      }
+      paint();
+    });
+  }
   function goodToKnow() {
     sheet(T('Good to know'), sh => {
       limits(sh, true);
@@ -1348,16 +1441,22 @@
     // the other apps
     el('div', 'sec', v, T("Blokvane's other apps"));
     ls = el('div', 'list', v);
-    row(ls, 'icon-192.png', 'BV Remote', T('Your phone as the remote for your computer and TV: slides, videos, sending things'), null, HERE + 'index.html');
-    row(ls, 'games-192.png', 'BV Games', T('Party games on the TV, with every phone as a controller'), null, HERE + 'games.html');
+    // (an app that is not on this phone yet says "Get": one tap leads to its page, which adds it to the home screen)
+    const appRow = (k, img, name, sub, file) => {
+      const have = plat() === 'desktop' || haveApp(k);
+      const it = row(ls, img, name, have && plat() !== 'desktop' ? T('On this phone') : sub, null, have || !window.BVAPPS ? HERE + file : BVAPPS.getUrl(k));
+      if (!have) { const c = it.querySelector('.chev'); if (c) c.remove(); const g = el('span', 'get-pill', it); g.appendChild(icon('addbox')); el('span', '', g, T('Get')); }
+    };
+    appRow('remote', 'icon-192.png', 'BV Remote', T('Your phone as the remote for your computer and TV: slides, videos, sending things'), 'index.html');
+    appRow('games', 'games-192.png', 'BV Games', T('Party games on the TV, with every phone as a controller'), 'games.html');
     row(ls, 'laptop', T('Blokvane for your computer'), T('The ad blocker for Chrome and Edge. It takes the ads out of YouTube too.'), null, SITE + '/download');
-    el('p', 'muted small', v, T('The two apps open in the browser. To keep one, use "Add to Home Screen" there.'));
     // sharing and the app itself
     el('div', 'sec', v, T('This app'));
     ls = el('div', 'list', v);
     row(ls, 'share', T('Tell a friend about Blokvane'), T('Sends the address of blokvane.com'), shareApp);
     row(ls, 'hex', T('Show this app to someone next to you'), T('A code their phone can scan'), () => qrSheet(T('Scan to get this app'), APP_URL, T('Point the other phone\'s camera at the code. The app opens in its browser.')));
     if (canOfferInstall()) row(ls, 'addbox', T('Add this app to your home screen'), T('It opens like any app, with its own icon'), installApp);
+    row(ls, 'look', T('Look'), { auto: T('Auto'), light: T('Light'), dark: T('Dark') }[lookNow()], lookSheet);
     row(ls, 'globe', T('Language'), (LANGS.find(l => l[0] === lang) || LANGS[0])[1], langSheet);
     row(ls, 'info', T('Good to know'), T('What it can do, what it cannot, and a few warnings'), goodToKnow);
     // help
@@ -1420,6 +1519,12 @@
     draw();
     try { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {}
     infoFresh().then(changed => { if (changed && !acct()) draw(); });
+    if (lookNow() !== 'auto') barLook();
+    if (window.BVAPPS) {
+      BVAPPS.onchange(() => { if (tab === 'more' && !closeSheet) draw(); });
+      // (came here from "Get" in another app or on blokvane.com: straight to adding it)
+      if (BVAPPS.wantsGet()) setTimeout(() => { if (standalone() || haveApp('ads')) toast(T('This app is on your home screen already.'), 'ok'); else if (plat() !== 'desktop') installApp(); }, 400);
+    }
     if (acct()) { await load(); firstProbe(); }
     watch();
     // (the free day's clock, and "asked Blokvane 3 minutes ago", stay true while the page is open)
