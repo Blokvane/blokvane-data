@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '6';
+  const V = '7';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -39,7 +39,7 @@
   const hex = n => Array.from(crypto.getRandomValues(new Uint8Array(n)), b => b.toString(16).padStart(2, '0')).join('');
   const device = () => { let d = store.get('games:dev', ''); if (!/^[0-9a-f]{32}$/.test(d)) { d = hex(16); store.set('games:dev', d); } return d; };
   const urls = () => { const u = store.get('shield:dns', null), a = acct(); return u && typeof u.token === 'string' && /^[a-f0-9]{32}$/.test(u.token) && (!u.email || !a || u.email === a.email) ? u : null; };
-  function signedOutHere() { for (const k of ['games:acct', 'games:passes', 'games:pass', 'shield:sum']) store.del(k); }
+  function signedOutHere() { for (const k of ['games:acct', 'games:passes', 'games:pass', 'shield:sum']) store.del(k); live = 'unknown'; }
 
   // ---------------------------------------------------------------- which phone is this
   // (an iPad says it is a Mac: the touch screen gives it away)
@@ -299,12 +299,36 @@
     if (p === 'android' && S.android !== 'yes') return 'soon';
     if (!S.dns.on) return 'start';
     if (!S.dns.blocking) return 'paused';
-    return S.dns.working ? 'on' : 'finish';
+    // "On" is never taken from what the server remembers (it heard from this phone's address some minutes ago): the
+    // profile may have been removed since, or never installed. It is on when a test question from this very page
+    // just came through this phone's own address (verify, below).
+    return live === 'yes' ? 'on' : live === 'unknown' ? 'checking' : 'finish';
   }
 
   // ---------------------------------------------------------------- "is it this very phone?"
   // The app makes up a name nobody has ever asked for and lets the phone look it up. If this phone's lookups go
   // through Blokvane, the server sees that name arrive on the phone's own address, and says so. The name leads nowhere.
+  // Does this phone really ask Blokvane right now? 'unknown' until tested, then 'yes' or 'no'. Tested when the app
+  // opens, when it comes back to the front, after the setup steps, and whenever the person asks ("Test this phone").
+  let live = 'unknown', liveAt = 0, liveBusy = null, liveOther = false;
+  function verify(tries) {
+    if (liveBusy) return liveBusy;
+    liveBusy = (async () => {
+      let got = 'no';
+      liveOther = false;
+      for (let i = 0; i < (tries || 2); i++) {
+        lastProbe = Date.now();
+        const p = await probe();
+        if (p && p.seen && p.mine && p.this) { got = 'yes'; break; }
+        // (its lookups arrive on another address of this same person: this phone is that one, under an older id)
+        if (p && p.seen && p.mine && p.device && await adopt(p.device, true)) { got = 'yes'; break; }
+        if (p && p.seen && !p.mine) { liveOther = true; break; }
+      }
+      live = got; liveAt = Date.now(); liveBusy = null;
+      return got;
+    })();
+    return liveBusy;
+  }
   async function probe() {
     if (!acct() || !S || !S.check || !/^dnscheck\.[a-z0-9.-]+$/.test(S.check)) return null;
     const nonce = hex(12);
@@ -326,6 +350,7 @@
     if (!/^[0-9a-f]{32}$/.test(dev) || dev === device()) return false;
     store.set('games:dev', dev); store.del('shield:dns');
     await load(true);
+    live = 'yes'; liveAt = Date.now();
     if (!quiet) toast(T('This phone is already protected. Welcome back.'), 'ok');
     draw();
     return true;
@@ -335,19 +360,25 @@
   function watch() {
     clearInterval(watching);
     watching = setInterval(async () => {
-      if (document.hidden || closeSheet || phase() !== 'finish' || Date.now() - lastProbe < 3500) return;
-      lastProbe = Date.now();
-      const p = await probe();
-      if ((p && p.seen && p.mine && p.this) || Date.now() - loadedAt > 12000) {
+      if (document.hidden || closeSheet || liveBusy || navigator.onLine === false) return;
+      const ph = phase();
+      // (waiting for the steps on the phone: test every few seconds. On: test again every few minutes, so a profile
+      // that was removed is noticed while the app is open)
+      if (ph === 'finish' ? Date.now() - lastProbe < 3500 : ph === 'on' ? Date.now() - liveAt < 180000 : true) return;
+      const was = live;
+      if (await verify(ph === 'on' ? 2 : 1) !== was) {
         await load(true);
-        if (phase() === 'on') { toast(T('Ad blocking is on.'), 'ok'); draw(); }
+        if (phase() === 'on') toast(T('Ad blocking is on.'), 'ok');
+        draw();
       }
     }, 4000);
   }
   // once, right after the first look: maybe this phone is protected already
   async function firstProbe() {
     const ph = phase();
-    if (ph !== 'start' && ph !== 'finish') return;
+    // (switched on for this phone: is it really running? The page shows "Testing this phone" until this answers)
+    if (ph === 'checking' || ph === 'finish' || ph === 'on') { await verify(2); draw(); return; }
+    if (ph !== 'start') return;
     lastProbe = Date.now();
     const p = await probe();
     if (!p || !p.seen || !p.mine) return;
@@ -455,6 +486,8 @@
     if (!r.ok || typeof r.data.token !== 'string') { toast(why(r), 'bad'); await load(true); draw(); return; }
     const a = acct();
     store.set('shield:dns', { token: r.data.token, doh: r.data.doh, profile: r.data.profile, hostname: r.data.hostname || '', email: a ? a.email : '' });
+    // (a new address: nothing on the phone uses it yet, so the steps come next. The page tests every few seconds)
+    live = 'no'; liveAt = Date.now();
     await load(true);
     draw();
     try { scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
@@ -757,6 +790,13 @@
       return;
     }
     if (ph === 'loading') { el('div', 'eyebrow', v, T('This phone')); headline(v, T('One moment...')); dial(v, 'wait', '', T('Checking')); return; }
+    if (ph === 'checking') {
+      el('div', 'eyebrow', v, T('This phone')); headline(v, T('One moment...'));
+      el('p', 'lede', v, T('Testing that this phone really asks Blokvane. It takes a few seconds.'));
+      dial(v, 'wait', '', T('Testing this phone'));
+      if (!liveBusy) verify(2).then(() => draw());
+      return;
+    }
     if (ph === 'failed') {
       el('div', 'eyebrow', v, T('This phone'));
       headline(v, T("Blokvane didn't *answer.*"));
@@ -832,45 +872,54 @@
       return;
     }
     if (ph === 'finish') {
-      // Blokvane heard from this phone before: it was set up. Then nothing is "to do" here. The page says what it
-      // knows, why it may not see the phone from here, and keeps "set it up again" out of the way (a new address
-      // would make the old one stop, and the setting on the phone would have to be done again).
-      const before = d.last_used > 0, here = !!urls();
+      // Three cases. Never heard from this phone: the steps, once. Heard before, but the test from this page does not
+      // come through now: say so plainly, say the likely reasons, and make setting it up again one tap (the same
+      // address when the app still has it; a new one otherwise).
+      const before = d.last_used > 0, here = urls();
       const check = async () => {
-        lastProbe = Date.now();
-        const pr = await probe();
-        if (pr && pr.seen && pr.mine && !pr.this && await adopt(pr.device, true)) { if (phase() === 'on') toast(T('Ad blocking is on.'), 'ok'); return; }
+        const got = await verify(2);
         await load(true);
-        if (phase() === 'on') { toast(T('Ad blocking is on.'), 'ok'); draw(); }
-        else toast(pr && pr.seen && !pr.mine ? T('This phone uses Blokvane with another email. Sign in with that one.') : before ? T('Not yet. If the setting is there, wait a moment and check again.') : T('Not yet. Do the steps above, then check again.'));
+        draw();
+        if (got === 'yes') toast(T('Ad blocking is on.'), 'ok');
+        else toast(liveOther ? T('This phone uses Blokvane with another email. Sign in with that one.') : before ? T('The test did not come through. Ad blocking is not running on this phone right now.') : T('Not yet. Do the steps above, then check again.'));
       };
-      if (before && !here) {
+      if (before) {
         el('div', 'eyebrow', v, T('This phone'));
-        headline(v, T('Set up *before.*'));
-        el('p', 'lede', v, T('Ad blocking was set up on this phone, and Blokvane last heard from it {when}. This page cannot see it right now.', { when: ago(d.last_used) }));
-        dial(v, 'wait', '', T('Checking'));
+        headline(v, T('Not blocking *here.*'));
+        el('p', 'lede', v, T('This page just asked Blokvane a test question, and it did not come through this phone\'s ad blocking.') + ' ' + T('Blokvane last heard from this phone {when}.', { when: ago(d.last_used) }));
+        dial(v, 'bad', T('Off'), T('Not blocking'));
+        const st = el('div', 'stack'); st.style.marginTop = '14px';
+        if (!here) v.appendChild(st);
+        if (here) {
+          // (the app still has this phone's address: the same steps again, starting with the one button that
+          // installs the profile. Nothing new is made, so nothing else stops working)
+          el('div', 'label', v, T('Set it up again'));
+          setup(el('div', 'card', v));
+          btn(T('Test again'), { icon: 'refresh' }, st, check);
+          v.appendChild(st);
+        } else {
+          btn(T('Set it up again'), { kind: 'go', icon: 'shield' }, st, () => make());
+          el('p', 'under', v, T('This makes a new address for this phone. The old one stops blocking, so the steps have to be done again.'));
+          btn(T('Test again'), { icon: 'refresh' }, st, check);
+          if (p === 'android' && !CHROME && /^https:\/\//.test(APP_URL)) btn(T('Open this page in Chrome'), { href: 'intent://' + APP_URL.slice(8) + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(APP_URL) + ';end' }, st);
+        }
+        el('div', 'label', v, T('The usual reasons')).style.marginTop = '18px';
         bullets(v, p === 'ios' ? [
+          T('The profile was removed from this phone. Install it again with the steps on this page.'),
           T('Is "iCloud Private Relay" on? It sends Safari\'s lookups past Blokvane. Switch it off in Settings: your name at the top, then iCloud, then Private Relay.'),
           T('A VPN app does the same while it is connected.')
         ] : [
+          T('The setting was removed from Chrome. Do the steps on this page again.'),
           T('On Android, ad blocking is a setting inside Chrome. If this page is open in another browser, or inside another app, open it in Chrome.'),
           T('A VPN app sends lookups past Blokvane while it is connected.')
         ]);
-        const st = el('div', 'stack', v); st.style.marginTop = '14px';
-        btn(T('Check now'), { kind: 'go', icon: 'refresh' }, st, check);
-        if (p === 'android' && !CHROME && /^https:\/\//.test(APP_URL)) btn(T('Open this page in Chrome'), { href: 'intent://' + APP_URL.slice(8) + '#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent(APP_URL) + ';end' }, st);
-        const w = el('details', 'more', v);
-        el('summary', '', w, T('Set it up again'));
-        el('p', 'muted', w, T('This makes a new address for this phone. The old one stops blocking, so the steps have to be done again.'));
-        const s2 = el('div', 'stack', w);
-        btn(T('Make a new address'), {}, s2, () => make());
-        btn(T('Switch it off'), {}, s2, offSheet);
+        btn(T('Switch it off'), {}, el('div', 'stack', v), offSheet);
+        if (F.on) el('p', 'under', v, T('Your free day is running: {left} left.', { left: leftText(F.ends - now()) }));
         return;
       }
-      el('div', 'eyebrow', v, before ? T('This phone') : T('Almost there'));
+      el('div', 'eyebrow', v, T('Almost there'));
       headline(v, T('Now the steps *on the phone.*'));
-      el('p', 'lede', v, before ? T('Blokvane last heard from this phone {when}. If the setting is still there, this page turns green by itself. If not, do the steps below again: the address is the same.', { when: ago(d.last_used) })
-        : T('Blokvane has not heard from this phone yet. Do the steps below once. This page turns green by itself.'));
+      el('p', 'lede', v, T('Blokvane has not heard from this phone yet. Do the steps below once. This page turns green by itself.'));
       dial(v, 'wait', '', T('Waiting for this phone'));
       const c = el('div', 'card', v);
       setup(c);
@@ -927,6 +976,12 @@
     row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
     row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats'));
     row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet);
+    row(ls, 'check', T('Test this phone'), T('Checks that this phone really asks Blokvane right now'), async () => {
+      toast(T('Testing this phone'));
+      const got = await verify(2);
+      if (got === 'yes') toast(T('Test passed. This phone asked Blokvane just now.'), 'ok');
+      else { await load(true); draw(); toast(T('The test did not come through. Ad blocking is not running on this phone right now.')); }
+    });
     row(ls, 'off', T('Block a website'), (S.blocked || []).length ? T('{n} blocked', { n: num(S.blocked.length) }) : T('Pick sites this phone should not open'), sitesSheet);
     row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
     limits(v);
@@ -1510,7 +1565,7 @@
   }
   addEventListener('hashchange', () => { if (closeSheet) { const c = closeSheet; closeSheet = null; c(true); } readHash(); drawn = ''; draw(); scrollTo(0, 0); });
   // back in the app (from Settings, or from blokvane.com): look again
-  document.addEventListener('visibilitychange', () => { if (!document.hidden && acct() && Date.now() - loadedAt > 4000) { lastProbe = 0; refresh(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && acct() && Date.now() - loadedAt > 4000) { lastProbe = 0; refresh(); if (S && S.dns && S.dns.on && Date.now() - liveAt > 20000) verify(1).then(got => { if ((got === 'yes') !== (phase() === 'on') || got !== 'yes') draw(); }); } });
   addEventListener('pageshow', e => { if (e.persisted && acct()) refresh(); });
 
   // ---------------------------------------------------------------- start

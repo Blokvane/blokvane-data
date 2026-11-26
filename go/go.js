@@ -11,7 +11,7 @@
 (() => {
   'use strict';
   const L = BVLIVE, C = BVWT_CORE;
-  const VERSION = '46';
+  const VERSION = '47';
   const $ = id => document.getElementById(id);
   const app = $('app');
 
@@ -971,7 +971,7 @@
     const a = pass.get();
     const sum = (() => { const x = store.get('shield:sum', null); return a && x && typeof x === 'object' && x.email === a.email ? x : {}; })();
     // 1. ad blocking on this phone
-    const adsSays = () => { const info = adsOpen(); return sum.ads === 'working' ? ['On: ads are blocked', 'ok'] : sum.ads === 'steps' ? ['Almost there: finish the steps', 'warn']
+    const adsSays = () => { const info = adsOpen(); return sum.ads === 'working' ? ['Switched on. Open it to test this phone', 'ok'] : sum.ads === 'steps' ? ['Almost there: finish the steps', 'warn']
       : sum.ads === 'left-out' ? ['Not part of your license', '']
       : sum.ads === 'closed' || info.open === 'none' ? ['Not open yet', ''] : info.open === 'some' && !sum.ads ? ['Being tried out with a few people', ''] : ['Not set up yet', '']; };
     const ads = adsSays();

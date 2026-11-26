@@ -473,7 +473,8 @@ GO.def('shield', (kind, parts) => {
     const done = 1 + (S.available && mineDev ? 1 : 0) + (working ? 1 : 0);
     v.setStatus(a.email, working ? 'on' : 'wait');
     const names = Number(S.names || 0).toLocaleString('en-US');
-    if (working) head(v.body, 'check', 'Ads are blocked on this phone', 'This phone asked Blokvane ' + ago(S.last_used) + '. ' + names + ' ad and tracking servers are left out.', 'ok');
+    // (what the server remembers, not a test of this very moment: the BV Ad Block app has that test)
+    if (working) head(v.body, 'check', 'Ad blocking is switched on for this phone', 'Blokvane last heard from this phone ' + ago(S.last_used) + '. To make sure it is running right now, open BV Ad Block and tap "Test this phone".', 'ok');
     else head(v.body, 'shield', 'Block ads on this phone', S.available ? lead(S.android) : QUIET);
     if (!S.available) {
       // (not open for this person: said before anything is taken from a license)
