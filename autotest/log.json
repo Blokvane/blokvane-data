@@ -1,5 +1,83 @@
 [
   {
+    "date": "2026-11-26",
+    "score": 87,
+    "gotThrough": 27,
+    "added": [],
+    "droppedForBreaking": [],
+    "brokenSites": [],
+    "skipped": [
+      {
+        "host": "dai.google.com",
+        "why": "a shared service or work site"
+      },
+      {
+        "host": "app.posthog.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "cdn.optimizely.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "cdn.dynamicyield.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "tagmanager.google.com",
+        "why": "a shared service or work site"
+      },
+      {
+        "host": "rudderstack.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "fingerprintjs.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "api.optimizely.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "redirect.viglink.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "widget.intercom.io",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "adjust.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "cookiebot.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "cdn.cookielaw.org",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "consent.cookiebot.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "consent.trustarc.com",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "app.usercentrics.eu",
+        "why": "not on a public ad or tracker list"
+      },
+      {
+        "host": "cmp.osano.com",
+        "why": "not on a public ad or tracker list"
+      }
+    ]
+  },
+  {
     "date": "2026-11-25",
     "score": 99,
     "gotThrough": 8,
