@@ -359,5 +359,21 @@ BVAB.add('ar', {
   "Needs *iOS 14* or newer.": "يحتاج إلى *iOS 14* أو أحدث.",
   "Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS {n}.": "حظر الإعلانات في الهاتف كله يستخدم إعدادا أضافته Apple في iOS 14. هذا الجهاز عليه iOS {n}.",
   "If this device can be updated: open Settings, then General, then Software Update.": "إذا كان هذا الجهاز يقبل التحديث: افتح الإعدادات، ثم \"عام\"، ثم \"تحديث البرامج\".",
-  "Ad blocking needs iOS 14 or newer on this device.": "حظر الإعلانات يحتاج إلى iOS 14 أو أحدث على هذا الجهاز."
+  "Ad blocking needs iOS 14 or newer on this device.": "حظر الإعلانات يحتاج إلى iOS 14 أو أحدث على هذا الجهاز.",
+  "Strict blocking": "الحظر الصارم",
+  "On: it blocks even what phones leave open": "مفعّل: يحظر حتى ما تتركه الهواتف مفتوحًا",
+  "Off. See what it does": "متوقف. اعرف ماذا يفعل",
+  "A phone blocks by name. A few names are left open on purpose, because things people use come from them too.": "يحظر الهاتف بالاسم. بعض الأسماء تُترك مفتوحة عمدًا، لأن أشياء يستخدمها الناس تأتي منها أيضًا.",
+  "Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.": "الحظر الصارم يوقفها أيضًا، على هذا الهاتف فقط. وعندها يعدّها اختبار مانع الإعلانات محظورة.",
+  "With Strict blocking on, these can stop working on this phone:": "عند تفعيل الحظر الصارم، قد يتوقف هذا عن العمل على هذا الهاتف:",
+  "The Instagram and Facebook apps, and Log in with Facebook": "تطبيقا إنستغرام وفيسبوك، وتسجيل الدخول بفيسبوك",
+  "Some videos and online radio, and YouTube remembering what you watched": "بعض الفيديوهات والإذاعات على الإنترنت، وتذكّر يوتيوب لما شاهدته",
+  "Links in emails (even Reset password) and links to shops in articles": "الروابط في الرسائل الإلكترونية (حتى إعادة تعيين كلمة المرور) وروابط المتاجر في المقالات",
+  "Notifications and settings in some apps": "الإشعارات والإعدادات في بعض التطبيقات",
+  "If something you need stops, add its site under A site does not open?, or turn Strict blocking off.": "إذا توقف شيء تحتاجه، أضف موقعه في موقع لا يفتح؟ أو أوقف الحظر الصارم.",
+  "It does not remove the ads inside YouTube: they come from the same servers as the videos.": "لا يزيل الإعلانات داخل يوتيوب: فهي تأتي من الخوادم نفسها التي تأتي منها الفيديوهات.",
+  "Turn Strict blocking off": "إيقاف الحظر الصارم",
+  "Turn Strict blocking on": "تفعيل الحظر الصارم",
+  "Strict blocking is on. It works from now on.": "الحظر الصارم مفعّل. يعمل من الآن.",
+  "Strict blocking is off.": "الحظر الصارم متوقف."
 });

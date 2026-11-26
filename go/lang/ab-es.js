@@ -359,5 +359,21 @@ BVAB.add('es', {
   "Needs *iOS 14* or newer.": "Necesita *iOS 14* o posterior.",
   "Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS {n}.": "El bloqueo de anuncios en todo el teléfono usa un ajuste que Apple añadió en iOS 14. Este dispositivo tiene iOS {n}.",
   "If this device can be updated: open Settings, then General, then Software Update.": "Si este dispositivo se puede actualizar: abre Ajustes, luego General y luego Actualización de software.",
-  "Ad blocking needs iOS 14 or newer on this device.": "El bloqueo de anuncios necesita iOS 14 o posterior en este dispositivo."
+  "Ad blocking needs iOS 14 or newer on this device.": "El bloqueo de anuncios necesita iOS 14 o posterior en este dispositivo.",
+  "Strict blocking": "Bloqueo estricto",
+  "On: it blocks even what phones leave open": "Activado: bloquea incluso lo que los teléfonos dejan abierto",
+  "Off. See what it does": "Desactivado. Mira qué hace",
+  "A phone blocks by name. A few names are left open on purpose, because things people use come from them too.": "Un teléfono bloquea por nombre. Algunos nombres se dejan abiertos a propósito, porque de ellos también vienen cosas que la gente usa.",
+  "Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.": "El bloqueo estricto también los detiene, solo en este teléfono. La Prueba de bloqueador de anuncios los da entonces por bloqueados.",
+  "With Strict blocking on, these can stop working on this phone:": "Con el bloqueo estricto activado, esto puede dejar de funcionar en este teléfono:",
+  "The Instagram and Facebook apps, and Log in with Facebook": "Las apps de Instagram y Facebook, e Iniciar sesión con Facebook",
+  "Some videos and online radio, and YouTube remembering what you watched": "Algunos videos y radios en línea, y que YouTube recuerde lo que viste",
+  "Links in emails (even Reset password) and links to shops in articles": "Los enlaces de los correos (incluso Restablecer contraseña) y los enlaces a tiendas en artículos",
+  "Notifications and settings in some apps": "Las notificaciones y los ajustes de algunas apps",
+  "If something you need stops, add its site under A site does not open?, or turn Strict blocking off.": "Si algo que necesitas deja de funcionar, añade su sitio en ¿Un sitio no se abre? o desactiva el bloqueo estricto.",
+  "It does not remove the ads inside YouTube: they come from the same servers as the videos.": "No quita los anuncios dentro de YouTube: vienen de los mismos servidores que los videos.",
+  "Turn Strict blocking off": "Desactivar el bloqueo estricto",
+  "Turn Strict blocking on": "Activar el bloqueo estricto",
+  "Strict blocking is on. It works from now on.": "El bloqueo estricto está activado. Funciona desde ahora.",
+  "Strict blocking is off.": "El bloqueo estricto está desactivado."
 });

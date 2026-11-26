@@ -359,5 +359,21 @@ BVAB.add('bn', {
   "Needs *iOS 14* or newer.": "এর জন্য *iOS 14* বা নতুন সংস্করণ লাগবে।",
   "Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS {n}.": "পুরো ফোনে বিজ্ঞাপন আটকাতে এমন একটি সেটিং লাগে যা Apple iOS 14-এ যোগ করেছে। এই ডিভাইসে iOS {n} আছে।",
   "If this device can be updated: open Settings, then General, then Software Update.": "এই ডিভাইস আপডেট করা গেলে: সেটিংস খুলুন, তারপর \"সাধারণ\", তারপর \"সফটওয়্যার আপডেট\"।",
-  "Ad blocking needs iOS 14 or newer on this device.": "এই ডিভাইসে বিজ্ঞাপন আটকাতে iOS 14 বা নতুন সংস্করণ লাগবে।"
+  "Ad blocking needs iOS 14 or newer on this device.": "এই ডিভাইসে বিজ্ঞাপন আটকাতে iOS 14 বা নতুন সংস্করণ লাগবে।",
+  "Strict blocking": "কঠোর ব্লকিং",
+  "On: it blocks even what phones leave open": "চালু: ফোন যা খোলা রাখে তাও ব্লক করে",
+  "Off. See what it does": "বন্ধ। দেখুন এটা কী করে",
+  "A phone blocks by name. A few names are left open on purpose, because things people use come from them too.": "ফোন নাম ধরে ব্লক করে। কিছু নাম ইচ্ছে করে খোলা রাখা হয়, কারণ মানুষের কাজের জিনিসও সেগুলো থেকেই আসে।",
+  "Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.": "কঠোর ব্লকিং সেগুলোও থামায়, শুধু এই ফোনে। তখন অ্যাড ব্লকার টেস্ট সেগুলোকে ব্লক করা ধরে।",
+  "With Strict blocking on, these can stop working on this phone:": "কঠোর ব্লকিং চালু থাকলে এই ফোনে এগুলো কাজ করা বন্ধ করতে পারে:",
+  "The Instagram and Facebook apps, and Log in with Facebook": "Instagram আর Facebook অ্যাপ, আর Facebook দিয়ে লগ ইন",
+  "Some videos and online radio, and YouTube remembering what you watched": "কিছু ভিডিও আর অনলাইন রেডিও, আর আপনি কী দেখেছেন YouTube-এর তা মনে রাখা",
+  "Links in emails (even Reset password) and links to shops in articles": "ইমেইলের লিংক (পাসওয়ার্ড রিসেটেরও) আর লেখায় দোকানের লিংক",
+  "Notifications and settings in some apps": "কিছু অ্যাপের নোটিফিকেশন আর সেটিংস",
+  "If something you need stops, add its site under A site does not open?, or turn Strict blocking off.": "দরকারি কিছু বন্ধ হয়ে গেলে, তার সাইট কোনো সাইট খুলছে না?-তে যোগ করুন, অথবা কঠোর ব্লকিং বন্ধ করুন।",
+  "It does not remove the ads inside YouTube: they come from the same servers as the videos.": "এটা YouTube-এর ভেতরের বিজ্ঞাপন সরায় না: সেগুলো ভিডিওর একই সার্ভার থেকে আসে।",
+  "Turn Strict blocking off": "কঠোর ব্লকিং বন্ধ করুন",
+  "Turn Strict blocking on": "কঠোর ব্লকিং চালু করুন",
+  "Strict blocking is on. It works from now on.": "কঠোর ব্লকিং চালু হয়েছে। এখন থেকে কাজ করছে।",
+  "Strict blocking is off.": "কঠোর ব্লকিং বন্ধ আছে।"
 });

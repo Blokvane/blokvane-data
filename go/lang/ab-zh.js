@@ -359,5 +359,21 @@ BVAB.add('zh', {
   "Needs *iOS 14* or newer.": "需要 *iOS 14* 或更高版本。",
   "Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS {n}.": "为整部手机拦截广告要用到 Apple 在 iOS 14 中加入的一项设置。这台设备是 iOS {n}。",
   "If this device can be updated: open Settings, then General, then Software Update.": "如果这台设备可以更新：打开“设置”，然后点“通用”，再点“软件更新”。",
-  "Ad blocking needs iOS 14 or newer on this device.": "这台设备需要 iOS 14 或更高版本才能拦截广告。"
+  "Ad blocking needs iOS 14 or newer on this device.": "这台设备需要 iOS 14 或更高版本才能拦截广告。",
+  "Strict blocking": "严格拦截",
+  "On: it blocks even what phones leave open": "已开启：连手机特意放行的也拦截",
+  "Off. See what it does": "已关闭。看看它做什么",
+  "A phone blocks by name. A few names are left open on purpose, because things people use come from them too.": "手机按名称拦截。有几个名称是特意放行的，因为大家要用的东西也来自它们。",
+  "Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.": "严格拦截会把它们也拦下，只在这部手机上。这时广告拦截器测试会把它们算作已拦截。",
+  "With Strict blocking on, these can stop working on this phone:": "开启严格拦截后，这部手机上这些可能无法使用：",
+  "The Instagram and Facebook apps, and Log in with Facebook": "Instagram 和 Facebook 应用，以及用 Facebook 登录",
+  "Some videos and online radio, and YouTube remembering what you watched": "一些视频和网络电台，以及 YouTube 记住你看过什么",
+  "Links in emails (even Reset password) and links to shops in articles": "邮件里的链接（包括“重设密码”）和文章里的购物链接",
+  "Notifications and settings in some apps": "一些应用的通知和设置",
+  "If something you need stops, add its site under A site does not open?, or turn Strict blocking off.": "如果你需要的东西不能用了，把它的网站加到“有网站打不开？”里，或者关闭严格拦截。",
+  "It does not remove the ads inside YouTube: they come from the same servers as the videos.": "它去不掉 YouTube 里面的广告：那些广告和视频来自同样的服务器。",
+  "Turn Strict blocking off": "关闭严格拦截",
+  "Turn Strict blocking on": "开启严格拦截",
+  "Strict blocking is on. It works from now on.": "严格拦截已开启。从现在起生效。",
+  "Strict blocking is off.": "严格拦截已关闭。"
 });

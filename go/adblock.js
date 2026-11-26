@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '3';
+  const V = '4';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -283,7 +283,7 @@
     return S;
   }
   // what the pages show, in a few words: a quiet look redraws only when this changed
-  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, (S.phones || []).length].join('|') : phase() + '|' + failed);
+  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, S.strict ? 1 : 0, (S.phones || []).length].join('|') : phase() + '|' + failed);
   let shown = '';
   async function refresh() { await load(true); if (sig() !== shown) draw(); }
   // which screen the Shield page shows
@@ -894,6 +894,7 @@
     row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
     row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats'));
     row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet);
+    row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
     limits(v);
     installCard(v);
   }
@@ -1141,6 +1142,32 @@
         S.prefs = { countries: r.data.countries || [], trusted: r.data.trusted || [] };
         draft = null;
         toast(T('Saved. It works from now on.'), 'ok'); close(); draw();
+      });
+    });
+  }
+
+  // ---------------------------------------------------------------- Strict blocking: also the names phones leave open on purpose
+  // (the server keeps it for this phone: POST /v1/phone/strict. Sites that always open still open with it on.)
+  function strictSheet() {
+    sheet(T('Strict blocking'), (sh, close) => {
+      el('p', '', sh, T('A phone blocks by name. A few names are left open on purpose, because things people use come from them too.'));
+      el('p', '', sh, T('Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.'));
+      el('p', 'muted', sh, T('With Strict blocking on, these can stop working on this phone:'));
+      bullets(sh, [
+        T('The Instagram and Facebook apps, and Log in with Facebook'),
+        T('Some videos and online radio, and YouTube remembering what you watched'),
+        T('Links in emails (even Reset password) and links to shops in articles'),
+        T('Notifications and settings in some apps')
+      ]);
+      el('p', 'muted', sh, T('If something you need stops, add its site under A site does not open?, or turn Strict blocking off.'));
+      el('p', 'muted', sh, T('It does not remove the ads inside YouTube: they come from the same servers as the videos.'));
+      const st = el('div', 'stack', sh); st.style.marginTop = '14px';
+      const on = !!S.strict;
+      btn(on ? T('Turn Strict blocking off') : T('Turn Strict blocking on'), on ? { icon: 'off' } : { kind: 'go', icon: 'lock' }, st, async () => {
+        const r = await ask('/v1/phone/strict', { on: !on });
+        if (!r.ok) { toast(why(r), 'bad'); return; }
+        S.strict = r.data.strict === true;
+        toast(S.strict ? T('Strict blocking is on. It works from now on.') : T('Strict blocking is off.'), 'ok'); close(); draw();
       });
     });
   }

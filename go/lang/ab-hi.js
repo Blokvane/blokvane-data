@@ -359,5 +359,21 @@ BVAB.add('hi', {
   "Needs *iOS 14* or newer.": "इसके लिए *iOS 14* या नया चाहिए।",
   "Ad blocking for the whole phone uses a setting that Apple added in iOS 14. This device has iOS {n}.": "पूरे फ़ोन पर विज्ञापन रोकने के लिए वह सेटिंग चाहिए जो Apple ने iOS 14 में जोड़ी थी। इस डिवाइस में iOS {n} है।",
   "If this device can be updated: open Settings, then General, then Software Update.": "अगर यह डिवाइस अपडेट हो सकता है: सेटिंग्स खोलें, फिर \"सामान्य\", फिर \"सॉफ़्टवेयर अपडेट\"।",
-  "Ad blocking needs iOS 14 or newer on this device.": "इस डिवाइस पर विज्ञापन रोकने के लिए iOS 14 या नया चाहिए।"
+  "Ad blocking needs iOS 14 or newer on this device.": "इस डिवाइस पर विज्ञापन रोकने के लिए iOS 14 या नया चाहिए।",
+  "Strict blocking": "सख़्त ब्लॉकिंग",
+  "On: it blocks even what phones leave open": "चालू: फ़ोन जो खुला छोड़ते हैं उसे भी ब्लॉक करती है",
+  "Off. See what it does": "बंद। देखें यह क्या करती है",
+  "A phone blocks by name. A few names are left open on purpose, because things people use come from them too.": "फ़ोन नाम से ब्लॉक करता है। कुछ नाम जानबूझकर खुले छोड़े जाते हैं, क्योंकि लोगों के काम की चीज़ें भी उन्हीं से आती हैं।",
+  "Strict blocking stops them as well, on this phone only. The Ad Blocker Test then passes them.": "सख़्त ब्लॉकिंग उन्हें भी रोकती है, सिर्फ़ इसी फ़ोन पर। तब ऐड ब्लॉकर टेस्ट उन्हें ब्लॉक मानता है।",
+  "With Strict blocking on, these can stop working on this phone:": "सख़्त ब्लॉकिंग चालू होने पर इस फ़ोन पर ये काम करना बंद कर सकते हैं:",
+  "The Instagram and Facebook apps, and Log in with Facebook": "Instagram और Facebook के ऐप, और Facebook से लॉग इन",
+  "Some videos and online radio, and YouTube remembering what you watched": "कुछ वीडियो और ऑनलाइन रेडियो, और YouTube का यह याद रखना कि आपने क्या देखा",
+  "Links in emails (even Reset password) and links to shops in articles": "ईमेल के लिंक (पासवर्ड रीसेट वाले भी) और लेखों में दुकानों के लिंक",
+  "Notifications and settings in some apps": "कुछ ऐप्स की सूचनाएँ और सेटिंग्स",
+  "If something you need stops, add its site under A site does not open?, or turn Strict blocking off.": "अगर आपकी ज़रूरत की कोई चीज़ रुक जाए, तो उसकी साइट कोई साइट नहीं खुल रही? में जोड़ें, या सख़्त ब्लॉकिंग बंद करें।",
+  "It does not remove the ads inside YouTube: they come from the same servers as the videos.": "यह YouTube के अंदर के विज्ञापन नहीं हटाती: वे उन्हीं सर्वरों से आते हैं जिनसे वीडियो आते हैं।",
+  "Turn Strict blocking off": "सख़्त ब्लॉकिंग बंद करें",
+  "Turn Strict blocking on": "सख़्त ब्लॉकिंग चालू करें",
+  "Strict blocking is on. It works from now on.": "सख़्त ब्लॉकिंग चालू है। अब से लागू है।",
+  "Strict blocking is off.": "सख़्त ब्लॉकिंग बंद है।"
 });
