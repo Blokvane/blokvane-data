@@ -121,7 +121,7 @@ var BVLIVE = (() => {
   //      info (a small object everyone sees), owner (an id that is always let in: the host), open (true: anyone with the
   //      secret may talk; false: only the owner and the ids allow(id) says yes to), allow(id), quiet (no hellos),
   //      home (true: a party game's room, which also goes through Blokvane's own relay), onMsg(m, from),
-  //      onPeers(peers), onPipe(pipe), memory,
+  //      onPeers(peers), onPipe(pipe), pipeOk(id) (whose pipe to take; all without it), memory,
   //      inbox (true: this device also listens on a room of its own, where the others send what is for it alone: the
   //      TV of a party game), toOwner (true: what this device sends goes to the owner's own room, so only the owner
   //      gets it: a phone's answers reach the TV, not every other phone), idle (true: a room that mostly waits) }
@@ -346,8 +346,11 @@ var BVLIVE = (() => {
         P.pc.setRemoteDescription({ type: 'answer', sdp: m.sdp }).catch(() => P.fail('answer'));
         return;
       }
-      // an offer: only when this page takes pipes
+      // an offer: only when this page takes pipes, from someone it takes one from (pipeOk(id): a party game's TV takes
+      // one only from a player in the game that is on), and never more than 40 at once
       if (!R.onPipe || !window.RTCPeerConnection) return;
+      if (o.pipeOk && !o.pipeOk(m.f)) return;
+      if (!pipes.has(m.f) && pipes.size >= 40) return;
       const old = pipes.get(m.f);
       if (old) old.close();
       const pc = new RTCPeerConnection({ iceServers: ICE });

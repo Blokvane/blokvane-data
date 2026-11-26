@@ -10,7 +10,11 @@ const ROOT = path.join(__dirname, '..');
 // the TV's scripts that use async functions (the others, and the data files lang/*.js, gir-data.js and world-data.js, are
 // old JavaScript already: play/index.html loads them as they are; go/compat.js is written for every browser)
 const FILES = ['go/wt-core.js', 'go/wt-net.js', 'go/live-kit.js', 'play/i18n.js', 'play/common.js', 'play/sound.js', 'play/play.js', 'play/games.js',
-  'play/world-game.js', 'play/gir-game.js', 'play/imp-game.js', 'play/emoji-game.js', 'play/boowho-game.js', 'play/dom-core.js', 'play/dom-game.js'];
+  'play/world-game.js', 'play/gir-game.js', 'play/imp-game.js', 'play/emoji-game.js', 'play/boowho-game.js', 'play/dom-core.js', 'play/dom-game.js', 'play/cfa-game.js',
+  // (Car Fighting Arena's drawing library, three.js: it is made small already, and its copy is made small too; the game
+  // itself, cfa-engine.js, is old JavaScript already)
+  'play/cfa/three.min.js'];
+const SMALL = new Set(['play/cfa/three.min.js']);
 const TARGET = ['chrome53'];
 const check = process.argv.includes('--check');
 let stale = 0;
@@ -19,7 +23,7 @@ for (const f of FILES) {
   const out = f.replace(/\.js$/, '.old.js');
   const head = '// Made from ' + path.basename(f) + ' by tools/old-js.js for older TV browsers (async functions written the older way).\n' +
     '// Do not edit this copy: change ' + path.basename(f) + ' and run node tools/old-js.js again.\n';
-  const r = esbuild.transformSync(src, { loader: 'js', target: TARGET, charset: 'utf8', legalComments: 'none', format: undefined });
+  const r = esbuild.transformSync(src, { loader: 'js', target: TARGET, charset: 'utf8', legalComments: SMALL.has(f) ? 'inline' : 'none', format: undefined, minify: SMALL.has(f) });
   const text = head + r.code;
   const cur = fs.existsSync(path.join(ROOT, out)) ? fs.readFileSync(path.join(ROOT, out), 'utf8') : '';
   if (cur === text) continue;

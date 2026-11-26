@@ -64,7 +64,7 @@
   const langsMore = () => (I() ? I().MORE : []);
   const booUri = id => (window.BVWATCH_BOO && BVWATCH_BOO.get(id)) ? BVWATCH_BOO.uri(id) : '';
   // each game's own icon (the TV's pictures, in ../play/icons: the same ones as on the TV and in Blokvane)
-  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'emoji', 'imposter', 'dominoes']);
+  const ICONS = new Set(['trivia', 'gir', 'boowho', 'world', 'emoji', 'imposter', 'dominoes', 'cfa']);
   function gameIcon(id, e) {
     if (ICONS.has(id)) { const im = el('img', 'gi'); im.src = '../play/icons/' + id + '.webp'; im.alt = ''; return im; }
     return el('span', 'e', null, e || '🎲');
@@ -1331,8 +1331,10 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
   // the host left and nobody else here could host, so the TV ended the game: say so, and show how to host a game of
   // your own (signing in on this phone: the free games for everyone, every question with Blokvane Pro)
-  // (the card about hosting your own game night says what the free games are: in Dominoes 151, 1 vs 1 to 51)
+  // (the card about hosting your own game night says what the free games are: in Dominoes 151, 1 vs 1 to 51; in Car
+  // Fighting Arena, Last Standing on the Lava arena)
   const hostCardText = () => ((G.lobby || {}).game === 'dominoes' ? T('Sign in on this phone with your email to host free games with friends and family. Free Dominoes 151 is 1 vs 1, first to 51, and Blokvane Pro gives you every mode. Everyone who joins plays for free.')
+    : (G.lobby || {}).game === 'cfa' ? T('Sign in on this phone with your email to host free games with friends and family. Free Car Fighting Arena is Last Standing on the Lava arena, and Blokvane Pro gives you every mode and every arena. Everyone who joins plays for free.')
     : T('Sign in on this phone with your email to host free games with friends and family, 15 questions each. Blokvane Pro gives you every question. Everyone who joins plays for free.'));
   // (why: 'end', the host ended it for everyone; 'lend', the game was handed over and its host has handed over another
   // game since; 'lendoff', the TV couldn't check that hand-over)
@@ -1433,6 +1435,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       case 'res': return onRes(m);
       case 'imp': return isImpGame() ? onImp(m) : undefined;
       case 'dom': return isDom() ? domMsg(m) : undefined;
+      case 'cfa': return isCfa() ? cfaMsg(m) : undefined;
       case 'emo': return isEmo() ? onEmo(m) : undefined;
       case 'end': G.ranking = Array.isArray(m.ranking) ? m.ranking.slice(0, 10) : null; G.endLook = typeof m.look === 'string' ? m.look.slice(0, 20) : ''; G.endTeam = !!m.team; if (G.phase === 'end') showEnd(); return;
       case 'helped': return onHelped(m);
@@ -1482,6 +1485,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.secret && G.secret.gr !== gr) G.secret = null;
     if (window.BVDOMP) BVDOMP.reset();
     DOMG.q = [];
+    if (window.BVCFAP) BVCFAP.reset();
+    CFAG.q = [];
   }
   function onLobby(m, force) {
     // (the small lobby: put together with its setup; kept waiting when the setup isn't here yet)
@@ -1520,9 +1525,12 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     document.documentElement.classList.toggle('g-imp', m.game === 'imposter');
     document.documentElement.classList.toggle('g-emo', m.game === 'emoji');
     document.documentElement.classList.toggle('g-dom', m.game === 'dominoes');
+    document.documentElement.classList.toggle('g-cfa', m.game === 'cfa');
     if (m.game === 'imposter') impLoad();
     if (m.game === 'dominoes') domLoad();
+    if (m.game === 'cfa') cfaLoad();
     if (window.BVDOMP && (m.game !== 'dominoes' || m.phase !== 'play')) BVDOMP.left();
+    if (window.BVCFAP && (m.game !== 'cfa' || m.phase !== 'play')) BVCFAP.left();
     if (m.phase !== 'play' || !G.host) hideNext();
     const mine = Array.isArray(m.players) ? m.players.find(p => p && p.id === G.id) : null;
     if (mine) { G.score = +mine.score || 0; G.lives = typeof mine.lives === 'number' ? mine.lives : null; G.out = !!mine.out; G.team = mine.team || ''; G.ready = !!mine.ready; }
@@ -1547,7 +1555,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     if (G.host && m.phase === 'lobby' && G.wizTo != null) { G.wiz = G.wizTo; G.wizTo = null; }
     else if (G.host && m.phase === 'lobby' && was === 'end') G.wiz = 99;
     if (m.phase === 'play') {
-      if ((was !== 'play' || fresh) && !early) { G.phase = 'play'; newRun(m.gr); showWait(S().look, 'boo:hi'); }
+      if ((was !== 'play' || fresh) && !early) { G.phase = 'play'; newRun(m.gr); if (isCfa()) cfaShow(); else showWait(S().look, 'boo:hi'); }
       else updMe();
     } else if (m.phase === 'end') {
       if (was !== 'end' || force) { G.phase = 'end'; G.q = null; stopQ(); showEnd(); }
@@ -1738,6 +1746,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
         if (sf.length) { const sb = btn('🔊 ' + T('Sounds'), { kind: 'ghost', full: true }, sh, () => { close(); soundSheet(); }); sb.style.marginTop = '10px'; }
         // (Dominoes 151: the table's look with its preview, the computer players, and the moves of the round)
         if (isDom() && window.BVDOMP) BVDOMP.menu(sh, close, (t, fn, ic) => { const b = btn(t, { kind: 'ghost', full: true, icon: ic || undefined }, sh, fn); b.style.marginTop = '10px'; return b; });
+        // (Car Fighting Arena: the TV's view, the next round, skipping the replay)
+        if (isCfa() && window.BVCFAP && G.phase === 'play') BVCFAP.menu(sh, close, (t, fn, ic) => { const b = btn(t, { kind: 'ghost', full: true, icon: ic || undefined }, sh, fn); b.style.marginTop = '10px'; return b; });
         tvSizeRow(sh, l);
         if (G.phase === 'play' || G.phase === 'end') gameCtl(sh, close);
         // (in the lobby: every setting of the game, in its groups)
@@ -2958,6 +2968,38 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // (this phone has nothing of the table yet, like right after the page opened again: it asks, not more than once a second)
   function domAsk() { const t = Date.now(); if (t - DOMG.at < 1000) return; DOMG.at = t; domLoad(); send({ k: 'dom', a: 'sync' }); }
 
+  // ---------- Car Fighting Arena: the garage and the controller (../play/cfa-ph.js) ----------
+  // The TV says how the garage stands ({k:'cfa', t:'g'}: everyone's car and who is ready), and during the match how this
+  // phone's car is doing ({t:'s'} through the pipe, or {t:'m'} for everyone through the relays) and what happened to it
+  // ({t:'e'}); this phone says what its player does ({k:'cfa', a: 'pick' | 'ready' | 'in' | 'fire' | 'jump' | 'swap'}).
+  const CFAG = { p: null, q: [], at: 0 };
+  const isCfa = () => (G.lobby || {}).game === 'cfa';
+  function cfaLoad() {
+    if (window.BVCFAP && CFAG.ready) return Promise.resolve(true);
+    if (!CFAG.p) CFAG.p = GO.script('../play/cfa-ph.js?v=' + GO.VERSION).then(() => {
+      BVCFAP.init({ el, send, G, buzz, toast, sheet, btn, booUri, myPic, clean: L.clean, T, numFmt,
+        view: () => { const v = partyView(gameName(), { chip: false }); moreBtn(v); return v; }, more: () => menuSheet(),
+        // (a straight line to the TV: offered from here, taken by the TV while the game is on)
+        pipe: () => (G.R && G.tv && G.R.pipe ? G.R.pipe(G.tv) : Promise.reject(new Error('no room'))) });
+      CFAG.ready = true;
+      return true;
+    }, () => { CFAG.p = null; return false; });
+    return CFAG.p;
+  }
+  function cfaMsg(m) {
+    if (window.BVCFAP && CFAG.ready) return BVCFAP.onMsg(m);
+    CFAG.q.push(m); if (CFAG.q.length > 40) CFAG.q.shift();
+    cfaLoad().then(ok => { if (!ok) return; const q = CFAG.q; CFAG.q = []; for (const x of q) BVCFAP.onMsg(x); });
+  }
+  // (the game started: the garage, or the controller, as soon as the TV has said how things stand; until then it asks)
+  function cfaShow() {
+    if (window.BVCFAP && CFAG.ready && BVCFAP.on) return BVCFAP.draw();
+    showWait(S().look, 'boo:hi');
+    const t = Date.now(); if (t - CFAG.at < 1000) return; CFAG.at = t;
+    cfaLoad().then(ok => { if (ok && BVCFAP.on && G.phase === 'play') BVCFAP.draw(); });
+    send({ k: 'cfa', a: 'sync' });
+  }
+
   // ---------- Who's the Imposter?: its screens, as the game's design has them (../play/imp-ph.js) ----------
   // The TV says which part of the game it is ({k:'imp', t: 'peek' | 'clue' | 'talk' | 'reveal' | 'unmask' | 'guessing' |
   // 'res' | 'final' | 'rules'}) and which of the designs to use, the same one on every phone. A question for this phone
@@ -3884,7 +3926,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   // A tall story picture (1080 x 1920) in the game's own look, the same one as the winners on the TV: a boarding pass for
   // Where in the World?, Trivia's cosmic, disco or fireworks night, Guess It Right!'s gold. For Instagram, TikTok,
   // Facebook, WhatsApp, Messages or anywhere; or saved, or the words copied.
-  const SHARE_GAMES = new Set(['world', 'trivia', 'gir', 'boowho', 'dominoes']);
+  const SHARE_GAMES = new Set(['world', 'trivia', 'gir', 'boowho', 'dominoes', 'cfa']);
   const shFont = (w2, px) => w2 + ' ' + px + 'px "BV Fun", ui-rounded, "Nunito", system-ui, sans-serif';
   const shSans = (w2, px) => w2 + ' ' + px + 'px ui-rounded, "Nunito", system-ui, sans-serif';
   const shEmo = px => px + 'px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
@@ -4194,6 +4236,41 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       },
       step(g, x, y, w, h) { const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#3a2490'); sg.addColorStop(1, '#1a0f4c'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 10); g.fill(); g.strokeStyle = '#ffc93c'; g.lineWidth = 4; g.stroke(); g.lineWidth = 1.5; shRR(g, x + 10, y + 10, w - 20, h + 10, 6); g.stroke(); },
       ink: '#fff'
+    },
+    // Car Fighting Arena: the arena at night, the lava glowing through its cracks, a finish line, and the winner's car
+    cfa: {
+      label: '#ffb066', ring: '#ff8a1f', glow: 'rgba(255,138,31,.85)', ring2: 'rgba(255,138,31,.5)', mine: '#ffd23f', foot: '#ffe2c4',
+      bg(g, rnd) {
+        const bg = g.createLinearGradient(0, 0, 0, 1920); bg.addColorStop(0, '#0b111e'); bg.addColorStop(0.55, '#121a30'); bg.addColorStop(1, '#2c0e05');
+        g.fillStyle = bg; g.fillRect(0, 0, 1080, 1920);
+        const gl = g.createRadialGradient(540, 2080, 80, 540, 2080, 1350); gl.addColorStop(0, 'rgba(255,110,30,.8)'); gl.addColorStop(1, 'rgba(255,110,30,0)');
+        g.fillStyle = gl; g.fillRect(0, 0, 1080, 1920);
+        // (speed lines from behind the winner)
+        g.save(); g.translate(540, 704); g.strokeStyle = 'rgba(255,255,255,.055)'; g.lineWidth = 7;
+        for (let i = 0; i < 40; i++) { const a = i / 40 * Math.PI * 2 + rnd() * 0.05; g.beginPath(); g.moveTo(Math.cos(a) * 250, Math.sin(a) * 250); g.lineTo(Math.cos(a) * 1500, Math.sin(a) * 1500); g.stroke(); }
+        g.restore();
+        // (the lava's cracks in the floor)
+        g.lineCap = 'round'; g.lineJoin = 'round';
+        for (let i = 0; i < 30; i++) {
+          let x = rnd() * 1080, y = 1300 + rnd() * 620;
+          g.strokeStyle = 'rgba(255,' + Math.round(120 + rnd() * 80) + ',40,' + (0.35 + rnd() * 0.4).toFixed(2) + ')'; g.lineWidth = 2 + rnd() * 4;
+          g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 5; k++) { x += (rnd() - 0.5) * 170; y += (rnd() - 0.35) * 80; g.lineTo(x, y); } g.stroke();
+        }
+        // (a checkered finish line across the top)
+        for (let r = 0; r < 2; r++) for (let c = 0; c < 27; c++) { g.fillStyle = (r + c) % 2 ? 'rgba(255,255,255,.85)' : 'rgba(10,14,26,.9)'; g.fillRect(c * 40, 40 + r * 40, 40, 40); }
+      },
+      step(g, x, y, w, h, pl) { const c = { 1: '#ff8a1f', 2: '#4aa3ff', 3: '#3ddc84' }[pl]; const sg = g.createLinearGradient(0, y, 0, y + h); sg.addColorStop(0, '#1b2540'); sg.addColorStop(1, '#0b111e'); g.fillStyle = sg; shRR(g, x, y, w, h + 30, 14); g.fill(); g.strokeStyle = c; g.lineWidth = 5; g.stroke(); },
+      ink: '#fff', num: pl => ({ 1: '#ff8a1f', 2: '#4aa3ff', 3: '#3ddc84' }[pl]),
+      // (the car the winner drove, beside their face)
+      async car(g, w1) {
+        const i = window.BVCFAP && BVCFAP.carOf ? BVCFAP.carOf(w1.id) : -1;
+        if (!(i >= 0)) return;
+        const im = await shImg('../play/cfa/ph/car' + String(i + 1).padStart(2, '0') + '.webp');
+        if (!im) return;
+        // (the car's own part of its picture: the pictures leave room around it for the stand it lands on)
+        const sx = im.width * 0.17, sy = im.height * 0.02, sw = im.width * 0.71, sh = im.height * 0.76, W2 = 470, H2 = W2 * sh / sw;
+        g.save(); g.shadowColor = 'rgba(0,0,0,.6)'; g.shadowBlur = 30; g.shadowOffsetY = 14; g.drawImage(im, sx, sy, sw, sh, 540 + 90, 704 + 186 - H2 + 40, W2, H2); g.restore();
+      }
     }
   };
   async function shPoster(g, list, o) {
@@ -4211,6 +4288,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
       g.save(); g.shadowColor = lk.glow; g.shadowBlur = 80; g.beginPath(); g.arc(540, cy, R + 14, 0, Math.PI * 2); g.fillStyle = lk.ring; g.fill(); g.restore();
       g.beginPath(); g.arc(540, cy, R + 32, 0, Math.PI * 2); g.lineWidth = 4; g.strokeStyle = lk.ring2; g.stroke();
       await shFace(g, w1, 540, cy, R);
+      if (lk.car) await lk.car(g, w1, cy, R);
       g.font = shEmo(124); g.textBaseline = 'middle'; g.fillText('👑', 540, cy - R - 46); g.textBaseline = 'alphabetic';
       const fs = shFit(g, w1.n, 920, 130, 60, px => shFont(700, px));
       g.save(); g.shadowColor = shd; g.shadowOffsetY = 8; g.fillStyle = ink(1030 - fs, 1040); g.fillText(w1.n, 540, 1030, 960); g.restore();
@@ -4239,7 +4317,7 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
   }
   // the picture, made once for this end screen (and again when the table or my place changes)
   const SH = { sig: '', blob: null, url: '', p: null };
-  function shSig() { return JSON.stringify([G.lobby && G.lobby.game, G.endLook, G.lang, G.ranking, G.endRes && [G.endRes.place, G.endRes.score], !!G.photo, isDom() && window.BVDOMP && BVDOMP.pub ? BVDOMP.pub.win : 0]); }
+  function shSig() { return JSON.stringify([G.lobby && G.lobby.game, G.endLook, G.lang, G.ranking, G.endRes && [G.endRes.place, G.endRes.score], !!G.photo, isDom() && window.BVDOMP && BVDOMP.pub ? BVDOMP.pub.win : 0, isCfa() && window.BVCFAP && BVCFAP.carOf && Array.isArray(G.ranking) && G.ranking[0] ? BVCFAP.carOf(G.ranking[0].id) : -1]); }
   function sharePic() {
     const sig = shSig();
     if (SH.sig === sig && (SH.blob || SH.p)) return SH.blob ? Promise.resolve(SH.blob) : SH.p;
@@ -4392,7 +4470,8 @@ html.no-flexgap .pt-multi-all > * + * { margin-left: 8px; }
     ['world', '🌍', 'Where in the World?', 'Drop a pin on the map. The closest pin wins.'],
     ['emoji', '🦁', 'Emoji Riddles', 'Guess the movie, food or saying from a row of emoji.'],
     ['imposter', '🕵️', 'Who\'s the Imposter?', 'Everyone has the same secret word, except one.'],
-    ['dominoes', '🎲', 'Dominoes 151', 'The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.']
+    ['dominoes', '🎲', 'Dominoes 151', 'The table is on the TV, your tiles are on your phone. Teams, one against one, or everyone alone. In English and Arabic.'],
+    ['cfa', '🏎️', 'Car Fighting Arena', 'Drive your car from your phone. Push everyone off the arena.']
   ];
   const GAME_LANGS = { gir: ['en', 'ar'], dominoes: ['en', 'ar'] };
   const gameNameOf = id => T((GAME_LIST.find(g => g[0] === id) || [0, 0, 'Party games'])[2]);

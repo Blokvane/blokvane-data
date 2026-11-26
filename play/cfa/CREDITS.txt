@@ -1,0 +1,32 @@
+CAR FIGHTING ARENA: CREDITS
+===========================
+
+The game, its cars, arenas and weapons were made for Blokvane. Some of its sounds are made from recordings that
+other people shared. Those shared under a Creative Commons Attribution license (CC BY) are listed here, as their
+licenses ask. The full list of every recording used, with the CC0 (public domain) ones too, is in
+assets/cc/CREDITS.txt (the combat sounds) and assets/eng/CREDITS.txt (the engine sounds).
+
+Sounds shared under CC BY (each one was changed for the game: parts picked, filtered, pitched, looped, layered
+with other sounds and evened out):
+
+- "Car tire squeal skid loop" by audible-edge (Tom Haigh), loop edit by qubodup (Iwan Gabovitch)
+  https://opengameart.org/content/car-tire-squeal-skid-loop
+  License: CC BY 3.0, https://creativecommons.org/licenses/by/3.0/
+
+- "Car Engine Loop 96kHz, 4s" by qubodup (Iwan Gabovitch)
+  https://opengameart.org/content/car-engine-loop-96khz-4s
+  License: CC BY 3.0, https://creativecommons.org/licenses/by/3.0/
+
+- "ferrari355underhood4.mp3" by enginemusic
+  https://freesound.org/people/enginemusic/sounds/43484/
+  License: CC BY 3.0, https://creativecommons.org/licenses/by/3.0/
+
+- "Car Engine Start, Rev, Idle, Switch Off" by iainmccurdy
+  https://freesound.org/people/iainmccurdy/sounds/643126/
+  License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+
+The makers of these recordings do not endorse Blokvane or this game.
+
+Also used:
+- three.js r147 (the 3D drawing), MIT License: LICENSE-three.txt
+- Chakra Petch (the game's typeface), SIL Open Font License 1.1: ../fonts/OFL-ChakraPetch.txt

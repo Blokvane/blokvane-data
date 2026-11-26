@@ -1,0 +1,78 @@
+CAR CLASH ARENA: CAR COMBAT AUDIO CREDITS
+=========================================
+
+This pack combines credited engine, tire and Foley recordings with new
+layering, synthesis, editing and mastering for CAR CLASH ARENA.
+It is designed for use in games. The recorded components retain the source
+licenses below. For CC BY 3.0 components, retain the creator/title/source,
+license link and adaptation notice in your game's credits or audio notices.
+The source authors do not endorse this pack or the game.
+
+The crash cues are designed Foley assemblies, not field recordings of real
+car accidents. Engine-family treatments are sound-design profiles, not
+claims that the pictured fictional cars are recordings of specific makes.
+
+Car Sound Effects Pack (Low Quality)
+Creator: GGBotNet
+Source: https://opengameart.org/content/car-sound-effects-pack-low-quality
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in: CC02, CC04, CC05, CC06, CC07, CC12, CC16, CC17, CC18, CC42, CC45, CC47, CC48, CC49
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+Source note: Author explicitly describes 13 car effects recorded using a mobile phone without professional equipment; original encoding 64 kb/s. Quality must be judged before prominent use.
+
+Car tire squeal skid loop
+Creator: audible-edge (Tom Haigh); loop edit by qubodup (Iwan Gabovitch)
+Source: https://opengameart.org/content/car-tire-squeal-skid-loop
+License: CC-BY-3.0, https://creativecommons.org/licenses/by/3.0/
+Used in: CC19, CC20, CC21, CC22, CC23, CC24, CC25, CC27, CC29, CC30
+Original source: https://freesound.org/people/audible-edge/sounds/71739/
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+Original tire recording by audible-edge / Tom Haigh; existing loop edit
+by qubodup / Iwan Gabovitch; further adaptations as described above.
+Source note: Three-second loop edited by qubodup from original recording credited to audible-edge. OGA file is mono 96kHz PCM24. Preserve creator/title/source/license attribution and indicate modifications.
+
+Crash Collision
+Creator: qubodup (Iwan Gabovitch)
+Source: https://opengameart.org/content/crash-collision
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in: CC04, CC05, CC09, CC13, CC16, CC17
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+Source note: Constructed collision foley from author own stapler/lock/click recordings; do not describe as an actual vehicle crash recording.
+
+racing car engine sound loops
+Creator: domasx2; original public-domain source from pdsounds.org
+Source: https://opengameart.org/content/racing-car-engine-sound-loops
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in: CC46
+Original source: http://www.pdsounds.org/sounds/start_up_car_with_seat_belt_warning_beep
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+Source note: Current page CC0. Author comments explicitly state earlier incompatible samples were remade using a public-domain sample on July24 2011. Loop is only0.864s; author notes pitch variants are not distinct recordings.
+
+Impact Sounds (1.0)
+Creator: Kenney (Kenney.nl)
+Source: https://kenney.nl/assets/impact-sounds
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in: CC01, CC02, CC03, CC04, CC05, CC06, CC07, CC08, CC09, CC10, CC11, CC12, CC13, CC14, CC15, CC16, CC17, CC18, CC33, CC34, CC35, CC36, CC37, CC38, CC41, CC42, CC43, CC44, CC47, CC50
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+Source note: 130 impact and foley assets. Useful metal/plate/glass hits; sound type does not imply actual car crash recording. Public download page now supplies a fresh signed URL.
+
+Car Engine Loop 96kHz, 4s
+Creator: qubodup (Iwan Gabovitch)
+Source: https://opengameart.org/content/car-engine-loop-96khz-4s
+License: CC-BY-3.0, https://creativecommons.org/licenses/by/3.0/
+Used in: CC41, CC42, CC45, CC46, CC47, CC48
+Adaptations: selected portions; mono conversion where applicable; 48 kHz
+resampling; filtering/EQ; pitch and timing changes; envelopes; looping;
+layering with other recorded and synthesized materials; level mastering.
+The original offers alternative licenses. CC BY 3.0 is selected here.
+Source note: Author explicitly says he recorded car engine sounds and processed them into a loop. 4-second stereo96kHz PCM24 master plus normalized44.1kHz PCM16 copy. Page offers CC-BY3.0 OR GPL3.0 OR GPL2.0; select CC-BY3.0 for this pack.

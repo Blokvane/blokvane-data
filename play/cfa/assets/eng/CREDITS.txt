@@ -1,0 +1,146 @@
+CAR CLASH ARENA: 16-CAR ENGINE PACK: SOURCE CREDITS
+=====================================================
+
+This pack contains 160 separately edited engine cues for sixteen fictional
+vehicles. The sound designs use adapted recordings; they are not recordings
+of the pictured fictional models and do not establish their real specifications.
+
+Source recordings retain their licenses below. Keep creator/title/source,
+license links and modification notices for the CC BY components in the game's
+credits or audio notices. The source authors do not endorse this pack or game.
+
+Source-quality note: the downloaded inputs are Freesound's publicly available
+high-quality MP3 preview encodes. The delivered 48 kHz PCM WAVs are edited
+masters of those inputs, not new lossless captures of the original vehicles.
+The original source titles identify recording donors only, not brands of
+the fictional CAR CLASH ARENA vehicles.
+
+AUDIO M4 WAV.wav
+Creator: Andreabarata
+Source: https://freesound.org/people/Andreabarata/sounds/335345/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 03, 09, 10, 12
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: BMW M4 starting engine with revving at end;203s recording needs selective cropping.
+
+Starting and revving a 74 Corvette.mp3
+Creator: DigPro120
+Source: https://freesound.org/people/DigPro120/sounds/432638/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 02, 07, 14, 15
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: 1974 Corvette startup and rev, Zoom H2n recording; creators Mark J and Chad C / DigPro120.
+
+ferrari355underhood4.mp3
+Creator: enginemusic
+Source: https://freesound.org/people/enginemusic/sounds/43484/
+License: CC-BY-3.0, https://creativecommons.org/licenses/by/3.0/
+Used in car voices: 03, 05, 12
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Ferrari355 recorded in engine compartment, CoreSoundbinaural microphones and SonyD8DAT, 1997; original is192kbpsMP3.
+
+Car Engine Start, Rev, Idle, Switch Off
+Creator: iainmccurdy
+Source: https://freesound.org/people/iainmccurdy/sounds/643126/
+License: CC-BY-4.0, https://creativecommons.org/licenses/by/4.0/
+Used in car voices: 09, 11
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Subaru Justy failed start, start, rev, idle, shutdown. Sennheiser MKH8040 pair at192kHz open hood; high quality recorded base.
+
+Diesel Truck Idling Front.wav
+Creator: ibirdfilm
+Source: https://freesound.org/people/ibirdfilm/sounds/128160/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 04, 13
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Diesel truck idling outside; useful stable heavy engine texture.
+
+Corvette shift into gear, start, idle, rev from engine
+Creator: kyles
+Source: https://freesound.org/people/kyles/sounds/637184/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 01, 05, 06, 07, 14, 16
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Actual Corvette start, idle, rev and gear; recorded Sony PCM-D50, Tascam DAT or Zoom H2.
+
+S63 AMG V8 Engine Revs
+Creator: marcelweiss
+Source: https://freesound.org/people/marcelweiss/sounds/505321/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 01, 05, 06
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Parked S63 V8 biturbo revs; use selected engine segments, not brand identity claims.
+
+V8 engine rev
+Creator: overmedium
+Source: https://freesound.org/people/overmedium/sounds/651534/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 02, 07, 15
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Throaty V8 engine blips with some idling; binaural recording.
+
+S009_Engine_Low_Rev_Mono.wav
+Creator: Pól
+Source: https://freesound.org/people/P%C3%B3l/sounds/385930/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 08, 10
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Low throttle rally engine; 8second steady candidate.
+
+Porsche Cayenne Idling
+Creator: Robo9418
+Source: https://freesound.org/people/Robo9418/sounds/840317/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 16
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Exhaust and engine recording mixed into one idle texture; original128kbpsMP3.
+
+Suzuki1250BanditStart.wav
+Creator: Sclolex
+Source: https://freesound.org/people/Sclolex/sounds/211667/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 08
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: Suzuki1250Bandit motorcycle starting and idling; useful small sporty engine donor.
+
+WRX - Exhaust sounds
+Creator: ulose2piranha
+Source: https://freesound.org/people/ulose2piranha/sounds/273334/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 11
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: 2003 Subaru WRX idle and several rev RPMs, 3 inch turbo-back exhaust. Author notes muffled texture; actual personal car recording.
+
+FORD LTL 9000_engine start and idle.wav
+Creator: YellowJacketStudios
+Source: https://freesound.org/people/YellowJacketStudios/sounds/435656/
+License: CC0-1.0, https://creativecommons.org/publicdomain/zero/1.0/
+Used in car voices: 04, 13
+Modifications: selected source regions, mono conversion, 48 kHz resampling,
+EQ/filtering, modest pitch/rate changes, complementary source layering,
+loop crossfades, envelopes, engine-state transitions and level mastering.
+Capture/source description: 1980s Ford diesel semi startup and idle, RodeNTG3/ZoomF8; a door slam occurs midrecording.

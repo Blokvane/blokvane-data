@@ -497,6 +497,8 @@ var BVLIVE = (() => {
             return;
           }
           if (!R.onPipe || !window.RTCPeerConnection) return;
+          if (o.pipeOk && !o.pipeOk(m.f)) return;
+          if (!pipes.has(m.f) && pipes.size >= 40) return;
           const old = pipes.get(m.f);
           if (old) old.close();
           const pc = new RTCPeerConnection({ iceServers: ICE });

@@ -124,7 +124,7 @@ var BVPLAY = (() => {
     };
   }
   const psleep = (ms) => new Promise((r) => pafter(r, ms));
-  const ICONS = /* @__PURE__ */ new Set(["trivia", "boowho", "world", "emoji", "imposter", "gir", "dominoes"]);
+  const ICONS = /* @__PURE__ */ new Set(["trivia", "boowho", "world", "emoji", "imposter", "gir", "dominoes", "cfa"]);
   const iconOf = (id) => "icons/" + id + ".webp";
   const list = () => [...players.values()].filter((p) => !p.away);
   const alive = () => list().filter((p) => !p.out);
@@ -163,7 +163,7 @@ var BVPLAY = (() => {
     return __async(this, null, function* () {
       const me = yield C.newMember();
       const s = secret = L.newSecret();
-      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+      R = yield L.room({ secret: s, label: "bvplay", me, name: "TV", role: "tv", open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep(), onPipe: (pp) => pipeIn(pp), pipeOk: (id) => pipeWanted(id) });
       code = given || L.shortCode(6);
       CR = yield L.room({ secret: yield L.codeSecret(code, "play"), label: "bvplaycode", me, name: "TV", role: "tv", open: true, home: true, onMsg: (m) => {
         if (m.k === "link?") CR.send({ k: "link", s, tv: R.id, lang }, m.f).catch(() => {
@@ -884,6 +884,54 @@ var BVPLAY = (() => {
     }
   }
   const liveKey = (k) => phase === "play" && !!(game && game.settings.some((f) => f.key === k && f.live));
+  const pipeSubs = /* @__PURE__ */ new Set();
+  const pipeWanted = (id) => !!(game && game.pipes && phase === "play" && players.has(id) && !players.get(id).away);
+  function pipeIn(pp) {
+    if (!pipeWanted(pp.id)) {
+      pp.close();
+      return;
+    }
+    const gr = run;
+    pp.onMsg = (m) => {
+      if (!m || typeof m.k !== "string" || m.k[0] === "~" || gr !== run || phase !== "play") return;
+      const p = players.get(pp.id);
+      if (!p) return;
+      p.heard = Date.now();
+      if (p.gone) {
+        p.gone = false;
+        setTimeout(sweep, 0);
+      }
+      const h = handlers.get(m.k);
+      if (h) {
+        try {
+          h(m, p, true);
+        } catch (e) {
+          console.warn("Blokvane play", e);
+        }
+      }
+    };
+    for (const f of pipeSubs) {
+      try {
+        f(pp.id, true);
+      } catch (e) {
+      }
+    }
+    pp.onClose = () => {
+      for (const f of pipeSubs) {
+        try {
+          f(pp.id, false);
+        } catch (e) {
+        }
+      }
+    };
+  }
+  function closePipes() {
+    if (!R) return;
+    for (const p of players.values()) {
+      const pp = R.pipeTo && R.pipeTo(p.id);
+      if (pp) pp.close();
+    }
+  }
   const say = (m) => R.send(m).catch(() => {
   });
   const sayTo = (id, m) => R.send(m, id).catch(() => {
@@ -2227,19 +2275,21 @@ var BVPLAY = (() => {
       sayLobby();
       if (!game.sounds) SND.music(null, { fadeOut: 2 });
       stage.textContent = "";
-      const cv = el("div", "cover", stage);
-      const cd = el("div", "cd", cv);
-      if (ICONS.has(game.id)) {
-        const gi = el("img", "cd-gi", cd);
-        gi.src = iconOf(game.id);
-        gi.alt = "";
-      }
-      const n = el("div", "big", cd, "3");
-      for (const x of ["3", "2", "1"]) {
-        n.textContent = x;
-        P.sfx("tick");
-        yield sleep(800);
-        if (my !== run) return;
+      if (!game.ownStart) {
+        const cv = el("div", "cover", stage);
+        const cd = el("div", "cd", cv);
+        if (ICONS.has(game.id)) {
+          const gi = el("img", "cd-gi", cd);
+          gi.src = iconOf(game.id);
+          gi.alt = "";
+        }
+        const n = el("div", "big", cd, "3");
+        for (const x of ["3", "2", "1"]) {
+          n.textContent = x;
+          P.sfx("tick");
+          yield sleep(800);
+          if (my !== run) return;
+        }
       }
       if (settings.k_code) showJoin(true, true);
       if (settings.k_rules && kitFields(game).some((f) => f.key === "k_rules")) {
@@ -2250,6 +2300,7 @@ var BVPLAY = (() => {
       playerSubs.clear();
       pauseSubs.clear();
       setSubs.clear();
+      pipeSubs.clear();
       let ranking = null;
       try {
         ranking = yield game.tv(kit(my));
@@ -2262,6 +2313,7 @@ var BVPLAY = (() => {
       playerSubs.clear();
       pauseSubs.clear();
       setSubs.clear();
+      pipeSubs.clear();
       finish(ranking);
     });
   }
@@ -2273,6 +2325,7 @@ var BVPLAY = (() => {
     playerSubs.clear();
     pauseSubs.clear();
     setSubs.clear();
+    pipeSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     finish(null);
     P.mute(true);
@@ -2379,8 +2432,10 @@ var BVPLAY = (() => {
     playerSubs.clear();
     pauseSubs.clear();
     setSubs.clear();
+    pipeSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     abandonTimers();
+    closePipes();
     cur.q = null;
     waitHost = false;
     if (joinEl) showJoin(false);
@@ -2388,6 +2443,7 @@ var BVPLAY = (() => {
   function finish(ranking) {
     return __async(this, null, function* () {
       phase = "end";
+      closePipes();
       soundHint();
       cur.q = null;
       waitHost = false;
@@ -2662,6 +2718,28 @@ var BVPLAY = (() => {
           return String(n);
         }
       },
+      // a straight line to one phone (see pipeIn): fn(id, open) when one opens or closes; to(id, m) sends through it
+      // and says whether it went (no pipe: false, and the game sends it the ordinary way)
+      pipes: {
+        on(fn) {
+          if (!live()) return nop;
+          pipeSubs.add(fn);
+          return () => pipeSubs.delete(fn);
+        },
+        open: (id) => {
+          const pp = R && R.pipeTo && R.pipeTo(id);
+          return !!(pp && pp.open());
+        },
+        to: (id, m) => {
+          if (!live()) return false;
+          const pp = R && R.pipeTo && R.pipeTo(id);
+          return !!(pp && pp.open() && pp.send(m));
+        }
+      },
+      // (a TV's own browser, or a screen that draws slowly: a game that draws a lot starts lighter there)
+      tv: IS_TV,
+      slow: SLOW_SCREEN,
+      calm: () => !!settings.k_calm,
       over: () => !live()
     };
   }

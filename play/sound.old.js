@@ -150,7 +150,29 @@ var BVSOUND = (() => {
     dPlayC: ["", 1, { list: ["dP3", "dP4", "dP1", "dP2"], xf: 5 }],
     dPlayD: ["", 1, { list: ["dP4", "dP1", "dP2", "dP3"], xf: 5 }],
     dWin1: ["d-win1.mp3", 0.367, { stream: true, once: true, then: "dLobby", tail: 1.9 }],
-    dWin2: ["d-win2.mp3", 0.38, { stream: true, once: true, then: "dLobby", tail: 2 }]
+    dWin2: ["d-win2.mp3", 0.38, { stream: true, once: true, then: "dLobby", tail: 2 }],
+    // Car Fighting Arena's own: Asphalt Crowns and Steel and Velocity taking turns in the lobby; Iron Pulse or Under the
+    // Roll Cage while everyone picks a car; Piston Fury, Ten Tons of Fury, Apex Impact and Peak Torque taking turns all
+    // match long (a different one first each match); Asphalt Crown or Victory on the Asphalt for the winners, then the
+    // lobby tunes again. Measured like the others, and the match tunes sit lowest: the cars' own engines, crashes and
+    // weapons (the game makes those itself) are heard over them.
+    cL1: ["c-lobby1.mp3", 0.275, { stream: true, tail: 1.1, xf: 3 }],
+    cL2: ["c-lobby2.mp3", 0.324, { stream: true, tail: 2.7, xf: 3 }],
+    cLobby: ["", 1, { list: ["cL1", "cL2"], xf: 4 }],
+    cPre1: ["c-pre1.mp3", 0.331, { stream: true, tail: 1.6, xf: 3 }],
+    cPre2: ["c-pre2.mp3", 0.313, { stream: true, tail: 2.1, xf: 3 }],
+    cPreA: ["", 1, { list: ["cPre1", "cPre2"], xf: 4 }],
+    cPreB: ["", 1, { list: ["cPre2", "cPre1"], xf: 4 }],
+    cP1: ["c-play1.mp3", 0.209, { stream: true, tail: 2.5, xf: 4 }],
+    cP2: ["c-play2.mp3", 0.219, { stream: true, tail: 2.1, xf: 4 }],
+    cP3: ["c-play3.mp3", 0.219, { stream: true, tail: 2.6, xf: 4 }],
+    cP4: ["c-play4.mp3", 0.219, { stream: true, tail: 1.9, xf: 4 }],
+    cPlayA: ["", 1, { list: ["cP1", "cP2", "cP3", "cP4"], xf: 5 }],
+    cPlayB: ["", 1, { list: ["cP2", "cP3", "cP4", "cP1"], xf: 5 }],
+    cPlayC: ["", 1, { list: ["cP3", "cP4", "cP1", "cP2"], xf: 5 }],
+    cPlayD: ["", 1, { list: ["cP4", "cP1", "cP2", "cP3"], xf: 5 }],
+    cWin1: ["c-win1.mp3", 0.372, { stream: true, once: true, then: "cLobby", tail: 1.5 }],
+    cWin2: ["c-win2.mp3", 0.372, { stream: true, once: true, then: "cLobby", tail: 1.8 }]
   };
   const isStream = (f) => !!(f && f[2] && typeof f[2] === "object" && (f[2].stream || f[2].list));
   const KIND = {
@@ -184,7 +206,9 @@ var BVSOUND = (() => {
     bwTimesup: "timesup",
     bwWin: "win",
     dWin1: "win",
-    dWin2: "win"
+    dWin2: "win",
+    cWin1: "win",
+    cWin2: "win"
   };
   const kindOf = (name) => KIND[name] || (FILES[name] && FILES[name][2] ? "music" : "fx");
   let offKinds = /* @__PURE__ */ new Set(), wantReal = null;
@@ -623,6 +647,7 @@ var BVSOUND = (() => {
     }
     return true;
   }
+  const fxLevel = () => !on || !ready() || offKinds.has("fx") ? 0 : vols.fx;
   function setOn(v) {
     on = !!v;
     try {
@@ -728,6 +753,7 @@ var BVSOUND = (() => {
     vol: (k) => k in vols ? vols[k] : 1,
     pause,
     resume,
-    isPaused: () => pausedNow
+    isPaused: () => pausedNow,
+    fxLevel
   };
 })();

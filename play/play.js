@@ -74,7 +74,7 @@ var BVPLAY = (() => {
   }
   const psleep = ms => new Promise(r => pafter(r, ms));
   // each game's own icon (icons/: the same pictures as on the phones and in Blokvane)
-  const ICONS = new Set(['trivia', 'boowho', 'world', 'emoji', 'imposter', 'gir', 'dominoes']);
+  const ICONS = new Set(['trivia', 'boowho', 'world', 'emoji', 'imposter', 'gir', 'dominoes', 'cfa']);
   const iconOf = id => 'icons/' + id + '.webp';
   const list = () => [...players.values()].filter(p => !p.away);
   const alive = () => list().filter(p => !p.out);
@@ -112,7 +112,7 @@ var BVPLAY = (() => {
     const me = await C.newMember();
     const s = secret = L.newSecret();
     // (inbox: the phones send their answers to the TV's own room, so they go to the TV only)
-    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep() });
+    R = await L.room({ secret: s, label: 'bvplay', me, name: 'TV', role: 'tv', open: true, home: true, inbox: true, onMsg: (m, p) => take(m, p), onPeers: () => sweep(), onPipe: pp => pipeIn(pp), pipeOk: id => pipeWanted(id) });
     // a short code for phones that can't scan: a room of its own that only hands out the link. (A phone that started
     // this game from Blokvane made the code itself, so it joins by itself as the host.)
     code = given || L.shortCode(6);
@@ -586,6 +586,30 @@ var BVPLAY = (() => {
     }
   }
   const liveKey = k => phase === 'play' && !!(game && game.settings.some(f => f.key === k && f.live));
+  // ---------- a straight line to a phone (a pipe: WebRTC, encrypted by the browser) ----------
+  // A game that needs every phone's moves many times a second, like Car Fighting Arena's steering, says so (pipes:
+  // true): while it is on, each phone offers a pipe, and the TV takes it from a player who is in the game. The relays
+  // still carry everything else, and carry the moves too for a phone whose pipe never opens. What comes through a pipe
+  // goes only to the game's own handlers (never 'join', 'set' or the host's buttons), and a pipe closes when the game ends.
+  const pipeSubs = new Set();
+  const pipeWanted = id => !!(game && game.pipes && phase === 'play' && players.has(id) && !players.get(id).away);
+  function pipeIn(pp) {
+    if (!pipeWanted(pp.id)) { pp.close(); return; }
+    const gr = run;
+    pp.onMsg = m => {
+      if (!m || typeof m.k !== 'string' || m.k[0] === '~' || gr !== run || phase !== 'play') return;
+      const p = players.get(pp.id);
+      if (!p) return;
+      p.heard = Date.now();
+      if (p.gone) { p.gone = false; setTimeout(sweep, 0); }
+      const h = handlers.get(m.k);
+      if (h) { try { h(m, p, true); } catch (e) { console.warn('Blokvane play', e); } }
+    };
+    for (const f of pipeSubs) { try { f(pp.id, true); } catch (e) {} }
+    pp.onClose = () => { for (const f of pipeSubs) { try { f(pp.id, false); } catch (e) {} } };
+  }
+  // (the game is over: every pipe goes)
+  function closePipes() { if (!R) return; for (const p of players.values()) { const pp = R.pipeTo && R.pipeTo(p.id); if (pp) pp.close(); } }
   const say = m => R.send(m).catch(() => {});
   const sayTo = (id, m) => R.send(m, id).catch(() => {});
   async function box(id, m) {
@@ -1440,26 +1464,29 @@ var BVPLAY = (() => {
     for (const p of players.values()) { p.score = 0; p.right = 0; p.lives = +settings.lives || 3; p.out = false; p.streak = 0; p.helpers = {}; }
     balanceTeams();
     sayLobby();
-    // 3, 2, 1 (the lobby tune fades out; a game with its own sounds keeps it going until its first sound)
+    // 3, 2, 1 (the lobby tune fades out; a game with its own sounds keeps it going until its first sound). A game that
+    // starts by itself (ownStart: Car Fighting Arena's garage, then its own 3, 2, 1 with the engines) goes straight in.
     if (!game.sounds) SND.music(null, { fadeOut: 2 });
     stage.textContent = '';
-    const cv = el('div', 'cover', stage);
-    // (the game's icon over the 3, 2, 1)
-    const cd = el('div', 'cd', cv);
-    if (ICONS.has(game.id)) { const gi = el('img', 'cd-gi', cd); gi.src = iconOf(game.id); gi.alt = ''; }
-    const n = el('div', 'big', cd, '3');
-    for (const x of ['3', '2', '1']) { n.textContent = x; P.sfx('tick'); await sleep(800); if (my !== run) return; }
+    if (!game.ownStart) {
+      const cv = el('div', 'cover', stage);
+      // (the game's icon over the 3, 2, 1)
+      const cd = el('div', 'cd', cv);
+      if (ICONS.has(game.id)) { const gi = el('img', 'cd-gi', cd); gi.src = iconOf(game.id); gi.alt = ''; }
+      const n = el('div', 'big', cd, '3');
+      for (const x of ['3', '2', '1']) { n.textContent = x; P.sfx('tick'); await sleep(800); if (my !== run) return; }
+    }
     if (settings.k_code) showJoin(true, true);
     // (how to play, first: a game with no rules screen of its own gets the kit's, on the TV and on every phone)
     if (settings.k_rules && kitFields(game).some(f => f.key === 'k_rules')) { await kitRules(my); if (my !== run) return; }
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear(); pipeSubs.clear();
     let ranking = null;
     try { ranking = await game.tv(kit(my)); }
     catch (e) { console.warn('Blokvane play', e); }
     // (the host ended this game early: the end screen is already up)
     if (my !== run) return;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear(); pipeSubs.clear();
     finish(ranking);
   }
   // the host ends the game early: the scores so far win, and the rest of that game just stops
@@ -1467,7 +1494,7 @@ var BVPLAY = (() => {
     if (phase !== 'play') return;
     run++;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear(); pipeSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     finish(null);
     P.mute(true);
@@ -1540,14 +1567,16 @@ var BVPLAY = (() => {
     if (phase !== 'play' && phase !== 'end') return;
     run++;
     unpause();
-    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear();
+    handlers.clear(); playerSubs.clear(); pauseSubs.clear(); setSubs.clear(); pipeSubs.clear();
     for (const w of [...pending.values()]) w.finish();
     abandonTimers();
+    closePipes();
     cur.q = null; waitHost = false;
     if (joinEl) showJoin(false);
   }
   async function finish(ranking) {
     phase = 'end';
+    closePipes();
     soundHint();
     cur.q = null;
     waitHost = false;
@@ -1695,6 +1724,12 @@ var BVPLAY = (() => {
         // (the moment a tune reaches a second of it: the reveal lands on the music's beat)
         at: (n, sec) => (live() ? (SND.at ? SND.at(n, sec) : sleep(sec * 1000)) : Promise.resolve()) },
       num: n => { try { return Number(n).toLocaleString(lang + '-u-nu-latn'); } catch (e) { return String(n); } },
+      // a straight line to one phone (see pipeIn): fn(id, open) when one opens or closes; to(id, m) sends through it
+      // and says whether it went (no pipe: false, and the game sends it the ordinary way)
+      pipes: { on(fn) { if (!live()) return nop; pipeSubs.add(fn); return () => pipeSubs.delete(fn); }, open: id => { const pp = R && R.pipeTo && R.pipeTo(id); return !!(pp && pp.open()); },
+        to: (id, m) => { if (!live()) return false; const pp = R && R.pipeTo && R.pipeTo(id); return !!(pp && pp.open() && pp.send(m)); } },
+      // (a TV's own browser, or a screen that draws slowly: a game that draws a lot starts lighter there)
+      tv: IS_TV, slow: SLOW_SCREEN, calm: () => !!settings.k_calm,
       over: () => !live()
     };
   }
