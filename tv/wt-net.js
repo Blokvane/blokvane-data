@@ -17,11 +17,15 @@ var BVWT_NET = (() => {
   'use strict';
   const C = BVWT_CORE;
   // Nostr relays that pass along short-lived (ephemeral) events, from the list the Trystero project keeps
-  // tested (October 2026). Each party uses 4 of them, picked the same way by everyone in it.
-  const NOSTR = ['0x-nostr-relay.fly.dev', 'cdn.satellite.earth', 'nos.lol', 'nostr.chaima.info', 'nostr.christiansass.de', 'nostr.rblb.it',
-    'nostr.red5d.dev', 'nostr.robosats.org', 'nostr.stakey.net', 'nostrcity-club.fly.dev', 'relay-dev.gulugulu.moe', 'relay.aarpia.com', 'relay.agentry.com',
-    'relay.bitmacro.cloud', 'relay.bullishbounty.com', 'relay.degmods.com', 'relay.flashapp.me', 'relay.grigic.org', 'relay.hackshed.dev', 'relay.kaleidoswap.com',
-    'relay.layer.systems', 'relay.nostr.blockhenge.com', 'relay.nostr.dev.br', 'relay.nostrmap.net', 'relay.novospes.com', 'relay.piazza.today', 'relay.routstr.com',
+  // tested. Each party uses 4 of them, picked the same way by everyone in it.
+  // (November 2026: 8 that had stopped, or no longer take short-lived events, were swapped for 8 that carried a
+  // message from one connection to another. A relay is swapped IN ITS PLACE, never added, removed or sorted: everyone
+  // shuffles this list by position, so a copy of Blokvane with the list from before still lands on the same relays in
+  // every place that did not change, and the two keep meeting.)
+  const NOSTR = ['relay.primal.net', 'cdn.satellite.earth', 'nos.lol', 'relay.snort.social', 'bucket.coracle.social', 'nostr.rblb.it',
+    'nostr.red5d.dev', 'relay.ditto.pub', 'nostr.stakey.net', 'nostrcity-club.fly.dev', 'relay-dev.gulugulu.moe', 'relay.aarpia.com', 'relay.agentry.com',
+    'relay.mostro.network', 'nostr.overmind.lol', 'relay.degmods.com', 'relay.flashapp.me', 'relay.grigic.org', 'relay.hackshed.dev', 'relay.wavlake.com',
+    'relay.layer.systems', 'relay.nostr.blockhenge.com', 'relay.nostr.dev.br', 'relay.nostrmap.net', 'relay.fundstr.me', 'relay.piazza.today', 'relay.routstr.com',
     'testr.nymble.world'].map(h => 'wss://' + h);
   // Public MQTT brokers. All of them call themselves test services with no promise they stay up, which is
   // why they're used together with the Nostr relays and never alone. (test.mosquitto.org was dropped: its secure

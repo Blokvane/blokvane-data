@@ -93,7 +93,7 @@ function relayLists() {
   return { nostr: ctx.BVWT_NET.NOSTR, mqtt: ctx.BVWT_NET.MQTT.map(m => m.url), core: ctx.BVWT_CORE };
 }
 // spare relays: tried too, so a tested replacement is ready the day one of the 28 stops
-const SPARE = ['wss://relay.damus.io', 'wss://relay.primal.net', 'wss://nostr.mom', 'wss://relay.snort.social', 'wss://offchain.pub'];
+const SPARE = ['wss://nostr.liberty.fans', 'wss://yabu.me', 'wss://no.str.cr', 'wss://nostr.hifish.org', 'wss://nostr.azzamo.net'];
 function nostrAlive(url) {
   return new Promise(res => {
     let ws, done = false;
