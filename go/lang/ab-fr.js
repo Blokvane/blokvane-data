@@ -407,5 +407,6 @@ BVAB.add('fr', {
   "Test again": "Tester à nouveau",
   "Test this phone": "Tester ce téléphone",
   "Checks that this phone really asks Blokvane right now": "Vérifie que ce téléphone interroge vraiment Blokvane en ce moment",
-  "Test passed. This phone asked Blokvane just now.": "Test réussi. Ce téléphone vient d'interroger Blokvane."
+  "Test passed. This phone asked Blokvane just now.": "Test réussi. Ce téléphone vient d'interroger Blokvane.",
+  "A white page that never loads? Tap the compass at the bottom right of it: that opens it in Safari, where the phone asks to allow the download.": "Une page blanche qui ne charge jamais ? Touche la boussole en bas à droite : cela l'ouvre dans Safari, où le téléphone demande d'autoriser le téléchargement."
 });

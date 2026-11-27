@@ -407,5 +407,6 @@ BVAB.add('zh', {
   "Test again": "再测一次",
   "Test this phone": "测试这部手机",
   "Checks that this phone really asks Blokvane right now": "检查这部手机现在是否真的在询问 Blokvane",
-  "Test passed. This phone asked Blokvane just now.": "测试通过。这部手机刚刚询问了 Blokvane。"
+  "Test passed. This phone asked Blokvane just now.": "测试通过。这部手机刚刚询问了 Blokvane。",
+  "A white page that never loads? Tap the compass at the bottom right of it: that opens it in Safari, where the phone asks to allow the download.": "白屏一直加载不出来？点它右下角的指南针：这会在 Safari 中打开它，手机会在那里询问是否允许下载。"
 });

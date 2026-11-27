@@ -407,5 +407,6 @@ BVAB.add('bn', {
   "Test again": "আবার পরীক্ষা করুন",
   "Test this phone": "এই ফোন পরীক্ষা করুন",
   "Checks that this phone really asks Blokvane right now": "দেখে যে এই ফোন এখন সত্যিই Blokvane-কে জিজ্ঞেস করে",
-  "Test passed. This phone asked Blokvane just now.": "পরীক্ষা সফল। এই ফোন এইমাত্র Blokvane-কে জিজ্ঞেস করেছে।"
+  "Test passed. This phone asked Blokvane just now.": "পরীক্ষা সফল। এই ফোন এইমাত্র Blokvane-কে জিজ্ঞেস করেছে।",
+  "A white page that never loads? Tap the compass at the bottom right of it: that opens it in Safari, where the phone asks to allow the download.": "সাদা পেজ, যা কখনো লোড হয় না? এর নিচে ডানদিকে কম্পাসে ট্যাপ করুন: এতে সেটি Safari-তে খোলে, যেখানে ফোন ডাউনলোডের অনুমতি চায়।"
 });

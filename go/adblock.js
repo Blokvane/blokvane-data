@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '7';
+  const V = '8';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -627,7 +627,12 @@
       return;
     }
     if (p === 'ios') {
-      const a = btn(T('Install the profile'), { kind: 'go', icon: 'shield', href: u.profile }, parent);
+      // An iPhone hands a profile to Settings only from Safari itself. From a home-screen app (or another browser) the
+      // link would open in a small in-app browser that shows a white page forever. So there the button hands the link
+      // straight to Safari ("x-safari-https://...", iOS 17 and newer); older iPhones get the way through Safari below.
+      const outside = standalone() || !SAFARI;
+      const a = btn(T('Install the profile'), { kind: 'go', icon: 'shield', href: outside && /^https:\/\//.test(u.profile) ? 'x-safari-' + u.profile : u.profile }, parent);
+      if (outside) { a.removeAttribute('target'); a.removeAttribute('rel'); }
       a.style.marginBottom = '4px';
       steps(parent, [
         [T('Tap "Install the profile"'), T('The phone asks whether to allow the download: tap Allow.')],
@@ -635,11 +640,11 @@
         [T('Tap Install, three times'), T('It asks for the passcode. "Not Signed" in red is normal for a profile that does not come from a company\'s device management.')],
         [T('Come back here'), T('This page notices by itself. It takes a few seconds.')]
       ]);
-      // (an iPhone hands a profile to Settings from Safari itself. From a home-screen app, or from another browser
-      // on the iPhone, the download may go nowhere: those get the way through Safari offered)
-      if (standalone() || !SAFARI) {
+      if (outside) {
         const d = el('details', 'more', parent);
+        d.open = true;
         el('summary', '', d, T('Nothing happens when you tap the button?'));
+        el('p', 'muted', d, T('A white page that never loads? Tap the compass at the bottom right of it: that opens it in Safari, where the phone asks to allow the download.'));
         el('p', 'muted', d, T('Then the profile has to be opened in Safari. Copy the link, open Safari, paste it into the address bar, and tap Allow.'));
         copyBox(d, u.profile, T('The link to the profile'));
       }
