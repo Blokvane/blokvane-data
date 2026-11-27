@@ -527,6 +527,42 @@ var BVWT_NET = (() => {
       return m.m;
     };
   }
-  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST, IDLE_LINES, IDLE_SLOT };
+  // ---------- a newer relay list, without a new version of Blokvane ----------
+  // Blokvane's watch robot tests the relays every day (blokvane-data, tools/watch.js). When one has not carried a
+  // message for 3 days in a row, the robot writes a tested spare IN THAT RELAY'S PLACE in relays.json. Every copy of
+  // Blokvane reads that file about once a day and takes it over here, place by place, so a relay that stopped is
+  // replaced by itself. A list is only taken when it has the very same number of places as the list above and every
+  // place is a plain host name: anything else is left alone, and the list above stays.
+  const HOST = /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+  function adopt(x) {
+    const list = x && Array.isArray(x.nostr) ? x.nostr : null;
+    if (!list || list.length !== NOSTR.length) return false;
+    if (!list.every(h => typeof h === 'string' && HOST.test(h)) || new Set(list).size !== list.length) return false;
+    for (let i = 0; i < list.length; i++) NOSTR[i] = 'wss://' + list[i];
+    return true;
+  }
+  // Where the newer list comes from. In the extension: its storage (background.js reads relays.json with the daily
+  // fix file). On Blokvane's phone, game and TV pages: this browser's memory, filled from relays.json beside the
+  // pages at most every 6 hours, so the list is there at once on the next visit.
+  (function () {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get('bvRelayList', r => { try { void chrome.runtime.lastError; if (r && r.bvRelayList) adopt(r.bvRelayList); } catch (e) {} });
+        return;
+      }
+      if (typeof location === 'undefined' || typeof localStorage === 'undefined') return;
+      const KEY = 'bv:relays';
+      try { const kept = JSON.parse(localStorage.getItem(KEY) || 'null'); if (kept) adopt(kept); } catch (e) {}
+      if (location.hostname !== 'app.blokvane.com' || typeof fetch !== 'function') return;
+      let at = 0;
+      try { at = +localStorage.getItem(KEY + ':at') || 0; } catch (e) {}
+      if (Date.now() - at < 6 * 3600000) return;
+      fetch('https://app.blokvane.com/relays.json', { cache: 'no-store', credentials: 'omit' }).then(r => (r.ok ? r.json() : null)).then(d => {
+        try { localStorage.setItem(KEY + ':at', String(Date.now())); } catch (e) {}
+        if (d && adopt(d)) { try { localStorage.setItem(KEY, JSON.stringify({ nostr: d.nostr })); } catch (e) {} }
+      }).catch(() => {});
+    } catch (e) {}
+  })();
+  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, adopt, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST, IDLE_LINES, IDLE_SLOT };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = BVWT_NET;

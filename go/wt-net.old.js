@@ -804,6 +804,56 @@ var BVWT_NET = (() => {
       return m.m;
     });
   }
-  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST, IDLE_LINES, IDLE_SLOT };
+  const HOST = /^(?=.{4,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/;
+  function adopt(x) {
+    const list = x && Array.isArray(x.nostr) ? x.nostr : null;
+    if (!list || list.length !== NOSTR.length) return false;
+    if (!list.every((h) => typeof h === "string" && HOST.test(h)) || new Set(list).size !== list.length) return false;
+    for (let i = 0; i < list.length; i++) NOSTR[i] = "wss://" + list[i];
+    return true;
+  }
+  (function() {
+    try {
+      if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get("bvRelayList", (r) => {
+          try {
+            void chrome.runtime.lastError;
+            if (r && r.bvRelayList) adopt(r.bvRelayList);
+          } catch (e) {
+          }
+        });
+        return;
+      }
+      if (typeof location === "undefined" || typeof localStorage === "undefined") return;
+      const KEY = "bv:relays";
+      try {
+        const kept = JSON.parse(localStorage.getItem(KEY) || "null");
+        if (kept) adopt(kept);
+      } catch (e) {
+      }
+      if (location.hostname !== "app.blokvane.com" || typeof fetch !== "function") return;
+      let at = 0;
+      try {
+        at = +localStorage.getItem(KEY + ":at") || 0;
+      } catch (e) {
+      }
+      if (Date.now() - at < 6 * 36e5) return;
+      fetch("https://app.blokvane.com/relays.json", { cache: "no-store", credentials: "omit" }).then((r) => r.ok ? r.json() : null).then((d) => {
+        try {
+          localStorage.setItem(KEY + ":at", String(Date.now()));
+        } catch (e) {
+        }
+        if (d && adopt(d)) {
+          try {
+            localStorage.setItem(KEY, JSON.stringify({ nostr: d.nostr }));
+          } catch (e) {
+          }
+        }
+      }).catch(() => {
+      });
+    } catch (e) {
+    }
+  })();
+  return { create, gate, bucket, NOSTR, MQTT, shuffled, okUrl, relaysFrom, adopt, MAX_OWN, PER_SENDER, PER_SENDER_BURST, CHECKS, CHECKS_BURST, NEW, NEW_BURST, IDLE_LINES, IDLE_SLOT };
 })();
 if (typeof module !== "undefined" && module.exports) module.exports = BVWT_NET;

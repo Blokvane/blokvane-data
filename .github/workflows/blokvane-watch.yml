@@ -8,7 +8,12 @@
 # certificates and the name blokvane.com are not about to end, the server's alert checker is alive, the size of the
 # pages, and once a day the free relays. It sends its results to the server (blokvane.com/v1/robot/report), proven
 # by GitHub's own signed token for this workflow, so the admin page shows them and the server notices when the robot
-# stops. Nothing is changed by it and it needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
+# stops. It needs no secrets. Run it by hand any time: Actions, Blokvane watch, Run workflow.
+# What it mends by itself:
+#   - a free relay that has not carried a message for 3 days in a row is swapped for a tested spare (relays.json,
+#     saved to main; what the robot remembers between runs is kept on the "watch-state" branch)
+#   - when GitHub runs the list robot late (its list is over 2 hours old), this robot starts it
+#   - GitHub switches a schedule off after 60 days without changes: this robot keeps both schedules on
 name: Blokvane watch
 
 on:
@@ -16,15 +21,17 @@ on:
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch: {}
 
-# (actions: read, to see when the list robot last ran; id-token: write, for GitHub's signed token that proves a report
-# comes from this very workflow)
+# (actions: write, to see when the list robot last ran and to start it when it is late; contents: write, to save a
+# swapped relay and the robot's memory; id-token: write, for GitHub's signed token that proves a report comes from
+# this very workflow)
 permissions:
-  actions: read
+  actions: write
+  contents: write
   id-token: write
 
 concurrency:
   group: blokvane-watch
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   watch:
@@ -87,6 +94,17 @@ jobs:
           door https://blokvane.com/play https://app.blokvane.com/play/
           exit $fail
 
+      # (what the robot remembers between runs: for how many days in a row each relay failed)
+      - name: Get the robot's memory
+        continue-on-error: true
+        run: |
+          mkdir -p "$RUNNER_TEMP/state"
+          if git ls-remote --exit-code --heads origin watch-state >/dev/null 2>&1; then
+            git fetch -q --depth 1 origin watch-state
+            git archive FETCH_HEAD | tar -x -C "$RUNNER_TEMP/state"
+          fi
+          cp "$RUNNER_TEMP/state/relay-state.json" "$RUNNER_TEMP/state.before" 2>/dev/null || true
+
       - name: What the server cannot see about itself
         id: checks
         continue-on-error: true
@@ -94,11 +112,60 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           relays=""
-          # (the free relays once a day, in the first run after 06:00 UTC)
-          if [ "$(date -u +%H)" = "06" ] && [ "$(date -u +%M)" -lt 15 ]; then relays="--relays"; fi
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then relays="--relays"; fi
+          # (the free relays are tested in the first run of each day, and whenever a person starts this robot by hand)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.actor }}" != "github-actions[bot]" ]; then relays="--relays"; fi
           down=0; [ "${{ steps.site.outcome }}" = "success" ] || down=1
-          node tools/watch.js --out "$RUNNER_TEMP/report.json" --site-down $down $relays
+          node tools/watch.js --out "$RUNNER_TEMP/report.json" --site-down $down $relays \
+            --state "$RUNNER_TEMP/state/relay-state.json" --swapped "$RUNNER_TEMP/swapped" --wake "$RUNNER_TEMP/wake"
+
+      # (a relay was swapped: the new list goes to main, where every copy of Blokvane reads it)
+      - name: Save a swapped relay
+        if: always()
+        continue-on-error: true
+        run: |
+          [ -f "$RUNNER_TEMP/swapped" ] || { echo "No relay was swapped."; exit 0; }
+          git config user.name "Blokvane watch robot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add relays.json
+          git commit -q -m "Free relays: $(cat "$RUNNER_TEMP/swapped") (swapped by the watch robot)"
+          git push -q origin HEAD:main || { git pull -q --rebase origin main && git push -q origin HEAD:main; }
+
+      - name: Save the robot's memory
+        if: always()
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          f="$RUNNER_TEMP/state/relay-state.json"
+          [ -f "$f" ] || exit 0
+          if cmp -s "$f" "$RUNNER_TEMP/state.before"; then echo "Nothing new to remember."; exit 0; fi
+          mkdir -p "$RUNNER_TEMP/mem" && cp "$f" "$RUNNER_TEMP/mem/" && cd "$RUNNER_TEMP/mem"
+          git init -q -b watch-state
+          git config user.name "Blokvane watch robot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "What the watch robot remembers, $(date -u '+%Y-%m-%d %H:%M') UTC"
+          git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" watch-state
+
+      # (GitHub runs schedules late on busy days. A list over 2 hours old: start the list robot now)
+      - name: Start the list robot when it is late
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          [ -f "$RUNNER_TEMP/wake" ] || exit 0
+          gh workflow run blokvane-list.yml --repo "$GITHUB_REPOSITORY" --ref main && echo "The list robot was started."
+
+      # (GitHub switches a schedule off after 60 days without changes to the repository; this keeps both on)
+      - name: Keep the schedules on
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/blokvane-watch.yml/enable" >/dev/null 2>&1 || true
+          gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/blokvane-list.yml/enable" >/dev/null 2>&1 || true
 
       - name: Tell the server
         if: always()

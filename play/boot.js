@@ -8,7 +8,7 @@
   var list = ['tvlite.js?v=1',
     '../go/compat.js?v=15',
     '../go/wt-core.js?v=15',
-    '../go/wt-net.js?v=20',
+    '../go/wt-net.js?v=21',
     '../go/live-kit.js?v=20',
     '../go/qrcode.js?v=11',
     '../go/pass.js?v=5',
