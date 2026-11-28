@@ -21,7 +21,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '10';
+  const V = '11';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -987,25 +987,51 @@
     }
     onRows(v);
   }
-  // the rows under the dial, on the page of a phone that blocks (or is paused)
+  // the rows under the dial, on the page of a phone that blocks (or is paused). Their icons have colors that say
+  // something: blue and orange for two of them always, green for one that is on or has something in it, red for a
+  // switch that is off (with its word "On" or "Off" in the same color), and the plain color otherwise.
   function onRows(v) {
     const ls = el('div', 'list', v);
     row(ls, 'hex', T('Run the Ad Blocker Test'), T('See what this phone stops, test by test'), () => go('test'));
-    row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
-    row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats'));
-    row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet);
-    row(ls, 'check', T('Test this phone'), T('Checks that this phone really asks Blokvane right now'), async () => {
+    tint(row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries')), 'blue');
+    tint(row(ls, 'chart', T('Your numbers'), T('Day by day, and a picture to share'), () => go('stats')), 'orange');
+    tint(row(ls, 'check', T('A site does not open?'), S.prefs.trusted.length ? T('Always open: {n}', { n: num(S.prefs.trusted.length) }) : T('Let it through on this phone'), trustSheet), S.prefs.trusted.length ? 'good' : '');
+    const test = row(ls, 'check', T('Test this phone'), T('Checks that this phone really asks Blokvane right now'), async () => {
+      const a = acct();
+      if (a) own.set('tested', a.email);
       toast(T('Testing this phone'));
       const got = await verify(2);
-      if (got === 'yes') toast(T('Test passed. This phone asked Blokvane just now.'), 'ok');
+      if (got === 'yes') { tint(test, 'good'); toast(T('Test passed. This phone asked Blokvane just now.'), 'ok'); }
       else { await load(true); draw(); toast(T('The test did not come through. Ad blocking is not running on this phone right now.')); }
     });
-    row(ls, 'off', T('Block a website'), (S.blocked || []).length ? T('{n} blocked', { n: num(S.blocked.length) }) : T('Pick sites this phone should not open'), sitesSheet);
+    // (green or red only once this person has tested this phone with this row: then it is how the last test of the
+    // phone went, the ones the app makes by itself included)
+    tint(test, testedHere() ? (live === 'yes' ? 'good' : live === 'no' ? 'bad' : '') : '');
+    tint(row(ls, 'off', T('Block a website'), (S.blocked || []).length ? T('{n} blocked', { n: num(S.blocked.length) }) : T('Pick sites this phone should not open'), sitesSheet), (S.blocked || []).length ? 'good' : '');
     // (only with a server that closes Meta's ad name the smart way: an older one would close it for good, Facebook too)
-    if ((S.smart || []).includes('meta')) row(ls, 'game', T('Ads from Meta in games'), metaOn() ? T('On: blocked on this phone') : T('Off: they can still show'), metaSheet);
-    row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
+    if ((S.smart || []).includes('meta')) onOff(row(ls, 'game', T('Ads from Meta in games'), metaOn() ? T('On: blocked on this phone') : T('Off: they can still show'), metaSheet), metaOn());
+    onOff(row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet), S.strict);
     limits(v);
     installCard(v);
+  }
+  function testedHere() { const a = acct(); return !!a && own.get('tested', '') === a.email; }
+  // a row's icon in a color: 'blue', 'orange', 'good' (green) or 'bad' (red); '' leaves it in the plain color
+  function tint(it, c) {
+    for (const k of ['tint-blue', 'tint-orange', 'tint-good', 'tint-bad']) it.classList.remove(k);
+    if (c) it.classList.add('tint-' + c);
+    return it;
+  }
+  // a switch's row: its icon, and the first word of its second line ("On:" or "Off:", up to the first ":" or "." in
+  // every language the app speaks), green when it is on and red when it is off
+  function onOff(it, on) {
+    tint(it, on ? 'good' : 'bad');
+    const s = it.querySelector('.t small');
+    const m = s && /^([^:：.。।]{1,30}[:：.。।])([\s\S]*)$/.exec(s.textContent);
+    if (!m) return it;
+    s.textContent = '';
+    el('span', 'state', s, m[1]);
+    s.appendChild(document.createTextNode(m[2]));
+    return it;
   }
   // ---------------------------------------------------------------- a pause of ad blocking ("Pause ad blocking")
   // The owner can pause ad blocking on this phone for a while, from one minute to one year (POST /v1/phone/pause, kept

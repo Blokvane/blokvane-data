@@ -5,6 +5,7 @@
 :root {
   --paper: #f5efe3; --paper2: #fbf7ef; --card: #fffdf8; --ink: #1f1b16; --ink2: #5d554a; --faint: #9a8f80; --rule: #e4dac8;
   --pass: #18946a; --pass-soft: #d9f0e5; --fail: #e0453a; --fail-soft: #fbe0dc; --wait: #ebe2d1; --accent: #ff5a4e; --amber: #c98a12; --amber-soft: #f6ead0;
+  --blue: #2a64c8; --orange: #d0620f;
   --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -12,7 +13,8 @@
 }
 @media (prefers-color-scheme: dark) {
   :root { --paper: #15120e; --paper2: #1b1813; --card: #211d18; --ink: #f3ebdc; --ink2: #c4b8a5; --faint: #8b8070; --rule: #352f27;
-    --pass: #3fcf95; --pass-soft: #163a2c; --fail: #ff6b5e; --fail-soft: #43201c; --wait: #2c2620; --amber: #e0a52e; --amber-soft: #3a2f16; }
+    --pass: #3fcf95; --pass-soft: #163a2c; --fail: #ff6b5e; --fail-soft: #43201c; --wait: #2c2620; --amber: #e0a52e; --amber-soft: #3a2f16;
+    --blue: #6ea8ff; --orange: #ff9845; }
 }
 * { box-sizing: border-box; }
 html { background: var(--paper); -webkit-text-size-adjust: 100%; }
@@ -183,6 +185,13 @@ html.no-flexgap[dir="rtl"] .item > * + * { margin-left: 0; margin-right: 12px; }
 .item .chev { color: var(--faint); transform: scaleX(var(--flip, 1)); }
 [dir="rtl"] { --flip: -1; }
 .item.plain { cursor: default; }
+/* a row whose icon has a color that says something (the rows under the dial): blue and orange for two of them, green
+   when it is on or has something in it, red when a switch is off, with the word On or Off in the same color */
+.item.tint-blue > svg.ic:not(.chev) { color: var(--blue); }
+.item.tint-orange > svg.ic:not(.chev) { color: var(--orange); }
+.item.tint-good > svg.ic:not(.chev), .item.tint-good .t small .state { color: var(--pass); }
+.item.tint-bad > svg.ic:not(.chev), .item.tint-bad .t small .state { color: var(--fail); }
+.item .t small .state { font-weight: 700; }
 .item .flag { font-size: 24px; width: 30px; text-align: center; flex: none; }
 .chip { display: inline-flex; align-items: center; grid-gap: 6px; gap: 6px; border: 1.5px solid var(--ink); border-radius: 999px; padding: 5px 6px 5px 12px; background: var(--card); font-size: 14.5px; font-weight: 600; cursor: pointer; min-height: 38px; }
 html.no-flexgap .chip > * + * { margin-left: 6px; }
@@ -279,9 +288,9 @@ html:is(:lang(ar), :lang(hi), :lang(bn)) h1 { line-height: 1.25; letter-spacing:
 
 /* ---- the look picked in the app (More, then Look): theme.js says it on the first tag */
 html[data-theme="dark"] { color-scheme: dark; --paper: #15120e; --paper2: #1b1813; --card: #211d18; --ink: #f3ebdc; --ink2: #c4b8a5; --faint: #8b8070; --rule: #352f27;
-  --pass: #3fcf95; --pass-soft: #163a2c; --fail: #ff6b5e; --fail-soft: #43201c; --wait: #2c2620; --amber: #e0a52e; --amber-soft: #3a2f16; }
+  --pass: #3fcf95; --pass-soft: #163a2c; --fail: #ff6b5e; --fail-soft: #43201c; --wait: #2c2620; --amber: #e0a52e; --amber-soft: #3a2f16; --blue: #6ea8ff; --orange: #ff9845; }
 html[data-theme="light"] { color-scheme: light; --paper: #f5efe3; --paper2: #fbf7ef; --card: #fffdf8; --ink: #1f1b16; --ink2: #5d554a; --faint: #9a8f80; --rule: #e4dac8;
-  --pass: #18946a; --pass-soft: #d9f0e5; --fail: #e0453a; --fail-soft: #fbe0dc; --wait: #ebe2d1; --amber: #c98a12; --amber-soft: #f6ead0; }
+  --pass: #18946a; --pass-soft: #d9f0e5; --fail: #e0453a; --fail-soft: #fbe0dc; --wait: #ebe2d1; --amber: #c98a12; --amber-soft: #f6ead0; --blue: #2a64c8; --orange: #d0620f; }
 html[data-theme="dark"] .go { color: var(--paper); }
 html[data-theme="light"] .go { color: #fff; }
 .looks { display: grid; grid-template-columns: repeat(3, 1fr); grid-gap: 10px; gap: 10px; margin-top: 6px; }
