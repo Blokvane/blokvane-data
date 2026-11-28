@@ -6,7 +6,7 @@ const { build, readReported } = require('./build-lists.js');
 const F = require('./lists/filters.js');
 
 const AD_FILES = ['easylist.txt', 'filters.txt', 'filters-2020.txt', 'filters-2021.txt', 'filters-2022.txt', 'filters-2023.txt', 'filters-2024.txt', 'filters-2025.txt', 'filters-2026.txt',
-  'quick-fixes.txt', 'unbreak.txt', 'resource-abuse.txt', 'filter.txt', 'easyprivacy.txt', 'privacy.txt', 'annoyances-cookies.txt'];
+  'quick-fixes.txt', 'unbreak.txt', 'resource-abuse.txt', 'filter.txt', 'AdmiraList.txt', 'easyprivacy.txt', 'privacy.txt', 'annoyances-cookies.txt'];
 // (scale: each security list's least number of sites, from sources.json, made small enough for made-up lists: 100,000 becomes 5)
 const FLOORS = { adRules: 5, listBytes: 5, scale: 0.00005 };
 // the most-visited sites, made up: a shop, a page on a big platform (so the platform itself is above a popular site), one far down the list, and a
@@ -34,6 +34,8 @@ function lists(dir, over) {
     'privacy.txt': '||spy.example^\n',
     'annoyances-cookies.txt': '||cookiewall.example^\ncookies.example##.cookie-bar\n',
     'filter.txt': '||dnsads.example^\n||dnsads2.example^\n',
+    // (a list of names, one a line: AS_NAME_LISTS in filters.js)
+    'AdmiraList.txt': 'wall-names.example\n203.0.113.7\n',
     'phishing-domains-ACTIVE.txt': phish(40) + 'google.com\nvideo.nflxvideo.net\nbad-both.example\nwww.with-www.example\nNOT A DOMAIN\n',
     'badware.txt': '! made up\n||malware1.example^\n||malware2.example^$doc\n||bad-both.example^\n||skipme.example^$script\n/path-only/*\n',
     // the newer scam lists: MetaMask's (config.json), polkadot{.js}'s (all.json), the sites reported this month (month.csv)

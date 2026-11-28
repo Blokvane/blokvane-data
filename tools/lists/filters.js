@@ -13,11 +13,29 @@ const AS_LISTS = {
     // (fixes for sites that the lists above break, and sites that misuse your computer, like hidden coin miners)
     AS_UBO + 'unbreak.txt',
     AS_UBO + 'resource-abuse.txt',
-    'https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/gh-pages/Filters/filter.txt'
+    'https://raw.githubusercontent.com/AdguardTeam/AdGuardSDNSFilter/gh-pages/Filters/filter.txt',
+    // (the names Admiral uses: the company behind many "allow ads on this site" walls, which moves to new names all
+    // the time. One name a line, not filter rules: see AS_NAME_LISTS)
+    'https://raw.githubusercontent.com/jkrejcha/AdmiraList/master/AdmiraList.txt'
   ],
   privacy: ['https://raw.githubusercontent.com/easylist/easylist/gh-pages/easyprivacy.txt', AS_UBO + 'privacy.txt'],
   annoyances: [AS_UBO + 'annoyances-cookies.txt']
 };
+// Lists that are one site name a line, not filter rules: each name is blocked whole ("||name^"). IP addresses and
+// anything that is not a name are left out, and so is a name that is also a real, popular site.
+const AS_NAME_LISTS = new Set(['https://raw.githubusercontent.com/jkrejcha/AdmiraList/master/AdmiraList.txt']);
+const AS_NAME_SKIP = new Set(['getdrip.com']);
+// Blokvane's own additions, for what the lists above do not have yet: names Admiral moved to lately
+const AS_OWN = { ads: ['||unifybots.com^'] };
+function asNamesToRules(text) {
+  const out = [];
+  for (let l of String(text).split('\n')) {
+    l = l.trim().toLowerCase();
+    if (!/^[a-z0-9][a-z0-9.-]*\.[a-z][a-z0-9-]+$/.test(l) || l.length > 253 || AS_NAME_SKIP.has(l)) continue;
+    out.push('||' + l + '^');
+  }
+  return out.join('\n');
+}
 const COSMETIC_SOURCES = ['easylist.txt', 'filters.txt', 'filters-2020.txt', 'filters-2021.txt', 'filters-2022.txt', 'filters-2023.txt', 'filters-2024.txt', 'filters-2025.txt', 'filters-2026.txt',
   'quick-fixes.txt', 'unbreak.txt', 'privacy.txt'];
 const COOKIE_SOURCES = ['annoyances-cookies.txt'];
@@ -207,7 +225,8 @@ async function asBuildFromNetwork() {
     const texts = [];
     for (const u of urls) {
       try {
-        const t = await asFetchText(u);
+        let t = await asFetchText(u);
+        if (AS_NAME_LISTS.has(u)) t = asNamesToRules(t);
         texts.push(t);
         named[u.split('/').pop()] = t;
       } catch (e) {
@@ -215,6 +234,7 @@ async function asBuildFromNetwork() {
       }
     }
     if (!texts.length) throw new Error('no lists downloaded for ' + group);
+    if (AS_OWN[group]) texts.push(AS_OWN[group].join('\n'));
     rules.push(...asCompileNetwork(texts, generichide));
   }
   const main = asCompileCosmetic(COSMETIC_SOURCES.filter(n => named[n]).map(n => named[n]));
