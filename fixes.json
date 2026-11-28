@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updated": "2026-11-25",
+  "updated": "2026-11-27",
   "minVersion": "3.13.0",
   "youtube": {
     "deleteKeys": [],
@@ -41,6 +41,6 @@
   },
   "block": { "domains": ["bestridrabbleunhope.cfd", "googletagmanager.xyz", "hosteroutz.shop", "llvpn.com", "segolparmese.qpon", "stemonaaugured.com"] },
   "allow": { "domains": [] },
-  "hide": { "generic": [], "sites": {} },
+  "hide": { "generic": [".tpd-ad-slot", ".wp-block-tpd-ad-slot"], "sites": {} },
   "unhide": { "generic": [] }
 }
