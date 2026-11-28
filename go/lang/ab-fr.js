@@ -255,6 +255,7 @@ BVAB.add('fr', {
   "One tap to your numbers, the test and the countries.": "Un appui pour vos chiffres, le test et les pays.",
   "Add it": "L'ajouter",
   "The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.": "Le même test que sur blokvane.com, lancé depuis ce téléphone. Faites-le une fois avant d'activer le blocage des publicités, et une fois après.",
+  "You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.": "Vous venez de reprendre le blocage des pubs. Fermez cette appli et rouvrez-la avant de faire le test : ce qui était ouvert pendant la pause peut encore passer.",
   "Blokvane Ad Blocker Test": "Test de bloqueur de pubs Blokvane",
   "On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.": "Sur un téléphone, Blokvane bloque par nom. Quelques tests (de fausses publicités dans une page) ne peuvent être arrêtés que par une extension de navigateur, ils restent donc rouges ici. Le test dit lesquels après un passage.",
   "Open the test in the browser": "Ouvrir le test dans le navigateur",
@@ -453,8 +454,8 @@ BVAB.add('fr', {
   "The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "La pause vaut pour tout le téléphone. Un iPhone ne dit jamais à un bloqueur quelle appli fait la demande, donc d'autres applis peuvent aussi afficher des pubs si tu les ouvres pendant la pause.",
   "The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "La pause vaut pour tout le téléphone. Android ne dit jamais à un bloqueur quelle appli fait la demande, donc d'autres applis peuvent aussi afficher des pubs si tu les ouvres pendant la pause.",
   "Trackers get through too. The websites you blocked and the countries you picked stay blocked.": "Les traqueurs passent aussi. Les sites que tu as bloqués et les pays que tu as choisis restent bloqués.",
-  "When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.": "Quand le temps est écoulé, le blocage revient tout seul. Il faut environ 10 secondes pour commencer et pour finir.",
-  "Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.": "Reprendre maintenant remet le blocage aussitôt. Une pub qu'une appli a téléchargée pendant la pause peut encore s'afficher après.",
+  "When the time is up, blocking comes back by itself. It starts and ends in about a second.": "Quand le temps est écoulé, le blocage revient tout seul. Il commence et s'arrête en une seconde environ.",
+  "Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.": "Reprendre maintenant remet le blocage aussitôt. Une appli ou une page ouverte pendant la pause peut continuer d'afficher des pubs jusqu'à ce que vous la fermiez et la rouvriez.",
   "To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.": "Pour gagner une récompense dans un jeu : mets en pause quelques minutes, regarde la pub jusqu'au bout, puis touche Reprendre maintenant.",
   "One more": "Un de plus",
   "One less": "Un de moins"

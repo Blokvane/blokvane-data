@@ -255,6 +255,7 @@ BVAB.add('ar', {
   "One tap to your numbers, the test and the countries.": "ضغطة واحدة إلى أرقامك والاختبار والدول.",
   "Add it": "أضفه",
   "The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.": "الاختبار نفسه الموجود على blokvane.com، يُجرى من هذا الهاتف. أجرِه مرة قبل تشغيل حجب الإعلانات ومرة بعده.",
+  "You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.": "استأنفت حجب الإعلانات قبل لحظات. أغلق هذا التطبيق وافتحه من جديد قبل الاختبار: ما كان مفتوحًا أثناء الإيقاف قد يظل يمر.",
   "Blokvane Ad Blocker Test": "اختبار مانع الإعلانات من Blokvane",
   "On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.": "على الهاتف يحجب Blokvane بالاسم. بعض الاختبارات (صناديق إعلانات وهمية داخل الصفحة) لا يوقفها إلا امتداد المتصفح، فتبقى حمراء هنا. يذكر الاختبار أيها بعد إجرائه.",
   "Open the test in the browser": "فتح الاختبار في المتصفح",
@@ -453,8 +454,8 @@ BVAB.add('ar', {
   "The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "يشمل الإيقاف المؤقت الهاتف كله. لا يخبر iPhone أداة الحجب أبدًا بالتطبيق الذي يطلب، لذا قد تعرض تطبيقات أخرى إعلانات أيضًا إذا فتحتها أثناء الإيقاف.",
   "The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "يشمل الإيقاف المؤقت الهاتف كله. لا يخبر Android أداة الحجب أبدًا بالتطبيق الذي يطلب، لذا قد تعرض تطبيقات أخرى إعلانات أيضًا إذا فتحتها أثناء الإيقاف.",
   "Trackers get through too. The websites you blocked and the countries you picked stay blocked.": "تمرّ أدوات التتبع أيضًا. تبقى المواقع التي حظرتها والدول التي اخترتها محظورة.",
-  "When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.": "عندما ينتهي الوقت، يعود الحجب من تلقاء نفسه. يستغرق البدء والانتهاء نحو 10 ثوانٍ.",
-  "Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.": "يعيد استئناف الآن الحجب فورًا. قد يظهر لاحقًا إعلان نزّله تطبيق أثناء الإيقاف.",
+  "When the time is up, blocking comes back by itself. It starts and ends in about a second.": "عندما ينتهي الوقت، يعود الحجب من تلقاء نفسه. يبدأ وينتهي خلال ثانية تقريبًا.",
+  "Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.": "يعيد استئناف الآن الحجب فورًا. قد يستمر تطبيق أو صفحة كانت مفتوحة أثناء الإيقاف في عرض الإعلانات إلى أن تغلقه وتفتحه من جديد.",
   "To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.": "لتحصل على مكافأة في لعبة: أوقف الحجب بضع دقائق، وشاهد الإعلان حتى نهايته، ثم اضغط استئناف الآن.",
   "One more": "زيادة واحد",
   "One less": "إنقاص واحد"

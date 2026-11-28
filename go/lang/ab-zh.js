@@ -255,6 +255,7 @@ BVAB.add('zh', {
   "One tap to your numbers, the test and the countries.": "点一下就能看到你的数字、测试和国家。",
   "Add it": "添加",
   "The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.": "和 blokvane.com 上的测试一样，在这部手机上运行。开启广告拦截之前运行一次，之后再运行一次。",
+  "You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.": "你刚刚恢复了广告拦截。测试之前请先关掉这个应用再重新打开：暂停期间打开着的内容仍可能通过。",
   "Blokvane Ad Blocker Test": "Blokvane 广告拦截器测试",
   "On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.": "在手机上，Blokvane 按名称拦截。有几项测试（页面里的假广告框）只有浏览器扩展才能拦住，所以在这里会保持红色。测试运行后会说明是哪些。",
   "Open the test in the browser": "在浏览器里打开测试",
@@ -453,8 +454,8 @@ BVAB.add('zh', {
   "The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "暂停对整部手机生效。iPhone 从不告诉拦截工具是哪个应用在请求，所以暂停期间你打开的其他应用也可能显示广告。",
   "The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "暂停对整部手机生效。Android 从不告诉拦截工具是哪个应用在请求，所以暂停期间你打开的其他应用也可能显示广告。",
   "Trackers get through too. The websites you blocked and the countries you picked stay blocked.": "跟踪器也会放行。你拦截的网站和你选择的国家仍然会被拦截。",
-  "When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.": "时间一到，拦截会自动恢复。开始和结束大约都需要 10 秒。",
-  "Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.": "点“立即恢复”会马上恢复拦截。暂停期间应用下载的广告之后仍可能显示。",
+  "When the time is up, blocking comes back by itself. It starts and ends in about a second.": "时间一到，拦截会自动恢复。开始和结束大约只需一秒。",
+  "Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.": "点“立即恢复”会马上恢复拦截。暂停期间打开着的应用或网页，在你关掉并重新打开之前，仍可能显示广告。",
   "To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.": "想在游戏里拿奖励：先暂停几分钟，把广告看完，再点“立即恢复”。",
   "One more": "加一",
   "One less": "减一"

@@ -255,6 +255,7 @@ BVAB.add('hi', {
   "One tap to your numbers, the test and the countries.": "एक टैप में आपके आँकड़े, टेस्ट और देश।",
   "Add it": "जोड़ें",
   "The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.": "वही टेस्ट जो blokvane.com पर है, इस फ़ोन से चलाया गया। इसे एक बार विज्ञापन ब्लॉकिंग चालू करने से पहले चलाएँ, और एक बार बाद में।",
+  "You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.": "आपने अभी-अभी विज्ञापन ब्लॉकिंग फिर से शुरू की है। टेस्ट से पहले यह ऐप बंद करके फिर से खोलें: रोक के दौरान जो खुला था, वह अभी भी निकल सकता है।",
   "Blokvane Ad Blocker Test": "Blokvane ऐड ब्लॉकर टेस्ट",
   "On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.": "फ़ोन पर Blokvane नाम से ब्लॉक करता है। कुछ टेस्ट (पेज के अंदर नक़ली विज्ञापन बॉक्स) सिर्फ़ ब्राउज़र एक्सटेंशन ही रोक सकता है, इसलिए वे यहाँ लाल रहते हैं। टेस्ट चलने के बाद बताता है कि वे कौन से हैं।",
   "Open the test in the browser": "टेस्ट ब्राउज़र में खोलें",
@@ -453,8 +454,8 @@ BVAB.add('hi', {
   "The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "यह रोक पूरे फ़ोन पर लागू होती है। iPhone कभी किसी ब्लॉकर को नहीं बताता कि कौन-सा ऐप पूछ रहा है, इसलिए रोक के दौरान आप दूसरे ऐप खोलें तो उनमें भी विज्ञापन दिख सकते हैं।",
   "The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "यह रोक पूरे फ़ोन पर लागू होती है। Android कभी किसी ब्लॉकर को नहीं बताता कि कौन-सा ऐप पूछ रहा है, इसलिए रोक के दौरान आप दूसरे ऐप खोलें तो उनमें भी विज्ञापन दिख सकते हैं।",
   "Trackers get through too. The websites you blocked and the countries you picked stay blocked.": "ट्रैकर भी निकल जाते हैं। आपकी ब्लॉक की हुई वेबसाइटें और चुने हुए देश ब्लॉक ही रहते हैं।",
-  "When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.": "समय पूरा होने पर ब्लॉकिंग अपने आप लौट आती है। शुरू होने और खत्म होने में लगभग 10 सेकंड लगते हैं।",
-  "Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.": "अभी फिर शुरू करें से ब्लॉकिंग तुरंत लौट आती है। रोक के दौरान किसी ऐप का डाउनलोड किया हुआ विज्ञापन बाद में भी दिख सकता है।",
+  "When the time is up, blocking comes back by itself. It starts and ends in about a second.": "समय पूरा होने पर ब्लॉकिंग अपने आप लौट आती है। यह लगभग एक सेकंड में शुरू और खत्म होती है।",
+  "Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.": "अभी फिर शुरू करें से ब्लॉकिंग तुरंत लौट आती है। रोक के दौरान खुला कोई ऐप या पेज तब तक विज्ञापन दिखा सकता है, जब तक आप उसे बंद करके फिर से न खोलें।",
   "To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.": "किसी गेम में इनाम पाने के लिए: कुछ मिनट के लिए रोकें, विज्ञापन आख़िर तक देखें, फिर अभी फिर शुरू करें दबाएँ।",
   "One more": "एक बढ़ाएँ",
   "One less": "एक घटाएँ"

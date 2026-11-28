@@ -21,7 +21,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '11';
+  const V = '12';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -1085,14 +1085,15 @@
     const a = [plat() === 'android' ? T('The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.')
       : T('The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.'),
     T('Trackers get through too. The websites you blocked and the countries you picked stay blocked.'),
-    T('When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.')];
-    if (all) a.push(T('Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.'));
+    T('When the time is up, blocking comes back by itself. It starts and ends in about a second.')];
+    if (all) a.push(T('Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.'));
     return a;
   }
   async function setPause(sec) {
     const r = await ask('/v1/phone/pause', { seconds: sec });
     if (!r.ok) { toast(why(r), 'bad'); return false; }
     if (S) S.pause = r.data.pause || null;
+    if (!sec) resumedAt = Date.now();
     if (closeSheet) closeSheet();
     draw();
     try { scrollTo(0, 0); } catch (e) {}
@@ -1112,6 +1113,7 @@
       if (left <= 0) {
         clearInterval(heldT); heldT = 0;
         if (S && S.pause === P) S.pause = null;
+        resumedAt = Date.now();
         if (tab === 'home') draw();
         toast(T('Ad blocking is back on.'), 'ok');
         refresh();
@@ -1336,10 +1338,13 @@
   }
 
   // ---------------------------------------------------------------- Test: Blokvane's Ad Blocker Test, in a frame
-  let labMade = false;
+  // (right after a pause ends: a test run during the pause left its connections open in this app, and a lookup can't
+  // take them back, so the test would show addresses getting through that are blocked again. It says so.)
+  let labMade = false, resumedAt = 0;
   function test(v) {
     // (the test brings its own big words: here only one line that says what it is)
     el('p', 'muted small', v, T('The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.')).style.margin = '2px 0 8px';
+    if (Date.now() - resumedAt < 5 * 60e3) el('p', 'note', v, T('You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.'));
     if (!labMade) {
       labMade = true;
       labEl.textContent = '';

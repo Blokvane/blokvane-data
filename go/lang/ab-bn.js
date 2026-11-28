@@ -255,6 +255,7 @@ BVAB.add('bn', {
   "One tap to your numbers, the test and the countries.": "এক ট্যাপে আপনার সংখ্যা, টেস্ট আর দেশ।",
   "Add it": "যোগ করুন",
   "The same test as on blokvane.com, run from this phone. Run it once before you switch ad blocking on, and once after.": "blokvane.com-এর একই টেস্ট, এই ফোন থেকে চালানো। বিজ্ঞাপন ব্লকিং চালু করার আগে একবার চালান, আর পরে একবার।",
+  "You resumed ad blocking a moment ago. Close this app and open it again before you test: what was open during the pause can still get through.": "আপনি এইমাত্র বিজ্ঞাপন ব্লকিং আবার চালু করেছেন। টেস্ট করার আগে এই অ্যাপটি বন্ধ করে আবার খুলুন: বিরতির সময় যা খোলা ছিল, তা এখনও পার হয়ে যেতে পারে।",
   "Blokvane Ad Blocker Test": "Blokvane অ্যাড ব্লকার টেস্ট",
   "On a phone Blokvane blocks by name. A few of the tests (fake ad boxes inside a page) are things only a browser extension can stop, so they stay red here. The test says which ones after a run.": "ফোনে Blokvane নাম ধরে ব্লক করে। কয়েকটি টেস্ট (পেজের ভেতরের নকল বিজ্ঞাপন বক্স) শুধু ব্রাউজার এক্সটেনশনই থামাতে পারে, তাই সেগুলো এখানে লাল থাকে। চালানোর পরে টেস্ট বলে দেয় সেগুলো কোনগুলো।",
   "Open the test in the browser": "টেস্ট ব্রাউজারে খুলুন",
@@ -453,8 +454,8 @@ BVAB.add('bn', {
   "The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "এই বিরতি পুরো ফোনের জন্য। iPhone কখনো কোনো ব্লকারকে বলে না কোন অ্যাপ জিজ্ঞেস করছে, তাই বিরতির সময় অন্য অ্যাপ খুললে সেগুলোতেও বিজ্ঞাপন দেখা যেতে পারে।",
   "The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.": "এই বিরতি পুরো ফোনের জন্য। Android কখনো কোনো ব্লকারকে বলে না কোন অ্যাপ জিজ্ঞেস করছে, তাই বিরতির সময় অন্য অ্যাপ খুললে সেগুলোতেও বিজ্ঞাপন দেখা যেতে পারে।",
   "Trackers get through too. The websites you blocked and the countries you picked stay blocked.": "ট্র্যাকারও ঢুকে যায়। আপনার ব্লক করা ওয়েবসাইট আর বেছে নেওয়া দেশগুলো ব্লকই থাকে।",
-  "When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.": "সময় শেষ হলে ব্লকিং নিজে থেকেই ফিরে আসে। শুরু হতে আর শেষ হতে প্রায় ১০ সেকেন্ড লাগে।",
-  "Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.": "এখনই আবার চালু করুন চাপলে ব্লকিং সঙ্গে সঙ্গে ফিরে আসে। বিরতির সময় কোনো অ্যাপ যে বিজ্ঞাপন ডাউনলোড করেছে, সেটা পরেও দেখা যেতে পারে।",
+  "When the time is up, blocking comes back by itself. It starts and ends in about a second.": "সময় শেষ হলে ব্লকিং নিজে থেকেই ফিরে আসে। এটা প্রায় এক সেকেন্ডে শুরু ও শেষ হয়।",
+  "Resume now brings blocking back at once. An app or page that was open during the pause can keep showing ads until you close it and open it again.": "এখনই আবার চালু করুন চাপলে ব্লকিং সঙ্গে সঙ্গে ফিরে আসে। বিরতির সময় খোলা থাকা কোনো অ্যাপ বা পেজ বন্ধ করে আবার না খোলা পর্যন্ত বিজ্ঞাপন দেখাতে পারে।",
   "To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.": "কোনো গেমে পুরস্কার পেতে: কয়েক মিনিটের জন্য থামান, বিজ্ঞাপনটা শেষ পর্যন্ত দেখুন, তারপর এখনই আবার চালু করুন চাপুন।",
   "One more": "এক বাড়ান",
   "One less": "এক কমান"
