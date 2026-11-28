@@ -1,0 +1,174 @@
+{
+ "format": 1,
+ "made": "2026-11-28T18:17:55.104Z",
+ "ads": {
+  "v": "8bd3205d9ede24ca",
+  "sha256": "53156a34c273ab2e10490108f5ec41f88e2dfc0d7a6433f51670b4d37ed094fc",
+  "bytes": 9506529,
+  "rules": 20839,
+  "sites": 212642,
+  "patterns": 17113,
+  "hide": 38490,
+  "base": "a202611270944",
+  "baseSha256": "d8fa1179622bfa296a1e9032eaf1c451bfd68cdb0b03be39fdbd02e6ecce88f9",
+  "baseMade": "2026-11-27T09:44:05.357Z",
+  "deltaSha256": "c2864b25e725936d5f4faa9f87c29b3d1f8f8331d0aacbe251b526753f026223",
+  "deltaBytes": 51608,
+  "made": "2026-11-28T18:17:55.104Z"
+ },
+ "security": {
+  "v": "7f6d70dc621fb76d",
+  "base": "b202611250302",
+  "baseSha256": "f7d00bcc32e8865ca6ab5197fbfee33e7b9d67e20b766b5b874071bc210a2b1d",
+  "baseMade": "2026-11-25T03:02:14.722Z",
+  "deltaSha256": "5be1e27ae62a08ec04d6f3b2926448af843184b1aedf62b83dabc429c0eb0345",
+  "deltaBytes": 84435,
+  "count": 564659,
+  "malware": 3323,
+  "phishing": 561336,
+  "from": [
+   {
+    "name": "Phishing.Database",
+    "sites": 391261
+   },
+   {
+    "name": "uBlock Origin filters: Badware risks",
+    "sites": 3336
+   },
+   {
+    "name": "MetaMask eth-phishing-detect",
+    "sites": 118389
+   },
+   {
+    "name": "polkadot{.js} phishing list",
+    "sites": 54796
+   },
+   {
+    "name": "TweetFeed",
+    "sites": 790
+   }
+  ],
+  "made": "2026-11-28T18:17:55.104Z"
+ },
+ "hints": {
+  "v": "ded6ea54f7fc26d2",
+  "crowded": [
+   "000webhostapp.com",
+   "arweave.net",
+   "atwebpages.com",
+   "blogspot.am",
+   "blogspot.bg",
+   "blogspot.fi",
+   "blogspot.hr",
+   "blogspot.is",
+   "blogspot.li",
+   "blogspot.lu",
+   "blogspot.md",
+   "blogspot.sn",
+   "blogspot.tw",
+   "blogspot.ug",
+   "cf-ipfs.com",
+   "co.vu",
+   "crabdance.com",
+   "dweb.link",
+   "ewp.live",
+   "ey.r.appspot.com",
+   "filesusr.com",
+   "fleek.co",
+   "framer.ai",
+   "framer.app",
+   "glitch.me",
+   "infura-ipfs.io",
+   "mybluehost.me",
+   "nftstorage.link",
+   "qwo231sdx.club",
+   "r2.dev",
+   "raw.ic0.app",
+   "repl.co",
+   "replit.dev",
+   "rj.r.appspot.com",
+   "runcloud.link",
+   "sspl.com.au",
+   "surge.sh",
+   "swtest.ru",
+   "tmweb.ru",
+   "trycloudflare.com",
+   "tw1.ru",
+   "typedream.app",
+   "uc.r.appspot.com",
+   "usrfiles.com",
+   "w3s.link",
+   "wcnv20.cn",
+   "webcindario.com",
+   "weeblysite.com",
+   "wixstudio.com",
+   "wl.r.appspot.com",
+   "xsph.ru",
+   "yolasite.com"
+  ]
+ },
+ "phone": {
+  "v": "d95a9e4c13486020",
+  "sha256": "b3eb27b98865b569082b26e028a4b09a576c61fa2bd9776619e790b4f0dd1e08",
+  "bytes": 57766,
+  "names": 2328,
+  "popups": 2322,
+  "fixes": 6,
+  "endings": [],
+  "keep": 0,
+  "made": "2026-11-28T01:07:44.090Z",
+  "patterns": 485
+ },
+ "sources": [
+  {
+   "name": "EasyList and EasyPrivacy",
+   "home": "https://easylist.to",
+   "license": "GPLv3 or CC BY-SA 3.0"
+  },
+  {
+   "name": "uBlock Origin filters (uAssets): uBlock filters, privacy, quick fixes, unbreak, resource abuse, cookie notices, badware risks",
+   "home": "https://github.com/uBlockOrigin/uAssets",
+   "license": "GPLv3"
+  },
+  {
+   "name": "AdGuard DNS filter",
+   "home": "https://github.com/AdguardTeam/AdGuardSDNSFilter",
+   "license": "GPLv3"
+  },
+  {
+   "name": "AdmiraList",
+   "home": "https://github.com/jkrejcha/AdmiraList",
+   "license": "CC0 1.0 (public domain)"
+  },
+  {
+   "name": "Phishing.Database",
+   "home": "https://github.com/Phishing-Database/Phishing.Database",
+   "license": "MIT, Copyright (c) 2018-2025 Mitchell Krog, Nissar Chababy and the Phishing.Database Contributors"
+  },
+  {
+   "name": "uBlock Origin filters: Badware risks",
+   "home": "https://github.com/uBlockOrigin/uAssets",
+   "license": "GPLv3"
+  },
+  {
+   "name": "MetaMask eth-phishing-detect",
+   "home": "https://github.com/MetaMask/eth-phishing-detect",
+   "license": "DBAD Public License 1.2, Copyright (C) 2018 kumavis"
+  },
+  {
+   "name": "polkadot{.js} phishing list",
+   "home": "https://github.com/polkadot-js/phishing",
+   "license": "Apache License 2.0"
+  },
+  {
+   "name": "TweetFeed",
+   "home": "https://github.com/0xDanielLopez/TweetFeed",
+   "license": "CC0 1.0 (public domain)"
+  },
+  {
+   "name": "Chrome UX Report, most-visited sites (crux-top-lists)",
+   "home": "https://github.com/zakird/crux-top-lists",
+   "license": "CC BY 4.0 (the Chrome UX Report, by Google)"
+  }
+ ]
+}
