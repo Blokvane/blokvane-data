@@ -16,7 +16,8 @@
 //   security-base.json    malware and phishing sites: the big part, replaced about once a week
 //   security-delta.json   what was added and removed since that base (small: what each computer downloads)
 //   phone.json            what a phone's ad blocking adds to the whole names in ads.json: pop-up ad servers, the fix
-//                         file's addresses, and the web endings ad companies use (see phonePart). blokvane.com reads it.
+//                         file's addresses, the web endings ad companies use, and the patterns for ad servers whose
+//                         names change all the time (see phonePart). blokvane.com reads it.
 //   CREDITS.txt           the lists this is made from and their licenses. The list stays under those licenses.
 //   licenses/             the full text of the licenses that ask to be passed on with the list
 //
@@ -332,6 +333,8 @@ async function buildSecurity(o, sources, never, warnings) {
 //            lives (.cfd, .qpon ...). A phone blocks every name there, so tomorrow's throwaway ad address is stopped
 //            before any list has it. Worked out from the numbers every hour, never picked by hand.
 //   keep     the real sites on those endings (on this month's most-visited list, or a company's own): they still open
+//   patterns the ad servers whose names change all the time, and spared, the names no pattern ever blocks (see
+//            namePatterns below)
 // Never in it: a shared platform, a company's own site, an established popular site, a name on a big shared network,
 // or one of the names people need most.
 const POPUP_OPTS = /^(popup|popunder|third-party|3p|all)$/;
@@ -356,6 +359,97 @@ function fixNames(file) {
   const f = readJson(file, null);
   const list = f && f.block && Array.isArray(f.block.domains) ? f.block.domains : [];
   return list.filter(x => typeof x === 'string').map(x => x.trim().toLowerCase().replace(/^\*\./, '').replace(/^www\./, '').replace(/\.$/, '')).slice(0, 2000);
+}
+// ---------- names that change all the time: the patterns ----------
+// Some ad servers change their name all the time, but only a part of it: "marketplace-b316.hyprmx.com" today,
+// "marketplace-c77.hyprmx.com" tomorrow. A list of whole names never catches up with those. One of the lists here is
+// written for blocking by name (the AdGuard DNS filter, filter.txt), and it has rules for them with a star in it,
+// next to the names it leaves open. A phone gets both from here (the server: dnscore.Patterns):
+//   patterns  that list's rules about a name alone that are not one whole name: a star in it ("||ads*.example.com^"),
+//             or its end left open ("||adserver1."). As the list writes them. Never a rule with an option or a path.
+//   spared    the names that list leaves open ("@@||name^|", also with a star): no pattern blocks one of them, or a
+//             name under it
+// "||" is the start of the name, or of a part of it after a dot. "^" is its end. A star is any run of letters, numbers,
+// dots and dashes. A pattern is left out when:
+//   - it says too little to be about one company's names: fewer than six fixed letters or numbers, or no four in one
+//     piece (the server leaves out the same);
+//   - its names sit on a big shared network or on a host where anyone can rent a name (SHARED above, RENTED below):
+//     "every name there that starts with log" is never about one company;
+//   - its names belong to a service that sites and apps need to let people in (NEEDED below): blocked, a shop can
+//     ask "are you a person?" again and again, or a device cannot sign in;
+//   - it fits a site that must never be blocked: a shared platform, a company's own site, an established popular
+//     site, or one of the names people need most.
+const NAME_LIST = 'filter.txt';
+const NAME_STARS = 4, MAX_PATTERNS = 5000, MAX_SPARED = 20000;      // (the server takes no more: dns.py)
+// Clouds and hosting services where anyone can rent a name (the big shared networks are in SHARED)
+const RENTED = ['aliyuncs.com', 'run.app', 'azurewebsites.net', 'firebaseio.com', 'web.app', 'firebaseapp.com', 'elasticbeanstalk.com', 'oraclecloud.com',
+  'netdna-ssl.com', 'workers.dev', 'vercel.app', 'herokuapp.com', 'onrender.com', 'fly.dev', 'r2.dev', 'backblazeb2.com', 'digitaloceanspaces.com',
+  'ondigitalocean.app', 'myqcloud.com', 'bcebos.com', 'cloudfunctions.net', 'azure-api.net', 'pusher.com', 'glitch.me', 'repl.co', 'replit.app', 'ngrok.io',
+  'ngrok-free.app', 'supabase.co'];
+// Checks that a visitor is a person (PerimeterX), and where a smart TV signs in: never blocked by a pattern
+const NEEDED = ['perimeterx.net', 'px-cdn.net', 'px-client.net', 'pxchk.net', 'px-cloud.net', 'hismarttv.com'];
+const onRented = body => SHARED.concat(RENTED, NEEDED).some(d => body === d || body.endsWith('.' + d) || body.endsWith('*' + d));
+const escRe = t => t.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&');
+// One pattern, read the way the server reads it (dnscore.Patterns._make), or null. wide: one for names to leave open,
+// which may be as wide as it likes.
+function namePattern(p, wide) {
+  if (typeof p !== 'string' || p.length < 4 || p.length > 200) return null;
+  const text = p.trim().toLowerCase();
+  let s = text, start = s.startsWith('||');
+  if (start) s = s.slice(2);
+  s = s.replace(/\|+$/, '');
+  const end = s.endsWith('^');
+  if (end) s = s.slice(0, -1);
+  if (s.startsWith('*')) { start = false; s = s.replace(/^\*+/, ''); }
+  if (!s || s.includes('**') || s.includes('..') || s.split('*').length - 1 > NAME_STARS || !/^[a-z0-9.*-]+$/.test(s)) return null;
+  const pieces = s.split('*');
+  const key = pieces.reduce((a, b) => (b.length > a.length ? b : a), pieces[0]);
+  if (!wide && ((s.match(/[a-z0-9]/g) || []).length < 6 || key.length < 4 || !/[a-z]/.test(s))) return null;
+  return { text, key, start, end, body: s, star: text.includes('*'), re: new RegExp((start ? '(?:^|\\.)' : '') + pieces.map(escRe).join('[a-z0-9.-]*') + (end ? '$' : '')) };
+}
+// the patterns (of these) that fit one of these sites, or its "www." name
+function fitsASite(rules, sites) {
+  // (every site with "www." in front, in one long text: a pattern's longest fixed piece is looked for in it first,
+  // which is quick, and only a name that holds it is tried against the pattern)
+  const hay = '\n' + [...sites].map(x => 'www.' + x).join('\n') + '\n', bad = new Set();
+  for (const r of rules) {
+    for (let i = hay.indexOf(r.key); i >= 0; i = hay.indexOf(r.key, i)) {
+      const a = hay.lastIndexOf('\n', i) + 1, b = hay.indexOf('\n', i);
+      if (r.re.test(hay.slice(a, b)) || r.re.test(hay.slice(a + 4, b))) { bad.add(r.text); break; }
+      i = b;
+    }
+  }
+  return bad;
+}
+// in: texts (the ad lists, by file name), never (the sites never to block: a list of sets). out: { patterns, spared }
+function namePatterns(texts, never) {
+  const rules = new Map(), spared = new Set(), sparedStar = new Set(), off = new Set();
+  for (let line of (texts.get(NAME_LIST) || '').split('\n')) {
+    line = line.trim().toLowerCase();
+    if (!line || line[0] === '!' || line[0] === '#' || line[0] === '[') continue;
+    const di = line.indexOf('$');
+    if (di >= 0) {
+      // (a rule with an option is never one for a phone; "badfilter" takes the rule before it back)
+      if (line.slice(di + 1).split(',').includes('badfilter')) off.add(line.slice(0, di));
+      continue;
+    }
+    if (line.startsWith('@@')) {
+      const m = /^@@\|{0,2}([a-z0-9*.-]+)\^?\|?$/.exec(line);
+      if (!m) continue;
+      if (!m[1].includes('*')) { if (/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(m[1])) spared.add(m[1]); }
+      else if (namePattern('||' + m[1] + '^', true)) sparedStar.add('||' + m[1] + '^');
+      continue;
+    }
+    if (!line.startsWith('||')) continue;
+    const r = namePattern(line);
+    // (one whole name, "||name^", is not a pattern: ads.json has it)
+    if (!r || (!r.star && r.end) || onRented(r.body) || rules.has(r.text)) continue;
+    rules.set(r.text, r);
+  }
+  for (const x of off) rules.delete(x);
+  let list = [...rules.values()];
+  for (const set of never) { const bad = fitsASite(list, set); if (bad.size) list = list.filter(r => !bad.has(r.text)); }
+  return { patterns: list.map(r => r.text).sort(), spared: [...spared].sort().concat([...sparedStar].sort()) };
 }
 const regOf = d => { const p = d.split('.'); return p.length > 2 ? p.slice(-2).join('.') : d; };
 const endOf = d => d.slice(d.lastIndexOf('.') + 1);
@@ -399,8 +493,15 @@ function phonePart(o, inp) {
     keep = inp.prev && Array.isArray(inp.prev.keep) ? inp.prev.keep : [];
   }
   const body = { names, endings, keep };
+  // the patterns for ad servers whose names change all the time (a list without any adds nothing here)
+  const pt = namePatterns(inp.texts, [MUST_WORK, platform, official, inp.popular]);
+  const wasP = inp.prev && Array.isArray(inp.prev.patterns) ? inp.prev.patterns.length : 0;
+  if (pt.patterns.length > MAX_PATTERNS || pt.spared.length > MAX_SPARED) throw new Error(pt.patterns.length + ' patterns and ' + pt.spared.length + ' names left open: more than a phone follows');
+  if (wasP && pt.patterns.length > Math.max(wasP * o.grow, wasP + 500)) throw new Error('went from ' + wasP + ' patterns to ' + pt.patterns.length + ': too big a change to trust');
+  if (pt.patterns.length) { body.patterns = pt.patterns; body.spared = pt.spared; }
   const v = sha(JSON.stringify(body)).slice(0, 16);
-  return { text: JSON.stringify(Object.assign({ format: 1, v }, body)), v, names: names.length, popups: fromPopups.length, fixes: fromFixes.length, endings, keep: keep.length };
+  return { text: JSON.stringify(Object.assign({ format: 1, v }, body)), v, names: names.length, popups: fromPopups.length, fixes: fromFixes.length, endings, keep: keep.length,
+    patterns: pt.patterns.length };
 }
 
 // "Only what changed" for the ad list: the base published last time, while it is fresh enough, and the lines added and
@@ -505,6 +606,7 @@ async function build(opts) {
       const same = o.prevMeta.phone && o.prevMeta.phone.v === p.v;
       meta.phone = { v: p.v, sha256: sha(p.text), bytes: Buffer.byteLength(p.text), names: p.names, popups: p.popups, fixes: p.fixes, endings: p.endings,
         keep: p.keep, made: same ? o.prevMeta.phone.made : stamp };
+      if (p.patterns) meta.phone.patterns = p.patterns;
     } catch (e) {
       errors.push('Phones: ' + e.message);
       keepPhone();
@@ -544,7 +646,8 @@ if (require.main === module && process.argv.includes('--save-popular')) {
     if (r.security && r.security.spared) console.log('  left out because they are among the most-visited sites: ' + r.security.spared);
     if (m.hints) console.log('Addresses that scam pages crowd under (a warning sign for the extension): ' + m.hints.crowded.length);
     if (m.phone) console.log('Phones: ' + m.phone.names + ' more names (' + m.phone.popups + ' pop-up ad servers, ' + m.phone.fixes + ' from the fix file), ' +
-      m.phone.endings.length + ' web endings ad companies use (' + (m.phone.endings.join(', ') || 'none') + '), ' + m.phone.keep + ' real sites on them left open');
+      m.phone.endings.length + ' web endings ad companies use (' + (m.phone.endings.join(', ') || 'none') + '), ' + m.phone.keep + ' real sites on them left open, ' +
+      (m.phone.patterns || 0) + ' patterns for ad servers whose names change');
     for (const w of r.warnings) console.log('Note: ' + w);
     console.log(r.changed ? 'The list changed.' : 'Nothing changed since last time.');
     // (the workflow publishes only when this file is there)
@@ -553,4 +656,4 @@ if (require.main === module && process.argv.includes('--save-popular')) {
     process.exit(r.ok ? 0 : 1);
   }).catch(e => { console.error(e); process.exit(2); });
 }
-module.exports = { build, readSecurity, readReported, crowded, popupNames, phonePart, DEFAULTS, NEVER_ENDINGS, SHARED, MUST_WORK };
+module.exports = { build, readSecurity, readReported, crowded, popupNames, namePattern, namePatterns, phonePart, DEFAULTS, NEVER_ENDINGS, SHARED, MUST_WORK };

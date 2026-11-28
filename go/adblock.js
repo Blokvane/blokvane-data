@@ -20,7 +20,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '8';
+  const V = '9';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -124,6 +124,7 @@
     search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>', heart: '<path d="M12 20s-7-4.3-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.7-7 10-7 10z"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     off: '<path d="M12 4v8"/><path d="M7 7a7 7 0 1 0 10 0"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    game: '<rect x="2.5" y="7.5" width="19" height="10" rx="5"/><path d="M7.5 10.5v4M5.5 12.5h4M15.2 11.2v.2M18 13.6v.2"/>',
     laptop: '<rect x="5" y="5" width="14" height="10" rx="1.6"/><path d="M3 19h18"/>', mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>'
   };
   function icon(name) {
@@ -988,6 +989,8 @@
       else { await load(true); draw(); toast(T('The test did not come through. Ad blocking is not running on this phone right now.')); }
     });
     row(ls, 'off', T('Block a website'), (S.blocked || []).length ? T('{n} blocked', { n: num(S.blocked.length) }) : T('Pick sites this phone should not open'), sitesSheet);
+    // (only with a server that closes Meta's ad name the smart way: an older one would close it for good, Facebook too)
+    if ((S.smart || []).includes('meta')) row(ls, 'game', T('Ads from Meta in games'), metaOn() ? T('On: blocked on this phone') : T('Off: they can still show'), metaSheet);
     row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
     limits(v);
     installCard(v);
@@ -1277,6 +1280,44 @@
         if (!r.ok) { toast(why(r), 'bad'); return; }
         S.blocked = r.data.blocked || [];
         toast(T('Saved. It works from now on.'), 'ok'); close(); draw();
+      });
+    });
+  }
+  // ---------------------------------------------------------------- Ads from Meta inside games and apps
+  // Meta sells the ads many games and apps show. A game gets them from addresses of Facebook's own: an older kit at
+  // the very name the Facebook app itself talks to (graph.facebook.com), a newer one at addresses Meta made for its
+  // kits. So a phone leaves them open. Its owner can switch this on for one phone. It is kept as graph.facebook.com
+  // among the websites this phone cannot open (POST /v1/phone/sites), so nothing new is kept anywhere, and it shows
+  // in that list too. With that name in the list the server is smart about Meta's ad addresses (dns.py,
+  // meta_closed): they are closed while a game or another app is the one asking, and open while one of Meta's own
+  // apps is in use or somebody logs in with Facebook.
+  const META = 'graph.facebook.com';
+  const metaOn = () => (S.blocked || []).includes(META);
+  function metaSheet() {
+    sheet(T('Ads from Meta in games'), (sh, close) => {
+      el('p', '', sh, T('Many games and apps show ads that Meta sells. Meta is the company behind Facebook.'));
+      el('p', '', sh, T('A game gets those ads from addresses of Facebook. One of them is the address the Facebook app itself talks to. Blocking it stops the Facebook app too, so Blokvane leaves them open.'));
+      el('p', '', sh, T('Turn this on and Blokvane closes them on this phone while a game or another app is the one asking. They open again while you use Facebook, Messenger or Instagram, and when you log in with Facebook.'));
+      el('p', 'muted', sh, T('Good to know:'));
+      bullets(sh, [
+        T('A few ads from Meta can still get through, mostly in the first minutes after you used Facebook, Messenger or Instagram.'),
+        T('A reward for watching an ad from Meta is not given, because the ad does not load.'),
+        T('If Facebook, or a game, app or website that logs in with Facebook, ever acts up, turn this off. Everything is back at once.')
+      ]);
+      el('p', 'muted', sh, T('Blokvane already blocks the servers of the other big ad companies, with this on or off.'));
+      el('p', 'muted', sh, T('A game can keep showing ads it downloaded earlier for a while.'));
+      el('p', 'muted', sh, T('You will also see graph.facebook.com under Block a website. That is this switch.'));
+      el('p', 'muted small', sh, T('To tell them apart, Blokvane remembers for up to 15 minutes when this phone last asked for Facebook itself and when an ad server was last blocked. Only those two times, never a list of what you open.'));
+      const st = el('div', 'stack', sh); st.style.marginTop = '14px';
+      const on = metaOn();
+      btn(on ? T('Stop blocking ads from Meta') : T('Block ads from Meta on this phone'), on ? { icon: 'off' } : { kind: 'go', icon: 'game' }, st, async () => {
+        // (the whole list is saved each time, like under Block a website)
+        const list = (S.blocked || []).filter(x => x !== META);
+        if (!on) list.push(META);
+        const r = await ask('/v1/phone/sites', { blocked: list });
+        if (!r.ok) { toast(why(r), 'bad'); return; }
+        S.blocked = r.data.blocked || [];
+        toast(metaOn() ? T('Ads from Meta are blocked on this phone. It works from now on.') : T('Ads from Meta are open again on this phone.'), 'ok'); close(); draw();
       });
     });
   }
