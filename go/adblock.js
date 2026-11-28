@@ -3,7 +3,8 @@
 //
 // What it does, each on its own page of the menu at the bottom:
 //   Shield     switches ad blocking on for this phone in one tap (it takes a free license, or starts the free day),
-//              shows the few steps the phone itself needs, and notices by itself when they are done
+//              shows the few steps the phone itself needs, and notices by itself when they are done. It can also
+//              pause ad blocking for a while, from one minute to one year (the page turns red while it is paused)
 //   Test       Blokvane's Ad Blocker Test, the same page as on blokvane.com, in a frame
 //   Numbers    how many lookups this phone made and how many Blokvane stopped, per day, and a picture to share
 //   Countries  countries this phone does not reach, and sites it always reaches
@@ -20,7 +21,7 @@
 // sign-in once more, and then finds out by itself that it is on a phone that is already protected ("probe" below).
 (() => {
   'use strict';
-  const V = '9';
+  const V = '10';
   const API = BVPASS.api, SITE = 'https://blokvane.com';
   const HERE = location.origin + location.pathname.replace(/[^/]*$/, '');
   const APP_URL = HERE + 'adblock.html';
@@ -125,7 +126,8 @@
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/>', lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     off: '<path d="M12 4v8"/><path d="M7 7a7 7 0 1 0 10 0"/>', clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
     game: '<rect x="2.5" y="7.5" width="19" height="10" rx="5"/><path d="M7.5 10.5v4M5.5 12.5h4M15.2 11.2v.2M18 13.6v.2"/>',
-    laptop: '<rect x="5" y="5" width="14" height="10" rx="1.6"/><path d="M3 19h18"/>', mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>'
+    laptop: '<rect x="5" y="5" width="14" height="10" rx="1.6"/><path d="M3 19h18"/>', mail: '<rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="m4 7 8 6 8-6"/>',
+    pause: '<path d="M9 6.5v11M15 6.5v11"/>', play: '<path d="M8.5 6.2v11.6L18 12z" fill="currentColor"/>', minus: '<path d="M5 12h14"/>'
   };
   function icon(name) {
     const s = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -233,6 +235,7 @@
       not_available: T('Ad blocking for phones is not switched on yet.'),
       not_included: T('Your organization did not include ad blocking on phones in your license. Ask your administrator.'),
       too_many: T('That is more than one phone can keep.'),
+      bad_time: T('Pick a time between 1 minute and 1 year.'),
       signed_out: T('Please sign in again.')
     };
     return known[r.data.error] || r.data.message || T("That didn't work. Try again in a minute.");
@@ -286,7 +289,7 @@
     return S;
   }
   // what the pages show, in a few words: a quiet look redraws only when this changed
-  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, S.strict ? 1 : 0, (S.blocked || []).length, (S.phones || []).length].join('|') : phase() + '|' + failed);
+  const sig = () => (S ? [phase(), S.license.on, S.license.free, S.free_day.on, S.dns.last_used > 0, S.stats.all.asked, S.prefs.countries.length, S.prefs.trusted.length, S.strict ? 1 : 0, (S.blocked || []).length, (S.phones || []).length, S.pause ? S.pause.until : 0].join('|') : phase() + '|' + failed);
   let shown = '';
   async function refresh() { await load(true); if (sig() !== shown) draw(); }
   // which screen the Shield page shows
@@ -704,6 +707,7 @@
       const pts = [];
       for (let i = 0; i < 6; i++) { const a = Math.PI / 180 * (60 * i - 30); pts.push((x + (R - .6) * Math.cos(a)).toFixed(1) + ',' + (y + (R - .6) * Math.sin(a)).toFixed(1)); }
       const c = document.createElementNS(NS, 'polygon'); c.setAttribute('points', pts.join(' ')); c.setAttribute('class', 'cell'); c.style.setProperty('--d', String(Math.round((dist - 44) * 7)));
+      c.setAttribute('data-a', ((Math.atan2(x, -y) / (2 * Math.PI) + 1) % 1).toFixed(4));
       svg.appendChild(c);
     }
     d.appendChild(svg);
@@ -962,13 +966,17 @@
       el('p', 'under', v, T('Blocking starts again by itself within five minutes of getting a license. Nothing to install twice.'));
       return;
     }
-    // on
+    // on (or paused for a while by its owner)
+    const P = pausedNow();
+    if (P) { held(v, P); return; }
     el('div', 'eyebrow', v, T('This phone'));
     headline(v, T('Ads are *blocked.*'), true);
     el('p', 'lede', v, T('This phone asked Blokvane {when}. {n} ad and tracker servers are left out.', { when: ago(d.last_used), n: num(d.names) }));
     dial(v, 'on', short(t.blocked + t.country), T('stopped today'));
     statRow(v, [[num(t.asked), T('Lookups today')], [num(t.blocked + t.country), T('Stopped today'), 'pass'],
       [num(S.stats.all.blocked + S.stats.all.country), T('Stopped in all'), 'pass'], [num(S.prefs.countries.length), T('Countries blocked')]]);
+    // (only with a server that can pause)
+    if (canPause()) btn(T('Pause ad blocking'), { icon: 'pause', cls: 'pz-open' }, v, () => pauseSheet(null));
     if (F.on) {
       const c = el('div', 'card', v);
       el('span', 'pill', c, T('Free day'));
@@ -977,6 +985,10 @@
       if (L.free > 0) btn(T('Put this phone on a license'), { kind: 'go', icon: 'shield' }, c, async () => { if (await activate()) { toast(T('This phone is on your license now.'), 'ok'); await load(true); draw(); } });
       else btn(T('Get a license'), { kind: 'go', icon: 'shield' }, c, () => licenseSheet());
     }
+    onRows(v);
+  }
+  // the rows under the dial, on the page of a phone that blocks (or is paused)
+  function onRows(v) {
     const ls = el('div', 'list', v);
     row(ls, 'hex', T('Run the Ad Blocker Test'), T('See what this phone stops, test by test'), () => go('test'));
     row(ls, 'globe', T('Block countries'), S.prefs.countries.length ? T('{n} chosen', { n: num(S.prefs.countries.length) }) : T('Pick countries this phone does not reach'), () => go('countries'));
@@ -994,6 +1006,232 @@
     row(ls, 'lock', T('Strict blocking'), S.strict ? T('On: it blocks even what phones leave open') : T('Off. See what it does'), strictSheet);
     limits(v);
     installCard(v);
+  }
+  // ---------------------------------------------------------------- a pause of ad blocking ("Pause ad blocking")
+  // The owner can pause ad blocking on this phone for a while, from one minute to one year (POST /v1/phone/pause, kept
+  // on the server, so it ends by itself even with this app closed). While it runs, the Shield page turns red: the
+  // honeycomb is red for the time that is left and turns green again, cell by cell and clockwise, as the time runs out,
+  // and the turning words around it stand still. A phone never tells a blocker which app is asking, so a pause is
+  // always for the whole phone: the page and the sheet say so, with what else happens.
+  const STOPS = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 360, 480, 720, 1440, 2880, 4320, 10080, 20160, 43200, 86400, 129600, 259200, 525600];
+  const YEAR = 525600;                        // (minutes)
+  const MOST = 366 * 86400;                   // (a year from today can be 366 days)
+  let heldT = 0;
+  const pausedNow = () => (S && S.pause && S.pause.until > now() ? S.pause : null);
+  const canPause = () => !!(S && (S.smart || []).includes('pause'));
+  const untilDate = until => new Date(until * 1000 - skew);     // (the server's time, on this phone's clock)
+  // "5 minutes", "1 day" (long) or "5 min", "1 day" (short), the way the language says it
+  function unitText(n, unit, style) {
+    try { return new Intl.NumberFormat(loc(), { style: 'unit', unit, unitDisplay: style || 'long' }).format(n); } catch (e) { return num(n) + ' ' + unit + (n === 1 ? '' : 's'); }
+  }
+  function durText(min, style) {
+    min = Math.max(0, Math.round(min));
+    if (!min) return unitText(0, 'minute', style);
+    if (min === YEAR) return unitText(1, 'year', style);
+    if (min % 43200 === 0 && min < YEAR) return unitText(min / 43200, 'month', style);
+    if (min % 10080 === 0 && min < 43200) return unitText(min / 10080, 'week', style);
+    const p = [], dd = Math.floor(min / 1440), hh = Math.floor(min % 1440 / 60), mm = min % 60;
+    if (dd) p.push(unitText(dd, 'day', style));
+    if (hh) p.push(unitText(hh, 'hour', style));
+    if (mm) p.push(unitText(mm, 'minute', style));
+    try { return new Intl.ListFormat(loc(), { style: style === 'short' ? 'narrow' : 'long', type: 'unit' }).format(p); } catch (e) { return p.join(' '); }
+  }
+  // the time that is left, for the dial: 4:59, 3:14:59, or 5d 3h
+  function clockText(sec) {
+    sec = Math.max(0, Math.ceil(sec));
+    const two = n => { try { return new Intl.NumberFormat(loc(), { minimumIntegerDigits: 2, useGrouping: false }).format(n); } catch (e) { return String(n).padStart(2, '0'); } };
+    if (sec < 3600) return num(Math.floor(sec / 60)) + ':' + two(sec % 60);
+    if (sec < 86400) return num(Math.floor(sec / 3600)) + ':' + two(Math.floor(sec % 3600 / 60)) + ':' + two(sec % 60);
+    const dd = Math.floor(sec / 86400), hh = Math.floor(sec % 86400 / 3600);
+    return unitText(dd, 'day', 'narrow') + (hh ? ' ' + unitText(hh, 'hour', 'narrow') : '');
+  }
+  // a moment on this phone's clock: "5:47 PM" today, "Tuesday 5:47 PM" this week, "Tue, Dec 3, 5:47 PM" later
+  function dateText(dt) {
+    const n = new Date(), same = dt.toDateString() === n.toDateString(), soon = dt - n < 6 * 864e5;
+    const o = same ? { hour: 'numeric', minute: '2-digit' } : soon ? { weekday: 'long', hour: 'numeric', minute: '2-digit' }
+      : { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' };
+    if (!same && !soon && dt.getFullYear() !== n.getFullYear()) o.year = 'numeric';
+    try { return new Intl.DateTimeFormat(loc(), o).format(dt); } catch (e) { return dt.toLocaleString(); }
+  }
+  const backText = dt => (dt.toDateString() === new Date().toDateString() ? T('Back at {time} today', { time: dateText(dt) }) : T('Back on {date}', { date: dateText(dt) }));
+  // what happens during a pause, said plainly
+  function pauseNotes(all) {
+    const a = [plat() === 'android' ? T('The pause covers the whole phone. Android never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.')
+      : T('The pause covers the whole phone. An iPhone never tells a blocker which app is asking, so other apps can show ads too if you open them while it is paused.'),
+    T('Trackers get through too. The websites you blocked and the countries you picked stay blocked.'),
+    T('When the time is up, blocking comes back by itself. It takes about 10 seconds to start and to end.')];
+    if (all) a.push(T('Resume now brings blocking back at once. An ad an app downloaded during the pause can still show after it.'));
+    return a;
+  }
+  async function setPause(sec) {
+    const r = await ask('/v1/phone/pause', { seconds: sec });
+    if (!r.ok) { toast(why(r), 'bad'); return false; }
+    if (S) S.pause = r.data.pause || null;
+    if (closeSheet) closeSheet();
+    draw();
+    try { scrollTo(0, 0); } catch (e) {}
+    toast(sec ? T('Ad blocking is paused.') : T('Ad blocking is back on.'), sec ? '' : 'ok');
+    return true;
+  }
+  // the Shield page while paused: red, with the time that is left
+  function held(v, P) {
+    el('div', 'eyebrow', v, T('This phone'));
+    headline(v, T('Ad blocking is *paused.*'));
+    el('p', 'lede', v, T('Ads and trackers can show on this phone until {when}.', { when: dateText(untilDate(P.until)) }));
+    const d = dial(v, 'held', clockText(P.until - now()), T('until blocking is back'));
+    const cells = Array.from(d.querySelectorAll('.cell')), numEl = d.querySelector('.core .num');
+    const total = Math.max(60, P.until - P.from);
+    const tick = () => {
+      const left = P.until - now();
+      if (left <= 0) {
+        clearInterval(heldT); heldT = 0;
+        if (S && S.pause === P) S.pause = null;
+        if (tab === 'home') draw();
+        toast(T('Ad blocking is back on.'), 'ok');
+        refresh();
+        return;
+      }
+      // (red: the part of the pause that is left; green comes back clockwise from the top)
+      const f = Math.min(1, left / total);
+      for (const c of cells) c.classList.toggle('left', +c.getAttribute('data-a') >= 1 - f);
+      const t = clockText(left);
+      if (numEl.textContent !== t) { numEl.textContent = t; numEl.classList.toggle('long', t.length > 5); }
+    };
+    tick();
+    heldT = setInterval(tick, 1000);
+    const st = el('div', 'stack', v);
+    btn(T('Resume now'), { kind: 'go', cls: 'green', icon: 'play' }, st, () => setPause(0));
+    btn(T('Change the time'), { icon: 'clock' }, st, () => pauseSheet(P));
+    const c = el('div', 'card soft pz-info', v);
+    el('h3', '', c, T('While it is paused'));
+    bullets(c, pauseNotes(true));
+    onRows(v);
+  }
+  // press and hold a + or - to keep counting
+  function hold(b, fn) {
+    let t = 0, r = 0;
+    const stop = () => { clearTimeout(t); clearInterval(r); t = r = 0; };
+    b.addEventListener('pointerdown', e => { if (e.button) return; e.preventDefault(); stop(); fn(); t = setTimeout(() => { r = setInterval(fn, 70); }, 420); });
+    for (const ev of ['pointerup', 'pointerleave', 'pointercancel', 'blur']) b.addEventListener(ev, stop);
+    b.addEventListener('click', e => { if (e.detail === 0) fn(); });       // (a keyboard: Enter or Space)
+  }
+  const nearest = min => { let k = 0; for (let i = 1; i < STOPS.length; i++) if (Math.abs(Math.log(STOPS[i] / min)) < Math.abs(Math.log(STOPS[k] / min))) k = i; return k; };
+  const pad2 = n => String(n).padStart(2, '0');
+  const ymd = dt => dt.getFullYear() + '-' + pad2(dt.getMonth() + 1) + '-' + pad2(dt.getDate());
+  // the sheet that pauses: a slider from one minute to one year, quick picks, and a time of one's own
+  function pauseSheet(P) {
+    sheet(P ? T('Change the pause') : T('Pause ad blocking'), sh => {
+      // what is picked: a stop of the slider ('slide'), a time of one's own ('for'), or a date and a time ('until')
+      let mode = 'slide', mins = P ? STOPS[nearest(Math.max(1, (P.until - now()) / 60))] : 5, until = null;
+      const parts = { d: 0, h: 0, m: 5 }, MAXP = { d: 365, h: 23, m: 59 };
+      const read = el('div', 'pz-read', sh);
+      const big = el('div', 'pz-big', read), when = el('div', 'pz-when', read);
+      read.setAttribute('aria-live', 'polite');
+      // (the slider: 27 stops from one minute to one year)
+      const sl = el('div', 'pz-slide', sh);
+      const range = el('input', 'pz-range', sl);
+      range.type = 'range'; range.min = '0'; range.max = String(STOPS.length - 1); range.step = '1';
+      range.setAttribute('aria-label', T('How long'));
+      const ticks = el('div', 'pz-ticks', sl); ticks.setAttribute('aria-hidden', 'true');
+      for (const m of [1, 60, 1440, 43200, YEAR]) {
+        const sp = el('span', '', ticks, durText(m, 'short'));
+        sp.style[lang === 'ar' ? 'right' : 'left'] = (100 * STOPS.indexOf(m) / (STOPS.length - 1)) + '%';
+      }
+      // (a label that would run into the one after it is left out: the last one, "1 year", always stays)
+      requestAnimationFrame(() => {
+        let keep = null;
+        for (const sp of Array.from(ticks.children).reverse()) {
+          const r = sp.getBoundingClientRect();
+          if (keep && r.right + 6 > keep.left && r.left < keep.right + 6) sp.style.visibility = 'hidden'; else keep = r;
+        }
+      });
+      range.addEventListener('input', () => { mode = 'slide'; mins = STOPS[+range.value] || 5; fillFor(); showSeg('for'); sync(); });
+      // (quick picks)
+      const chips = el('div', 'pz-chips', sh);
+      const quick = [1, 5, 15, 60, 1440, 10080, 43200, YEAR].map(m => {
+        const b = el('button', 'pz-chip', chips, durText(m, 'short')); b.type = 'button';
+        b.onclick = () => { mode = 'slide'; mins = m; fillFor(); showSeg('for'); sync(); };
+        return [m, b];
+      });
+      // (a time of one's own: how long, in days, hours and minutes; or until a date and a time)
+      const own = el('button', 'pz-own', sh); own.type = 'button'; own.setAttribute('aria-expanded', 'false');
+      own.appendChild(icon('clock')); el('span', '', own, T('Set your own time'));
+      const chv = icon('chev'); chv.classList.add('chev'); own.appendChild(chv);
+      const panel = el('div', 'pz-panel', sh); panel.hidden = true;
+      own.onclick = () => { panel.hidden = !panel.hidden; own.setAttribute('aria-expanded', String(!panel.hidden)); };
+      const seg = el('div', 'pz-seg', panel);
+      const segFor = el('button', '', seg, T('How long')), segUntil = el('button', '', seg, T('Until when'));
+      segFor.type = segUntil.type = 'button';
+      const forBox = el('div', 'pz-steps', panel), untilBox = el('div', 'row2 pz-until', panel);
+      function showSeg(w) {
+        segFor.setAttribute('aria-pressed', String(w === 'for')); segUntil.setAttribute('aria-pressed', String(w === 'until'));
+        forBox.hidden = w !== 'for'; untilBox.hidden = w !== 'until';
+      }
+      segFor.onclick = () => { if (mode === 'until') { mode = 'for'; } showSeg('for'); sync(); };
+      segUntil.onclick = () => { showSeg('until'); if (!until) fillUntil(); mode = 'until'; sync(); };
+      const inputs = {};
+      for (const [k, label] of [['d', T('Days')], ['h', T('Hours')], ['m', T('Minutes')]]) {
+        const box = el('div', 'pz-step', forBox);
+        const id = 'pz-' + k + '-' + hex(3);
+        const lb = el('label', '', box, label); lb.htmlFor = id;
+        const up = el('button', 'pz-pm', box); up.type = 'button'; up.setAttribute('aria-label', label + ': ' + T('One more')); up.appendChild(icon('plus'));
+        const inp = el('input', '', box); inp.id = id; inp.type = 'text'; inp.inputMode = 'numeric'; inp.autocomplete = 'off'; inp.maxLength = 3; inp.setAttribute('enterkeyhint', 'done');
+        const dn = el('button', 'pz-pm', box); dn.type = 'button'; dn.setAttribute('aria-label', label + ': ' + T('One less')); dn.appendChild(icon('minus'));
+        inputs[k] = inp;
+        const step = n => { parts[k] = Math.max(0, Math.min(MAXP[k], parts[k] + n)); mode = 'for'; sync(); };
+        hold(up, () => step(1)); hold(dn, () => step(-1));
+        inp.addEventListener('input', () => { const n = parseInt(inp.value.replace(/\D/g, ''), 10); parts[k] = isNaN(n) ? 0 : Math.min(MAXP[k], n); mode = 'for'; sync(); });
+        inp.addEventListener('blur', () => { inp.value = String(parts[k]); });
+      }
+      const dWrap = el('div', '', untilBox), tWrap = el('div', '', untilBox);
+      const dl = el('label', 'f', dWrap, T('Date')), tl = el('label', 'f', tWrap, T('Time'));
+      const dIn = el('input', 'in', dWrap), tIn = el('input', 'in', tWrap);
+      dIn.type = 'date'; tIn.type = 'time'; dIn.id = 'pz-date-' + hex(3); tIn.id = 'pz-time-' + hex(3); dl.htmlFor = dIn.id; tl.htmlFor = tIn.id;
+      const readUntil = () => {
+        const a = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dIn.value), b = /^(\d{2}):(\d{2})/.exec(tIn.value);
+        until = a && b ? new Date(+a[1], +a[2] - 1, +a[3], +b[1], +b[2]) : null;
+        mode = 'until'; sync();
+      };
+      dIn.addEventListener('input', readUntil); tIn.addEventListener('input', readUntil);
+      dIn.addEventListener('change', readUntil); tIn.addEventListener('change', readUntil);
+      function fillFor() { const m = Math.min(YEAR, mins); parts.d = Math.floor(m / 1440); parts.h = Math.floor(m % 1440 / 60); parts.m = m % 60; }
+      function fillUntil() {
+        const dt = new Date(Date.now() + Math.max(5, mins) * 60000);
+        dt.setSeconds(0, 0); dt.setMinutes(Math.ceil(dt.getMinutes() / 5) * 5);
+        const yr = new Date(); yr.setFullYear(yr.getFullYear() + 1);
+        if (dt > yr) dt.setTime(yr.getTime() - 60000);
+        dIn.value = ymd(dt); tIn.value = pad2(dt.getHours()) + ':' + pad2(dt.getMinutes()); until = dt;
+      }
+      const err = el('p', 'err', sh); err.hidden = true; err.setAttribute('role', 'alert');
+      const info = el('div', 'card soft pz-info', sh);
+      el('h3', '', info, T('While it is paused'));
+      bullets(info, pauseNotes(false));
+      const goB = btn(T('Pause ad blocking'), { kind: 'go', icon: 'pause' }, sh, async () => { const sec = seconds(); if (sec) await setPause(sec); });
+      el('p', 'note', sh, T('To earn a reward in a game: pause for a few minutes, watch the ad to the end, then tap Resume now.'));
+      function seconds() {
+        if (mode === 'until') { if (!until) return 0; const x = Math.round((until - Date.now()) / 1000); return x >= 60 && x <= MOST ? x : 0; }
+        const m = mode === 'for' ? parts.d * 1440 + parts.h * 60 + parts.m : mins;
+        return m >= 1 && m <= YEAR ? m * 60 : 0;
+      }
+      function sync() {
+        if (parts.d >= 365) { parts.d = 365; parts.h = 0; parts.m = 0; }
+        const sec = seconds();
+        const m = mode === 'slide' ? mins : mode === 'for' ? parts.d * 1440 + parts.h * 60 + parts.m : until ? Math.max(0, Math.round((until - Date.now()) / 60000)) : 0;
+        const end = mode === 'until' && until ? until : new Date(Date.now() + m * 60000);
+        big.textContent = durText(m);
+        when.textContent = sec ? backText(end) : '';
+        const k = mode === 'slide' ? STOPS.indexOf(mins) : nearest(Math.max(1, m));
+        range.value = String(k < 0 ? nearest(mins) : k);
+        range.style.setProperty('--p', (100 * +range.value / (STOPS.length - 1)) + '%');
+        for (const [qm, b] of quick) b.setAttribute('aria-pressed', String(mode === 'slide' && qm === mins));
+        for (const key of ['d', 'h', 'm']) if (document.activeElement !== inputs[key]) inputs[key].value = String(parts[key]);
+        goB.querySelector('span').textContent = mode === 'until' && sec ? T('Pause until {when}', { when: dateText(until) }) : T('Pause for {time}', { time: durText(Math.max(m, 0)) });
+        goB.disabled = !sec;
+        err.hidden = !!sec; err.textContent = sec ? '' : T('Pick a time between 1 minute and 1 year.');
+      }
+      dIn.min = ymd(new Date()); { const yr = new Date(); yr.setFullYear(yr.getFullYear() + 1); dIn.max = ymd(yr); }
+      fillFor(); showSeg('for'); sync();
+    });
   }
   function licenseHelp() {
     sheet(T('I have a license'), (sh, close) => {
@@ -1584,6 +1822,7 @@
   let drawn = '';
   function draw() {
     const keepScroll = drawn === tab ? scrollY : 0;
+    if (heldT) { clearInterval(heldT); heldT = 0; }
     // (typing is never thrown away: a page with a text box in use is left alone until the next tap)
     const act = document.activeElement;
     if (drawn === tab && act && /^(INPUT|TEXTAREA)$/.test(act.tagName) && viewEl.contains(act) && act.value) return;
@@ -1630,6 +1869,6 @@
     if (acct()) { await load(); firstProbe(); }
     watch();
     // (the free day's clock, and "asked Blokvane 3 minutes ago", stay true while the page is open)
-    setInterval(() => { if (!document.hidden && !closeSheet && (tab === 'home' || tab === 'more') && S && !viewEl.querySelector('details[open]')) draw(); }, 60000);
+    setInterval(() => { if (!document.hidden && !closeSheet && (tab === 'home' || tab === 'more') && S && !viewEl.querySelector('details[open]') && !(tab === 'home' && pausedNow())) draw(); }, 60000);
   })();
 })();

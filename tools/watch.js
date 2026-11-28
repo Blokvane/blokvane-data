@@ -5,7 +5,9 @@
 //   node tools/watch.js --out report.json [--site-down 0|1] [--relays] [--state file] [--swapped file] [--wake file]
 //
 // Each check has a level, like the server's alerts: 0 all good, 1 heads-up, 2 act, 3 urgent.
-//   LISTS-STALE   the list robot's last good run (older than 6 hours: act; 24: urgent)
+//   LISTS-STALE   the list robot's last good run (older than 6 hours: act; 24: urgent). Older than 2 hours, this robot
+//                 starts the list robot. Late only because GitHub skipped its schedule (its last run did not fail),
+//                 that mends itself, so it is a heads-up, not "act": GitHub runs both robots late on busy days
 //   FREE-RELAYS   the free relays, once a day: at least 20 of the 28 Nostr relays must carry a message and 2 of the 3
 //                 MQTT brokers must answer (24: heads-up). A relay that failed 3 days in a row is swapped for a tested
 //                 spare by the robot itself (relays.json), so this only reaches "act" when the robot cannot mend it.
@@ -44,8 +46,20 @@ async function listsStale(now) {
   if (!run) return { level: 2, text: 'The list robot has no good run yet.' };
   const h = (now - Date.parse(run.updated_at)) / HOUR;
   // (the list robot runs every hour. Over 2 hours: GitHub is running its schedule late, so this robot starts it)
-  if (h >= 2 && WAKE) { try { fs.writeFileSync(WAKE, String(Math.floor(h))); } catch (e) {} }
-  return { level: h >= 24 ? 3 : h >= 6 ? 2 : 0, value: Math.round(h * 10) / 10, text: `The block list was rebuilt ${h < 1 ? 'less than an hour' : Math.floor(h) + ' hours'} ago.` };
+  const wake = h >= 2 && !!WAKE;
+  if (wake) { try { fs.writeFileSync(WAKE, String(Math.floor(h))); } catch (e) {} }
+  const value = Math.round(h * 10) / 10, text = `The block list was rebuilt ${h < 1 ? 'less than an hour' : Math.floor(h) + ' hours'} ago.`;
+  if (h >= 6 && h < 24 && wake) {
+    // (GitHub skipped the list robot's schedule, and this robot's own, for hours: it is started now, and the list is
+    // fresh a minute later. A heads-up, not "act": only a list robot whose own last run failed needs a person)
+    let broken = false;
+    try {
+      const last = ((await json(`https://api.github.com/repos/${REPO}/actions/workflows/blokvane-list.yml/runs?per_page=1`, GH)).workflow_runs || [])[0];
+      broken = !!last && last.status === 'completed' && ['failure', 'timed_out', 'startup_failure', 'action_required'].includes(last.conclusion);
+    } catch (e) {}
+    if (!broken) return { level: 1, value, text: text + ' GitHub ran the list robot late, so this robot starts it now.' };
+  }
+  return { level: h >= 24 ? 3 : h >= 6 ? 2 : 0, value, text };
 }
 
 function certDays(host, now) {
